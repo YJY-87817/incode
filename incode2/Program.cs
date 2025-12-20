@@ -1,4 +1,5 @@
 using incode2.Data;
+using incode2.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddDbContext<incodedatabaseContext>(option => {
-  option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+builder.Services.AddDbContext<incodedatabaseContext>(option =>
+{
+option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
 
