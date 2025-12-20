@@ -37,5 +37,46 @@ namespace incode2.Controllers
 
       return View(contentList);
     }
+
+    // GET: Content/Details/5
+    public IActionResult Details(int id)
+    {
+      // 查詢主貼文
+      var content = _context.Content
+          .Include(c => c.User)
+          .Include(c => c.Category)
+          .FirstOrDefault(c => c.ContentId == id);
+
+      if (content == null)
+        return NotFound();
+
+      // 查詢回覆列表
+      var replies = _context.Content
+          .Include(c => c.User)
+          .Where(c => c.ParentContentId == id)  // 找出所有回覆
+          .OrderBy(c => c.CreatedAt)
+          .Select(c => new ReplyViewModel
+          {
+            ContentId = c.ContentId,
+            Body = c.Body,
+            AuthorName = c.User.Username,
+            CreatedAt = (DateTime)c.CreatedAt
+          })
+          .ToList();
+
+      // 組合成 ViewModel
+      var viewModel = new ContentDetailViewModel
+      {
+        ContentId = content.ContentId,
+        Title = content.Title,
+        Body = content.Body,
+        CreatedAt = (DateTime)content.CreatedAt,
+        AuthorName = content.User.Username,
+        CategoryName = content.Category.CategoryName,
+        Replies = replies
+      };
+
+      return View(viewModel);
+    }
   }
 }
