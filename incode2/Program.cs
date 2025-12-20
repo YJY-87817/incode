@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+//給要去DI容器取物件的人使用
 builder.Services.AddDbContext<incodedatabaseContext>(option =>
 {
 option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
