@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>@ViewData["Title"] - incode</title>
-  <script type="importmap"></script>
   <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
   <!-- Custom fonts for this template-->
@@ -256,17 +255,16 @@
   <!-- Custom scripts for all pages-->
   <script src="~/js/sb-admin-2.min.js"></script>
 
-  <script src="~/lib/jquery/dist/jquery.min.js"></script>
   <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
   <script src="~/js/site.js" asp-append-version="true"></script>
 
-  @*   <environment include="Development">
+  <environment include="Development">
     <script src="~/js/site.js" asp-append-version="true"></script>
   </environment>
 
   <environment exclude="Development">
     <script src="~/js/site.min.js" asp-append-version="true"></script>
-  </environment> *@
+  </environment>
   @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
