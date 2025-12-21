@@ -37,17 +37,19 @@ else
   app.UseHsts();
 }
 
+// HTTP request pipeline configuration
+//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
 app.UseHttpsRedirection();
-
+//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
 app.UseRouting();
-
+//身分驗證 => 授予權限
 app.UseAuthorization();
 
 app.MapStaticAssets();
-
+//網址列的route變化規則
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Home}/{action=Index}/{id?}")//Controller命名最後一定要是Controller結尾
     .WithStaticAssets();
 
 app.MapRazorPages()
