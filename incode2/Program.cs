@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the DI container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -13,7 +13,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //給要去DI容器取物件的人使用
 builder.Services.AddDbContext<incodedatabaseContext>(option =>
 {
-option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+  option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
 
@@ -26,6 +26,7 @@ builder.Services.AddControllersWithViews();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// 選擇在開發環境時顯示詳細的error資訊，如果是"服務"則要倒過來才可以看到詳細資訊
 if (app.Environment.IsDevelopment())
 {
   app.UseMigrationsEndPoint();
