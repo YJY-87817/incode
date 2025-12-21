@@ -20,6 +20,8 @@ namespace incode2.Controllers
 
     public IActionResult Privacy()
     {
+      int a =0;
+      int b = 1 / a;
       return View();
     }
 

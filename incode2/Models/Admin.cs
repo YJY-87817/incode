@@ -7,11 +7,11 @@ namespace incode2.Models;
 
 public partial class Admin
 {
-    public int AdminId { get; set; }
+  public int AdminId { get; set; }
 
-    public string Type { get; set; }
+  public string Type { get; set; }
 
-    public int? Autority { get; set; }
+  public int? Autority { get; set; }
 
-    public virtual ICollection<AdminImage> AdminImage { get; set; } = new List<AdminImage>();
+  public virtual ICollection<AdminImage> AdminImage { get; set; } = new List<AdminImage>();
 }

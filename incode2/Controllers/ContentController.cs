@@ -20,7 +20,7 @@ namespace incode2.Controllers
     {
       // 查詢所有貼文（包含作者和分類）
       var contentList = _context.Content
-          .Include(c => c.User)              // 關聯查詢：作者
+          .Include(c => c.Category)          // 關聯查詢：分類
           .Include(c => c.Category)          // 關聯查詢：分類
           .Where(c => c.ParentContentId == null)  // 只要主貼文（不要回覆）
           .OrderByDescending(c => c.CreatedAt)    // 最新的在前面
