@@ -10,6 +10,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
+    //檔案"Program.cs",裡面的app.UseHttpsRedirection();
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
