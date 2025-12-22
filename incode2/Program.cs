@@ -47,10 +47,13 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
 //網址列的route變化規則
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")//Controller命名最後一定要是Controller結尾
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    //如果都沒填的預設
+    //Controller命名最後一定要是Controller結尾，不能有s
     .WithStaticAssets();
 
 app.MapRazorPages()
