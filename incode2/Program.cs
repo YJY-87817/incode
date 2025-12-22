@@ -3,6 +3,7 @@ using incode2.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+//註冊DI容器的地方
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the DI container.
@@ -26,6 +27,7 @@ builder.Services.AddControllersWithViews();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+//錯誤處理
 // 選擇在開發環境時顯示詳細的error資訊，如果是"服務"則要倒過來才可以看到詳細資訊
 if (app.Environment.IsDevelopment())
 {
