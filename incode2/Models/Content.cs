@@ -7,35 +7,35 @@ namespace incode2.Models;
 
 public partial class Content
 {
-    public int ContentId { get; set; }
+  public int ContentId { get; set; }
 
-    public int? ParentContentId { get; set; }
+  public int? ParentContentId { get; set; }
 
-    public int? CategoryId { get; set; }
+  public int? CategoryId { get; set; }
 
-    public int UserId { get; set; }
+  public int UserId { get; set; }
 
-    public string Title { get; set; }
+  public string Title { get; set; }
 
-    public string Body { get; set; }
+  public string Body { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+  public DateTime? CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+  public DateTime? UpdatedAt { get; set; }
 
-    public bool? Ishidden { get; set; }
+  public bool? Ishidden { get; set; }
 
-    public virtual ContentCategory Category { get; set; }
+  public virtual ContentCategory Category { get; set; }
 
-    public virtual ICollection<ContentHistory> ContentHistory { get; set; } = new List<ContentHistory>();
+  public virtual ICollection<ContentHistory> ContentHistory { get; set; } = new List<ContentHistory>();
 
-    public virtual ICollection<ContentInteraction> ContentInteraction { get; set; } = new List<ContentInteraction>();
+  public virtual ICollection<ContentInteraction> ContentInteraction { get; set; } = new List<ContentInteraction>();
 
-    public virtual ICollection<ContentNotification> ContentNotification { get; set; } = new List<ContentNotification>();
+  public virtual ICollection<ContentNotification> ContentNotification { get; set; } = new List<ContentNotification>();
 
-    public virtual ICollection<Content> InverseParentContent { get; set; } = new List<Content>();
+  public virtual ICollection<Content> InverseParentContent { get; set; } = new List<Content>();
 
-    public virtual Content ParentContent { get; set; }
+  public virtual Content ParentContent { get; set; }
 
-    public virtual User User { get; set; }
+  public virtual User User { get; set; }
 }

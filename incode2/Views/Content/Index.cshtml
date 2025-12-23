@@ -1,4 +1,4 @@
-﻿@model List<incode2.Models.ViewModels.ContentListViewModel>
+﻿@model IEnumerable<incode2.Models.ViewModels.ContentListViewModel>
 
 @{
   ViewData["Title"] = "貼文列表";
@@ -21,7 +21,7 @@
       <table class="table table-bordered" width="100%">
         <thead>
           <tr>
-            <th>標題</th>
+            <th>@Html.DisplayNameFor(s => s.ContentId)</th>
             <th>內容預覽</th>
             <th>作者</th>
             <th>分類</th>
@@ -34,7 +34,7 @@
           {
             <tr>
               <td>
-                <strong>@item.Title</strong>
+                <strong>@Html.DisplayFor(s => item.ContentId)</strong>
               </td>
               <td>
                 @item.Body...
@@ -56,6 +56,7 @@
               </td>
             </tr>
           }
+        
         </tbody>
       </table>
     </div>

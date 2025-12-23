@@ -12,8 +12,8 @@ namespace incode2.Models
       if (!optionsBuilder.IsConfigured)
       {
         IConfiguration Config = new ConfigurationBuilder()
-            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-            .AddJsonFile("appsettings.json")
+            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)//找到專案根目錄，所有的.NET程式都跑在AppDomain
+            .AddJsonFile("appsettings.json") //設定檔是JSON格式
             .Build();
         optionsBuilder.UseSqlServer(Config.GetConnectionString("incodedatabase"));
       }
