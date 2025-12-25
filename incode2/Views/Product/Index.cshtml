@@ -148,7 +148,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form asp-action="Create">
+                <form>
                     <div class="mb-3">
                         <label for="Name" class="form-label fw-bold">商品名稱:</label>
                         <input type="text" class="form-control" id="Name" name="Name" placeholder="請輸入商品名稱" required>
@@ -198,7 +198,7 @@
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">新增商品</button>
+                        <button id="BtnCreate" type="submit" class="btn btn-primary">新增商品</button>
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
                     </div>
                 </form>
@@ -229,5 +229,8 @@
 
 @section Scripts
 {
-  
+  <script>
+        var baseAddress = "https://localhost:7190/";
+       
+  </script>
 }
