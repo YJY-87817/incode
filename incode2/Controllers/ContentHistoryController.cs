@@ -28,9 +28,9 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Details/5
-    public async Task<IActionResult> Details(int? id)
+    public async Task<IActionResult> Details(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
@@ -38,7 +38,7 @@ namespace incode2.Controllers
       var contentHistory = await _context.ContentHistory
           .Include(c => c.Content)
           .Include(c => c.User)
-          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
@@ -74,14 +74,14 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    public async Task<IActionResult> Edit(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
 
-      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      var contentHistory = await _context.ContentHistory.FindAsync(content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
@@ -96,9 +96,9 @@ namespace incode2.Controllers
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
+    public async Task<IActionResult> Edit(int content_history_id, [Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
     {
-      if (id != contentHistory.ContentHistoryId)
+      if (content_history_id != contentHistory.ContentHistoryId)
       {
         return NotFound();
       }
@@ -129,9 +129,9 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    public async Task<IActionResult> Delete(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
@@ -139,7 +139,7 @@ namespace incode2.Controllers
       var contentHistory = await _context.ContentHistory
           .Include(c => c.Content)
           .Include(c => c.User)
-          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
@@ -151,9 +151,9 @@ namespace incode2.Controllers
     // POST: ContentHistory/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(int content_history_id)
     {
-      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      var contentHistory = await _context.ContentHistory.FindAsync(content_history_id);
       if (contentHistory != null)
       {
         _context.ContentHistory.Remove(contentHistory);
@@ -163,9 +163,9 @@ namespace incode2.Controllers
       return RedirectToAction(nameof(Index));
     }
 
-    private bool ContentHistoryExists(int id)
+    private bool ContentHistoryExists(int content_history_id)
     {
-      return _context.ContentHistory.Any(e => e.ContentHistoryId == id);
+      return _context.ContentHistory.Any(e => e.ContentHistoryId == content_history_id);
     }
   }
 }
