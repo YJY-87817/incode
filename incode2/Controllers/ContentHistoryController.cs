@@ -62,11 +62,11 @@ namespace incode2.Controllers
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
     {
-      if (ModelState.IsValid)
+      if (ModelState.IsValid) //Server端驗證
       {
         _context.Add(contentHistory);
-        await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+        await _context.SaveChangesAsync(); //寫入資料庫
+        return RedirectToAction(nameof(Index)); //重新導向到Index頁面
       }
       ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
       ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
