@@ -9,6 +9,7 @@ using incode2.Models;
 
 namespace incode2.Controllers
 {
+  [Route("/ContentHistory/{action=Index}/{content_history_id?}")]
   public class ContentHistoryController : Controller
   {
     private readonly incodedatabaseContext _context;
@@ -19,6 +20,7 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
       var incodedatabaseContext = _context.ContentHistory
@@ -28,6 +30,7 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Details/5
+    [HttpGet]
     public async Task<IActionResult> Details(int? content_history_id)
     {
       if (content_history_id == null)
@@ -48,6 +51,7 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Create
+    [HttpGet]
     public IActionResult Create()
     {
       ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body");
@@ -74,6 +78,7 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Edit/5
+    [HttpGet]
     public async Task<IActionResult> Edit(int? content_history_id)
     {
       if (content_history_id == null)
@@ -129,6 +134,7 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Delete/5
+    [HttpGet]
     public async Task<IActionResult> Delete(int? content_history_id)
     {
       if (content_history_id == null)
