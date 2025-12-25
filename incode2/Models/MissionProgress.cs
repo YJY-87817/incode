@@ -15,11 +15,11 @@ public partial class MissionProgress
 
     public int CurrentCount { get; set; }
 
-    public bool? IsCompleted { get; set; }
-
     public DateTime? AcceptedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+
+    public DateTime? RewardedAt { get; set; }
 
     public virtual Mission Mission { get; set; }
 

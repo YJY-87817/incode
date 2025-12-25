@@ -17,9 +17,9 @@ public partial class Orderdetail
 
     public int UnitPointAtPurchase { get; set; }
 
-    public bool Shipped { get; set; }
+    public bool RequiresShipping { get; set; }
 
-    public virtual Order Order { get; set; }
+    public virtual Orders Order { get; set; }
 
     public virtual Product Product { get; set; }
 

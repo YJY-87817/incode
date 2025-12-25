@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace incode2.Models;
 
-public partial class Follows
+public partial class Follow
 {
     public int FollowerId { get; set; }
 

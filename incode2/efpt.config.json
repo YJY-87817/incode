@@ -27,6 +27,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[chat_message]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[chat_session]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[content]",
          "ObjectType": 0
       },
@@ -55,7 +63,7 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[follows]",
+         "Name": "[dbo].[follow]",
          "ObjectType": 0
       },
       {
@@ -75,11 +83,11 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[order]",
+         "Name": "[dbo].[orderdetail]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[orderdetail]",
+         "Name": "[dbo].[orders]",
          "ObjectType": 0
       },
       {
@@ -112,6 +120,10 @@
       },
       {
          "Name": "[dbo].[user_login]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[user_point_wallet]",
          "ObjectType": 0
       },
       {

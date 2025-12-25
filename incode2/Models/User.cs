@@ -15,13 +15,19 @@ public partial class User
 
     public string Password { get; set; }
 
-    public int? Phone { get; set; }
-
     public string ImageUrl { get; set; }
+
+    public string Phone { get; set; }
+
+    public DateOnly? Birthday { get; set; }
+
+    public string Address { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
     public bool? IsActive { get; set; }
+
+    public virtual ICollection<ChatSession> ChatSession { get; set; } = new List<ChatSession>();
 
     public virtual ICollection<Content> Content { get; set; } = new List<Content>();
 
@@ -35,17 +41,19 @@ public partial class User
 
     public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
 
-    public virtual ICollection<Follows> FollowsFollowee { get; set; } = new List<Follows>();
+    public virtual ICollection<Follow> FollowFollowee { get; set; } = new List<Follow>();
 
-    public virtual ICollection<Follows> FollowsFollower { get; set; } = new List<Follows>();
+    public virtual ICollection<Follow> FollowFollower { get; set; } = new List<Follow>();
 
     public virtual ICollection<MissionProgress> MissionProgress { get; set; } = new List<MissionProgress>();
 
-    public virtual ICollection<Order> Order { get; set; } = new List<Order>();
+    public virtual ICollection<Orders> Orders { get; set; } = new List<Orders>();
 
     public virtual ICollection<PointDeposits> PointDeposits { get; set; } = new List<PointDeposits>();
 
     public virtual ICollection<PointLog> PointLog { get; set; } = new List<PointLog>();
 
     public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
+
+    public virtual UserPointWallet UserPointWallet { get; set; }
 }
