@@ -21,7 +21,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__admin__43AA414154A3117D", x => x.admin_id);
+                    table.PrimaryKey("PK__admin__43AA414179DE4119", x => x.admin_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -36,9 +36,9 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___0FFD1C56B7C06147", x => x.content_category_id);
+                    table.PrimaryKey("PK__content___0FFD1C562A686356", x => x.content_category_id);
                     table.ForeignKey(
-                        name: "FK__content_c__paren__0E6E26BF",
+                        name: "FK__content_c__paren__1BC821DD",
                         column: x => x.parent_category_id,
                         principalTable: "content_category",
                         principalColumn: "content_category_id");
@@ -55,7 +55,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__image_us__CA06DFFEC35A4BAF", x => x.image_usage_location_id);
+                    table.PrimaryKey("PK__image_us__CA06DFFE0CC3174C", x => x.image_usage_location_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -69,7 +69,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__interact__45DCC996A9F658A6", x => x.interaction_category_id);
+                    table.PrimaryKey("PK__interact__45DCC9966C6043B0", x => x.interaction_category_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -89,7 +89,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__mission__B5419AB2DCB0D9D6", x => x.mission_id);
+                    table.PrimaryKey("PK__mission__B5419AB27DA9B085", x => x.mission_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -104,7 +104,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_ty__E69D541F5577381D", x => x.point_type_definition_id);
+                    table.PrimaryKey("PK__point_ty__E69D541F0021BB09", x => x.point_type_definition_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -117,16 +117,16 @@ namespace incode2.Migrations
                     description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
                     image_name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     type = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
-                    isphysical = table.Column<bool>(type: "bit", nullable: false),
+                    is_physical = table.Column<bool>(type: "bit", nullable: false),
                     point = table.Column<int>(type: "int", nullable: false),
                     stock = table.Column<int>(type: "int", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "(getdate())"),
                     updated_at = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "(getdate())"),
-                    onsale = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
+                    on_sale = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__product__47027DF5253D6146", x => x.product_id);
+                    table.PrimaryKey("PK__product__47027DF5D70EF6EF", x => x.product_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -135,17 +135,19 @@ namespace incode2.Migrations
                 {
                     user_id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    account = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    account = table.Column<string>(type: "varchar(150)", unicode: false, maxLength: 150, nullable: false),
                     username = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    password = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: false),
-                    phone = table.Column<int>(type: "int", nullable: true),
+                    password = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     image_url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    phone = table.Column<string>(type: "varchar(15)", unicode: false, maxLength: 15, nullable: true),
+                    birthday = table.Column<DateOnly>(type: "date", nullable: true),
+                    address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())"),
                     is_active = table.Column<bool>(type: "bit", nullable: true, defaultValue: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__user__B9BE370F38FC00B1", x => x.user_id);
+                    table.PrimaryKey("PK__user__B9BE370FDEF54688", x => x.user_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -163,17 +165,38 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__admin_im__66FA4961597598A5", x => x.admin_image_id);
+                    table.PrimaryKey("PK__admin_im__66FA4961FA6BDEED", x => x.admin_image_id);
                     table.ForeignKey(
-                        name: "FK__admin_ima__admin__18EBB532",
+                        name: "FK__admin_ima__admin__2645B050",
                         column: x => x.admin_id,
                         principalTable: "admin",
                         principalColumn: "admin_id");
                     table.ForeignKey(
-                        name: "FK__admin_ima__usage__19DFD96B",
+                        name: "FK__admin_ima__usage__2739D489",
                         column: x => x.usage_location,
                         principalTable: "image_usage_location",
                         principalColumn: "image_usage_location_id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "chat_session",
+                columns: table => new
+                {
+                    chat_session_id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    user_id = table.Column<int>(type: "int", nullable: false),
+                    title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())"),
+                    updated_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK__chat_ses__B39120D4C2A75940", x => x.chat_session_id);
+                    table.ForeignKey(
+                        name: "FK__chat_sess__user___3864608B",
+                        column: x => x.user_id,
+                        principalTable: "user",
+                        principalColumn: "user_id");
                 });
 
             migrationBuilder.CreateTable(
@@ -193,19 +216,19 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content__655FE510DF34C17B", x => x.content_id);
+                    table.PrimaryKey("PK__content__655FE5102F86F35D", x => x.content_id);
                     table.ForeignKey(
-                        name: "FK__content__categor__0C85DE4D",
+                        name: "FK__content__categor__19DFD96B",
                         column: x => x.category_id,
                         principalTable: "content_category",
                         principalColumn: "content_category_id");
                     table.ForeignKey(
-                        name: "FK__content__parent___0B91BA14",
+                        name: "FK__content__parent___18EBB532",
                         column: x => x.parent_content_id,
                         principalTable: "content",
                         principalColumn: "content_id");
                     table.ForeignKey(
-                        name: "FK__content__user_id__0D7A0286",
+                        name: "FK__content__user_id__1AD3FDA4",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -221,21 +244,22 @@ namespace incode2.Migrations
                     title = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     detail = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     reward_points = table.Column<int>(type: "int", nullable: false),
+                    max_participants = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "open"),
                     created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__entrust___19471E95A503AE34", x => x.entrust_mission_id);
+                    table.PrimaryKey("PK__entrust___19471E9571A60FDE", x => x.entrust_mission_id);
                     table.ForeignKey(
-                        name: "FK__entrust_m__user___236943A5",
+                        name: "FK__entrust_m__user___2FCF1A8A",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "follows",
+                name: "follow",
                 columns: table => new
                 {
                     follower_id = table.Column<int>(type: "int", nullable: false),
@@ -244,15 +268,15 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__follows__710D19E62D4780D2", x => new { x.follower_id, x.followee_id });
+                    table.PrimaryKey("PK__follow__710D19E6DC0C21A0", x => new { x.follower_id, x.followee_id });
                     table.ForeignKey(
-                        name: "FK__follows__followe__1AD3FDA4",
-                        column: x => x.follower_id,
+                        name: "FK__follow__followee__29221CFB",
+                        column: x => x.followee_id,
                         principalTable: "user",
                         principalColumn: "user_id");
                     table.ForeignKey(
-                        name: "FK__follows__followe__1BC821DD",
-                        column: x => x.followee_id,
+                        name: "FK__follow__follower__282DF8C2",
+                        column: x => x.follower_id,
                         principalTable: "user",
                         principalColumn: "user_id");
                 });
@@ -266,27 +290,27 @@ namespace incode2.Migrations
                     user_id = table.Column<int>(type: "int", nullable: false),
                     mission_id = table.Column<int>(type: "int", nullable: false),
                     current_count = table.Column<int>(type: "int", nullable: false),
-                    is_completed = table.Column<bool>(type: "bit", nullable: true, defaultValueSql: "('0')"),
                     accepted_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())"),
-                    completed_at = table.Column<DateTime>(type: "datetime", nullable: true)
+                    completed_at = table.Column<DateTime>(type: "datetime", nullable: true),
+                    rewarded_at = table.Column<DateTime>(type: "datetime", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__mission___F43E603D79FB31A2", x => x.mission_progress_id);
+                    table.PrimaryKey("PK__mission___F43E603D02E022D3", x => x.mission_progress_id);
                     table.ForeignKey(
-                        name: "FK__mission_p__missi__1F98B2C1",
+                        name: "FK__mission_p__missi__2EDAF651",
                         column: x => x.mission_id,
                         principalTable: "mission",
                         principalColumn: "mission_id");
                     table.ForeignKey(
-                        name: "FK__mission_p__user___22751F6C",
+                        name: "FK__mission_p__user___2DE6D218",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "order",
+                name: "orders",
                 columns: table => new
                 {
                     order_id = table.Column<int>(type: "int", nullable: false)
@@ -294,15 +318,15 @@ namespace incode2.Migrations
                     user_id = table.Column<int>(type: "int", nullable: false),
                     total_point = table.Column<int>(type: "int", nullable: false),
                     order_date = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "(getdate())"),
-                    shipping = table.Column<bool>(type: "bit", nullable: false),
-                    note = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    cancel_order = table.Column<bool>(type: "bit", nullable: false)
+                    remark = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    canceled_at = table.Column<DateTime>(type: "datetime", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__order__465962294BFFDBBA", x => x.order_id);
+                    table.PrimaryKey("PK__orders__46596229017A50A0", x => x.order_id);
                     table.ForeignKey(
-                        name: "FK__order__user_id__2645B050",
+                        name: "FK__orders__user_id__3493CFA7",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -320,13 +344,14 @@ namespace incode2.Migrations
                     points_granted = table.Column<int>(type: "int", nullable: false),
                     payment_method = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: false),
                     related_order_id = table.Column<string>(type: "varchar(100)", unicode: false, maxLength: 100, nullable: true),
+                    status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true, defaultValue: "pending"),
                     created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_de__6DCA5DF6BBD15F90", x => x.point_deposit_id);
+                    table.PrimaryKey("PK__point_de__6DCA5DF694A4FF18", x => x.point_deposit_id);
                     table.ForeignKey(
-                        name: "FK__point_dep__user___25518C17",
+                        name: "FK__point_dep__user___339FAB6E",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -343,18 +368,19 @@ namespace incode2.Migrations
                     source_id = table.Column<int>(type: "int", nullable: false),
                     point_type_definition_id = table.Column<int>(type: "int", nullable: false),
                     change_amount = table.Column<int>(type: "int", nullable: false),
+                    balance_after = table.Column<int>(type: "int", nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_lo__E2EBFE7C22A26ECA", x => x.point_log_id);
+                    table.PrimaryKey("PK__point_lo__E2EBFE7C29C87CAD", x => x.point_log_id);
                     table.ForeignKey(
-                        name: "FK__point_log__point__208CD6FA",
+                        name: "FK__point_log__point__2CF2ADDF",
                         column: x => x.point_type_definition_id,
                         principalTable: "point_type_definition",
                         principalColumn: "point_type_definition_id");
                     table.ForeignKey(
-                        name: "FK__point_log__user___1EA48E88",
+                        name: "FK__point_log__user___2BFE89A6",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -375,14 +401,14 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__user_ima__A9249C9D973907F0", x => x.user_image_id);
+                    table.PrimaryKey("PK__user_ima__A9249C9D39B49E49", x => x.user_image_id);
                     table.ForeignKey(
-                        name: "FK__user_imag__usage__17F790F9",
+                        name: "FK__user_imag__usage__25518C17",
                         column: x => x.usage_location,
                         principalTable: "image_usage_location",
                         principalColumn: "image_usage_location_id");
                     table.ForeignKey(
-                        name: "FK__user_imag__user___17036CC0",
+                        name: "FK__user_imag__user___245D67DE",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -399,7 +425,26 @@ namespace incode2.Migrations
                 constraints: table =>
                 {
                     table.ForeignKey(
-                        name: "FK__user_logi__user___1DB06A4F",
+                        name: "FK__user_logi__user___2A164134",
+                        column: x => x.user_id,
+                        principalTable: "user",
+                        principalColumn: "user_id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "user_point_wallet",
+                columns: table => new
+                {
+                    user_id = table.Column<int>(type: "int", nullable: false),
+                    current_points = table.Column<int>(type: "int", nullable: false),
+                    frozen_points = table.Column<int>(type: "int", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK__user_poi__B9BE370F93D52D68", x => x.user_id);
+                    table.ForeignKey(
+                        name: "FK__user_poin__user___32AB8735",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -418,10 +463,31 @@ namespace incode2.Migrations
                 constraints: table =>
                 {
                     table.ForeignKey(
-                        name: "FK__user_stat__user___1CBC4616",
+                        name: "FK__user_stat__user___2B0A656D",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "chat_message",
+                columns: table => new
+                {
+                    chat_message_id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    session_id = table.Column<int>(type: "int", nullable: false),
+                    role = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
+                    body = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK__chat_mes__1F897716A36FA0AF", x => x.chat_message_id);
+                    table.ForeignKey(
+                        name: "FK__chat_mess__sessi__395884C4",
+                        column: x => x.session_id,
+                        principalTable: "chat_session",
+                        principalColumn: "chat_session_id");
                 });
 
             migrationBuilder.CreateTable(
@@ -439,14 +505,14 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___B7830094376D982F", x => x.content_history_id);
+                    table.PrimaryKey("PK__content___B783009414E2B78E", x => x.content_history_id);
                     table.ForeignKey(
-                        name: "FK__content_h__conte__123EB7A3",
+                        name: "FK__content_h__conte__1F98B2C1",
                         column: x => x.content_id,
                         principalTable: "content",
                         principalColumn: "content_id");
                     table.ForeignKey(
-                        name: "FK__content_h__user___1332DBDC",
+                        name: "FK__content_h__user___208CD6FA",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -465,19 +531,19 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___AA89BFE57938C2EE", x => x.content_interaction_id);
+                    table.PrimaryKey("PK__content___AA89BFE5F41BAD75", x => x.content_interaction_id);
                     table.ForeignKey(
-                        name: "FK__content_i__categ__0F624AF8",
+                        name: "FK__content_i__categ__1CBC4616",
                         column: x => x.category_id,
                         principalTable: "interaction_category",
                         principalColumn: "interaction_category_id");
                     table.ForeignKey(
-                        name: "FK__content_i__conte__10566F31",
+                        name: "FK__content_i__conte__1DB06A4F",
                         column: x => x.content_id,
                         principalTable: "content",
                         principalColumn: "content_id");
                     table.ForeignKey(
-                        name: "FK__content_i__user___114A936A",
+                        name: "FK__content_i__user___1EA48E88",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -497,19 +563,19 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___42595B28CC767AB1", x => x.content_notification_id);
+                    table.PrimaryKey("PK__content___42595B28D2C3ADB7", x => x.content_notification_id);
                     table.ForeignKey(
-                        name: "FK__content_n__categ__160F4887",
+                        name: "FK__content_n__categ__236943A5",
                         column: x => x.category,
                         principalTable: "interaction_category",
                         principalColumn: "interaction_category_id");
                     table.ForeignKey(
-                        name: "FK__content_n__conte__151B244E",
+                        name: "FK__content_n__conte__22751F6C",
                         column: x => x.content_id,
                         principalTable: "content",
                         principalColumn: "content_id");
                     table.ForeignKey(
-                        name: "FK__content_n__user___14270015",
+                        name: "FK__content_n__user___2180FB33",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -524,19 +590,20 @@ namespace incode2.Migrations
                     user_id = table.Column<int>(type: "int", nullable: false),
                     entrust_mission_id = table.Column<int>(type: "int", nullable: false),
                     status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true, defaultValue: "accepted"),
-                    is_completed = table.Column<bool>(type: "bit", nullable: true, defaultValueSql: "('0')"),
-                    created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())")
+                    accepted_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())"),
+                    completed_at = table.Column<DateTime>(type: "datetime", nullable: true),
+                    rewarded_at = table.Column<DateTime>(type: "datetime", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__entrust___8F68D7F4D8A32147", x => x.entrust_mission_progress_id);
+                    table.PrimaryKey("PK__entrust___8F68D7F446631C93", x => x.entrust_mission_progress_id);
                     table.ForeignKey(
-                        name: "FK__entrust_m__entru__2180FB33",
+                        name: "FK__entrust_m__entru__31B762FC",
                         column: x => x.entrust_mission_id,
                         principalTable: "entrust_mission",
                         principalColumn: "entrust_mission_id");
                     table.ForeignKey(
-                        name: "FK__entrust_m__user___245D67DE",
+                        name: "FK__entrust_m__user___30C33EC3",
                         column: x => x.user_id,
                         principalTable: "user",
                         principalColumn: "user_id");
@@ -552,19 +619,18 @@ namespace incode2.Migrations
                     product_id = table.Column<int>(type: "int", nullable: false),
                     quantity = table.Column<int>(type: "int", nullable: false),
                     unit_point_at_purchase = table.Column<int>(type: "int", nullable: false),
-                    shipped = table.Column<bool>(type: "bit", nullable: false)
+                    requires_shipping = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__orderdet__59AE74110880848F", x => x.orderdetail_id);
+                    table.PrimaryKey("PK__orderdet__59AE7411BF74A464", x => x.orderdetail_id);
                     table.ForeignKey(
-                        name: "FK__orderdeta__order__2739D489",
+                        name: "FK__orderdeta__order__3587F3E0",
                         column: x => x.order_id,
-                        principalTable: "order",
-                        principalColumn: "order_id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalTable: "orders",
+                        principalColumn: "order_id");
                     table.ForeignKey(
-                        name: "FK__orderdeta__produ__282DF8C2",
+                        name: "FK__orderdeta__produ__367C1819",
                         column: x => x.product_id,
                         principalTable: "product",
                         principalColumn: "product_id");
@@ -582,13 +648,15 @@ namespace incode2.Migrations
                     recipient_phone = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     shipped_date = table.Column<DateTime>(type: "datetime", nullable: true),
                     arrival_date = table.Column<DateTime>(type: "datetime", nullable: true),
-                    completed = table.Column<bool>(type: "bit", nullable: false)
+                    is_failed = table.Column<bool>(type: "bit", nullable: false),
+                    remark = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    is_completed = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__shipped___26C93C93812ED2F2", x => x.shipped_detail_id);
+                    table.PrimaryKey("PK__shipped___26C93C93C8E17EC4", x => x.shipped_detail_id);
                     table.ForeignKey(
-                        name: "FK__shipped_d__order__29221CFB",
+                        name: "FK__shipped_d__order__37703C52",
                         column: x => x.orderdetail_id,
                         principalTable: "orderdetail",
                         principalColumn: "orderdetail_id");
@@ -603,6 +671,16 @@ namespace incode2.Migrations
                 name: "IX_admin_image_usage_location",
                 table: "admin_image",
                 column: "usage_location");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_chat_message_session_id",
+                table: "chat_message",
+                column: "session_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_chat_session_user_id",
+                table: "chat_session",
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_content_category_id",
@@ -680,8 +758,8 @@ namespace incode2.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_follows_followee_id",
-                table: "follows",
+                name: "IX_follow_followee_id",
+                table: "follow",
                 column: "followee_id");
 
             migrationBuilder.CreateIndex(
@@ -695,11 +773,6 @@ namespace incode2.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_order_user_id",
-                table: "order",
-                column: "user_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_orderdetail_order_id",
                 table: "orderdetail",
                 column: "order_id");
@@ -710,12 +783,17 @@ namespace incode2.Migrations
                 column: "product_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_orders_user_id",
+                table: "orders",
+                column: "user_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_point_deposits_user_id",
                 table: "point_deposits",
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "UQ__point_de__465C81B8D1564B10",
+                name: "UQ__point_de__465C81B8B1493DFE",
                 table: "point_deposits",
                 column: "order_no",
                 unique: true);
@@ -731,7 +809,7 @@ namespace incode2.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "UQ__point_ty__543C4FD9F754B5D6",
+                name: "UQ__point_ty__543C4FD93F5DDD9A",
                 table: "point_type_definition",
                 column: "type_name",
                 unique: true);
@@ -740,6 +818,18 @@ namespace incode2.Migrations
                 name: "IX_shipped_detail_orderdetail_id",
                 table: "shipped_detail",
                 column: "orderdetail_id");
+
+            migrationBuilder.CreateIndex(
+                name: "UQ__user__EA162E11BE758572",
+                table: "user",
+                column: "account",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "UQ__user__F3DBC572A64B840E",
+                table: "user",
+                column: "username",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_user_image_usage_location",
@@ -769,6 +859,9 @@ namespace incode2.Migrations
                 name: "admin_image");
 
             migrationBuilder.DropTable(
+                name: "chat_message");
+
+            migrationBuilder.DropTable(
                 name: "content_history");
 
             migrationBuilder.DropTable(
@@ -781,7 +874,7 @@ namespace incode2.Migrations
                 name: "entrust_mission_progress");
 
             migrationBuilder.DropTable(
-                name: "follows");
+                name: "follow");
 
             migrationBuilder.DropTable(
                 name: "mission_progress");
@@ -802,10 +895,16 @@ namespace incode2.Migrations
                 name: "user_login");
 
             migrationBuilder.DropTable(
+                name: "user_point_wallet");
+
+            migrationBuilder.DropTable(
                 name: "user_status");
 
             migrationBuilder.DropTable(
                 name: "admin");
+
+            migrationBuilder.DropTable(
+                name: "chat_session");
 
             migrationBuilder.DropTable(
                 name: "interaction_category");
@@ -832,7 +931,7 @@ namespace incode2.Migrations
                 name: "content_category");
 
             migrationBuilder.DropTable(
-                name: "order");
+                name: "orders");
 
             migrationBuilder.DropTable(
                 name: "product");
