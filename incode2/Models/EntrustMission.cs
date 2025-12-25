@@ -17,6 +17,8 @@ public partial class EntrustMission
 
     public int RewardPoints { get; set; }
 
+    public int MaxParticipants { get; set; }
+
     public string Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }

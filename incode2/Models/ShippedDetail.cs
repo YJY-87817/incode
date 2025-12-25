@@ -21,7 +21,11 @@ public partial class ShippedDetail
 
     public DateTime? ArrivalDate { get; set; }
 
-    public bool Completed { get; set; }
+    public bool IsFailed { get; set; }
+
+    public string Remark { get; set; }
+
+    public bool IsCompleted { get; set; }
 
     public virtual Orderdetail Orderdetail { get; set; }
 }

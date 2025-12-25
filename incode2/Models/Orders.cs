@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace incode2.Models;
 
-public partial class Order
+public partial class Orders
 {
     public int OrderId { get; set; }
 
@@ -15,11 +15,11 @@ public partial class Order
 
     public DateTime OrderDate { get; set; }
 
-    public bool Shipping { get; set; }
+    public string Remark { get; set; }
 
-    public string Note { get; set; }
+    public string Status { get; set; }
 
-    public bool CancelOrder { get; set; }
+    public DateTime? CanceledAt { get; set; }
 
     public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
 

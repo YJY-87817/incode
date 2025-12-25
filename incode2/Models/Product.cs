@@ -17,7 +17,7 @@ public partial class Product
 
     public string Type { get; set; }
 
-    public bool Isphysical { get; set; }
+    public bool IsPhysical { get; set; }
 
     public int Point { get; set; }
 
@@ -27,7 +27,7 @@ public partial class Product
 
     public DateTime UpdatedAt { get; set; }
 
-    public bool Onsale { get; set; }
+    public bool OnSale { get; set; }
 
     public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
 }
