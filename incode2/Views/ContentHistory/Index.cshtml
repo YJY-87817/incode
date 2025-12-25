@@ -56,9 +56,9 @@
           @Html.DisplayFor(modelItem => item.User.Account)
         </td>
         <td>
-          <a asp-action="Edit" asp-route-id="@item.ContentHistoryId">Edit</a> |
-          <a asp-action="Details" asp-route-id="@item.ContentHistoryId">Details</a> |
-          <a asp-action="Delete" asp-route-id="@item.ContentHistoryId">Delete</a>
+          <a asp-controller="ContentHistory" asp-action="Edit" asp-route-content_history_id="@item.ContentHistoryId">Edit</a> |
+          <a asp-controller="ContentHistory" asp-action="Details" asp-route-content_history_id="@item.ContentHistoryId">Details</a> |
+          <a asp-controller="ContentHistory" asp-action="Delete" asp-route-content_history_id="@item.ContentHistoryId">Delete</a>
         </td>
       </tr>
     }
