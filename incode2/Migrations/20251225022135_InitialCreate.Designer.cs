@@ -12,7 +12,7 @@ using incode2.Models;
 namespace incode2.Migrations
 {
     [DbContext(typeof(incodedatabaseContext))]
-    [Migration("20251225020746_InitialCreate")]
+    [Migration("20251225022135_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -41,7 +41,7 @@ namespace incode2.Migrations
                         .HasColumnName("type");
 
                     b.HasKey("AdminId")
-                        .HasName("PK__admin__43AA414154A3117D");
+                        .HasName("PK__admin__43AA414179DE4119");
 
                     b.ToTable("admin", (string)null);
                 });
@@ -87,13 +87,91 @@ namespace incode2.Migrations
                         .HasColumnName("usage_location");
 
                     b.HasKey("AdminImageId")
-                        .HasName("PK__admin_im__66FA4961597598A5");
+                        .HasName("PK__admin_im__66FA4961FA6BDEED");
 
                     b.HasIndex("AdminId");
 
                     b.HasIndex("UsageLocation");
 
                     b.ToTable("admin_image", (string)null);
+                });
+
+            modelBuilder.Entity("incode2.Models.ChatMessage", b =>
+                {
+                    b.Property<long>("ChatMessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("chat_message_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ChatMessageId"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("role");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("ChatMessageId")
+                        .HasName("PK__chat_mes__1F897716A36FA0AF");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("chat_message", (string)null);
+                });
+
+            modelBuilder.Entity("incode2.Models.ChatSession", b =>
+                {
+                    b.Property<int>("ChatSessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("chat_session_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatSessionId"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("ChatSessionId")
+                        .HasName("PK__chat_ses__B39120D4C2A75940");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("chat_session", (string)null);
                 });
 
             modelBuilder.Entity("incode2.Models.Content", b =>
@@ -145,7 +223,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentId")
-                        .HasName("PK__content__655FE510DF34C17B");
+                        .HasName("PK__content__655FE5102F86F35D");
 
                     b.HasIndex("CategoryId");
 
@@ -181,7 +259,7 @@ namespace incode2.Migrations
                         .HasColumnName("parent_category_id");
 
                     b.HasKey("ContentCategoryId")
-                        .HasName("PK__content___0FFD1C56B7C06147");
+                        .HasName("PK__content___0FFD1C562A686356");
 
                     b.HasIndex("ParentCategoryId");
 
@@ -226,7 +304,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentHistoryId")
-                        .HasName("PK__content___B7830094376D982F");
+                        .HasName("PK__content___B783009414E2B78E");
 
                     b.HasIndex("ContentId");
 
@@ -263,7 +341,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentInteractionId")
-                        .HasName("PK__content___AA89BFE57938C2EE");
+                        .HasName("PK__content___AA89BFE5F41BAD75");
 
                     b.HasIndex("CategoryId");
 
@@ -306,7 +384,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentNotificationId")
-                        .HasName("PK__content___42595B28CC767AB1");
+                        .HasName("PK__content___42595B28D2C3ADB7");
 
                     b.HasIndex("Category");
 
@@ -338,6 +416,12 @@ namespace incode2.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("detail");
 
+                    b.Property<int>("MaxParticipants")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1)
+                        .HasColumnName("max_participants");
+
                     b.Property<int>("RewardPoints")
                         .HasColumnType("int")
                         .HasColumnName("reward_points");
@@ -361,7 +445,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("EntrustMissionId")
-                        .HasName("PK__entrust___19471E95A503AE34");
+                        .HasName("PK__entrust___19471E9571A60FDE");
 
                     b.HasIndex("UserId");
 
@@ -377,21 +461,23 @@ namespace incode2.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EntrustMissionProgressId"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime?>("AcceptedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
-                        .HasColumnName("created_at")
+                        .HasColumnName("accepted_at")
                         .HasDefaultValueSql("(getdate())");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("completed_at");
 
                     b.Property<int>("EntrustMissionId")
                         .HasColumnType("int")
                         .HasColumnName("entrust_mission_id");
 
-                    b.Property<bool?>("IsCompleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasColumnName("is_completed")
-                        .HasDefaultValueSql("('0')");
+                    b.Property<DateTime?>("RewardedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("rewarded_at");
 
                     b.Property<string>("Status")
                         .ValueGeneratedOnAdd()
@@ -405,7 +491,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("EntrustMissionProgressId")
-                        .HasName("PK__entrust___8F68D7F4D8A32147");
+                        .HasName("PK__entrust___8F68D7F446631C93");
 
                     b.HasIndex("EntrustMissionId");
 
@@ -414,7 +500,7 @@ namespace incode2.Migrations
                     b.ToTable("entrust_mission_progress", (string)null);
                 });
 
-            modelBuilder.Entity("incode2.Models.Follows", b =>
+            modelBuilder.Entity("incode2.Models.Follow", b =>
                 {
                     b.Property<int>("FollowerId")
                         .HasColumnType("int")
@@ -431,11 +517,11 @@ namespace incode2.Migrations
                         .HasDefaultValueSql("(getdate())");
 
                     b.HasKey("FollowerId", "FolloweeId")
-                        .HasName("PK__follows__710D19E62D4780D2");
+                        .HasName("PK__follow__710D19E6DC0C21A0");
 
                     b.HasIndex("FolloweeId");
 
-                    b.ToTable("follows", (string)null);
+                    b.ToTable("follow", (string)null);
                 });
 
             modelBuilder.Entity("incode2.Models.ImageUsageLocation", b =>
@@ -459,7 +545,7 @@ namespace incode2.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("ImageUsageLocationId")
-                        .HasName("PK__image_us__CA06DFFEC35A4BAF");
+                        .HasName("PK__image_us__CA06DFFE0CC3174C");
 
                     b.ToTable("image_usage_location", (string)null);
                 });
@@ -485,7 +571,7 @@ namespace incode2.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("InteractionCategoryId")
-                        .HasName("PK__interact__45DCC996A9F658A6");
+                        .HasName("PK__interact__45DCC9966C6043B0");
 
                     b.ToTable("interaction_category", (string)null);
                 });
@@ -546,7 +632,7 @@ namespace incode2.Migrations
                         .HasColumnName("target_type");
 
                     b.HasKey("MissionId")
-                        .HasName("PK__mission__B5419AB2DCB0D9D6");
+                        .HasName("PK__mission__B5419AB27DA9B085");
 
                     b.ToTable("mission", (string)null);
                 });
@@ -574,72 +660,26 @@ namespace incode2.Migrations
                         .HasColumnType("int")
                         .HasColumnName("current_count");
 
-                    b.Property<bool?>("IsCompleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasColumnName("is_completed")
-                        .HasDefaultValueSql("('0')");
-
                     b.Property<int>("MissionId")
                         .HasColumnType("int")
                         .HasColumnName("mission_id");
+
+                    b.Property<DateTime?>("RewardedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("rewarded_at");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("user_id");
 
                     b.HasKey("MissionProgressId")
-                        .HasName("PK__mission___F43E603D79FB31A2");
+                        .HasName("PK__mission___F43E603D02E022D3");
 
                     b.HasIndex("MissionId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("mission_progress", (string)null);
-                });
-
-            modelBuilder.Entity("incode2.Models.Order", b =>
-                {
-                    b.Property<int>("OrderId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("order_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
-
-                    b.Property<bool>("CancelOrder")
-                        .HasColumnType("bit")
-                        .HasColumnName("cancel_order");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)")
-                        .HasColumnName("note");
-
-                    b.Property<DateTime>("OrderDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasColumnName("order_date")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<bool>("Shipping")
-                        .HasColumnType("bit")
-                        .HasColumnName("shipping");
-
-                    b.Property<int>("TotalPoint")
-                        .HasColumnType("int")
-                        .HasColumnName("total_point");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("OrderId")
-                        .HasName("PK__order__465962294BFFDBBA");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("order", (string)null);
                 });
 
             modelBuilder.Entity("incode2.Models.Orderdetail", b =>
@@ -663,22 +703,68 @@ namespace incode2.Migrations
                         .HasColumnType("int")
                         .HasColumnName("quantity");
 
-                    b.Property<bool>("Shipped")
+                    b.Property<bool>("RequiresShipping")
                         .HasColumnType("bit")
-                        .HasColumnName("shipped");
+                        .HasColumnName("requires_shipping");
 
                     b.Property<int>("UnitPointAtPurchase")
                         .HasColumnType("int")
                         .HasColumnName("unit_point_at_purchase");
 
                     b.HasKey("OrderdetailId")
-                        .HasName("PK__orderdet__59AE74110880848F");
+                        .HasName("PK__orderdet__59AE7411BF74A464");
 
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
                     b.ToTable("orderdetail", (string)null);
+                });
+
+            modelBuilder.Entity("incode2.Models.Orders", b =>
+                {
+                    b.Property<int>("OrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("order_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
+
+                    b.Property<DateTime?>("CanceledAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("canceled_at");
+
+                    b.Property<DateTime>("OrderDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("order_date")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("remark");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TotalPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("total_point");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("OrderId")
+                        .HasName("PK__orders__46596229017A50A0");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("orders", (string)null);
                 });
 
             modelBuilder.Entity("incode2.Models.PointDeposits", b =>
@@ -724,16 +810,23 @@ namespace incode2.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("related_order_id");
 
+                    b.Property<string>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("pending")
+                        .HasColumnName("status");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int")
                         .HasColumnName("user_id");
 
                     b.HasKey("PointDepositId")
-                        .HasName("PK__point_de__6DCA5DF6BBD15F90");
+                        .HasName("PK__point_de__6DCA5DF694A4FF18");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "OrderNo" }, "UQ__point_de__465C81B8D1564B10")
+                    b.HasIndex(new[] { "OrderNo" }, "UQ__point_de__465C81B8B1493DFE")
                         .IsUnique();
 
                     b.ToTable("point_deposits", (string)null);
@@ -747,6 +840,10 @@ namespace incode2.Migrations
                         .HasColumnName("point_log_id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PointLogId"));
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int")
+                        .HasColumnName("balance_after");
 
                     b.Property<int>("ChangeAmount")
                         .HasColumnType("int")
@@ -777,7 +874,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("PointLogId")
-                        .HasName("PK__point_lo__E2EBFE7C22A26ECA");
+                        .HasName("PK__point_lo__E2EBFE7C29C87CAD");
 
                     b.HasIndex("PointTypeDefinitionId");
 
@@ -813,9 +910,9 @@ namespace incode2.Migrations
                         .HasColumnName("type_name");
 
                     b.HasKey("PointTypeDefinitionId")
-                        .HasName("PK__point_ty__E69D541F5577381D");
+                        .HasName("PK__point_ty__E69D541F0021BB09");
 
-                    b.HasIndex(new[] { "TypeName" }, "UQ__point_ty__543C4FD9F754B5D6")
+                    b.HasIndex(new[] { "TypeName" }, "UQ__point_ty__543C4FD93F5DDD9A")
                         .IsUnique();
 
                     b.ToTable("point_type_definition", (string)null);
@@ -846,9 +943,9 @@ namespace incode2.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("image_name");
 
-                    b.Property<bool>("Isphysical")
+                    b.Property<bool>("IsPhysical")
                         .HasColumnType("bit")
-                        .HasColumnName("isphysical");
+                        .HasColumnName("is_physical");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -856,11 +953,11 @@ namespace incode2.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
 
-                    b.Property<bool>("Onsale")
+                    b.Property<bool>("OnSale")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true)
-                        .HasColumnName("onsale");
+                        .HasColumnName("on_sale");
 
                     b.Property<int>("Point")
                         .HasColumnType("int")
@@ -882,7 +979,7 @@ namespace incode2.Migrations
                         .HasDefaultValueSql("(getdate())");
 
                     b.HasKey("ProductId")
-                        .HasName("PK__product__47027DF5253D6146");
+                        .HasName("PK__product__47027DF5D70EF6EF");
 
                     b.ToTable("product", (string)null);
                 });
@@ -900,9 +997,13 @@ namespace incode2.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("arrival_date");
 
-                    b.Property<bool>("Completed")
+                    b.Property<bool>("IsCompleted")
                         .HasColumnType("bit")
-                        .HasColumnName("completed");
+                        .HasColumnName("is_completed");
+
+                    b.Property<bool>("IsFailed")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_failed");
 
                     b.Property<int>("OrderdetailId")
                         .HasColumnType("int")
@@ -926,12 +1027,17 @@ namespace incode2.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("recipient_phone");
 
+                    b.Property<string>("Remark")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("remark");
+
                     b.Property<DateTime?>("ShippedDate")
                         .HasColumnType("datetime")
                         .HasColumnName("shipped_date");
 
                     b.HasKey("ShippedDetailId")
-                        .HasName("PK__shipped___26C93C93812ED2F2");
+                        .HasName("PK__shipped___26C93C93C8E17EC4");
 
                     b.HasIndex("OrderdetailId");
 
@@ -950,8 +1056,18 @@ namespace incode2.Migrations
                     b.Property<string>("Account")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
                         .HasColumnName("account");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("address");
+
+                    b.Property<DateOnly?>("Birthday")
+                        .HasColumnType("date")
+                        .HasColumnName("birthday");
 
                     b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -973,13 +1089,14 @@ namespace incode2.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("password");
 
-                    b.Property<int?>("Phone")
-                        .HasColumnType("int")
+                    b.Property<string>("Phone")
+                        .HasMaxLength(15)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(15)")
                         .HasColumnName("phone");
 
                     b.Property<string>("Username")
@@ -989,7 +1106,13 @@ namespace incode2.Migrations
                         .HasColumnName("username");
 
                     b.HasKey("UserId")
-                        .HasName("PK__user__B9BE370F38FC00B1");
+                        .HasName("PK__user__B9BE370FDEF54688");
+
+                    b.HasIndex(new[] { "Account" }, "UQ__user__EA162E11BE758572")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "Username" }, "UQ__user__F3DBC572A64B840E")
+                        .IsUnique();
 
                     b.ToTable("user", (string)null);
                 });
@@ -1035,7 +1158,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("UserImageId")
-                        .HasName("PK__user_ima__A9249C9D973907F0");
+                        .HasName("PK__user_ima__A9249C9D39B49E49");
 
                     b.HasIndex("UsageLocation");
 
@@ -1064,6 +1187,32 @@ namespace incode2.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("user_login", (string)null);
+                });
+
+            modelBuilder.Entity("incode2.Models.UserPointWallet", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("CurrentPoints")
+                        .HasColumnType("int")
+                        .HasColumnName("current_points");
+
+                    b.Property<int>("FrozenPoints")
+                        .HasColumnType("int")
+                        .HasColumnName("frozen_points");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.HasKey("UserId")
+                        .HasName("PK__user_poi__B9BE370F93D52D68");
+
+                    b.ToTable("user_point_wallet", (string)null);
                 });
 
             modelBuilder.Entity("incode2.Models.UserStatus", b =>
@@ -1099,17 +1248,39 @@ namespace incode2.Migrations
                         .WithMany("AdminImage")
                         .HasForeignKey("AdminId")
                         .IsRequired()
-                        .HasConstraintName("FK__admin_ima__admin__18EBB532");
+                        .HasConstraintName("FK__admin_ima__admin__2645B050");
 
                     b.HasOne("incode2.Models.ImageUsageLocation", "UsageLocationNavigation")
                         .WithMany("AdminImage")
                         .HasForeignKey("UsageLocation")
                         .IsRequired()
-                        .HasConstraintName("FK__admin_ima__usage__19DFD96B");
+                        .HasConstraintName("FK__admin_ima__usage__2739D489");
 
                     b.Navigation("Admin");
 
                     b.Navigation("UsageLocationNavigation");
+                });
+
+            modelBuilder.Entity("incode2.Models.ChatMessage", b =>
+                {
+                    b.HasOne("incode2.Models.ChatSession", "Session")
+                        .WithMany("ChatMessage")
+                        .HasForeignKey("SessionId")
+                        .IsRequired()
+                        .HasConstraintName("FK__chat_mess__sessi__395884C4");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("incode2.Models.ChatSession", b =>
+                {
+                    b.HasOne("incode2.Models.User", "User")
+                        .WithMany("ChatSession")
+                        .HasForeignKey("UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__chat_sess__user___3864608B");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("incode2.Models.Content", b =>
@@ -1117,18 +1288,18 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.ContentCategory", "Category")
                         .WithMany("Content")
                         .HasForeignKey("CategoryId")
-                        .HasConstraintName("FK__content__categor__0C85DE4D");
+                        .HasConstraintName("FK__content__categor__19DFD96B");
 
                     b.HasOne("incode2.Models.Content", "ParentContent")
                         .WithMany("InverseParentContent")
                         .HasForeignKey("ParentContentId")
-                        .HasConstraintName("FK__content__parent___0B91BA14");
+                        .HasConstraintName("FK__content__parent___18EBB532");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("Content")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__content__user_id__0D7A0286");
+                        .HasConstraintName("FK__content__user_id__1AD3FDA4");
 
                     b.Navigation("Category");
 
@@ -1142,7 +1313,7 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.ContentCategory", "ParentCategory")
                         .WithMany("InverseParentCategory")
                         .HasForeignKey("ParentCategoryId")
-                        .HasConstraintName("FK__content_c__paren__0E6E26BF");
+                        .HasConstraintName("FK__content_c__paren__1BC821DD");
 
                     b.Navigation("ParentCategory");
                 });
@@ -1152,12 +1323,12 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.Content", "Content")
                         .WithMany("ContentHistory")
                         .HasForeignKey("ContentId")
-                        .HasConstraintName("FK__content_h__conte__123EB7A3");
+                        .HasConstraintName("FK__content_h__conte__1F98B2C1");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("ContentHistory")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__content_h__user___1332DBDC");
+                        .HasConstraintName("FK__content_h__user___208CD6FA");
 
                     b.Navigation("Content");
 
@@ -1170,19 +1341,19 @@ namespace incode2.Migrations
                         .WithMany("ContentInteraction")
                         .HasForeignKey("CategoryId")
                         .IsRequired()
-                        .HasConstraintName("FK__content_i__categ__0F624AF8");
+                        .HasConstraintName("FK__content_i__categ__1CBC4616");
 
                     b.HasOne("incode2.Models.Content", "Content")
                         .WithMany("ContentInteraction")
                         .HasForeignKey("ContentId")
                         .IsRequired()
-                        .HasConstraintName("FK__content_i__conte__10566F31");
+                        .HasConstraintName("FK__content_i__conte__1DB06A4F");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("ContentInteraction")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__content_i__user___114A936A");
+                        .HasConstraintName("FK__content_i__user___1EA48E88");
 
                     b.Navigation("Category");
 
@@ -1196,17 +1367,17 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.InteractionCategory", "CategoryNavigation")
                         .WithMany("ContentNotification")
                         .HasForeignKey("Category")
-                        .HasConstraintName("FK__content_n__categ__160F4887");
+                        .HasConstraintName("FK__content_n__categ__236943A5");
 
                     b.HasOne("incode2.Models.Content", "Content")
                         .WithMany("ContentNotification")
                         .HasForeignKey("ContentId")
-                        .HasConstraintName("FK__content_n__conte__151B244E");
+                        .HasConstraintName("FK__content_n__conte__22751F6C");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("ContentNotification")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__content_n__user___14270015");
+                        .HasConstraintName("FK__content_n__user___2180FB33");
 
                     b.Navigation("CategoryNavigation");
 
@@ -1221,7 +1392,7 @@ namespace incode2.Migrations
                         .WithMany("EntrustMission")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__entrust_m__user___236943A5");
+                        .HasConstraintName("FK__entrust_m__user___2FCF1A8A");
 
                     b.Navigation("User");
                 });
@@ -1232,32 +1403,32 @@ namespace incode2.Migrations
                         .WithMany("EntrustMissionProgress")
                         .HasForeignKey("EntrustMissionId")
                         .IsRequired()
-                        .HasConstraintName("FK__entrust_m__entru__2180FB33");
+                        .HasConstraintName("FK__entrust_m__entru__31B762FC");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("EntrustMissionProgress")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__entrust_m__user___245D67DE");
+                        .HasConstraintName("FK__entrust_m__user___30C33EC3");
 
                     b.Navigation("EntrustMission");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("incode2.Models.Follows", b =>
+            modelBuilder.Entity("incode2.Models.Follow", b =>
                 {
                     b.HasOne("incode2.Models.User", "Followee")
-                        .WithMany("FollowsFollowee")
+                        .WithMany("FollowFollowee")
                         .HasForeignKey("FolloweeId")
                         .IsRequired()
-                        .HasConstraintName("FK__follows__followe__1BC821DD");
+                        .HasConstraintName("FK__follow__followee__29221CFB");
 
                     b.HasOne("incode2.Models.User", "Follower")
-                        .WithMany("FollowsFollower")
+                        .WithMany("FollowFollower")
                         .HasForeignKey("FollowerId")
                         .IsRequired()
-                        .HasConstraintName("FK__follows__followe__1AD3FDA4");
+                        .HasConstraintName("FK__follow__follower__282DF8C2");
 
                     b.Navigation("Followee");
 
@@ -1270,48 +1441,47 @@ namespace incode2.Migrations
                         .WithMany("MissionProgress")
                         .HasForeignKey("MissionId")
                         .IsRequired()
-                        .HasConstraintName("FK__mission_p__missi__1F98B2C1");
+                        .HasConstraintName("FK__mission_p__missi__2EDAF651");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("MissionProgress")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__mission_p__user___22751F6C");
+                        .HasConstraintName("FK__mission_p__user___2DE6D218");
 
                     b.Navigation("Mission");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("incode2.Models.Order", b =>
-                {
-                    b.HasOne("incode2.Models.User", "User")
-                        .WithMany("Order")
-                        .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK__order__user_id__2645B050");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("incode2.Models.Orderdetail", b =>
                 {
-                    b.HasOne("incode2.Models.Order", "Order")
+                    b.HasOne("incode2.Models.Orders", "Order")
                         .WithMany("Orderdetail")
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK__orderdeta__order__2739D489");
+                        .HasConstraintName("FK__orderdeta__order__3587F3E0");
 
                     b.HasOne("incode2.Models.Product", "Product")
                         .WithMany("Orderdetail")
                         .HasForeignKey("ProductId")
                         .IsRequired()
-                        .HasConstraintName("FK__orderdeta__produ__282DF8C2");
+                        .HasConstraintName("FK__orderdeta__produ__367C1819");
 
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("incode2.Models.Orders", b =>
+                {
+                    b.HasOne("incode2.Models.User", "User")
+                        .WithMany("Orders")
+                        .HasForeignKey("UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__orders__user_id__3493CFA7");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("incode2.Models.PointDeposits", b =>
@@ -1320,7 +1490,7 @@ namespace incode2.Migrations
                         .WithMany("PointDeposits")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__point_dep__user___25518C17");
+                        .HasConstraintName("FK__point_dep__user___339FAB6E");
 
                     b.Navigation("User");
                 });
@@ -1331,13 +1501,13 @@ namespace incode2.Migrations
                         .WithMany("PointLog")
                         .HasForeignKey("PointTypeDefinitionId")
                         .IsRequired()
-                        .HasConstraintName("FK__point_log__point__208CD6FA");
+                        .HasConstraintName("FK__point_log__point__2CF2ADDF");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("PointLog")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__point_log__user___1EA48E88");
+                        .HasConstraintName("FK__point_log__user___2BFE89A6");
 
                     b.Navigation("PointTypeDefinition");
 
@@ -1350,7 +1520,7 @@ namespace incode2.Migrations
                         .WithMany("ShippedDetail")
                         .HasForeignKey("OrderdetailId")
                         .IsRequired()
-                        .HasConstraintName("FK__shipped_d__order__29221CFB");
+                        .HasConstraintName("FK__shipped_d__order__37703C52");
 
                     b.Navigation("Orderdetail");
                 });
@@ -1361,13 +1531,13 @@ namespace incode2.Migrations
                         .WithMany("UserImage")
                         .HasForeignKey("UsageLocation")
                         .IsRequired()
-                        .HasConstraintName("FK__user_imag__usage__17F790F9");
+                        .HasConstraintName("FK__user_imag__usage__25518C17");
 
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany("UserImage")
                         .HasForeignKey("UserId")
                         .IsRequired()
-                        .HasConstraintName("FK__user_imag__user___17036CC0");
+                        .HasConstraintName("FK__user_imag__user___245D67DE");
 
                     b.Navigation("UsageLocationNavigation");
 
@@ -1379,7 +1549,18 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__user_logi__user___1DB06A4F");
+                        .HasConstraintName("FK__user_logi__user___2A164134");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("incode2.Models.UserPointWallet", b =>
+                {
+                    b.HasOne("incode2.Models.User", "User")
+                        .WithOne("UserPointWallet")
+                        .HasForeignKey("incode2.Models.UserPointWallet", "UserId")
+                        .IsRequired()
+                        .HasConstraintName("FK__user_poin__user___32AB8735");
 
                     b.Navigation("User");
                 });
@@ -1389,7 +1570,7 @@ namespace incode2.Migrations
                     b.HasOne("incode2.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__user_stat__user___1CBC4616");
+                        .HasConstraintName("FK__user_stat__user___2B0A656D");
 
                     b.Navigation("User");
                 });
@@ -1397,6 +1578,11 @@ namespace incode2.Migrations
             modelBuilder.Entity("incode2.Models.Admin", b =>
                 {
                     b.Navigation("AdminImage");
+                });
+
+            modelBuilder.Entity("incode2.Models.ChatSession", b =>
+                {
+                    b.Navigation("ChatMessage");
                 });
 
             modelBuilder.Entity("incode2.Models.Content", b =>
@@ -1441,14 +1627,14 @@ namespace incode2.Migrations
                     b.Navigation("MissionProgress");
                 });
 
-            modelBuilder.Entity("incode2.Models.Order", b =>
-                {
-                    b.Navigation("Orderdetail");
-                });
-
             modelBuilder.Entity("incode2.Models.Orderdetail", b =>
                 {
                     b.Navigation("ShippedDetail");
+                });
+
+            modelBuilder.Entity("incode2.Models.Orders", b =>
+                {
+                    b.Navigation("Orderdetail");
                 });
 
             modelBuilder.Entity("incode2.Models.PointTypeDefinition", b =>
@@ -1463,6 +1649,8 @@ namespace incode2.Migrations
 
             modelBuilder.Entity("incode2.Models.User", b =>
                 {
+                    b.Navigation("ChatSession");
+
                     b.Navigation("Content");
 
                     b.Navigation("ContentHistory");
@@ -1475,19 +1663,21 @@ namespace incode2.Migrations
 
                     b.Navigation("EntrustMissionProgress");
 
-                    b.Navigation("FollowsFollowee");
+                    b.Navigation("FollowFollowee");
 
-                    b.Navigation("FollowsFollower");
+                    b.Navigation("FollowFollower");
 
                     b.Navigation("MissionProgress");
 
-                    b.Navigation("Order");
+                    b.Navigation("Orders");
 
                     b.Navigation("PointDeposits");
 
                     b.Navigation("PointLog");
 
                     b.Navigation("UserImage");
+
+                    b.Navigation("UserPointWallet");
                 });
 #pragma warning restore 612, 618
         }
