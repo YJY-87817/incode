@@ -18,19 +18,7 @@ namespace incode2.Controllers
         {
             return View(_context.Product);
         }
-
-        // GET: Product/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: Product/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
+       
         // POST: Product/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -46,14 +34,8 @@ namespace incode2.Controllers
             }
         }
 
-        // GET: Product/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: Product/Edit/5
-        [HttpPost]
+        // PUT: Product/Edit/5
+        [HttpPut]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(int id, IFormCollection collection)
         {
@@ -67,14 +49,8 @@ namespace incode2.Controllers
             }
         }
 
-        // GET: Product/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
         // POST: Product/Delete/5
-        [HttpPost]
+        [HttpDelete]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id, IFormCollection collection)
         {
