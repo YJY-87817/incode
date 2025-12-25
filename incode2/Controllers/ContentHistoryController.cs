@@ -1,0 +1,171 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using incode2.Models;
+
+namespace incode2.Controllers
+{
+  public class ContentHistoryController : Controller
+  {
+    private readonly incodedatabaseContext _context;
+
+    public ContentHistoryController(incodedatabaseContext context)
+    {
+      _context = context;
+    }
+
+    // GET: ContentHistory
+    public async Task<IActionResult> Index()
+    {
+      var incodedatabaseContext = _context.ContentHistory
+        .Include(c => c.Content)
+        .Include(c => c.User);
+      return View(await incodedatabaseContext.ToListAsync());
+    }
+
+    // GET: ContentHistory/Details/5
+    public async Task<IActionResult> Details(int? id)
+    {
+      if (id == null)
+      {
+        return NotFound();
+      }
+
+      var contentHistory = await _context.ContentHistory
+          .Include(c => c.Content)
+          .Include(c => c.User)
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+      if (contentHistory == null)
+      {
+        return NotFound();
+      }
+
+      return View(contentHistory);
+    }
+
+    // GET: ContentHistory/Create
+    public IActionResult Create()
+    {
+      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body");
+      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+      return View();
+    }
+
+    // POST: ContentHistory/Create
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create([Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
+    {
+      if (ModelState.IsValid) //Server端驗證
+      {
+        _context.Add(contentHistory);
+        await _context.SaveChangesAsync(); //寫入資料庫
+        return RedirectToAction(nameof(Index)); //重新導向到Index頁面
+      }
+      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      return View(contentHistory);
+    }
+
+    // GET: ContentHistory/Edit/5
+    public async Task<IActionResult> Edit(int? id)
+    {
+      if (id == null)
+      {
+        return NotFound();
+      }
+
+      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      if (contentHistory == null)
+      {
+        return NotFound();
+      }
+      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      return View(contentHistory);
+    }
+
+    // POST: ContentHistory/Edit/5
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, [Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
+    {
+      if (id != contentHistory.ContentHistoryId)
+      {
+        return NotFound();
+      }
+
+      if (ModelState.IsValid)
+      {
+        try
+        {
+          _context.Update(contentHistory);
+          await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+          if (!ContentHistoryExists(contentHistory.ContentHistoryId))
+          {
+            return NotFound();
+          }
+          else
+          {
+            throw;
+          }
+        }
+        return RedirectToAction(nameof(Index));
+      }
+      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      return View(contentHistory);
+    }
+
+    // GET: ContentHistory/Delete/5
+    public async Task<IActionResult> Delete(int? id)
+    {
+      if (id == null)
+      {
+        return NotFound();
+      }
+
+      var contentHistory = await _context.ContentHistory
+          .Include(c => c.Content)
+          .Include(c => c.User)
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+      if (contentHistory == null)
+      {
+        return NotFound();
+      }
+
+      return View(contentHistory);
+    }
+
+    // POST: ContentHistory/Delete/5
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      if (contentHistory != null)
+      {
+        _context.ContentHistory.Remove(contentHistory);
+      }
+
+      await _context.SaveChangesAsync();
+      return RedirectToAction(nameof(Index));
+    }
+
+    private bool ContentHistoryExists(int id)
+    {
+      return _context.ContentHistory.Any(e => e.ContentHistoryId == id);
+    }
+  }
+}

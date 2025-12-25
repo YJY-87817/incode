@@ -8,18 +8,23 @@ namespace incode2.Controllers
   {
     private readonly ILogger<HomeController> _logger;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger,incodedatabaseContext context) //請系統注入1個物件給我用
     {
       _logger = logger;
     }
 
+    //處理user操作view的函式，叫做action函式
+    //()內沒有值，預設抓Index.cshtml(同名函式的.cshtml)
     public IActionResult Index()
     {
       return View();
+      //return View("Privacy"); //指定要回傳的view名稱改為Privacy
     }
 
     public IActionResult Privacy()
     {
+      //int a =0;
+      //int b = 1 / a;
       return View();
     }
 
