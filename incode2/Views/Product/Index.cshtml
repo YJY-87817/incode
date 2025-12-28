@@ -22,20 +22,20 @@
             </tr>
         </thead>
         <tbody>
-             <tr>
-                    <td>ProductId</td>
-                    <td>Name</td>
-                    <td>Type</td>
-                    <td>IsPhysical</td>
-                    <td>Point</td>
-                    <td>Stock</td>
-                    <td>CreatedAt</td>
-                    <td>UpdatedAt</td>
-                    <td>OnSale</td>
-                    <td>
+            @* <tr>
+                <td>ProductId</td>
+                <td>Name</td>
+                <td>Type</td>
+                <td>IsPhysical</td>
+                <td>Point</td>
+                <td>Stock</td>
+                <td>CreatedAt</td>
+                <td>UpdatedAt</td>
+                <td>OnSale</td>
+                <td>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#test">詳細</button>
-                    </td>
-                </tr>
+                </td>
+            </tr> *@
             @foreach (var item in Model)
             {
                 <tr>
@@ -71,17 +71,18 @@
                     <form action="/submit-your-api" method="POST">
                         <div class="mb-3">
                             <label for="product_name" class="form-label fw-bold">商品名稱:</label>
-                            <input type="text" class="form-control" id="product_name" name="product_name" placeholder="請輸入商品名稱" value="@item.Name" required>
+                            @Html.EditorFor(modelItem => item.ImageName, new { htmlAttributes = new { @class = "form-control", placeholder = "請輸入商品名稱" } })
                         </div>
 
                         <div class="mb-3">
                             <label for="description" class="form-label fw-bold">商品描述:</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="請輸入商品詳細描述" value="@item.Description"></textarea>
+                            @Html.TextAreaFor(modelItem => item.Description, new {
+                            @class = "form-control", rows = "3", placeholder = "請輸入商品詳細描述" })
                         </div>
 
                         <div class="mb-3">
                             <label for="image_url" class="form-label fw-bold">圖片</label>
-                           
+                            @Html.EditorFor(modelItem => item.ImageName, new { htmlAttributes = new { @class = "form-control" } })
                         </div>
 
                         <div class="mb-3">
@@ -98,31 +99,32 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="points" class="form-label fw-bold">所需點數</label>
-                                <input type="number" class="form-control" id="points" name="points" min="0" value="@item.Point">
+                                @Html.EditorFor(modelItem => item.Point, new { htmlAttributes = new { @class = "form-control" } })
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="stock" class="form-label fw-bold">庫存數量</label>
-                                <input type="number" class="form-control" id="stock" name="stock" min="0" value="@item.Stock">
+                                @Html.EditorFor(modelItem => item.Stock, new { htmlAttributes = new { @class = "form-control" } })
                             </div>
                         </div>
 
                         <div class="mb-3">
-                                <label for="points" class="form-label fw-bold">新增時間</label>
-                                <input type="text" class="form-control" id="points" name="points" min="0" value="@item.CreatedAt">
+                            <label for="points" class="form-label fw-bold">新增時間</label>
+                            @Html.EditorFor(modelItem => item.UpdatedAt, new { htmlAttributes = new { @class = "form-control" } })
+
                         </div>
 
                         <div class="mb-3">
-                                <label for="stock" class="form-label fw-bold">最後修改時間</label>
-                                <input type="text" class="form-control" id="stock" name="stock" min="0" value="@item.UpdatedAt">
+                            <label for="stock" class="form-label fw-bold">最後修改時間</label>
+                            @Html.EditorFor(modelItem => item.UpdatedAt, new { htmlAttributes = new { @class = "form-control" } })
                         </div>
 
                         <div class="mb-3 d-flex gap-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_physical" name="is_physical" value="@item.IsPhysical">
+                                @Html.EditorFor(modelItem => item.IsPhysical, new { htmlAttributes = new { @class = "form-check-input" } })
                                 <label class="form-check-label" for="is_physical">實體商品</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_selling" name="is_selling" value="@item.OnSale">
+                                @Html.EditorFor(modelItem => item.OnSale, new { htmlAttributes = new { @class = "form-check-input" } })
                                 <label class="form-check-label" for="is_selling">販售中</label>
                             </div>
                         </div>
@@ -229,8 +231,8 @@
 
 @section Scripts
 {
-  <script>
+    <script>
         var baseAddress = "https://localhost:7190/";
-       
-  </script>
+
+    </script>
 }
