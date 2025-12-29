@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using incode2.Models;
+using incode2.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.Controllers
@@ -33,5 +34,25 @@ namespace incode2.Controllers
     {
       return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    //GET是生畫面，必須存在，不能只有POST
+    [HttpGet]
+    public IActionResult Contact()
+    {
+      return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Contact(ContactViewModel cvm)
+    {
+      if (ModelState.IsValid) //Server端驗證通過
+      {
+        //處理==>寫入資料庫
+        return RedirectToAction("Index", "Home");
+      }
+      return View(cvm);
+    }
+
   }
 }

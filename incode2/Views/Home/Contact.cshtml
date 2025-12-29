@@ -1,0 +1,38 @@
+﻿@model ContactViewModel
+
+@* asp-action預設找[HttpPost] *@
+<form asp-controller="Home" asp-action="Contact">
+  <div class="container">
+    <h3 class="mb-3 text-center">聯絡資訊</h3>
+    <div asp-validation-summary="All" class="mb-3 text-danger"></div>
+    <div class="mb-3 form-floating">
+      <input asp-for="Name" class="form-control" style="width:40%" placeholder="" />
+      <label asp-for="Name" class="form-label">姓名</label>
+      <span class="text-danger" asp-validation-for="Name"></span>
+    </div>
+    <div class="mb-3 form-floating">
+      <input asp-for="Email" class="form-control" style="width:40%" placeholder="" />
+      <label asp-for="Email" class="form-label">電子郵件</label>
+      <span class="text-danger" asp-validation-for="Email"></span>
+
+    </div>
+    <div class="mb-3 form-floating">
+      <input asp-for="Phone" class="form-control" style="width:40%" placeholder="" />
+      <label asp-for="Phone" class="form-label">連絡電話</label>
+      <span class="text-danger" asp-validation-for="Phone"></span>
+
+    </div>
+    <div class="mb-3"></div>
+    <div class="mb-3"></div>
+    <div class="mb-3">
+      <button type="submit" class="btn btn-primary">提交</button>
+    </div>
+  </div>
+</form>
+
+@* 引用jQuery驗證模組，才會有用戶端驗證(Server端生成) *@
+@section Scripts {
+  @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+  }
+}
