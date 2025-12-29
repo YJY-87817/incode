@@ -13,7 +13,10 @@
   <thead>
     <tr>
       <th>
-        @Html.DisplayNameFor(model => model.OldTitle)
+        @* @Html.是舊的TaqHelper，但還是可以用
+          DisplayNameFor 顯示欄位標題，要在controller裡面用[Display]屬性來設定
+        *@
+        @Html.DisplayNameFor(model => model.OldTitle) 
       </th>
       <th>
         @Html.DisplayNameFor(model => model.OldBody)

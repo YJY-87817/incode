@@ -8,7 +8,7 @@ namespace incode2.Controllers
   {
     private readonly ILogger<HomeController> _logger;
 
-    public HomeController(ILogger<HomeController> logger,incodedatabaseContext context) //請系統注入1個物件給我用
+    public HomeController(ILogger<HomeController> logger, incodedatabaseContext context) //請系統注入1個物件給我用
     {
       _logger = logger;
     }
