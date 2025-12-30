@@ -7,7 +7,7 @@
     <div asp-validation-summary="All" class="mb-3 text-danger"></div>
     <div class="mb-3 form-floating">
       <input asp-for="Name" class="form-control" style="width:40%" placeholder="" />
-      <label asp-for="Name" class="form-label">姓名</label>
+      <label asp-for="Name" class="form-label">@Html.DisplayNameFor(model=>model.Name)</label>
       <span class="text-danger" asp-validation-for="Name"></span>
     </div>
     <div class="mb-3 form-floating">
