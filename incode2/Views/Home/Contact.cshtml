@@ -12,13 +12,13 @@
     </div>
     <div class="mb-3 form-floating">
       <input asp-for="Email" class="form-control" style="width:40%" placeholder="" />
-      <label asp-for="Email" class="form-label">電子郵件</label>
+      <label asp-for="Email" class="form-label">@Html.DisplayNameFor(model => model.Email)</label>
       <span class="text-danger" asp-validation-for="Email"></span>
 
     </div>
     <div class="mb-3 form-floating">
       <input asp-for="Phone" class="form-control" style="width:40%" placeholder="" />
-      <label asp-for="Phone" class="form-label">連絡電話</label>
+      <label asp-for="Phone" class="form-label">@Html.DisplayNameFor(model => model.Phone)</label>
       <span class="text-danger" asp-validation-for="Phone"></span>
 
     </div>
