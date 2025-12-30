@@ -44,7 +44,7 @@ namespace incode2.Controllers
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Contact(ContactViewModel cvm)
+    public IActionResult Contact([Bind("Name")]ContactViewModel cvm)
     {
       if (ModelState.IsValid) //Server∫›≈Á√“≥qπL
       {
