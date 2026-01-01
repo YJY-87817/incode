@@ -18,6 +18,7 @@ namespace incode2.Controllers
     //()內沒有值，預設抓Index.cshtml(同名函式的.cshtml)
     public IActionResult Index()
     {
+      ViewBag.Fuen = "這是從HomeController用ViewBag.Fuen傳過來的"; //傳資料到view用
       return View();
       //return View("Privacy"); //指定要回傳的view名稱改為Privacy
     }
@@ -44,13 +45,15 @@ namespace incode2.Controllers
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Contact([Bind("Name,Email,Phone")]ContactViewModel cvm)
+    //public IActionResult Contact(IFormCollection col)
+    public IActionResult Contact([Bind("Name,Email,Phone")] ContactViewModel cvm)
     {
       if (ModelState.IsValid) //Server端驗證通過
       {
         //處理==>寫入資料庫
         return RedirectToAction("Index", "Home");
       }
+      //return View(null);
       return View(cvm);
     }
 
