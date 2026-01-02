@@ -40,6 +40,12 @@ namespace incode2.Controllers
       cacheOptions.SetPriority(CacheItemPriority.Normal);
       _cache.Set<Content>("Cache鍵", c);
 
+      CookieOptions cookieOptions = new CookieOptions();
+      cookieOptions.Expires = DateTime.Now.AddYears(30);
+      cookieOptions.Secure = true;
+      cookieOptions.HttpOnly = true;
+      Response.Cookies.Append("CookieKey", "Cookie值", cookieOptions);
+
       return View();
       //return View("Privacy"); //指定要回傳的view名稱改為Privacy
     }
@@ -52,11 +58,16 @@ namespace incode2.Controllers
 
       }
       //在Privacy做取出
-      Content c = _cache.Get<Content>("Cache鍵");
+      Content c = _cache.Get<Content>("Cookie鍵");
       if (c!=null)
       {
 
       }
+      string CookieValue = Request.Cookies["CookieKey"];
+      if(CookieValue != null)
+      {
+      }
+
       return View();
     }
 
