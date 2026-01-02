@@ -18,6 +18,14 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
   option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
+builder.Services.AddSession(options =>
+{
+  options.Cookie.Name = ".incode2.Session";
+  options.IdleTimeout = TimeSpan.FromMinutes(5);
+  options.Cookie.IsEssential = true;
+  options.Cookie.HttpOnly = true;
+  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -42,12 +50,11 @@ else
 }
 
 // HTTP request pipeline configuration
-//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
-app.UseHttpsRedirection();
-//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
-app.UseRouting();
-//身分驗證 => 授予權限
-app.UseAuthorization();
+
+app.UseHttpsRedirection();//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
+app.UseRouting();//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
+app.UseAuthorization();//身分驗證 => 授予權限
+app.UseSession();
 
 app.MapStaticAssets();
 

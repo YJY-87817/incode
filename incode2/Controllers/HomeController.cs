@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -14,11 +15,12 @@ namespace incode2.Controllers
     private readonly ILogger<HomeController> _logger;
 
     incodedatabaseContext _context; //宣告一個變數用來接收資料庫物件
-
-    public HomeController(ILogger<HomeController> logger, incodedatabaseContext context) //請系統注入1個物件給我用
+    IMemoryCache _cache;
+    public HomeController(ILogger<HomeController> logger, incodedatabaseContext context, IMemoryCache cache) //請系統注入1個物件給我用
     {
       _logger = logger;
       _context = context;
+      _cache = cache; //建構函示取物件
     }
 
     //處理user操作view的函式，叫做action函式
@@ -30,14 +32,31 @@ namespace incode2.Controllers
       ViewBag.content = c;
       ViewBag.user = new SelectList(_context.Content.Select(x => x.Body).Distinct());
       ViewBag.JS = $"alert('貼文總數:{_context.Content.Count()}篇')";
+      HttpContext.Session.SetString("Session鍵", "Session");
+
+      //Index裡面做寫入
+      MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions();
+      cacheOptions.SetSlidingExpiration(TimeSpan.FromDays(1));
+      cacheOptions.SetPriority(CacheItemPriority.Normal);
+      _cache.Set<Content>("Cache鍵", c);
+
       return View();
       //return View("Privacy"); //指定要回傳的view名稱改為Privacy
     }
 
     public IActionResult Privacy()
     {
-      //int a =0;
-      //int b = 1 / a;
+      string? SessionValue = HttpContext.Session.GetString("Session鍵");
+      if (SessionValue != null)
+      {
+
+      }
+      //在Privacy做取出
+      Content c = _cache.Get<Content>("Cache鍵");
+      if (c!=null)
+      {
+
+      }
       return View();
     }
 
