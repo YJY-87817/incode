@@ -2,6 +2,7 @@ using incode2.Models;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -25,8 +26,9 @@ namespace incode2.Controllers
     public async Task<IActionResult> Index()
     {
       ViewBag.Fuen = "這是從HomeController用ViewBag.Fuen傳過來的"; //傳資料到view用
-      Content c = await _context.Content.FindAsync(22);
+      Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId ==1);
       ViewBag.content = c;
+      ViewBag.user = new SelectList(_context.Content.Select(x => x.Body).Distinct());
       return View();
       //return View("Privacy"); //指定要回傳的view名稱改為Privacy
     }

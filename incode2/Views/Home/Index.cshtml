@@ -3,8 +3,11 @@
 }
 
 <div class="text-center">
-  <h1 class="display-4">@ViewBag.Fuen</h1>
-  <span>@ViewBag.content.ContentId</span>
-  <h5>圖片有加版本asp-append-version</h5>
+  <div>@ViewBag.Fuen</div>
+  <div>@ViewBag.content.Body</div>
+  <select asp-items="@ViewBag.user">
+    <option>這個選項是另外加的option，會在最上面，asp-items=""ViewBag會在下面</option>
+  </select>
+  <div>圖片有加版本asp-append-version</div>
   <img src="~/img/corgi.png" asp-append-version />
 </div>
