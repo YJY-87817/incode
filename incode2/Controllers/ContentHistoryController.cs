@@ -54,8 +54,8 @@ namespace incode2.Controllers
     [HttpGet]
     public IActionResult Create()
     {
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body");
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body");
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account");
       return View();
     }
 
@@ -72,8 +72,8 @@ namespace incode2.Controllers
         await _context.SaveChangesAsync(); //寫入資料庫
         return RedirectToAction(nameof(Index)); //重新導向到Index頁面
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
@@ -91,8 +91,8 @@ namespace incode2.Controllers
       {
         return NotFound();
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
@@ -128,8 +128,8 @@ namespace incode2.Controllers
         }
         return RedirectToAction(nameof(Index));
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
