@@ -12,6 +12,7 @@
                 <th>商品ID</th>
                 <th>商品名稱</th>
                 <th>類別</th>
+                <th>照片</th>
                 <th>有實體</th>
                 <th>點數</th>
                 <th>庫存</th>
@@ -22,26 +23,27 @@
             </tr>
         </thead>
         <tbody>
-            @* <tr>
-                <td>ProductId</td>
-                <td>Name</td>
-                <td>Type</td>
-                <td>IsPhysical</td>
-                <td>Point</td>
-                <td>Stock</td>
-                <td>CreatedAt</td>
-                <td>UpdatedAt</td>
-                <td>OnSale</td>
-                <td>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#test">詳細</button>
-                </td>
-            </tr> *@
             @foreach (var item in Model)
             {
                 <tr>
                     <td>@Html.DisplayFor(modelItem => item.ProductId)</td>
                     <td>@Html.DisplayFor(modelItem => item.Name)</td>
                     <td>@Html.DisplayFor(modelItem => item.Type)</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(item.ImageName))
+                        {
+                            <img src="~/img/product/@item.ImageName"
+                                 alt="@item.Name"
+                                 style="width: 100px; height: auto;"
+                                 class="img-thumbnail" />
+                        }
+                        else
+                        {
+                            <img src="~/img/product/noimage.png" alt="暫無照片"
+                                 style="width: 100px; height: auto;"
+                                 class="img-thumbnail" />
+                        }
+                    </td>
                     <td>@Html.DisplayFor(modelItem => item.IsPhysical)</td>
                     <td>@Html.DisplayFor(modelItem => item.Point)</td>
                     <td>@Html.DisplayFor(modelItem => item.Stock)</td>
@@ -49,7 +51,7 @@
                     <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
                     <td>@Html.DisplayFor(modelItem => item.OnSale)</td>
                     <td>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#@item.ProductId">詳細</button>
+                        <a class="btn btn-primary" asp-controller="Product" asp-action="Edit" asp-route-ProductId="@item.ProductId">詳細/修改</a>
                     </td>
                 </tr>
             }
@@ -57,111 +59,8 @@
     </table>
 </div>
 
-<!-- 詳細修改-->
-@foreach (var item in Model)
-{
-    <div class="modal fade" id="@item.ProductId" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">商品詳細</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form action="/submit-your-api" method="POST">
-                        <div class="mb-3">
-                            <label for="product_name" class="form-label fw-bold">商品名稱:</label>
-                            @Html.EditorFor(modelItem => item.ImageName, new { htmlAttributes = new { @class = "form-control", placeholder = "請輸入商品名稱" } })
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="description" class="form-label fw-bold">商品描述:</label>
-                            @Html.TextAreaFor(modelItem => item.Description, new {
-                            @class = "form-control", rows = "3", placeholder = "請輸入商品詳細描述" })
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="image_url" class="form-label fw-bold">圖片</label>
-                            @Html.EditorFor(modelItem => item.ImageName, new { htmlAttributes = new { @class = "form-control" } })
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="category" class="form-label fw-bold">類別</label>
-                            <select class="form-select" id="category" name="category">
-                                <option value="" selected disabled>請選擇類別</option>
-                                <option value="electronics">兌換票券</option>
-                                <option value="clothing">電影周邊</option>
-                                <option value="food">造型</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="points" class="form-label fw-bold">所需點數</label>
-                                @Html.EditorFor(modelItem => item.Point, new { htmlAttributes = new { @class = "form-control" } })
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="stock" class="form-label fw-bold">庫存數量</label>
-                                @Html.EditorFor(modelItem => item.Stock, new { htmlAttributes = new { @class = "form-control" } })
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="points" class="form-label fw-bold">新增時間</label>
-                            @Html.EditorFor(modelItem => item.UpdatedAt, new { htmlAttributes = new { @class = "form-control" } })
-
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="stock" class="form-label fw-bold">最後修改時間</label>
-                            @Html.EditorFor(modelItem => item.UpdatedAt, new { htmlAttributes = new { @class = "form-control" } })
-                        </div>
-
-                        <div class="mb-3 d-flex gap-4">
-                            <div class="form-check">
-                                @Html.EditorFor(modelItem => item.IsPhysical, new { htmlAttributes = new { @class = "form-check-input" } })
-                                <label class="form-check-label" for="is_physical">實體商品</label>
-                            </div>
-                            <div class="form-check">
-                                @Html.EditorFor(modelItem => item.OnSale, new { htmlAttributes = new { @class = "form-check-input" } })
-                                <label class="form-check-label" for="is_selling">販售中</label>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary">新增商品</button>
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-
-<!-- 測試 -->
-<div class="modal fade" id="test" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">商品詳細</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                測試
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary">修改</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 
 @section Scripts
 {
-    
+
 }
