@@ -4,7 +4,7 @@
     ViewData["Title"] = "商品管理";
 }
 <h2>商品管理</h2>
-<button class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#create">新增商品</button>
+<a asp-action="Create" class="btn btn-success mb-2">新增商品</a>
 <div class="table-responsive">
     <table class="table table-bordered" width="100%">
         <thead>
@@ -141,74 +141,6 @@
 }
 
 
-<!-- 新增 -->
-<div class="modal fade" id="create" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">新增商品</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form>
-                    <div class="mb-3">
-                        <label for="Name" class="form-label fw-bold">商品名稱:</label>
-                        <input type="text" class="form-control" id="Name" name="Name" placeholder="請輸入商品名稱" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="Description" class="form-label fw-bold">商品描述:</label>
-                        <textarea class="form-control" id="Description" name="Description" rows="3" placeholder="請輸入商品詳細描述"></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="ImageName" class="form-label fw-bold">圖片</label><br />
-                        <input id="Picture" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="Type" class="form-label fw-bold">類別</label>
-                        <select class="form-select" id="Type" name="Type">
-                            <option value="" selected disabled>請選擇類別</option>
-                            <option value="electronics">兌換票券</option>
-                            <option value="clothing">電影周邊</option>
-                            <option value="food">造型</option>
-                            <option value="other">其他</option>
-                        </select>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="Point" class="form-label fw-bold">所需點數</label>
-                            <input type="number" class="form-control" id="Point" name="points" min="0" value="0">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="Stock" class="form-label fw-bold">庫存數量</label>
-                            <input type="number" class="form-control" id="Stock" name="stock" min="0" value="0">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 d-flex gap-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="IsPhysical" name="is_physical" value="true">
-                            <label class="form-check-label" for="IsPhysical">實體商品</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="OnSale" name="is_selling" value="true" checked>
-                            <label class="form-check-label" for="OnSale">販售中</label>
-                        </div>
-                    </div>
-
-                    <div class="d-grid gap-2 mt-4">
-                        <button id="BtnCreate" type="submit" class="btn btn-primary">新增商品</button>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- 測試 -->
 <div class="modal fade" id="test" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -231,8 +163,5 @@
 
 @section Scripts
 {
-    <script>
-        var baseAddress = "https://localhost:7190/";
-
-    </script>
+    
 }
