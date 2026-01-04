@@ -31,7 +31,7 @@ namespace incode2.Controllers
       Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId ==1);
       ViewBag.content = c;
       ViewBag.user = new SelectList(_context.Content.Select(x => x.Body).Distinct());
-      ViewBag.JS = $"alert('貼文總數:{_context.Content.Count()}篇')";
+      //ViewBag.JS = $"alert('貼文總數:{_context.Content.Count()}篇')";
       HttpContext.Session.SetString("Session鍵", "Session");
 
       //Index裡面做寫入
