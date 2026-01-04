@@ -24,7 +24,6 @@ namespace incode2.Controllers
     public async Task<IActionResult> Index()
     {
       var incodedatabaseContext = _context.ContentHistory
-        .Include(c => c.Content)
         .Include(c => c.User);
       return View(await incodedatabaseContext.ToListAsync());
     }

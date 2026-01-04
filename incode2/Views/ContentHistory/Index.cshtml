@@ -13,6 +13,9 @@
   <thead>
     <tr>
       <th>
+        @Html.DisplayNameFor(model => model.ContentHistoryId)
+      </th>
+      <th>
         @* @Html.是舊的TaqHelper，但還是可以用
           DisplayNameFor 顯示欄位標題，要在controller裡面用[Display]屬性來設定
         *@
@@ -28,18 +31,18 @@
         @Html.DisplayNameFor(model => model.EditedAt)
       </th>
       <th>
-        @Html.DisplayNameFor(model => model.Content)
-      </th>
-      <th>
         @Html.DisplayNameFor(model => model.User)
       </th>
-      <th></th>
+      <th>操作項目</th>
     </tr>
   </thead>
   <tbody>
     @foreach (var item in Model)
     {
       <tr>
+        <td>
+          @Html.DisplayFor(modelItem => item.ContentHistoryId)
+        </td>
         <td>
           @Html.DisplayFor(modelItem => item.OldTitle)
         </td>
@@ -51,9 +54,6 @@
         </td>
         <td>
           @Html.DisplayFor(modelItem => item.EditedAt)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Content.Body)
         </td>
         <td>
           @Html.DisplayFor(modelItem => item.User.Account)
