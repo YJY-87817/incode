@@ -9,6 +9,7 @@ using incode2.Models;
 
 namespace incode2.Controllers
 {
+    [Route("/PointLogs/{action=Index}/{PointLogId?}")]
     public class PointLogsController : Controller
     {
         private readonly incodedatabaseContext _context;
@@ -26,9 +27,9 @@ namespace incode2.Controllers
         }
 
         // GET: PointLogs/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int? PointLogId)
         {
-            if (id == null)
+            if (PointLogId == null)
             {
                 return NotFound();
             }
@@ -36,7 +37,7 @@ namespace incode2.Controllers
             var pointLog = await _context.PointLog
                 .Include(p => p.PointTypeDefinition)
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointLogId == id);
+                .FirstOrDefaultAsync(m => m.PointLogId == PointLogId);
             if (pointLog == null)
             {
                 return NotFound();
@@ -83,14 +84,14 @@ namespace incode2.Controllers
         }
 
         // GET: PointLogs/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int? PointLogId)
         {
-            if (id == null)
+            if (PointLogId == null)
             {
                 return NotFound();
             }
 
-            var pointLog = await _context.PointLog.FindAsync(id);
+            var pointLog = await _context.PointLog.FindAsync(PointLogId);
             if (pointLog == null)
             {
                 return NotFound();
@@ -105,9 +106,9 @@ namespace incode2.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PointLogId,UserId,SourceType,SourceId,PointTypeDefinitionId,ChangeAmount,BalanceAfter,CreatedAt")] PointLog pointLog)
+        public async Task<IActionResult> Edit(int PointLogId, [Bind("PointLogId,UserId,SourceType,SourceId,PointTypeDefinitionId,ChangeAmount,BalanceAfter,CreatedAt")] PointLog pointLog)
         {
-            if (id != pointLog.PointLogId)
+            if (PointLogId != pointLog.PointLogId)
             {
                 return NotFound();
             }
@@ -138,9 +139,9 @@ namespace incode2.Controllers
         }
 
         // GET: PointLogs/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? PointLogId)
         {
-            if (id == null)
+            if (PointLogId == null)
             {
                 return NotFound();
             }
@@ -148,7 +149,7 @@ namespace incode2.Controllers
             var pointLog = await _context.PointLog
                 .Include(p => p.PointTypeDefinition)
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointLogId == id);
+                .FirstOrDefaultAsync(m => m.PointLogId == PointLogId);
             if (pointLog == null)
             {
                 return NotFound();
@@ -160,9 +161,9 @@ namespace incode2.Controllers
         // POST: PointLogs/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int PointLogId)
         {
-            var pointLog = await _context.PointLog.FindAsync(id);
+            var pointLog = await _context.PointLog.FindAsync(PointLogId);
             if (pointLog != null)
             {
                 _context.PointLog.Remove(pointLog);
@@ -172,14 +173,14 @@ namespace incode2.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PointLogExists(int id)
+        private bool PointLogExists(int PointLogId)
         {
-            return _context.PointLog.Any(e => e.PointLogId == id);
+            return _context.PointLog.Any(e => e.PointLogId == PointLogId);
         }
 
         //----------------------------------------------------------------------------
-        // GET: PointLogs/PointLogsDetail   
-        public async Task<IActionResult> PointLogsDetail(int? userId = null)  //目前後台查看任意使用者點數明細 //之後改成登入者 ID
+        // GET: PointLogs/PointLogsDetail
+        public async Task<IActionResult> PointLogsDetail(int? UserId = null)  //目前後台查看任意使用者點數明細 //之後改成登入者 ID
         {
 
             //載入所有使用者到下拉選單
@@ -193,12 +194,12 @@ namespace incode2.Controllers
             ViewBag.UserCount = userList.Count;
 
             // 如果沒有選擇使用者，預設顯示第一個
-            if (!userId.HasValue && userList.Any())
+            if (!UserId.HasValue && userList.Any())
             {
-                userId = userList.First().UserId;
+                UserId = userList.First().UserId;
             }
 
-            if (!userId.HasValue || !userList.Any())
+            if (!UserId.HasValue || !userList.Any())
             {
                 return View(new List<ViewModels.PointLogsViewModel>());
             }
@@ -206,13 +207,13 @@ namespace incode2.Controllers
             // 取出該使用者的所有點數異動紀錄（舊 → 新）
             var logs = await _context.PointLog
                 .Include(l => l.PointTypeDefinition)
-                .Where(l => l.UserId == userId.Value)
+                .Where(l => l.UserId == UserId.Value)
                 .OrderBy(l => l.CreatedAt)
                 .ToListAsync();
 
             if (!logs.Any())
             {
-                ViewBag.SelectedUserId = userId.Value;
+                ViewBag.SelectedUserId = UserId.Value;
                 ViewBag.CurrentTotalPoints = 0;
                 return View(new List<ViewModels.PointLogsViewModel>());
             }
@@ -289,7 +290,7 @@ namespace incode2.Controllers
             viewModels.Reverse();
 
             ViewBag.CurrentTotalPoints = runningBalance;
-            ViewBag.SelectedUserId = userId.Value;
+            ViewBag.SelectedUserId = UserId.Value;
 
             return View(viewModels);
         }

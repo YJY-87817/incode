@@ -1,0 +1,65 @@
+﻿@model IEnumerable<incode2.Models.MissionProgress>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.CurrentCount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AcceptedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CompletedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RewardedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mission)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.CurrentCount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AcceptedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CompletedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RewardedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Mission.MissionDetail)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.User.Account)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.MissionProgressId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.MissionProgressId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.MissionProgressId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
