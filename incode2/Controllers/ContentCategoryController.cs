@@ -32,7 +32,8 @@ namespace incode2.Controllers
       return View();
     }
 
-    // GET: ContentCategory/IndexJson
+    // POST: ContentCategory/IndexJson
+    [HttpPost]
     public async Task<IActionResult> IndexJson()
     {
       var category = await _context.ContentCategory
