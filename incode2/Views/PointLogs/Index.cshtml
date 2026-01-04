@@ -27,39 +27,47 @@
             <th>
                 @Html.DisplayNameFor(model => model.ChangeAmount)
             </th>
-            <th>
+            @* <th>
                 @Html.DisplayNameFor(model => model.BalanceAfter)
-            </th>
+            </th> *@
             <th>
                 @Html.DisplayNameFor(model => model.CreatedAt)
             </th>           
-            <th></th>
+            <th>
+                會員明細
+            </th>
         </tr>
     </thead>
     <tbody>
 @foreach (var item in Model) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.SourceType)
+                @Html.DisplayFor(modelItem => item.User.Account)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SourceType )
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.SourceId)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ChangeAmount)
+                @Html.DisplayFor(modelItem => item.PointTypeDefinition.DisplayName)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.BalanceAfter)
+                @Html.DisplayFor(modelItem => item.ChangeAmount)
             </td>
+            @* <td>
+                @Html.DisplayFor(modelItem => item.BalanceAfter)
+            </td> *@
             <td>
                 @Html.DisplayFor(modelItem => item.CreatedAt)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.PointTypeDefinition.DisplayName)
+                <a asp-action="PointLogsDetail" asp-route-userId="@item.UserId" class="btn btn-sm btn-info">
+                        查看此會員明細
+                </a>
             </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.User.Account)
-            </td>
+            
             <td>
                 <a asp-action="Edit" asp-route-id="@item.PointLogId">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.PointLogId">Details</a> |
