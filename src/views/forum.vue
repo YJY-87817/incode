@@ -6,4 +6,11 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 </script>
 
-<template>論壇</template>
+<template>
+  <DefaultNavbar
+    :action="{
+      route: 'javascript:;',
+    }"
+  />
+  論壇
+</template>

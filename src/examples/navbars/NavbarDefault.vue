@@ -121,7 +121,8 @@ watch(
         title="Designed and Coded by Creative Tim"
         data-placement="bottom"
       >
-        Material Kit 2
+        <i class="fas fa-hat-cowboy-side"></i>
+        incode影庫
       </RouterLink>
       <RouterLink
         class="navbar-brand d-block d-md-none"
