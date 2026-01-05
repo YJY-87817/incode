@@ -45,7 +45,9 @@
             </div>
             <div class="form-group">
                 <label asp-for="ResetType" class="control-label"></label>
-                <input asp-for="ResetType" class="form-control" />
+                <select asp-for="ResetType" class="form-select" asp-items="ViewBag.ResetType">
+                    <option value="">-- 請選擇重置類型 --</option>
+                </select>
                 <span asp-validation-for="ResetType" class="text-danger"></span>
             </div>
             <div class="form-group">

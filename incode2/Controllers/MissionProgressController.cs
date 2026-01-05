@@ -19,10 +19,50 @@ namespace incode2.Controllers
         }
 
         // GET: MissionProgress
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? MissionId, int? UserId)
         {
-            var incodedatabaseContext = _context.MissionProgress.Include(m => m.Mission).Include(m => m.User);
-            return View(await incodedatabaseContext.ToListAsync());
+            var query = _context.MissionProgress
+                 .Include(m => m.Mission)
+                 .Include(m => m.User)
+                 .AsNoTracking();  // 純查看，不追蹤實體，提高效能
+
+            // 篩選特定任務
+            if (MissionId.HasValue)
+            {
+                query = query.Where(m => m.MissionId == MissionId.Value);
+            }
+
+            // 篩選特定用戶
+            if (UserId.HasValue)
+            {
+                query = query.Where(m => m.UserId == UserId.Value);
+            }
+
+            // 排序：先按任務，再按用戶
+            query = query.OrderBy(m => m.MissionId)
+                         .ThenBy(m => m.UserId);
+
+            var progress = await query.ToListAsync();
+
+            // 設定頁面標題
+            if (MissionId.HasValue)
+            {
+                var mission = await _context.Mission
+                    .FirstOrDefaultAsync(m => m.MissionId == MissionId.Value);
+                ViewBag.PageTitle = $"任務進度 - {mission?.MissionName ?? "未知任務"}";
+            }
+            else if (UserId.HasValue)
+            {
+                var user = await _context.User
+                    .FirstOrDefaultAsync(u => u.UserId == UserId.Value);
+                ViewBag.PageTitle = $"用戶任務進度 - {user?.Username ?? "未知用戶"}";
+            }
+            else
+            {
+                ViewBag.PageTitle = "所有任務進度記錄";
+            }
+
+            return View(progress);
         }
 
         // GET: MissionProgress/Details/5
@@ -41,6 +81,9 @@ namespace incode2.Controllers
             {
                 return NotFound();
             }
+
+            ViewBag.PageTitle = $"進度詳情 - {missionProgress.Mission?.MissionName ?? "未知任務"}";
+
 
             return View(missionProgress);
         }
