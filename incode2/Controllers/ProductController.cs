@@ -16,20 +16,22 @@ namespace incode2.Controllers
             _context = context;
             _webHostEnvironment = webHostEnvironment; // 用於取得 wwwroot 路徑
         }
+
         // GET: Product
+        [HttpGet]
         public ActionResult Index()
         {
             return View(_context.Product);
         }
 
-        // GET: Customers/Create 顯示頁面
+        // GET: Product/Create 顯示頁面
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Customers/Create 存入資料庫
+        // POST: Product/Create 存入資料庫
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product, IFormFile imageFile)
@@ -87,7 +89,7 @@ namespace incode2.Controllers
         }
 
         [Route("/Product/Edit/{ProductId}")]
-        // GET:  Product/Edit/5
+        // GET: Product/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int ProductId)
         {
