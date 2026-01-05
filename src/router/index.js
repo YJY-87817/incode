@@ -148,7 +148,7 @@ const router = createRouter({
       component: ElTypography,
     },
     {
-      path: "/component",
+      path: "/forum",
       name: "forum",
       component:()=>import('../views/forum.vue'),
     },
