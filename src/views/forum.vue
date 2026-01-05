@@ -12,5 +12,8 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
       route: 'javascript:;',
     }"
   />
-  論壇
+  <div>
+    <h3>論壇</h3>
+  </div>
+  <DefaultFooter />
 </template>
