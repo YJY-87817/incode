@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using incode2.Models;
 
+
 namespace incode2.Controllers
 {
     public class ChatSessionsController : Controller
@@ -159,5 +160,53 @@ namespace incode2.Controllers
         {
             return _context.ChatSession.Any(e => e.ChatSessionId == id);
         }
+        [HttpGet("api/ChatSessions/User/{userId}")]
+        public async Task<IActionResult> GetSessionsApi(int userId)
+        {
+            var sessions = await _context.ChatSession
+                                         .Where(s => s.UserId == userId) 
+                                         .OrderByDescending(s => s.UpdatedAt)
+                                         .Select(s => new { 
+                                             s.ChatSessionId,
+                                             s.Title,
+                                             s.UpdatedAt
+                                         })
+                                         .ToListAsync();
+            return Ok(sessions);
+        }
+
+        
+        [HttpPost("api/ChatSessions/Create")]
+        public async Task<IActionResult> CreateSessionApi([FromBody] ChatSession session)
+        {
+            
+            session.CreatedAt = DateTime.Now;
+            session.UpdatedAt = DateTime.Now;
+
+            
+            if (string.IsNullOrEmpty(session.Title)) session.Title = "新對話";
+
+            _context.ChatSession.Add(session);
+            await _context.SaveChangesAsync();
+
+            
+            return Ok(new { sessionId = session.ChatSessionId, title = session.Title });
+        }
+
+        
+        [HttpPut("api/ChatSessions/UpdateTitle/{id}")]
+        public async Task<IActionResult> UpdateSessionTitleApi(int id, [FromBody] ChatSession updateData)
+        {
+            var session = await _context.ChatSession.FindAsync(id);
+            if (session == null) return NotFound();
+
+            session.Title = updateData.Title;
+            session.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "標題更新成功" });
+        }
     }
 }
+    
+

@@ -18,6 +18,18 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
   option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
+//加入 CORS 服務設定
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "AllowVueApp", 
+    policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") 
+            .AllowAnyHeader()
+            .AllowAnyMethod(); 
+    });
+});
+
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -44,8 +56,18 @@ else
 // HTTP request pipeline configuration
 //重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
 app.UseHttpsRedirection();
+
+// 讓瀏覽器可以下載 wwwroot 裡面的檔案 (不然 Vue 的畫面會跑不出來)
+app.UseStaticFiles();
+
+
 //啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
 app.UseRouting();
+
+//啟用CORS
+app.UseCors("AllowVueApp");
+
+
 //身分驗證 => 授予權限
 app.UseAuthorization();
 
