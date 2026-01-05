@@ -1,0 +1,48 @@
+﻿@section Styles
+{
+  <link href="~/lib/datatables/css/jquery.datatables.min.css" rel="stylesheet" asp-append-version="true" />
+  <style>
+
+  </style>
+}
+
+<table class="table table-hover table-striped">
+  <thead class="table-danger">
+    <tr>
+      <th>content_category_id</th>
+      <th>parent_category_id</th>
+      <th>category_name</th>
+      <th>description</th>
+    </tr>
+  </thead>
+</table>
+
+@section Scripts
+{
+  <script src="~/lib/datatables/js/jquery.datatables.min.js" asp-append-version="true"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables-fixedheader/3.4.1/dataTables.fixedHeader.min.js" integrity="sha512-77LPFo/K97TH0ZwP21bdQ04DJxU2RWnawf+N80wNZS8B6ZNUS3NNnrsZ/TWlurTdvllO9eJHxoBWOSdprqMbng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    $("table").dataTable({
+      ajax:{
+        type:"POST",
+        url:"https://localhost:7190/ContentCategory/IndexJson",
+        dataSrc:function(data){
+          return data;
+        }
+      },
+      columns:[
+        {data:"contentCategoryId",width:"20%"},
+        {data:"parentCategoryId",width:"20%"},
+        {data:"categoryName",width:"20%"},
+        {data:"description",width:"20%"},
+      ],
+      fixedHeader:
+      {
+        header:true,
+      },
+      language: {
+        url: '//cdn.datatables.net/plug-ins/2.3.6/i18n/zh-HANT.json',
+      },
+    })
+  </script>
+}
