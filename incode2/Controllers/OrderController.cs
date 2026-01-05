@@ -30,11 +30,11 @@ namespace incode2.Controllers
         {
             // 從資料庫抓出商品（可加條件例如 OnSale、Stock > 0）
             var products = _context.Product.OrderBy(p => p.Name).ToList();
-
             ViewBag.Products = products;
             return View();
         }
 
+        // POST: Order/Create 新增訂單
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderViewModel order)
