@@ -1,6 +1,5 @@
 ﻿@model incode2.Models.ShippedDetail
 
-
 @{
     ViewData["Title"] = "寄送管理";
 }
@@ -10,7 +9,7 @@
 <div class="col-6">
     <form asp-action="Create" method="post">
         <div class="mb-3">
-            <label asp-for="OrderdetailId" class="form-label fw-bold">訂單ID:</label>
+            <label asp-for="OrderdetailId" class="form-label fw-bold">需寄送訂單詳細ID:</label>
             <input asp-for="OrderdetailId" type="number" class="form-control" required>
         </div>
         <div class="mb-3">

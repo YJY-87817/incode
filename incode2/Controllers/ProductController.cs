@@ -88,8 +88,8 @@ namespace incode2.Controllers
             return View(product);
         }
 
-        [Route("/Product/Edit/{ProductId}")]
         // GET: Product/Edit/5
+        [Route("/Product/Edit/{ProductId}")]
         [HttpGet]
         public async Task<IActionResult> Edit(int ProductId)
         {
@@ -158,7 +158,7 @@ namespace incode2.Controllers
             }
             return View(product);
         }
-        
+
         private bool ProductExists(int ProductId)
         {
             return _context.Product.Any(e => e.ProductId == ProductId);

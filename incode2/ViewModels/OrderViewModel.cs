@@ -8,7 +8,7 @@ namespace incode2.ViewModels
         public int UserId { get; set; }
 
         public int TotalPoint { get; set; }
-        
+
         public string Remark { get; set; }
 
         public string Status { get; set; }

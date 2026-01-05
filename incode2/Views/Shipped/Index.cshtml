@@ -11,8 +11,7 @@
     <table class="table table-bordered" width="100%">
         <thead>
             <tr>
-                <th>寄送ID</th>
-                <th>訂單ID</th>
+                <th>詳細訂單ID</th>
                 <th>姓名</th>
                 <th>地址</th>
                 <th>電話</th>
@@ -28,7 +27,6 @@
             @foreach (var item in Model)
             {
                 <tr>
-                    <td>@Html.DisplayFor(modelItem => item.ShippedDetailId)</td>
                     <td>@Html.DisplayFor(modelItem => item.OrderdetailId)</td>
                     <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
                     <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
@@ -39,7 +37,7 @@
                     <td>@Html.DisplayFor(modelItem => item.Remark)</td>
                     <td>@Html.DisplayFor(modelItem => item.IsCompleted)</td>
                     <td>
-                        <a class="btn btn-primary">詳細/修改</a>
+                        <a class="btn btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">詳細/修改</a>
                     </td>
                 </tr>
             }
