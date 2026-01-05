@@ -1,6 +1,84 @@
-﻿
+﻿@model incode2.ViewModels.OrderViewModel
 
 @{
     ViewData["Title"] = "訂單管理";
 }
 <h2>新增訂單</h2>
+
+<div class="col-8">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label asp-for="UserId" class="form-label fw-bold">會員ID:</label>
+                <input asp-for="UserId" class="form-control" required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="TotalPoint" class="form-label fw-bold">總點數:</label>
+                <input asp-for="TotalPoint" type="number" class="form-control" min="0">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Status" class="form-label fw-bold">訂單狀態:</label>
+                <select asp-for="Status" class="form-select">
+                    <option value="未完成" selected>未完成</option>
+                    <option value="完成">完成</option>
+                    <option value="取消">取消</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Remark" class="form-label fw-bold">備註:</label>
+            <textarea asp-for="Remark" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+            <button id="BtnCreate" type="submit" class="btn btn-primary">新增訂單</button>
+        </div>
+
+        <table class="table table-bordered mt-4" width="100%">
+            <thead>
+                <tr class="text-center">
+                    <th>商品</th>
+                    <th>數量</th>
+                    <th>下單時價格</th>
+                    <th>需寄送</th>
+                    <th>刪除</th>
+                </tr>
+            </thead>
+            <tbody id="shoppingList">
+                <tr class="text-center align-middle">
+                    <td>
+                        <select class="form-select" name="orderdetails[0].ProductId" required>
+                            <option value="">--請選擇商品--</option>
+                            @if (ViewBag.Products != null)
+                            {
+                                foreach (var p in (List<Product>)ViewBag.Products)
+                                {
+                                    <option value="@p.ProductId">@p.Name （@p.Point 點） 庫存:@p.Stock</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <td><input type="number" class="form-control" name="quantity" min="1" value="1" /></td>
+                    <td><input type="number" class="form-control" name="UnitPointAtPurchase" min="1" value="1"/></td>
+                    <td><input type="checkbox" class="form-check-input" name="RequiresShipping" value="" /></td>
+                    <td><button type="button" class="btn btn-danger">刪除</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="d-grid gap-2 mt-2">
+            <button id="BtnNewProduct" type="button" class="btn btn-primary" onclick="newOrderList ()">加入商品</button>
+        </div>
+    </form>
+</div>
+
+
+@section Scripts
+{<script>
+    function newOrderList() {
+        alert("click")
+    }
+</script>
+}
