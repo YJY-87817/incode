@@ -63,7 +63,12 @@
             <td>
                 <a asp-action="Edit" asp-route-id="@item.EntrustMissionId">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.EntrustMissionId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.EntrustMissionId">Delete</a>
+                <a asp-action="Delete" asp-route-id="@item.EntrustMissionId">Delete</a> |
+                <a asp-controller="EntrustMissionProgress" asp-action="Index"
+                   asp-route-EntrustMissionId="@item.EntrustMissionId"
+                   class="btn btn-sm btn-outline-primary">
+                   查看進度
+                </a>
             </td>
         </tr>
 }
