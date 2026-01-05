@@ -11,6 +11,7 @@ namespace incode2.Partials
         public int UserId { get; set; }
 
         [Display(Name = "帳號")]
+        [Required]
         public string Account { get; set; }
 
         [Display(Name = "暱稱")]
@@ -18,13 +19,14 @@ namespace incode2.Partials
             public string? Username { get; set; }
 
          [Display(Name = "密碼")] //存雜湊
-                public string Password { get; set; }
+        [Required]
+        public string Password { get; set; }
 
             [Display(Name = "電話")]
             public int? Phone { get; set; }
 
         [Display(Name = "大頭照")]
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
 
         [Display(Name = "加入時間")]
             public DateTime? CreatedAt { get; set; }
