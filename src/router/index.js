@@ -146,6 +146,11 @@ const router = createRouter({
       name: "el-typography",
       component: ElTypography,
     },
+    {
+      path: "/user",
+      name: "user",
+      component: () => import('@/views/user.vue')
+    },
   ],
 });
 
