@@ -2,8 +2,9 @@
 import { onMounted, onUnmounted } from "vue";
 
 //example components
-import DefaultNavbar from "../../examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "../../examples/footers/FooterDefault.vue";
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+// import Header from "../../examples/Header.vue";
 
 //image
 import bg0 from "@/assets/img/bg9.jpg";
@@ -14,6 +15,9 @@ import Typed from "typed.js";
 //sections
 import Information from "./Sections/userInformation.vue";
 import AboutTeam from "./Sections/usermission.vue";
+
+import Profile from "./Sections/userProfile.vue";
+import Posts from "./Sections/userPosts.vue";
 
 const body = document.getElementsByTagName("body")[0];
 //hooks
@@ -73,7 +77,19 @@ onUnmounted(() => {
       </div>
     </div>
   </header>
-
+  <!-- <Header>
+    <div
+      class="page-header min-height-400"
+      :style="{ backgroundImage: `url(${image})` }"
+      loading="lazy"
+    >
+      <span class="mask bg-gradient-dark opacity-8"></span>
+    </div>
+  </Header> -->
+  <div class="card card-body blur shadow-blur mx-3 mx-md-4 mt-n6 mb-4">
+    <Profile />
+    <Posts />
+  </div>
   <div class="card card-body shadow-xl mx-3 mx-md-4 mt-n6">
     <Information />
     <AboutTeam />

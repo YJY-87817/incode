@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from "vue-router";
 import { ref, watch } from "vue";
-import { useWindowsWidth } from "../../assets/js/useWindowsWidth";
+import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 
 // images
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
@@ -163,11 +163,14 @@ watch(
         id="navigation"
       >
         <ul class="navbar-nav navbar-nav-hover ms-auto">
-        <li class="nav-item dropdown dropdown-hover mx-2">
-          <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
-            <span>點數商城</span>
-          </RouterLink>
-        </li>
+          <li class="nav-item dropdown dropdown-hover mx-2">
+            <RouterLink
+              :to="{ name: 'PointShop' }"
+              class="dropdown-item border-radius-md"
+            >
+              <span>點數商城</span>
+            </RouterLink>
+          </li>
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
               role="button"
@@ -213,12 +216,6 @@ watch(
                         class="dropdown-item border-radius-md"
                       >
                         <span>討論區</span>
-                      </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'user' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>會員中心</span>
                       </RouterLink>
                       <RouterLink
                         :to="{ name: 'about' }"
@@ -356,6 +353,14 @@ watch(
                 </RouterLink>
               </div>
             </div>
+          </li>
+          <li class="nav-item dropdown dropdown-hover mx-2">
+            <RouterLink
+              :to="{ name: 'user' }"
+              class="dropdown-item border-radius-md"
+            >
+              <span class="text-sm"> 會員中心</span>
+            </RouterLink>
           </li>
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
