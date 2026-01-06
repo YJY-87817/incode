@@ -21,6 +21,7 @@
                 <th>說明</th>
                 <th>完成</th>
                 <th>詳細/修改</th>
+                <th>刪除</th>
             </tr>
         </thead>
         <tbody>
@@ -38,6 +39,9 @@
                     <td>@Html.DisplayFor(modelItem => item.IsCompleted)</td>
                     <td>
                         <a class="btn btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">詳細/修改</a>
+                    </td>
+                    <td>
+                        <a class="btn btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
                     </td>
                 </tr>
             }

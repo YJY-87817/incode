@@ -53,13 +53,48 @@ namespace incode2.Controllers
             return View(ShippedDetail);
         }
 
-        // PUT: Shipped/Edit/5
+        // POST: Shipped/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int ShippedDetailId, ShippedDetail ShippedDetail)
         {
             if (ShippedDetailId != ShippedDetail.ShippedDetailId) return NotFound();
             _context.Update(ShippedDetail);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Products/Delete/5
+        [Route("/Shipped/Delete/{ShippedDetailId}")]
+        [HttpGet]
+        public async Task<IActionResult> Delete(int? ShippedDetailId)
+        {
+            if (ShippedDetailId == null)
+            {
+                return NotFound();
+            }
+
+            var ShippedDetail = await _context.ShippedDetail
+                .FirstOrDefaultAsync(m => m.ShippedDetailId == ShippedDetailId);
+            if (ShippedDetail == null)
+            {
+                return NotFound();
+            }
+
+            return View(ShippedDetail);
+        }
+
+        // POST: Shipped/Delete/5
+        [Route("/Shipped/Delete/{ShippedDetailId}")]
+        [HttpPost]
+        public async Task<IActionResult> Delete(int ShippedDetailId)
+        {
+            var ShippedDetail = await _context.ShippedDetail.FindAsync(ShippedDetailId);
+            if (ShippedDetail != null)
+            {
+                _context.ShippedDetail.Remove(ShippedDetail);
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
