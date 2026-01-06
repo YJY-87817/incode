@@ -268,6 +268,11 @@
   <environment exclude="Development">
     <script src="~/js/site.min.js" asp-append-version="true"></script>
   </environment>
+
+
+  <script type="module" src="http://localhost:3000/@@vite/client"></script>
+  <script type="module" src="http://localhost:3000/src/main.js"></script>
+
   @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
