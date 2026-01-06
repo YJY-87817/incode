@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'https://localhost:7190', 
+  baseURL: 'http://localhost:5187', 
   headers: { 'Content-Type': 'application/json' }
 });
 
@@ -11,7 +11,7 @@ export default {
   },
 
   sendMessage(userContent) {
-    return apiClient.post('/ChatMessages/SendMessage', { 
+    return apiClient.post('/api/ChatMessages/send', { 
       UserContent: userContent 
     });
   }

@@ -12,18 +12,35 @@ const toggleChat = () => {
   if (isOpen.value) unreadCount.value = 0;
 };
 
-const chatRequest = {
+const chatConnect = {
   handler: async (body, signals) => {
+    console.log("【除錯】Deep Chat 原始 Body:", body);
+
+    let userText = "";
+    
+    if (body.text) {
+
+      userText = body.text;
+    } else if (body.messages && body.messages.length > 0) {
+      const lastMessage = body.messages[body.messages.length - 1];
+      userText = lastMessage.text || lastMessage.content;
+    }
+
+    console.log("【除錯】抓到的最終文字:", userText);
+
+    if (!userText) {
+      console.error("❌ 錯誤：無法從 Body 中解析出文字，後端會報錯！");
+      signals.onResponse({ error: "前端資料解析錯誤 (UserText is empty)" });
+      return;
+    }
+
     try {
-      
-      const aiReply = await chatStore.sendUserMessage(body.text);
-      
-     
+      // 發送請求
+      const aiReply = await chatStore.sendUserMessage(userText);
       signals.onResponse({ text: aiReply });
-      
     } catch (error) {
       console.error("Chat Error:", error);
-      signals.onResponse({ error: "連線失敗，請檢查後端是否啟動。" });
+      signals.onResponse({ error: "連線失敗" });
     }
   }
 };
@@ -78,13 +95,14 @@ const submitButtonStyle = {
       <deep-chat
         v-show="isOpen"
         class="styled-chat"
-        :textInput="textInputStyle"
-        :messageStyles="messageBubblesStyle"
-        :microphone="microphoneStyle"
-        :submitButtonStyles="submitButtonStyle"
-        :history="chatStore.messages" 
-        :request="chatRequest"
-        :introMessage="{ text: '你好!我是AI小幫手，有什麼可以幫你的嗎？' }"
+        :demo="false"
+        :textInput.prop="textInputStyle"
+        :messageStyles.prop="messageBubblesStyle"
+        :microphone.prop="microphoneStyle"
+        :submitButtonStyles.prop="submitButtonStyle"
+        :history.prop="chatStore.messages" 
+        :connect.prop="chatConnect"
+        :introMessage.prop="{ text: '你好!我是AI小幫手，有什麼可以幫你的嗎？' }"
       ></deep-chat>
     </transition>
 
