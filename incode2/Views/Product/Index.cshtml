@@ -1,0 +1,68 @@
+﻿@model IEnumerable<incode2.Models.Product>
+
+@{
+    ViewData["Title"] = "商品管理";
+}
+
+<h2>商品管理</h2>
+
+<a asp-action="Create" class="btn btn-success mb-2">新增商品</a>
+<div class="table-responsive">
+    <table class="table table-bordered" width="100%">
+        <thead>
+            <tr>
+                <th>商品ID</th>
+                <th>商品名稱</th>
+                <th>類別</th>
+                <th>照片</th>
+                <th>有實體</th>
+                <th>點數</th>
+                <th>庫存</th>
+                <th>加入時間</th>
+                <th>最後修改時間</th>
+                <th>販售中</th>
+                <th>詳細</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.ProductId)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Type)</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(item.ImageName))
+                        {
+                            <img src="~/img/product/@item.ImageName"
+                                 alt="@item.Name"
+                                 style="width: 100px; height: auto;"
+                                 class="img-thumbnail" />
+                        }
+                        else
+                        {
+                            <img src="~/img/product/noimage.png" alt="暫無照片"
+                                 style="width: 100px; height: auto;"
+                                 class="img-thumbnail" />
+                        }
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.IsPhysical)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Point)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Stock)</td>
+                    <td>@Html.DisplayFor(modelItem => item.CreatedAt)</td>
+                    <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
+                    <td>@Html.DisplayFor(modelItem => item.OnSale)</td>
+                    <td>
+                        <a class="btn btn-primary" asp-controller="Product" asp-action="Edit" asp-route-ProductId="@item.ProductId">詳細/修改</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@section Scripts
+{
+
+}

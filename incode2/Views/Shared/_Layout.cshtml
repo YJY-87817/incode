@@ -117,8 +117,9 @@
         </a>
         <div id="collapseShop" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" href="#">商品管理</a>
-            <a class="collapse-item" href="#">訂單管理</a>
+            <a class="collapse-item" asp-area="" asp-controller="Product" asp-action="Index" >商品管理</a>
+            <a class="collapse-item" asp-area="" asp-controller="Order" asp-action="Index">訂單管理</a>
+            <a class="collapse-item" asp-area="" asp-controller="Shipped" asp-action="Index">寄送管理</a>
           </div>
         </div>
       </li>

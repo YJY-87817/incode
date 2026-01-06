@@ -1,0 +1,50 @@
+﻿@model IEnumerable<incode2.Models.ShippedDetail>
+
+@{
+    ViewData["Title"] = "寄送管理";
+}
+
+<h2>寄送管理</h2>
+
+<a asp-action="Create" class="btn btn-success mb-2">新增寄送資料</a>
+<div class="table-responsive">
+    <table class="table table-bordered" width="100%">
+        <thead>
+            <tr>
+                <th>詳細訂單ID</th>
+                <th>姓名</th>
+                <th>地址</th>
+                <th>電話</th>
+                <th>寄送日期</th>
+                <th>送達日期</th>
+                <th>寄送失敗</th>
+                <th>說明</th>
+                <th>完成</th>
+                <th>詳細/修改</th>
+                <th>刪除</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.OrderdetailId)</td>
+                    <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
+                    <td>@Html.DisplayFor(modelItem => item.RecipientPhone)</td>
+                    <td>@Html.DisplayFor(modelItem => item.ShippedDate)</td>
+                    <td>@Html.DisplayFor(modelItem => item.ArrivalDate)</td>
+                    <td>@Html.DisplayFor(modelItem => item.IsFailed)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Remark)</td>
+                    <td>@Html.DisplayFor(modelItem => item.IsCompleted)</td>
+                    <td>
+                        <a class="btn btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">詳細/修改</a>
+                    </td>
+                    <td>
+                        <a class="btn btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
