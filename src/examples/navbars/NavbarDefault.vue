@@ -163,6 +163,11 @@ watch(
         id="navigation"
       >
         <ul class="navbar-nav navbar-nav-hover ms-auto">
+        <li class="nav-item dropdown dropdown-hover mx-2">
+          <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+            <span>點數商城</span>
+          </RouterLink>
+        </li>
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
               role="button"
