@@ -80,7 +80,6 @@ else
 // HTTP request pipeline configuration
 
 app.UseHttpsRedirection();//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
-app.UseStaticFiles();//claude給我，要給Api用的
 app.UseRouting();//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
 app.UseCors("VueApp");//claude給我，要給Api用的
 app.UseAuthorization();//身分驗證 => 授予權限
