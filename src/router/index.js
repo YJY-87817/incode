@@ -175,6 +175,11 @@ const router = createRouter({
         name: "recharge",
         component: Recharge, //views的檔案名稱
       },
+      {
+        path: "/user",
+        name: "user",
+        component: () => import('@/views/user/user.vue'),
+      },
     ],
 });
 

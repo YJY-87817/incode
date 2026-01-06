@@ -215,6 +215,12 @@ watch(
                         <span>討論區</span>
                       </RouterLink>
                       <RouterLink
+                        :to="{ name: 'user' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>會員中心</span>
+                      </RouterLink>
+                      <RouterLink
                         :to="{ name: 'about' }"
                         class="dropdown-item border-radius-md"
                       >
