@@ -1,69 +1,61 @@
 <script setup>
-import { onMounted, onUnmounted } from "vue";
+  import { onMounted, onUnmounted } from "vue";
 
-//example components
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-// import Header from "../../examples/Header.vue";
+  //example components
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
-//image
-import bg0 from "@/assets/img/bg9.jpg";
+  //image
+  import bg0 from "@/assets/img/bg9.jpg";
 
-//dep
-import Typed from "typed.js";
+  //dep
+  import Typed from "typed.js";
 
-//sections
-import Information from "./Sections/userInformation.vue";
-import AboutTeam from "./Sections/usermission.vue";
+  //sections
+  import Information from "@/views/user/Sections/userInformation.vue";
+  import AboutTeam from "@/views/user/Sections/usermission.vue";
 
-import Profile from "./Sections/userProfile.vue";
-import Posts from "./Sections/userPosts.vue";
+  import Profile from "@/views/user/Sections/userProfile.vue";
+  import Posts from "@/views/user/Sections/userPosts.vue";
 
-const body = document.getElementsByTagName("body")[0];
-//hooks
-onMounted(() => {
-  body.classList.add("about-us");
-  body.classList.add("bg-gray-200");
+  const body = document.getElementsByTagName("body")[0];
+  //hooks
+  onMounted(() => {
+    body.classList.add("about-us");
+    body.classList.add("bg-gray-200");
 
-  if (document.getElementById("typed")) {
-    // eslint-disable-next-line no-unused-vars
-    var typed = new Typed("#typed", {
-      stringsElement: "#typed-strings",
-      typeSpeed: 90,
-      backSpeed: 90,
-      backDelay: 200,
-      startDelay: 500,
-      loop: true,
-    });
-  }
-});
+    if (document.getElementById("typed")) {
+      // eslint-disable-next-line no-unused-vars
+      var typed = new Typed("#typed", {
+        stringsElement: "#typed-strings",
+        typeSpeed: 90,
+        backSpeed: 90,
+        backDelay: 200,
+        startDelay: 500,
+        loop: true,
+      });
+    }
+  });
+  import Login from "@/views/user/signin.vue";
+  import { useRouter } from "vue-router";
+  const router = useRouter();
+  const goToBasic = () => {
+    router.push("/signin");
+  };
 
-import { useRouter } from "vue-router";
-const router = useRouter();
-
-const goToBasic = () => {
-  router.push("/pages/landing-pages/basic"); // 假設路徑設定為 /basic
-};
-
-onUnmounted(() => {
-  body.classList.remove("about-us");
-  body.classList.remove("bg-gray-200");
-});
+  onUnmounted(() => {
+    body.classList.remove("about-us");
+    body.classList.remove("bg-gray-200");
+  });
 </script>
 <template>
-  <DefaultNavbar
-    :action="{
+  <DefaultNavbar :action="{
       route: 'javascript:;',
       label: 'Buy Now',
       color: 'btn-white',
-    }"
-    transparent
-  />
+    }" transparent />
   <header class="bg-gradient-dark">
-    <div
-      class="page-header min-vh-75"
-      :style="{ backgroundImage: `url(${bg0})` }"
-    >
+    <div class="page-header min-vh-75" :style="{ backgroundImage: `url(${bg0})` }">
       <span class="mask bg-gradient-dark opacity-6"></span>
       <div class="container">
         <div class="row justify-content-center">
@@ -76,11 +68,7 @@ onUnmounted(() => {
               <h1>~~~</h1>
             </div>
             <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button
-              type="submit"
-              class="btn bg-white text-dark"
-              @click="$router.push('/pages/landing-pages/basic')"
-            >
+            <button type="submit" class="btn bg-white text-dark" @click="$router.push('/signin')">
               加入會員
             </button>
           </div>
