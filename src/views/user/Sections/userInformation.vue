@@ -3,6 +3,7 @@
 import DefaultInfoCard from "../../../examples/cards/infoCards/DefaultInfoCard.vue";
 import CenteredBlogCard from "../../../examples/cards/blogCards/CenteredBlogCard.vue";
 import UserCenteredBlogCard from "../../../examples/cards/blogCards/UserCenteredBlogCard.vue";
+import MaterialAvatar from "@/components/MaterialAvatar.vue";
 </script>
 <template>
   <section class="py-7">

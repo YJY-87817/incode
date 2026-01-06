@@ -12,8 +12,8 @@ import bg0 from "@/assets/img/bg9.jpg";
 import Typed from "typed.js";
 
 //sections
-import Information from "./Sections/AboutInformation.vue";
-import AboutTeam from "./Sections/AboutTeam.vue";
+import Information from "./Sections/userInformation.vue";
+import AboutTeam from "./Sections/usermission.vue";
 
 const body = document.getElementsByTagName("body")[0];
 //hooks
@@ -58,9 +58,13 @@ onUnmounted(() => {
         <div class="row justify-content-center">
           <div class="col-lg-8 text-center mx-auto my-auto">
             <h1 class="text-white">
-              歡迎 <span class="text-white" id="typed"></span>
+              welcome to incode<span class="text-white" id="typed"></span>
             </h1>
-            <p class="lead mb-4 text-white opacity-8">welcome to Incode</p>
+            <div id="typed-strings">
+              <h1>!!!</h1>
+              <h1>~~~</h1>
+            </div>
+            <p class="lead mb-4 text-white opacity-8">會員中心</p>
             <button type="submit" class="btn bg-white text-dark">
               加入會員
             </button>
@@ -69,6 +73,7 @@ onUnmounted(() => {
       </div>
     </div>
   </header>
+
   <div class="card card-body shadow-xl mx-3 mx-md-4 mt-n6">
     <Information />
     <AboutTeam />
