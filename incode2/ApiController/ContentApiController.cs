@@ -4,12 +4,13 @@ using incode2.Models;
 using incode2.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace incode2.Controllers
+namespace incode2.ApiController
 {
   [ApiController]
   [Route("api/[controller]")]
   public class ContentApiController : ControllerBase
   {
+
     private readonly incodedatabaseContext _context;
 
     public ContentApiController(incodedatabaseContext context)
@@ -17,7 +18,8 @@ namespace incode2.Controllers
       _context = context;
     }
 
-    // GET: api/Content
+    // GET: api/ContentApi
+    // https://localhost:7190/api/ContentApi
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ContentDto>>> GetContents(
         [FromQuery] int? categoryId = null,
@@ -75,7 +77,7 @@ namespace incode2.Controllers
       var content = await _context.Content
           .Include(c => c.User)
           .Include(c => c.Category)
-          .Where(c => c.ContentId == id && (c.Ishidden == false))
+          .Where(c => c.ContentId == id && c.Ishidden == false)
           .Select(c => new ContentDetailDto
           {
             ContentId = c.ContentId,
