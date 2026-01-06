@@ -11,7 +11,7 @@
 
       <div class="product-footer">
         <div class="point-tag">
-          <span class="points">$ {{ product.price }} P</span>
+          <span class="points">🟡 {{ product.price }} P</span>
         </div>
 
         <button

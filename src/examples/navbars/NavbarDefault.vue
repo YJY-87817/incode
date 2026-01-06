@@ -163,11 +163,128 @@ watch(
         id="navigation"
       >
         <ul class="navbar-nav navbar-nav-hover ms-auto">
-        <li class="nav-item dropdown dropdown-hover mx-2">
-          <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
-            <span>點數商城</span>
-          </RouterLink>
-        </li>
+          <li class="nav-item dropdown dropdown-hover mx-2">
+            <a
+              role="button"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+              id="dropdownMenuPages"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                dashboard</i
+              >
+              點數商城
+              <img
+                :src="getArrowColor()"
+                alt="down-arrow"
+                class="arrow ms-2 d-lg-block d-none"
+              />
+              <img
+                :src="getArrowColor()"
+                alt="down-arrow"
+                class="arrow ms-1 d-lg-none d-block ms-auto"
+              />
+            </a>
+            <div
+              class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
+              aria-labelledby="dropdownMenuPages"
+            >
+              <div class="row d-none d-lg-block">
+                <div class="col-12 px-4 py-2">
+                  <div class="row">
+                    <div class="position-relative">
+                      <div
+                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
+                      >
+                        點數商城
+                      </div>
+                      <RouterLink
+                        :to="{ name: 'PointShop' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>點數商城</span>
+                      </RouterLink>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="d-lg-none">
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0"
+                >
+                  Landing Pages
+                </div>
+                <RouterLink
+                  :to="{ name: 'about' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>About Us</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'contactus' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>Contact Us</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'author' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>Author</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  Account
+                </div>
+                <RouterLink
+                  :to="{ name: 'signin-basic' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>Sign In</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  點數
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  任務
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  儲值
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
+                </RouterLink>
+              </div>
+            </div>
+          </li>
+
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
               role="button"

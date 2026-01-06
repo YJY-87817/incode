@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted, onUnmounted } from "vue";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
+
 //example components
 import NavbarDefault from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
-import ProductCard from "./ProductCard.vue";
+import ProductCard from "@/Views/PointShop/ProductCard.vue";
 
 // 1. 模擬使用者初始點數
 const userPoints = ref(2000);
@@ -64,11 +64,11 @@ const handleExchange = (product) => {
 
 <template>
   <NavbarDefault dark transparent />
-  <div class="shop-container">
+  <div class="shop-container" style="margin-top: 100px">
     <header class="shop-header">
       <h2>電影點數商城</h2>
       <div class="user-points">
-        我的點數: <span>🪙 {{ userPoints }}</span>
+        我的點數: <span>🟡{{ userPoints }}</span>
       </div>
     </header>
 
@@ -81,6 +81,7 @@ const handleExchange = (product) => {
       />
     </div>
   </div>
+  <background></background>
   <DefaultFooter />
 </template>
 
