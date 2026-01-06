@@ -1,0 +1,64 @@
+﻿@model incode2.Models.PointLog
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>PointLog</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="PointLogId" />
+            <div class="form-group">
+                <label asp-for="UserId" class="control-label"></label>
+                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SourceType" class="control-label"></label>
+                <input asp-for="SourceType" class="form-control" />
+                <span asp-validation-for="SourceType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SourceId" class="control-label"></label>
+                <input asp-for="SourceId" class="form-control" />
+                <span asp-validation-for="SourceId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PointTypeDefinitionId" class="control-label"></label>
+                <select asp-for="PointTypeDefinitionId" class="form-control" asp-items="ViewBag.PointTypeDefinitionId"></select>
+                <span asp-validation-for="PointTypeDefinitionId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ChangeAmount" class="control-label"></label>
+                <input asp-for="ChangeAmount" class="form-control" />
+                <span asp-validation-for="ChangeAmount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BalanceAfter" class="control-label"></label>
+                <input asp-for="BalanceAfter" class="form-control" />
+                <span asp-validation-for="BalanceAfter" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreatedAt" class="control-label"></label>
+                <input asp-for="CreatedAt" class="form-control" />
+                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

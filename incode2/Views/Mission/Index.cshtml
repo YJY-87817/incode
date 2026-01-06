@@ -1,0 +1,79 @@
+﻿@model IEnumerable<incode2.Models.Mission>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.MissionName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MissionDetail)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TargetType)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TargetCount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RewardPoints)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RewardExp)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ResetType)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CreatedAt)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.MissionName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MissionDetail)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.TargetType)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.TargetCount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RewardPoints)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RewardExp)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ResetType)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CreatedAt)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.MissionId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.MissionId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.MissionId">Delete</a>
+                <a asp-controller="MissionProgress" asp-action="Index" asp-route-MissionId="@item.MissionId" class="btn btn-sm btn-outline-primary">查看參與者</a>
+
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

@@ -1,0 +1,60 @@
+﻿@model incode2.Models.Mission
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Mission</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="MissionName" class="control-label"></label>
+                <input asp-for="MissionName" class="form-control" />
+                <span asp-validation-for="MissionName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MissionDetail" class="control-label"></label>
+                <input asp-for="MissionDetail" class="form-control" />
+                <span asp-validation-for="MissionDetail" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TargetCount" class="control-label"></label>
+                <input asp-for="TargetCount" class="form-control" />
+                <span asp-validation-for="TargetCount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RewardPoints" class="control-label"></label>
+                <input asp-for="RewardPoints" class="form-control" />
+                <span asp-validation-for="RewardPoints" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RewardExp" class="control-label"></label>
+                <input asp-for="RewardExp" class="form-control" />
+                <span asp-validation-for="RewardExp" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ResetType" class="control-label"></label>
+                <select asp-for="ResetType" class="form-select" asp-items="ViewBag.ResetType">
+                    <option value="">-- 請選擇重置類型 --</option>
+                </select>
+                <span asp-validation-for="ResetType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
