@@ -1,0 +1,39 @@
+﻿@model IEnumerable<incode2.ViewModel.AdminViewModel>
+
+<h1>管理者權限</h1>
+
+@* Ajax/或列出異常 *@
+
+<div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.UserId)</th>
+                <th>@Html.DisplayNameFor(model => model.Account)</th>
+                <th>@Html.DisplayNameFor(model => model.Username)</th>
+                <th>@Html.DisplayNameFor(model => model.Logintime)</th>
+                <th>@Html.DisplayNameFor(model => model.Location)</th>
+                <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.UserId)</td>
+                <td>@Html.DisplayFor(modelItem => item.Account)</td>
+                <td>@Html.DisplayFor(modelItem => item.Username)</td>
+                <td>
+                    @if (item.Logintime.HasValue)
+                    {
+                        @item.Logintime.Value.ToString("yyyy-MM-dd HH:mm")
+                    }
+                </td>
+                <td>@Html.DisplayFor(modelItem => item.Location)</td>
+                <td>@Html.DisplayFor(modelItem => item.IsActive)</td>                
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
