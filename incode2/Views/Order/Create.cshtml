@@ -42,7 +42,8 @@
                 <tr class="text-center">
                     <th>商品</th>
                     <th>數量</th>
-                    <th>下單時價格</th>
+                    <th>下單時點數</th>
+                    <th>總點數</th>
                     <th>需寄送</th>
                     <th>刪除</th>
                 </tr>
@@ -50,26 +51,27 @@
             <tbody id="shoppingList">
                 <tr class="text-center align-middle">
                     <td>
-                        <select class="form-select" name="orderdetails[0].ProductId" required>
+                        <select id="select[0]" class="form-select" name="orderdetails[0].ProductId" onchange="PointChange(this)" required>
                             <option value="">--請選擇商品--</option>
                             @if (ViewBag.Products != null)
                             {
                                 foreach (var p in (List<Product>)ViewBag.Products)
                                 {
-                                    <option value="@p.ProductId">@p.Name （@p.Point 點） 庫存:@p.Stock</option>
+                                    <option value="@p.ProductId" data-point="@p.Point">@p.Name （@p.Point 點） 庫存:@p.Stock</option>
                                 }
                             }
                         </select>
                     </td>
-                    <td><input type="number" class="form-control" name="quantity" min="1" value="1" /></td>
-                    <td><input type="number" class="form-control" name="UnitPointAtPurchase" min="1" value="1"/></td>
-                    <td><input type="checkbox" class="form-check-input" name="RequiresShipping" value="" /></td>
-                    <td><button type="button" class="btn btn-danger">刪除</button></td>
+                    <td><input type="number" class="form-control" name="orderdetails[0].quantity" min="1" value="1" onchange="quantity(this)" /></td>
+                    <td><input type="number" class="form-control" name="nowpoint" min="1" value="1" disabled /></td>
+                    <td><input type="number" class="form-control" name="orderdetails[0].UnitPointAtPurchase" min="1" value="1" disabled /></td>
+                    <td><input type="checkbox" class="form-check-input" name="orderdetails[0].RequiresShipping" value="" /></td>
+                    <td><button type="button" class="btn btn-danger remove-btn" onclick="removeRow(this)">刪除</button></td>
                 </tr>
             </tbody>
         </table>
         <div class="d-grid gap-2 mt-2">
-            <button id="BtnNewProduct" type="button" class="btn btn-primary" onclick="newOrderList ()">加入商品</button>
+            <button id="BtnNewProduct" type="button" class="btn btn-primary" onclick="newOrderList()">加入商品</button>
         </div>
     </form>
 </div>
@@ -78,7 +80,55 @@
 @section Scripts
 {<script>
     function newOrderList() {
-        alert("click")
+    let index = $("#shoppingList tr").length; // 取得目前列數作為索引
+    let newRow = 
+        `<tr class="text-center align-middle">
+            <td>
+                <select id="select[${index}]" class="form-select" name="orderdetails[${index}].ProductId" onchange="PointChange(this)" required>
+                    <option value="">--請選擇商品--</option>
+                    @if (ViewBag.Products != null)
+                    {
+                        foreach (var p in (List<Product>)ViewBag.Products)
+                        {
+                            <option value="@p.ProductId" data-point="@p.Point">@p.Name （@p.Point 點） 庫存:@p.Stock</option>
+                        }
+                    }
+                 </select>
+            </td>
+            <td><input type="number" class="form-control" name="orderdetails[${index}].quantity" min="1" value="1" /></td>
+            <td><input type="number" class="form-control" name="nowpoint" min="1" value="1" disabled /></td>
+            <td><input type="number" class="form-control" name="orderdetails[${index}].UnitPointAtPurchase" min="1" value="1" disabled/></td>
+            <td><input type="checkbox" class="form-check-input" name="orderdetails[${index}].RequiresShipping" value="" /></td>
+            <td><button type="button" class="btn btn-danger remove-btn" onclick="removeRow(this)">刪除</button></td>
+        </tr>`
+    $("#shoppingList").append(newRow);
+    }
+
+    function removeRow(btn) {
+    $(btn).closest('tr').remove();
+    reIndexTable(); // 重新排序索引以確保連續性
+    }
+
+    function reIndexTable() {
+    $("#shoppingList tr").each(function(i) {
+        $(this).find("[name]").each(function() {
+            var name = $(this).attr("name");
+            // 將 orderdetails[x].Prop 替換為 orderdetails[i].Prop
+            $(this).attr("name", name.replace(/\[\d+\]/, "[" + i + "]"));
+        });
+    });
+    }
+
+    function PointChange(select) {
+         // 取得選中 option 的 data-point 屬性
+         var point = $(select).find(':selected').data('point');
+
+         // 找到同一列的單價輸入框並賦值
+         $(select).closest('tr').find('input[name*="nowpoint"]').val(point);
+    }
+
+    function quantity(count) {
+        
     }
 </script>
 }
