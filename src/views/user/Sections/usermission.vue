@@ -1,22 +1,22 @@
 <script setup>
-// example component
-import userHorizontalTeamCard from "@/examples/cards/teamCards/userHorizontalTeamCard.vue";
+  // example component
+  import userHorizontalTeamCard from "@/views/user/Sections/userHorizontalTeamCard.vue";
 
-import { ref } from "vue";
-const reviews = ref([
-  {
-    id: 1,
-    username: "王小明",
-    avatarImage: "@/assets/img/team-3.jpg",
-    detail: "這家餐廳的義大利麵非常好吃！",
-  },
-  {
-    id: 2,
-    username: "李知恩",
-    avatarImage: "@/assets/img/team-2.jpg",
-    detail: "環境整潔，服務態度親切。",
-  },
-]);
+  import { ref } from "vue";
+  const reviews = ref([
+    {
+      id: 1,
+      username: "王小明",
+      avatarImage: "@/assets/img/team-3.jpg",
+      detail: "這家餐廳的義大利麵非常好吃！",
+    },
+    {
+      id: 2,
+      username: "李知恩",
+      avatarImage: "@/assets/img/team-2.jpg",
+      detail: "環境整潔，服務態度親切。",
+    },
+  ]);
 </script>
 
 <template>
@@ -33,14 +33,8 @@ const reviews = ref([
       </div>
       <div class="row mt-4">
         <div class="col-lg-6 col-12">
-          <userHorizontalTeamCard
-            class="mt-4 z-index-2"
-            v-for="item in reviews"
-            :key="item.id"
-            :username="item.username"
-            :image="item.avatarImage"
-            :detail="item.detail"
-          />
+          <userHorizontalTeamCard class="mt-4 z-index-2" v-for="item in reviews" :key="item.id"
+            :username="item.username" :image="item.avatarImage" :detail="item.detail" />
         </div>
       </div>
     </div>
