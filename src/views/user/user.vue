@@ -38,6 +38,13 @@ onMounted(() => {
   }
 });
 
+import { useRouter } from "vue-router";
+const router = useRouter();
+
+const goToBasic = () => {
+  router.push("/pages/landing-pages/basic"); // 假設路徑設定為 /basic
+};
+
 onUnmounted(() => {
   body.classList.remove("about-us");
   body.classList.remove("bg-gray-200");
@@ -69,7 +76,11 @@ onUnmounted(() => {
               <h1>~~~</h1>
             </div>
             <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button type="submit" class="btn bg-white text-dark">
+            <button
+              type="submit"
+              class="btn bg-white text-dark"
+              @click="$router.push('/pages/landing-pages/basic')"
+            >
               加入會員
             </button>
           </div>
