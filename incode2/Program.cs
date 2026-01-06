@@ -18,6 +18,34 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
   option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
+//claude給我，要給Api用的
+// 設定 CORS - 允許 Vue 前端存取
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("VueApp", policy =>
+  {
+    policy.WithOrigins(
+      "http://localhost:7190",
+      "http://localhost:5173",  // Vite 預設開發埠
+      "http://localhost:8080",  // Vue CLI 預設開發埠
+      "http://localhost:3000"   // 其他可能的開發埠
+    )
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials();
+  });
+});
+
+//claude給我，要給Api用的
+//會影響原本的View顯示，先註解掉
+// 設定 JSON 序列化選項
+//builder.Services.AddControllers()
+//.AddJsonOptions(options =>
+//{
+//  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // 保持原始命名
+//  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // 處理循環參照
+//});
+
 builder.Services.AddSession(options =>
 {
   options.Cookie.Name = ".incode2.Session";
@@ -52,7 +80,9 @@ else
 // HTTP request pipeline configuration
 
 app.UseHttpsRedirection();//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
+app.UseStaticFiles();//claude給我，要給Api用的
 app.UseRouting();//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
+app.UseCors("VueApp");//claude給我，要給Api用的
 app.UseAuthorization();//身分驗證 => 授予權限
 app.UseSession();
 
@@ -68,5 +98,4 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
-
 app.Run();
