@@ -243,6 +243,39 @@ watch(
                       >
                         <span>Sign In</span>
                       </RouterLink>
+                      <div
+                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                      >
+                        點數
+                      </div>
+                      <RouterLink
+                        :to="{ name: 'point-log' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>1</span>
+                      </RouterLink>
+                      <div
+                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                      >
+                        任務
+                      </div>
+                      <RouterLink
+                        :to="{ name: 'point-log' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>1</span>
+                      </RouterLink>
+                      <div
+                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                      >
+                        儲值
+                      </div>
+                      <RouterLink
+                        :to="{ name: 'point-log' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>1</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>
@@ -281,6 +314,39 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>Sign In</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  點數
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  任務
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
+                </RouterLink>
+                <div
+                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
+                >
+                  儲值
+                </div>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>1</span>
                 </RouterLink>
               </div>
             </div>

@@ -23,6 +23,9 @@ import ElDropdowns from "../layouts/sections/elements/dropdowns/DropdownsView.vu
 import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressBarsView.vue";
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
+import PointLog from "../views/pointlog/PointLog.vue";
+import Mission from "../views/task/Mission.vue";
+import Recharge from "../views/recharge/Recharge.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes:
@@ -156,7 +159,22 @@ const router = createRouter({
         path: "/PointShop",
         name: "PointShop",
         component: () => import('../views/PointShop.vue'),
-      }
+      },
+      {
+        path: "/point-log",
+        name: "point-log",
+        component: PointLog, //views的檔案名稱
+      },
+      {
+        path: "/mission",
+        name: "mission",
+        component: Mission, //views的檔案名稱
+      },
+      {
+        path: "/recharge",
+        name: "recharge",
+        component: Recharge, //views的檔案名稱
+      },
     ],
 });
 
