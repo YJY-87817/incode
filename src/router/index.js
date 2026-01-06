@@ -150,11 +150,18 @@ const router = createRouter({
         name: "el-typography",
         component: ElTypography,
       },
+      // 以下是tim的路由
       {
         path: "/forum",
         name: "forum",
-        component: () => import('../views/forum.vue'),
+        component: () => import('@/views/forum/forum.vue'),
       },
+      {
+        path: "/test",
+        name: "test",
+        component: () => import('@/views/forum/test.vue'),
+      },
+      // 以上是tim的路由
       {
         path: "/PointShop",
         name: "PointShop",

@@ -5,6 +5,7 @@ import { ref, reactive, onMounted } from "vue";
 import axios from "axios";
 const responseData = ref("");
 const products = ref("");
+
 // 塞在這裡
 
 // Example components
