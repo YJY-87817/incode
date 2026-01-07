@@ -209,6 +209,12 @@ watch(
                         點數
                       </div>
                       <RouterLink
+                        :to="{ name: 'point-log2' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>點數紀錄</span>
+                      </RouterLink>
+                      <RouterLink
                         :to="{ name: 'point-log' }"
                         class="dropdown-item border-radius-md"
                       >
