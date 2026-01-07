@@ -362,3 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /incode2/wwwroot/img/product
+/incode2/wwwroot/img/product/NoImage.png
