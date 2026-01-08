@@ -62,10 +62,13 @@
                             }
                         </select>
                     </td>
-                    <td><input type="number" class="form-control" name="orderdetails[0].quantity" min="1" value="1" onchange="quantity(this)" /></td>
-                    <td><input type="number" class="form-control" name="nowpoint" min="1" value="1" disabled /></td>
-                    <td><input type="number" class="form-control" name="orderdetails[0].UnitPointAtPurchase" min="1" value="1" disabled /></td>
-                    <td><input type="checkbox" class="form-check-input" name="orderdetails[0].RequiresShipping" value="" /></td>
+                    <td><input type="number" class="form-control" name="orderdetails[0].Quantity" min="1" value="1" onchange="quantity(this)" /></td>
+                    <td><input type="number" class="form-control" name="orderdetails[0].UnitPointAtPurchase" min="1" value="1" readonly /></td>
+                    <td><input type="number" class="form-control" min="1" value="1" readonly /></td>
+                    <td>
+                        <input type="hidden" name="orderdetails[0].RequiresShipping" value="false" />
+                        <input type="checkbox" class="form-check-input" name="orderdetails[0].RequiresShipping" value="true" />
+                    </td>
                     <td><button type="button" class="btn btn-danger remove-btn" onclick="removeRow(this)">刪除</button></td>
                 </tr>
             </tbody>
@@ -95,10 +98,13 @@
                     }
                  </select>
             </td>
-            <td><input type="number" class="form-control" name="orderdetails[${index}].quantity" min="1" value="1" /></td>
-            <td><input type="number" class="form-control" name="nowpoint" min="1" value="1" disabled /></td>
-            <td><input type="number" class="form-control" name="orderdetails[${index}].UnitPointAtPurchase" min="1" value="1" disabled/></td>
-            <td><input type="checkbox" class="form-check-input" name="orderdetails[${index}].RequiresShipping" value="" /></td>
+            <td><input type="number" class="form-control" name="orderdetails[${index}].Quantity" min="1" value="1" /></td>
+            <td><input type="number" class="form-control" name="orderdetails[${index}].UnitPointAtPurchase" min="1" value="1" readonly /></td>
+            <td><input type="number" class="form-control" min="1" value="1" readonly/></td>
+            <td>
+                <input type="hidden" name="orderdetails[0].RequiresShipping" value="false" />
+                <input type="checkbox" class="form-check-input" name="orderdetails[${index}].RequiresShipping" value="true" />
+            </td>
             <td><button type="button" class="btn btn-danger remove-btn" onclick="removeRow(this)">刪除</button></td>
         </tr>`
     $("#shoppingList").append(newRow);
@@ -124,7 +130,7 @@
          var point = $(select).find(':selected').data('point');
 
          // 找到同一列的單價輸入框並賦值
-         $(select).closest('tr').find('input[name*="nowpoint"]').val(point);
+              $(select).closest('tr').find('input[name*="UnitPointAtPurchase"]').val(point);
     }
 
     function quantity(count) {

@@ -39,10 +39,9 @@ namespace incode2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderViewModel NewOrder)
         {
-            //if (ModelState.IsValid)
-            //{
+            if (ModelState.IsValid)
+            {
                 var orders = new Orders();
-                var orderdetail = new Orderdetail();
                 orders.OrderId = 0;
                 orders.UserId = NewOrder.UserId;
                 orders.TotalPoint = NewOrder.TotalPoint;
@@ -54,11 +53,18 @@ namespace incode2.Controllers
             foreach (var item in NewOrder.orderdetails)
             {
                 //orderdetai
+                var orderdetail = new Orderdetail();
+                orderdetail.OrderId = orders.OrderId;
+                orderdetail.ProductId = item.ProductId;
+                orderdetail.Quantity = item.Quantity;
+                orderdetail.UnitPointAtPurchase = item.UnitPointAtPurchase;
+                orderdetail.RequiresShipping = item.RequiresShipping;
+                _context.Add(orderdetail);
             }
-
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-            //}
-            //return View(NewOrder);
         }
+            return View(NewOrder);
+    }
     }
 }
