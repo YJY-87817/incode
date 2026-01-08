@@ -37,9 +37,28 @@ namespace incode2.Controllers
         // POST: Order/Create 新增訂單
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(OrderViewModel order)
+        public async Task<IActionResult> Create(OrderViewModel NewOrder)
         {
-            return View();
+            //if (ModelState.IsValid)
+            //{
+                var orders = new Orders();
+                var orderdetail = new Orderdetail();
+                orders.OrderId = 0;
+                orders.UserId = NewOrder.UserId;
+                orders.TotalPoint = NewOrder.TotalPoint;
+                orders.Status = NewOrder.Status;
+                orders.Remark = NewOrder.Remark;
+                orders.OrderDate = DateTime.Now;
+                _context.Add(orders);
+                await _context.SaveChangesAsync();
+            foreach (var item in NewOrder.orderdetails)
+            {
+                //orderdetai
+            }
+
+            return RedirectToAction(nameof(Index));
+            //}
+            //return View(NewOrder);
         }
     }
 }
