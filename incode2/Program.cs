@@ -18,17 +18,17 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
   option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-//claude���ڡA�n��Api�Ϊ�
-// �]�w CORS - ���\ Vue �e�ݦs��
+//claude給我，要給Api用的
+// 設定 CORS - 允許 Vue 前端存取
 builder.Services.AddCors(options =>
 {
   options.AddPolicy("VueApp", policy =>
   {
     policy.WithOrigins(
       "http://localhost:7190",
-      "http://localhost:5173",  // Vite �w�]�}�o��
-      "http://localhost:8080",  // Vue CLI �w�]�}�o��
-      "http://localhost:3000"   // ��L�i�઺�}�o��
+      "http://localhost:5173",  // Vite 預設開發埠
+      "http://localhost:8080",  // Vue CLI 預設開發埠
+      "http://localhost:3000"   // 其他可能的開發埠
     )
     .AllowAnyMethod()
     .AllowAnyHeader()
@@ -36,14 +36,15 @@ builder.Services.AddCors(options =>
   });
 });
 
-//claude���ڡA�n��Api�Ϊ�
-//�|�v�T�쥻��View��ܡA�����ѱ�
-// �]�w JSON �ǦC�ƿﶵ
+//claude給我，要給Api用的
+//會影響原本的View顯示，先註解掉
+// 設定 JSON 序列化選項
+
 //builder.Services.AddControllers()
 //.AddJsonOptions(options =>
 //{
-//  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // �O����l�R�W
-//  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // �B�z�`���ѷ�
+//  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // 保持原始命名
+//  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // 處理循環參照
 //});
 
 builder.Services.AddSession(options =>
@@ -108,13 +109,13 @@ else
 //重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
 app.UseHttpsRedirection();
 
-//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
+// 讓瀏覽器可以下載 wwwroot 裡面的檔案 (不然 Vue 的畫面會跑不出來)
 app.UseStaticFiles();
 
-//�ҥ�Url Routing(�S�٬�Url Rewriting)�����}���n���S�Ӧh��T
+//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
 app.UseRouting();
 
-//�ҥ�CORS
+//啟用CORS
 app.UseCors("VueApp");
 
 //身分驗證 => 授予權限
