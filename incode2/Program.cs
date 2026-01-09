@@ -61,6 +61,33 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
+//新增密碼驗證規則(下面)
+builder.Services.Configure<IdentityOptions>(options => {
+  options.Password.RequireDigit = true;
+  options.Password.RequireLowercase = true;
+  options.Password.RequireNonAlphanumeric = true;
+  options.Password.RequireUppercase = true;
+  options.Password.RequiredLength = 8;
+  options.Password.RequiredUniqueChars = 1;
+
+  options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+  options.Lockout.MaxFailedAccessAttempts = 3;
+  options.Lockout.AllowedForNewUsers = true;  //帳號創立後要去email收驗證信
+
+  options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+  options.User.RequireUniqueEmail = true;
+  options.SignIn.RequireConfirmedEmail = true;
+});
+builder.Services.ConfigureApplicationCookie(options => {
+  options.Cookie.HttpOnly = true;
+  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+  options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+  options.LoginPath = "/Identity/Account/Login";
+  options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+  options.SlidingExpiration = true;
+});
+//新增密碼驗證規則(上面)
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
