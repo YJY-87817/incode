@@ -1,3 +1,4 @@
+using CoreMVCValidation.ViewModels;
 using incode2.Models;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -97,7 +98,7 @@ namespace incode2.Controllers
     {
       if (ModelState.IsValid) //Server端驗證通過
       {
-        //處理==>寫入資料庫
+        //處理==>寫入資料庫(這邊自己還沒寫)
         return RedirectToAction("Index", "Home");
       }
       //return View(null);
