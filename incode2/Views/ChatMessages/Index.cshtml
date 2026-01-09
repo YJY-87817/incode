@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "聊天助手";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="~/css/chat.css" />
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<div id="app">
+    <div class="chat-widget" :class="{ 'open': isChatOpen }">
+
+        <div class="chat-header">
+            <div class="header-info">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Avatar">
+                <span>聊天助手</span>
+            </div>
+            <button class="close-btn" v-onClick ="toggleChat">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="chat-body" ref="chatBox">
+            <div v-for="(msg, index) in messages"
+                 :key="index"
+                 class="message-row"
+                 :class="msg.role">
+
+                <div v-if="msg.role === 'model'" class="avatar">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png">
+                </div>
+
+                <div class="message-bubble">
+                    {{ msg.body }}
+                </div>
+            </div>
+
+            <div v-if="isLoading" class="message-row model">
+                <div class="avatar">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png">
+                </div>
+                <div class="message-bubble typing">
+                    <span>.</span><span>.</span><span>.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text"
+                   v-model="userInput"
+                   v-onkeyup.enter="sendMessage"
+                   placeholder="請輸入問題..."
+                   :disabled="isLoading">
+            <button class="send-btn" v-onclick="sendMessage" :disabled="isLoading || !userInput.trim()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <button class="chat-launcher" v-onclick="toggleChat" :class="{ 'hide': isChatOpen }">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+</div>
+
+<script src="~/js/chat.js" asp-append-version="true"></script>

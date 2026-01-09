@@ -1,0 +1,112 @@
+﻿@model incode2.Models.Product
+
+@{
+    ViewData["Title"] = "商品管理";
+}
+
+<h2>商品修改</h2>
+
+<div class="col-6">
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="ProductId" />
+        <input type="hidden" asp-for="ImageName" />
+        <div class="mb-3">
+            <label label asp-for="Name" class="form-label fw-bold">商品名稱:</label>
+            <input asp-for="Name" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label fw-bold">商品描述:</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <<label class="form-label fw-bold">目前圖片</label><br />
+            @if (!string.IsNullOrEmpty(Model.ImageName))
+            {
+                <img src="~/img/product/@Model.ImageName" id="imagePreview" style="max-width: 200px;" class="mb-2 img-thumbnail" />
+            }
+            <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
+            <small class="text-muted">若不更換圖片請留空</small>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Type" class="form-label fw-bold">類別</label>
+            <select asp-for="Type" class="form-select">
+                <option value="兌換票券">兌換票券</option>
+                <option value="電影周邊">電影周邊</option>
+                <option value="造型">造型</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Point" class="form-label fw-bold">所需點數</label>
+                <input asp-for="Point" type="number" class="form-control" min="0">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Stock" class="form-label fw-bold">庫存數量</label>
+                <input asp-for="Stock" type="number" class="form-control" min="0">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="CreatedAt" class="form-label fw-bold">新增時間</label>
+                <input asp-for="CreatedAt" class="form-control bg-light" readonly type="text"
+                       value="@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")" />
+                <input type="hidden" asp-for="CreatedAt" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="UpdatedAt" class="form-label fw-bold">最後修改時間</label>
+                <input asp-for="UpdatedAt" class="form-control bg-light" readonly type="text"
+                       value="@Model.UpdatedAt.ToString("yyyy/MM/dd HH:mm:ss")" />
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex gap-4">
+            <div class="form-check">
+                <input asp-for="IsPhysical" class="form-check-input" type="checkbox">
+                <label class="form-check-label" asp-for="IsPhysical">實體商品</label>
+            </div>
+            <div class="form-check">
+                <input asp-for="OnSale" class="form-check-input" type="checkbox">
+                <label asp-for="OnSale" class="form-check-label">販售中</label>
+            </div>
+        </div>
+        <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">修改商品</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    // 假設您要在表單上方或下方加一個 <img> 標籤來預覽
+                    // 如果沒有，可以動態插入一個
+                    let preview = document.getElementById('imagePreview');
+                    if(!preview){
+                        const img = document.createElement('img');
+                        img.id = 'imagePreview';
+                        img.style.maxWidth = '200px';
+                        img.className = 'mt-2 img-thumbnail';
+                        input.parentNode.appendChild(img);
+                        preview = img;
+                    }
+                    preview.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

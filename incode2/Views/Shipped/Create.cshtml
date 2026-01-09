@@ -1,0 +1,43 @@
+﻿@model incode2.Models.ShippedDetail
+
+@{
+    ViewData["Title"] = "寄送管理";
+}
+
+<h2>新增寄送資料</h2>
+
+<div class="col-6">
+    <form asp-action="Create" method="post">
+        <div class="mb-3">
+            <label asp-for="OrderdetailId" class="form-label fw-bold">需寄送訂單詳細ID:</label>
+            <input asp-for="OrderdetailId" type="number" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱:</label>
+            <input asp-for="RecipientName" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址:</label>
+            <input asp-for="RecipientAddress" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話:</label>
+            <input asp-for="RecipientPhone" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label asp-for="ShippedDate" class="form-label fw-bold">寄送日期:</label>
+            <input asp-for="ShippedDate" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label asp-for="ArrivalDate" class="form-label fw-bold">送達日期:</label>
+            <input asp-for="ArrivalDate" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label asp-for="Remark" class="form-label fw-bold">備註:</label>
+            <textarea asp-for="Remark" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="d-grid gap-2 mt-4">
+            <button id="BtnCreate" type="submit" class="btn btn-primary">新增寄送資料</button>
+        </div>
+    </form>
+</div>

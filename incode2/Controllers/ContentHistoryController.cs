@@ -9,6 +9,7 @@ using incode2.Models;
 
 namespace incode2.Controllers
 {
+  [Route("/ContentHistory/{action=Index}/{content_history_id?}")]
   public class ContentHistoryController : Controller
   {
     private readonly incodedatabaseContext _context;
@@ -19,18 +20,19 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
       var incodedatabaseContext = _context.ContentHistory
-        .Include(c => c.Content)
         .Include(c => c.User);
       return View(await incodedatabaseContext.ToListAsync());
     }
 
     // GET: ContentHistory/Details/5
-    public async Task<IActionResult> Details(int? id)
+    [HttpGet]
+    public async Task<IActionResult> Details(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
@@ -38,7 +40,7 @@ namespace incode2.Controllers
       var contentHistory = await _context.ContentHistory
           .Include(c => c.Content)
           .Include(c => c.User)
-          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
@@ -48,10 +50,11 @@ namespace incode2.Controllers
     }
 
     // GET: ContentHistory/Create
+    [HttpGet]
     public IActionResult Create()
     {
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body");
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body");
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account");
       return View();
     }
 
@@ -68,26 +71,27 @@ namespace incode2.Controllers
         await _context.SaveChangesAsync(); //寫入資料庫
         return RedirectToAction(nameof(Index)); //重新導向到Index頁面
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
     // GET: ContentHistory/Edit/5
-    public async Task<IActionResult> Edit(int? id)
+    [HttpGet]
+    public async Task<IActionResult> Edit(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
 
-      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      var contentHistory = await _context.ContentHistory.FindAsync(content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
@@ -96,9 +100,9 @@ namespace incode2.Controllers
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
+    public async Task<IActionResult> Edit(int content_history_id, [Bind("ContentHistoryId,ContentId,UserId,OldTitle,OldBody,Ishidden,EditedAt")] ContentHistory contentHistory)
     {
-      if (id != contentHistory.ContentHistoryId)
+      if (content_history_id != contentHistory.ContentHistoryId)
       {
         return NotFound();
       }
@@ -123,15 +127,16 @@ namespace incode2.Controllers
         }
         return RedirectToAction(nameof(Index));
       }
-      ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
-      ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
+      ViewBag.ContentId = new SelectList(_context.Content, "ContentId", "Body", contentHistory.ContentId);
+      ViewBag.UserId = new SelectList(_context.User, "UserId", "Account", contentHistory.UserId);
       return View(contentHistory);
     }
 
     // GET: ContentHistory/Delete/5
-    public async Task<IActionResult> Delete(int? id)
+    [HttpGet]
+    public async Task<IActionResult> Delete(int? content_history_id)
     {
-      if (id == null)
+      if (content_history_id == null)
       {
         return NotFound();
       }
@@ -139,7 +144,7 @@ namespace incode2.Controllers
       var contentHistory = await _context.ContentHistory
           .Include(c => c.Content)
           .Include(c => c.User)
-          .FirstOrDefaultAsync(m => m.ContentHistoryId == id);
+          .FirstOrDefaultAsync(m => m.ContentHistoryId == content_history_id);
       if (contentHistory == null)
       {
         return NotFound();
@@ -151,9 +156,9 @@ namespace incode2.Controllers
     // POST: ContentHistory/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(int content_history_id)
     {
-      var contentHistory = await _context.ContentHistory.FindAsync(id);
+      var contentHistory = await _context.ContentHistory.FindAsync(content_history_id);
       if (contentHistory != null)
       {
         _context.ContentHistory.Remove(contentHistory);
@@ -163,9 +168,9 @@ namespace incode2.Controllers
       return RedirectToAction(nameof(Index));
     }
 
-    private bool ContentHistoryExists(int id)
+    private bool ContentHistoryExists(int content_history_id)
     {
-      return _context.ContentHistory.Any(e => e.ContentHistoryId == id);
+      return _context.ContentHistory.Any(e => e.ContentHistoryId == content_history_id);
     }
   }
 }
