@@ -1,13 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 
-// 塞在這裡
-import axios from "axios";
-const responseData = ref("");
-const products = ref("");
-
-// 塞在這裡
-
 // Example components
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
@@ -187,9 +180,6 @@ onMounted(() => {
           <div>
             <h2 class="mb-2">💬 技術論壇</h2>
             <p class="text-muted mb-0">分享知識、交流技術、共同成長</p>
-            <!-- 塞在這裡 -->
-
-            <!-- 塞在這裡 -->
           </div>
           <button class="btn btn-primary">
             <i class="fas fa-plus"></i> 發表新主題
