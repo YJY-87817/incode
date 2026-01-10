@@ -206,13 +206,21 @@ onMounted(() => {
       <div class="col-lg-9">
         <!-- 分類列表（已縮小按鈕） -->
         <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div
+            class="card-header bg-white d-flex justify-content-between align-items-center"
+          >
             <h5 class="mb-0">📁 討論分類</h5>
             <small class="text-muted">點擊分類篩選主題</small>
           </div>
           <div class="card-body">
-            <div v-if="forumState.isLoading && forumState.categories.length === 0" class="text-center py-3">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <div
+              v-if="forumState.isLoading && forumState.categories.length === 0"
+              class="text-center py-3"
+            >
+              <div
+                class="spinner-border spinner-border-sm text-primary"
+                role="status"
+              >
                 <span class="visually-hidden">載入中...</span>
               </div>
             </div>
@@ -226,22 +234,33 @@ onMounted(() => {
                 <div
                   class="category-card p-2 border rounded cursor-pointer h-100 d-flex flex-column justify-content-between"
                   :class="{
-                    'border-primary bg-primary text-white':
+                    'bg-info text-white':
                       forumState.selectedCategory === category.id,
-                    'border-light': forumState.selectedCategory !== category.id
+                    'border-light': forumState.selectedCategory !== category.id,
                   }"
                   @click="onCategorySelect(category.id)"
                 >
-                  <div class="d-flex justify-content-between align-items-start mb-1">
+                  <div
+                    class="d-flex justify-content-between align-items-start mb-1"
+                  >
                     <h6 class="mb-0 small fw-bold">{{ category.name }}</h6>
-                    <span v-if="forumState.selectedCategory === category.id" class="badge bg-white text-primary">✓</span>
                   </div>
-                  <p class="text-muted mb-1 small text-truncate" 
-                     :class="{ 'text-white-50': forumState.selectedCategory === category.id }">
+                  <p
+                    class="text-muted mb-1 small text-truncate"
+                    :class="{
+                      'text-white-50':
+                        forumState.selectedCategory === category.id,
+                    }"
+                  >
                     {{ category.description }}
                   </p>
-                  <div class="d-flex justify-content-between small mt-1"
-                       :class="{ 'text-white-50': forumState.selectedCategory === category.id }">
+                  <div
+                    class="d-flex justify-content-between small mt-1"
+                    :class="{
+                      'text-white-50':
+                        forumState.selectedCategory === category.id,
+                    }"
+                  >
                     <span>📝 {{ category.topicCount }}</span>
                     <span>💬 {{ category.postCount }}</span>
                   </div>
@@ -253,22 +272,36 @@ onMounted(() => {
 
         <!-- 主題列表 -->
         <div class="card shadow-sm">
-          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <div
+            class="card-header bg-white d-flex justify-content-between align-items-center"
+          >
             <h5 class="mb-0">📋 討論主題</h5>
             <div>
-              <span class="badge bg-secondary me-2" v-if="forumState.selectedCategory">已篩選</span>
-              <span class="badge bg-info">共 {{ forumState.pagination.totalCount }} 筆</span>
+              <span
+                class="badge bg-secondary me-2"
+                v-if="forumState.selectedCategory"
+                >已篩選</span
+              >
+              <span class="badge bg-info"
+                >共 {{ forumState.pagination.totalCount }} 筆</span
+              >
             </div>
           </div>
 
           <div class="card-body p-0">
-            <div v-if="forumState.isLoading && forumState.topics.length === 0" class="text-center py-5">
+            <div
+              v-if="forumState.isLoading && forumState.topics.length === 0"
+              class="text-center py-5"
+            >
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">載入中...</span>
               </div>
             </div>
 
-            <div v-else-if="forumState.topics.length === 0" class="text-center py-5 text-muted">
+            <div
+              v-else-if="forumState.topics.length === 0"
+              class="text-center py-5 text-muted"
+            >
               <p>此分類目前沒有主題</p>
             </div>
 
@@ -292,18 +325,30 @@ onMounted(() => {
 
                   <!-- 主題內容 -->
                   <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div
+                      class="d-flex justify-content-between align-items-start mb-2"
+                    >
                       <div>
                         <h6 class="mb-1">
-                          <span v-if="topic.isPinned" class="badge bg-danger me-2">置頂</span>
-                          <span v-if="topic.isHot" class="badge bg-warning text-dark me-2">熱門</span>
+                          <span
+                            v-if="topic.isPinned"
+                            class="badge bg-danger me-2"
+                            >置頂</span
+                          >
+                          <span
+                            v-if="topic.isHot"
+                            class="badge bg-warning text-dark me-2"
+                            >熱門</span
+                          >
                           {{ topic.title }}
                         </h6>
 
                         <div class="small text-muted mb-1">
                           <span class="me-3">👤 {{ topic.author }}</span>
                           <span class="me-3">📁 {{ topic.categoryName }}</span>
-                          <span class="me-3">🕒 {{ formatTimeAgo(topic.createdAt) }}</span>
+                          <span class="me-3"
+                            >🕒 {{ formatTimeAgo(topic.createdAt) }}</span
+                          >
                         </div>
 
                         <!-- ✅ 這裡就是「實際內容」 -->
@@ -313,13 +358,16 @@ onMounted(() => {
                       </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div
+                      class="d-flex justify-content-between align-items-center"
+                    >
                       <div class="small text-muted">
                         <span class="me-3">💬 {{ topic.replyCount }} 回覆</span>
                         <span class="me-3">👁 {{ topic.viewCount }} 瀏覽</span>
                       </div>
                       <div class="small text-muted">
-                        最後回覆：{{ topic.lastReplyUser }} · {{ topic.lastReplyTime }}
+                        最後回覆：{{ topic.lastReplyUser }} ·
+                        {{ topic.lastReplyTime }}
                       </div>
                     </div>
                   </div>
@@ -329,15 +377,30 @@ onMounted(() => {
           </div>
 
           <!-- 分頁 -->
-          <div class="card-footer bg-white" v-if="forumState.pagination.totalPages > 1">
+          <div
+            class="card-footer bg-white"
+            v-if="forumState.pagination.totalPages > 1"
+          >
             <nav>
               <ul class="pagination pagination-sm mb-0 justify-content-center">
-                <li class="page-item" :class="{ disabled: forumState.pagination.currentPage === 1 }">
-                  <a class="page-link" href="#" @click.prevent="onPageChange(forumState.pagination.currentPage - 1)">上一頁</a>
+                <li
+                  class="page-item"
+                  :class="{ disabled: forumState.pagination.currentPage === 1 }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.currentPage - 1)
+                    "
+                    >上一頁</a
+                  >
                 </li>
 
                 <li v-if="displayPages[0] > 1" class="page-item">
-                  <a class="page-link" href="#" @click.prevent="onPageChange(1)">1</a>
+                  <a class="page-link" href="#" @click.prevent="onPageChange(1)"
+                    >1</a
+                  >
                 </li>
                 <li v-if="displayPages[0] > 2" class="page-item disabled">
                   <span class="page-link">...</span>
@@ -347,22 +410,61 @@ onMounted(() => {
                   v-for="pageNum in displayPages"
                   :key="pageNum"
                   class="page-item"
-                  :class="{ active: pageNum === forumState.pagination.currentPage }"
+                  :class="{
+                    active: pageNum === forumState.pagination.currentPage,
+                  }"
                 >
-                  <a class="page-link" href="#" @click.prevent="onPageChange(pageNum)">{{ pageNum }}</a>
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="onPageChange(pageNum)"
+                    >{{ pageNum }}</a
+                  >
                 </li>
 
-                <li v-if="displayPages[displayPages.length - 1] < forumState.pagination.totalPages - 1" class="page-item disabled">
+                <li
+                  v-if="
+                    displayPages[displayPages.length - 1] <
+                    forumState.pagination.totalPages - 1
+                  "
+                  class="page-item disabled"
+                >
                   <span class="page-link">...</span>
                 </li>
-                <li v-if="displayPages[displayPages.length - 1] < forumState.pagination.totalPages" class="page-item">
-                  <a class="page-link" href="#" @click.prevent="onPageChange(forumState.pagination.totalPages)">
+                <li
+                  v-if="
+                    displayPages[displayPages.length - 1] <
+                    forumState.pagination.totalPages
+                  "
+                  class="page-item"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.totalPages)
+                    "
+                  >
                     {{ forumState.pagination.totalPages }}
                   </a>
                 </li>
 
-                <li class="page-item" :class="{ disabled: forumState.pagination.currentPage === forumState.pagination.totalPages }">
-                  <a class="page-link" href="#" @click.prevent="onPageChange(forumState.pagination.currentPage + 1)">下一頁</a>
+                <li
+                  class="page-item"
+                  :class="{
+                    disabled:
+                      forumState.pagination.currentPage ===
+                      forumState.pagination.totalPages,
+                  }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.currentPage + 1)
+                    "
+                    >下一頁</a
+                  >
                 </li>
               </ul>
             </nav>
@@ -378,15 +480,23 @@ onMounted(() => {
           </div>
           <div class="card-body">
             <div class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-1">
+              <div
+                class="d-flex justify-content-between align-items-center mb-1"
+              >
                 <span class="small text-muted">總主題數</span>
-                <strong class="text-primary">{{ forumState.pagination.totalCount }}</strong>
+                <strong class="text-primary">{{
+                  forumState.pagination.totalCount
+                }}</strong>
               </div>
-              <div class="d-flex justify-content-between align-items-center mb-1">
+              <div
+                class="d-flex justify-content-between align-items-center mb-1"
+              >
                 <span class="small text-muted">總回覆數</span>
                 <strong class="text-success">2,707</strong>
               </div>
-              <div class="d-flex justify-content-between align-items-center mb-1">
+              <div
+                class="d-flex justify-content-between align-items-center mb-1"
+              >
                 <span class="small text-muted">註冊會員</span>
                 <strong class="text-info">1,234</strong>
               </div>
@@ -442,7 +552,9 @@ onMounted(() => {
                   />
                   <strong>李四</strong>
                 </div>
-                <p class="mb-1 text-muted text-truncate">回覆了「Vue 3 使用心得」</p>
+                <p class="mb-1 text-muted text-truncate">
+                  回覆了「Vue 3 使用心得」
+                </p>
                 <small class="text-muted">5 分鐘前</small>
               </div>
               <div class="list-group-item small">
@@ -455,7 +567,9 @@ onMounted(() => {
                   />
                   <strong>王五</strong>
                 </div>
-                <p class="mb-1 text-muted text-truncate">回覆了「效能優化問題」</p>
+                <p class="mb-1 text-muted text-truncate">
+                  回覆了「效能優化問題」
+                </p>
                 <small class="text-muted">15 分鐘前</small>
               </div>
             </div>
@@ -478,7 +592,7 @@ onMounted(() => {
 
 .category-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* 選中狀態 */
