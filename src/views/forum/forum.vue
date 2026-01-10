@@ -1,9 +1,21 @@
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { reactive, onMounted, computed } from "vue";
+import axios from "axios";
 
-// Example components
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+
+// 後端 API 基底網址
+const apiBaseUrl = "https://localhost:7190/api"; // 記得改成你的實際後端網址
+
+// 建立 axios 實例（你熟悉的格式）
+const apiClient = axios.create({
+  baseURL: apiBaseUrl,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 // 論壇狀態
 const forumState = reactive({
@@ -11,152 +23,161 @@ const forumState = reactive({
   categories: [],
   topics: [],
   isLoading: false,
+  pagination: {
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+  },
 });
 
-// 獲取分類列表
-const fetchCategories = async () => {
+// 取得分類列表
+const fetchCategories = () => {
   forumState.isLoading = true;
-  try {
-    // 模擬數據
-    forumState.categories = [
-      {
-        id: 1,
-        name: "一般討論",
-        topicCount: 150,
-        postCount: 1250,
-        description: "自由討論各種話題",
-      },
-      {
-        id: 2,
-        name: "技術問答",
-        topicCount: 89,
-        postCount: 567,
-        description: "技術相關問題討論",
-      },
-      {
-        id: 3,
-        name: "新手入門",
-        topicCount: 234,
-        postCount: 890,
-        description: "新手提問與學習",
-      },
-      {
-        id: 4,
-        name: "專案分享",
-        topicCount: 45,
-        postCount: 234,
-        description: "分享你的專案成果",
-      },
-    ];
-  } catch (error) {
-    console.error("載入分類失敗:", error);
-  } finally {
-    forumState.isLoading = false;
-  }
+
+  apiClient
+    .get("/CategoryApi")
+    .then((response) => {
+      console.log("分類資料:", response.data);
+      // CategoryApi 回傳的 CategoryDto：Id / Name / Description / TopicCount / PostCount
+      // 會被序列化成 JSON：id / name / description / topicCount / postCount
+      forumState.categories = response.data;
+    })
+    .catch((error) => {
+      console.error("載入分類失敗:", error);
+      alert("載入分類失敗");
+    })
+    .finally(() => {
+      forumState.isLoading = false;
+    });
 };
 
-// 獲取主題列表
-const fetchTopics = async (categoryId = null) => {
+// 取得主題列表（ContentApi）
+const fetchTopics = (categoryId = null, page = 1) => {
   forumState.isLoading = true;
-  try {
-    // 模擬數據
-    forumState.topics = [
-      {
-        id: 1,
-        title: "Vue 3 Composition API 使用心得分享",
-        author: "張三",
-        authorAvatar:
-          "https://ui-avatars.com/api/?name=Zhang+San&background=random",
-        categoryId: 2,
-        categoryName: "技術問答",
-        replyCount: 23,
-        viewCount: 456,
-        lastReplyTime: "2 小時前",
-        lastReplyUser: "李四",
-        isPinned: true,
-        isHot: true,
-      },
-      {
-        id: 2,
-        title: "如何優化前端效能？求大神指點",
-        author: "李四",
-        authorAvatar:
-          "https://ui-avatars.com/api/?name=Li+Si&background=random",
-        categoryId: 2,
-        categoryName: "技術問答",
-        replyCount: 15,
-        viewCount: 289,
-        lastReplyTime: "5 小時前",
-        lastReplyUser: "王五",
-        isPinned: false,
-        isHot: true,
-      },
-      {
-        id: 3,
-        title: "ASP.NET Core 與 Vue 3 整合教學",
-        author: "王五",
-        authorAvatar:
-          "https://ui-avatars.com/api/?name=Wang+Wu&background=random",
-        categoryId: 2,
-        categoryName: "技術問答",
-        replyCount: 8,
-        viewCount: 156,
-        lastReplyTime: "1 天前",
-        lastReplyUser: "趙六",
-        isPinned: false,
-        isHot: false,
-      },
-      {
-        id: 4,
-        title: "新手提問：Vue Router 路由設定問題",
-        author: "趙六",
-        authorAvatar:
-          "https://ui-avatars.com/api/?name=Zhao+Liu&background=random",
-        categoryId: 3,
-        categoryName: "新手入門",
-        replyCount: 32,
-        viewCount: 678,
-        lastReplyTime: "3 小時前",
-        lastReplyUser: "張三",
-        isPinned: false,
-        isHot: true,
-      },
-      {
-        id: 5,
-        title: "分享我的第一個 Vue 專案！",
-        author: "錢七",
-        authorAvatar:
-          "https://ui-avatars.com/api/?name=Qian+Qi&background=random",
-        categoryId: 4,
-        categoryName: "專案分享",
-        replyCount: 12,
-        viewCount: 234,
-        lastReplyTime: "6 小時前",
-        lastReplyUser: "李四",
-        isPinned: false,
-        isHot: false,
-      },
-    ];
 
-    // 如果有選擇分類，過濾主題
-    if (categoryId) {
-      forumState.topics = forumState.topics.filter(
-        (t) => t.categoryId === categoryId
-      );
-    }
-  } catch (error) {
-    console.error("載入主題失敗:", error);
-  } finally {
-    forumState.isLoading = false;
+  // 查詢參數
+  const params = {
+    page: page,
+    pageSize: forumState.pagination.pageSize,
+  };
+  if (categoryId) {
+    params.categoryId = categoryId;
   }
+
+  apiClient
+    .get("/ContentApi", { params })
+    .then((response) => {
+      console.log("主題資料:", response.data);
+
+      const {
+        items,
+        totalCount,
+        totalPages,
+        page: currentPage,
+        pageSize,
+      } = response.data;
+
+      // 更新分頁資訊
+      forumState.pagination = {
+        currentPage,
+        pageSize,
+        totalCount,
+        totalPages,
+      };
+
+      // 注意：ASP.NET Core 會把 ContentDto (ContentId, Title, ...) 轉成 camelCase:
+      // contentId, title, body, createdAt, username, categoryName
+      forumState.topics = items.map((item) => ({
+        id: item.contentId,
+        title: item.title,
+        content: item.body,
+        author: item.username,
+        authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          item.username
+        )}&background=random`,
+        categoryName: item.categoryName,
+        createdAt: item.createdAt,
+
+        // 下面幾個暫時用假資料或推算，之後可以在 DB 補欄位
+        replyCount: Math.floor(Math.random() * 100),
+        viewCount: Math.floor(Math.random() * 500),
+        lastReplyTime: formatTimeAgo(item.createdAt),
+        lastReplyUser: item.username,
+        isPinned: false,
+        isHot: Math.random() > 0.7,
+      }));
+    })
+    .catch((error) => {
+      console.error("載入主題失敗:", error);
+
+      if (error.response) {
+        alert(error.response.data.message || "載入主題失敗");
+      } else if (error.request) {
+        alert("無法連接到伺服器，請檢查網路連線");
+      } else {
+        alert("發生未知錯誤");
+      }
+
+      forumState.topics = [];
+    })
+    .finally(() => {
+      forumState.isLoading = false;
+    });
+};
+
+// 時間格式化：顯示成「X 小時前」
+const formatTimeAgo = (date) => {
+  const now = new Date();
+  const d = new Date(date);
+  const diff = now - d;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} 天前`;
+  if (hours > 0) return `${hours} 小時前`;
+  if (minutes > 0) return `${minutes} 分鐘前`;
+  return "剛剛";
 };
 
 // 選擇分類
 const onCategorySelect = (categoryId) => {
   forumState.selectedCategory =
     categoryId === forumState.selectedCategory ? null : categoryId;
-  fetchTopics(forumState.selectedCategory);
+  forumState.pagination.currentPage = 1; // 切換分類時回到第 1 頁
+  fetchTopics(forumState.selectedCategory, 1);
 };
+
+// 換頁
+const onPageChange = (page) => {
+  if (page < 1 || page > forumState.pagination.totalPages) return;
+  forumState.pagination.currentPage = page;
+  fetchTopics(forumState.selectedCategory, page);
+};
+
+// 計算要顯示的頁碼
+const displayPages = computed(() => {
+  const { currentPage, totalPages } = forumState.pagination;
+  const pages = [];
+  const maxDisplay = 5;
+
+  if (totalPages === 0) return pages;
+
+  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
+  let end = Math.min(totalPages, start + maxDisplay - 1);
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1);
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  return pages;
+});
 
 // 初始化
 onMounted(() => {
@@ -197,7 +218,7 @@ onMounted(() => {
             <h5 class="mb-0">📁 討論分類</h5>
           </div>
           <div class="card-body">
-            <div v-if="forumState.isLoading" class="text-center py-4">
+            <div v-if="forumState.isLoading && forumState.categories.length === 0" class="text-center py-4">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">載入中...</span>
               </div>
@@ -237,12 +258,23 @@ onMounted(() => {
             class="card-header bg-white d-flex justify-content-between align-items-center"
           >
             <h5 class="mb-0">📋 討論主題</h5>
-            <span class="badge bg-secondary" v-if="forumState.selectedCategory">
-              已篩選
-            </span>
+            <div>
+              <span
+                class="badge bg-secondary me-2"
+                v-if="forumState.selectedCategory"
+              >
+                已篩選
+              </span>
+              <span class="badge bg-info">
+                共 {{ forumState.pagination.totalCount }} 筆
+              </span>
+            </div>
           </div>
           <div class="card-body p-0">
-            <div v-if="forumState.isLoading" class="text-center py-5">
+            <div
+              v-if="forumState.isLoading && forumState.topics.length === 0"
+              class="text-center py-5"
+            >
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">載入中...</span>
               </div>
@@ -292,10 +324,18 @@ onMounted(() => {
                           >
                           {{ topic.title }}
                         </h6>
-                        <div class="small text-muted">
+                        <div class="small text-muted mb-1">
                           <span class="me-3">👤 {{ topic.author }}</span>
                           <span class="me-3">📁 {{ topic.categoryName }}</span>
+                          <span class="me-3">
+                            🕒 {{ formatTimeAgo(topic.createdAt) }}
+                          </span>
                         </div>
+
+                        <!-- 貼文內容（顯示前幾行） -->
+                        <p class="mb-1 text-muted topic-body-preview">
+                          {{ topic.content }}
+                        </p>
                       </div>
                     </div>
 
@@ -318,23 +358,103 @@ onMounted(() => {
           </div>
 
           <!-- 分頁 -->
-          <div class="card-footer bg-white">
+          <div
+            class="card-footer bg-white"
+            v-if="forumState.pagination.totalPages > 1"
+          >
             <nav>
               <ul class="pagination pagination-sm mb-0 justify-content-center">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#">上一頁</a>
+                <li
+                  class="page-item"
+                  :class="{ disabled: forumState.pagination.currentPage === 1 }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.currentPage - 1)
+                    "
+                  >
+                    上一頁
+                  </a>
                 </li>
-                <li class="page-item active">
-                  <a class="page-link" href="#">1</a>
+
+                <li v-if="displayPages[0] > 1" class="page-item">
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="onPageChange(1)"
+                    >1</a
+                  >
                 </li>
-                <li class="page-item">
-                  <a class="page-link" href="#">2</a>
+                <li
+                  v-if="displayPages[0] > 2"
+                  class="page-item disabled"
+                >
+                  <span class="page-link">...</span>
                 </li>
-                <li class="page-item">
-                  <a class="page-link" href="#">3</a>
+
+                <li
+                  v-for="pageNum in displayPages"
+                  :key="pageNum"
+                  class="page-item"
+                  :class="{
+                    active: pageNum === forumState.pagination.currentPage,
+                  }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="onPageChange(pageNum)"
+                  >
+                    {{ pageNum }}
+                  </a>
                 </li>
-                <li class="page-item">
-                  <a class="page-link" href="#">下一頁</a>
+
+                <li
+                  v-if="
+                    displayPages[displayPages.length - 1] <
+                    forumState.pagination.totalPages - 1
+                  "
+                  class="page-item disabled"
+                >
+                  <span class="page-link">...</span>
+                </li>
+                <li
+                  v-if="
+                    displayPages[displayPages.length - 1] <
+                    forumState.pagination.totalPages
+                  "
+                  class="page-item"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.totalPages)
+                    "
+                  >
+                    {{ forumState.pagination.totalPages }}
+                  </a>
+                </li>
+
+                <li
+                  class="page-item"
+                  :class="{
+                    disabled:
+                      forumState.pagination.currentPage ===
+                      forumState.pagination.totalPages,
+                  }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="
+                      onPageChange(forumState.pagination.currentPage + 1)
+                    "
+                  >
+                    下一頁
+                  </a>
                 </li>
               </ul>
             </nav>
@@ -355,7 +475,9 @@ onMounted(() => {
                 class="d-flex justify-content-between align-items-center mb-1"
               >
                 <span class="small text-muted">總主題數</span>
-                <strong class="text-primary">473</strong>
+                <strong class="text-primary">{{
+                  forumState.pagination.totalCount
+                }}</strong>
               </div>
               <div
                 class="d-flex justify-content-between align-items-center mb-1"
@@ -474,5 +596,14 @@ onMounted(() => {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+/* 貼文內容只顯示前 2 行，避免整篇太長 */
+.topic-body-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 顯示 2 行 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9rem;
 }
 </style>
