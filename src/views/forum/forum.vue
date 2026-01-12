@@ -225,14 +225,14 @@ onMounted(() => {
               </div>
             </div>
 
-            <div v-else class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
+<div v-else class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-1">
               <div
                 v-for="category in forumState.categories"
                 :key="category.id"
                 class="col"
               >
                 <div
-                  class="category-card p-2 border rounded cursor-pointer h-100 d-flex flex-column justify-content-between"
+class="category-card p-1 border rounded cursor-pointer d-flex flex-column justify-content-between"
                   :class="{
                     'bg-info text-white':
                       forumState.selectedCategory === category.id,
@@ -588,6 +588,8 @@ onMounted(() => {
 .category-card {
   transition: all 0.2s ease;
   border-width: 2px;
+  font-size: 0.85rem;
+  padding: 0.5rem !important;
 }
 
 .category-card:hover {
