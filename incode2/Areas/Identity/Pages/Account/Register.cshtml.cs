@@ -81,10 +81,10 @@ namespace incode2.Areas.Identity.Pages.Account
       public string Email { get; set; }
       
       
-      [Display(Name ="國別碼")]
-      [Required(ErrorMessage ="必田拉")]
-      [StringLength(3)]
-      public string CountryCode { get; set; }
+      [Display(Name ="員工編號")]
+      [Required(ErrorMessage ="必填")]
+      [MaxLength(20)]
+      public string Account { get; set; }
 
       /// <summary>
       ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -93,7 +93,7 @@ namespace incode2.Areas.Identity.Pages.Account
       [Required]
       [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
       [DataType(DataType.Password)]
-      [Display(Name = "Password")]
+      [Display(Name = "密碼")]
       public string Password { get; set; }
 
       /// <summary>
@@ -101,8 +101,8 @@ namespace incode2.Areas.Identity.Pages.Account
       ///     directly from your code. This API may change or be removed in future releases.
       /// </summary>
       [DataType(DataType.Password)]
-      [Display(Name = "Confirm password")]
-      [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+      [Display(Name = "確認密碼")]
+      [Compare("Password", ErrorMessage = "確認密碼和密碼不同")]
       public string ConfirmPassword { get; set; }
     }
 
@@ -120,7 +120,7 @@ namespace incode2.Areas.Identity.Pages.Account
       if (ModelState.IsValid)
       {
         var user = CreateUser();
-        user.CountryCode = Input.CountryCode;
+        user.CountryCode = Input.Account;
         await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         var result = await _userManager.CreateAsync(user, Input.Password);
