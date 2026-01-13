@@ -6,11 +6,11 @@ using incode2.ViewModel;
 
 namespace incode2.Controllers
 {
-    public class AVMController : Controller
+    public class AdminController : Controller
     {
         private readonly incodedatabaseContext _context;
 
-        public AVMController(incodedatabaseContext context)
+        public AdminController(incodedatabaseContext context)
         {
             _context = context;
         }
@@ -45,7 +45,7 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
-            var AVM = await _context.User
+            var AdminViewModels = await _context.User
                 .Where(m => m.UserId == id) // 先篩選
                 .Select(u => new AdminViewModel
                 {
@@ -54,12 +54,12 @@ namespace incode2.Controllers
                     Username = u.Username,                   
                 })
                 .FirstOrDefaultAsync(); ;
-            if (AVM == null)
+            if (AdminViewModels == null)
             {
                 return NotFound();
             }
 
-            return View(AVM);
+            return View(AdminViewModels);
         }
 
     }

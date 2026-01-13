@@ -5,11 +5,11 @@ using System.Linq;
 
 namespace incode2.Controllers
 {
-    public class CVMController : Controller
+    public class CommunityController : Controller
     {
         private readonly incodedatabaseContext _context;
 
-        public CVMController(incodedatabaseContext context)
+        public CommunityController(incodedatabaseContext context)
         {
             _context = context;
         }
@@ -45,7 +45,7 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
-         var CVM = await _context.User
+         var CommunityViewModels = await _context.User
         .Where(u => u.UserId == id)
         .Select(u => new CommunityViewModel
         {
@@ -54,12 +54,12 @@ namespace incode2.Controllers
             Rank = _context.UserStatus.Where(s => s.UserId == u.UserId).Select(s => s.Rank).FirstOrDefault()
             }).FirstOrDefaultAsync();
                 
-            if (CVM == null)
+            if (CommunityViewModels == null)
             {
                 return NotFound();
             }
 
-            CVM.SocialLinks = await _context.Follow
+            CommunityViewModels.SocialLinks = await _context.Follow
         .Where(f => f.FollowerId == id) // 假設這是找他追蹤的人
         .Select(f => new CommunityViewModel
         {
@@ -69,7 +69,7 @@ namespace incode2.Controllers
             // 這裡可以再串接其他資料
         }).ToListAsync();
 
-            return View(CVM);
+            return View(CommunityViewModels);
         }
 
     }

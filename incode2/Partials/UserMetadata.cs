@@ -25,6 +25,12 @@ namespace incode2.Partials
             [Display(Name = "電話")]
             public int? Phone { get; set; }
 
+        [Display(Name = "生日")]
+        public DateOnly? Birthday { get; set; }
+
+        [Display(Name = "地址")]
+        public string Address { get; set; }
+
         [Display(Name = "大頭照")]
         public string? ImageUrl { get; set; }
 

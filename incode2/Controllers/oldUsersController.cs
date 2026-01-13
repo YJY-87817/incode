@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using incode2.Models;
 
-namespace tesst.Controllers
+namespace incode2.Controllers
 {
-    public class UsersController : Controller
+    public class oldUsersController : Controller
     {
         private readonly incodedatabaseContext _context;
 
-        public UsersController(incodedatabaseContext context)
+        public oldUsersController(incodedatabaseContext context)
         {
             _context = context;
         }
