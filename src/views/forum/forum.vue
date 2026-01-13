@@ -31,6 +31,15 @@ const forumState = reactive({
   },
 });
 
+// 新主題狀態
+const newTopicState = reactive({
+  show: false,
+  title: "",
+  body: "",
+  // 若需要預設分類，可在此加入 categoryId
+  // categoryId: null,
+});
+
 // 取得分類列表
 const fetchCategories = () => {
   forumState.isLoading = true;
@@ -171,6 +180,46 @@ const displayPages = computed(() => {
   return pages;
 });
 
+// 開啟新主題 Modal
+const openNewTopic = () => {
+  newTopicState.show = true;
+  newTopicState.title = "";
+  newTopicState.body = "";
+};
+
+// 關閉新主題 Modal
+const closeNewTopic = () => {
+  newTopicState.show = false;
+};
+
+// 提交新主題
+const submitNewTopic = () => {
+  if (!newTopicState.title || !newTopicState.body) {
+    alert("請填寫標題與內容");
+    return;
+  }
+
+  const dto = {
+    UserId: 1, // TODO: 改成實際使用者 ID
+    CategoryId: forumState.selectedCategory,
+    ParentContentId: null,
+    Title: newTopicState.title,
+    Body: newTopicState.body,
+  };
+
+  apiClient
+    .post("/ContentApi", dto)
+    .then(() => {
+      alert("發表成功");
+      closeNewTopic();
+      fetchTopics();
+    })
+    .catch((error) => {
+      console.error("發表失敗:", error);
+      alert("發表失敗，請稍後再試");
+    });
+};
+
 // 初始化
 onMounted(() => {
   fetchCategories();
@@ -194,9 +243,65 @@ onMounted(() => {
             <h2 class="mb-2">💬 技術論壇</h2>
             <p class="text-muted mb-0">分享知識、交流技術、共同成長</p>
           </div>
-          <button class="btn btn-primary">
+          <button class="btn btn-primary" @click="openNewTopic">
             <i class="fas fa-plus"></i> 發表新主題
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新主題發表 Modal -->
+    <div
+      v-if="newTopicState.show"
+      class="modal-backdrop"
+      style="
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="modal-dialog"
+        style="
+          background: white;
+          border-radius: 0.3rem;
+          max-width: 500px;
+          width: 100%;
+          padding: 1rem;
+        "
+      >
+        <div
+          class="modal-header d-flex justify-content-between align-items-center mb-3"
+        >
+          <h5 class="modal-title mb-0">發表新主題</h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="closeNewTopic"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">標題</label>
+            <input v-model="newTopicState.title" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">內容</label>
+            <textarea
+              v-model="newTopicState.body"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-end">
+          <button class="btn btn-secondary me-2" @click="closeNewTopic">
+            取消
+          </button>
+          <button class="btn btn-primary" @click="submitNewTopic">發表</button>
         </div>
       </div>
     </div>
@@ -225,14 +330,14 @@ onMounted(() => {
               </div>
             </div>
 
-<div v-else class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-1">
+            <div v-else class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-1">
               <div
                 v-for="category in forumState.categories"
                 :key="category.id"
                 class="col"
               >
                 <div
-class="category-card p-1 border rounded cursor-pointer d-flex flex-column justify-content-between"
+                  class="category-card p-1 border rounded cursor-pointer d-flex flex-column justify-content-between"
                   :class="{
                     'bg-info text-white':
                       forumState.selectedCategory === category.id,
@@ -444,9 +549,8 @@ class="category-card p-1 border rounded cursor-pointer d-flex flex-column justif
                     @click.prevent="
                       onPageChange(forumState.pagination.totalPages)
                     "
+                    >{{ forumState.pagination.totalPages }}</a
                   >
-                    {{ forumState.pagination.totalPages }}
-                  </a>
                 </li>
 
                 <li
