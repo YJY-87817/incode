@@ -81,6 +81,7 @@ namespace incode2.ApiController
           .Select(c => new ContentDetailDto
           {
             ContentId = c.ContentId,
+            ParentContentId = c.ParentContentId,
             Title = c.Title,
             Body = c.Body,
             CreatedAt = (DateTime)c.CreatedAt,
@@ -95,7 +96,6 @@ namespace incode2.ApiController
       {
         return NotFound(new { message = "找不到此內容" });
       }
-
       return Ok(content);
     }
 
@@ -112,6 +112,7 @@ namespace incode2.ApiController
       {
         UserId = dto.UserId,
         CategoryId = dto.CategoryId,
+        ParentContentId = dto.ParentContentId,
         Title = dto.Title,
         Body = dto.Body,
         CreatedAt = DateTime.Now,
@@ -181,6 +182,7 @@ namespace incode2.ApiController
   public class ContentDto
   {
     public int ContentId { get; set; }
+    public int? ParentContentId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
     public DateTime? CreatedAt { get; set; }
@@ -198,6 +200,7 @@ namespace incode2.ApiController
   {
     public int UserId { get; set; }
     public int? CategoryId { get; set; }
+    public int? ParentContentId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
   }
