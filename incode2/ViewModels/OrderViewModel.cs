@@ -12,5 +12,7 @@ namespace incode2.ViewModels
         public string Remark { get; set; }
 
         public string Status { get; set; }
+
+        public int OrderId { get; set; }
     }
 }
