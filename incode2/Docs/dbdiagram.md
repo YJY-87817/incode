@@ -63,24 +63,13 @@ table content_notification {
   note {"通知(有人回覆/互動)"}
 }
 
-// 前台圖片管理
+// 圖片管理
 table user_image {
   user_image_id int [pk, increment]
   user_id int [not null, ref: > user.user_id, note: '使用者id']
-  image_url nvarchar(500) [not null, note: '圖片url']
+  image_name nvarchar(500) [not null, note: '圖片名稱']
   usage_location int [not null, ref: > image_usage_location.image_usage_location_id, note: '圖片使用在哪裡: 頭像、封面、內容等']
   caption nvarchar(200) [note: '圖片說明:帥氣的狗(用在優化體驗，當圖片顯示不出來時)']
-  display_order int [default: 0, note: '顯示順序:輪播時可以調整順序']
-  created_at datetime [default: `current_timestamp`]
-}
-
-// 後台圖片管理
-table admin_image {
-  admin_image_id int [pk, increment]
-  admin_id int [not null, ref: > admin.admin_id, note: '管理者id']
-  image_url nvarchar(500) [not null, note: '圖片url']
-  usage_location int [not null, ref: > image_usage_location.image_usage_location_id, note: '圖片使用在哪裡: 頭像、封面、內容等']
-  caption nvarchar(200) [note: '圖片說明:可愛的貓(用在優化體驗，當圖片顯示不出來時)']
   display_order int [default: 0, note: '顯示順序:輪播時可以調整順序']
   created_at datetime [default: `current_timestamp`]
 }
@@ -88,7 +77,8 @@ table admin_image {
 // 圖片使用地點
 table image_usage_location {
   image_usage_location_id int [pk, increment]
-  name nvarchar(100) [not null]
+  location int [not null, note: '0:發文' ]
+  locationkey int [not null] 
   description nvarchar(200)
   note {"圖片使用在哪裡: 頭像、封面、內容等"}
 }
