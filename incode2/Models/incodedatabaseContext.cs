@@ -751,12 +751,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Account, "UQ__user__EA162E119BE2F79C").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__user__EA162E119BE2F79C").IsUnique();
 
             entity.HasIndex(e => e.Username, "UQ__user__F3DBC572AADE1F42").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.Account)
+            entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(150)
                 .IsUnicode(false)

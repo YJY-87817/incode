@@ -46,14 +46,39 @@ builder.Services.AddCors(options =>
 //  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // �B�z�`���ѷ�
 //});
 
+builder.Services.AddDistributedMemoryCache(); // 使用記憶體暫存 (正式環境建議用 Redis)
+
+
 builder.Services.AddSession(options =>
 {
-  options.Cookie.Name = ".incode2.Session";
-  options.IdleTimeout = TimeSpan.FromMinutes(5);
+  options.Cookie.Name = ".incode2.Session"; //暫存資料 像購物車
+  options.IdleTimeout = TimeSpan.FromMinutes(60);
   options.Cookie.IsEssential = true;
   options.Cookie.HttpOnly = true;
   options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
+
+builder.Services.AddAuthentication("MyCookieAuth")
+    .AddCookie("MyCookieAuth", options =>
+    {
+        options.Cookie.Name = ".ReviewPlatform.Auth"; // 身分驗證的 Cookie 名稱
+        options.ExpireTimeSpan = TimeSpan.FromDays(1); // 登入狀態可以維持 1 天
+        //options.SlidingExpiration = true;  如果有活動，自動延長過期時間
+        options.Cookie.HttpOnly = true;   // 前端 JS 讀不到，安全
+
+        // 如果未登入被攔截，回應 401 而不是跳轉頁面 (因為是前後端分離)
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = 401;
+            return Task.CompletedTask;
+        };
+        // 如果權限不足 (例如 Member 想進 Admin)，回應 403
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = 403;
+            return Task.CompletedTask;
+        };
+    });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -118,6 +143,7 @@ app.UseRouting();
 app.UseCors("VueApp");
 
 //身分驗證 => 授予權限
+app.UseAuthentication();//先驗證身分
 app.UseAuthorization();
 app.UseSession();
 

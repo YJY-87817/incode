@@ -10,9 +10,9 @@ namespace incode2.Partials
             [Required]
         public int UserId { get; set; }
 
-        [Display(Name = "帳號")]
+        [Display(Name = "Email")]
         [Required]
-        public string Account { get; set; }
+        public string Email { get; set; }
 
         [Display(Name = "暱稱")]
            

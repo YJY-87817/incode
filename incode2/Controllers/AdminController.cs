@@ -22,7 +22,7 @@ namespace incode2.Controllers
             var AdminViewModels = await _context.User.Select(u => new AdminViewModel
             {
                 UserId = u.UserId,
-                Account = u.Account,
+                Email = u.Email,
                 Username = u.Username,
                 IsActive = u.IsActive,
                
@@ -50,7 +50,7 @@ namespace incode2.Controllers
                 .Select(u => new AdminViewModel
                 {
                     UserId = u.UserId,
-                    Account = u.Account,
+                    Email = u.Email,
                     Username = u.Username,                   
                 })
                 .FirstOrDefaultAsync(); ;

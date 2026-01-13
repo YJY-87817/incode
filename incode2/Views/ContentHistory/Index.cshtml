@@ -62,7 +62,7 @@
           @Html.DisplayFor(modelItem => item.EditedAt)
         </td>
         <td>
-          @Html.DisplayFor(modelItem => item.User.Account)
+                    @Html.DisplayFor(modelItem => item.User.Email)
         </td>
         <td>
           <a asp-controller="ContentHistory" asp-action="Edit" asp-route-content_history_id="@item.ContentHistoryId">Edit</a> |
