@@ -253,7 +253,8 @@ onMounted(() => {
     <!-- 新主題發表 Modal -->
     <div
       v-if="newTopicState.show"
-      class="modal-backdrop"
+      class="custom-modal-backdrop"
+      @click.self="closeNewTopic"
       style="
         position: fixed;
         inset: 0;
@@ -741,5 +742,18 @@ onMounted(() => {
     flex: 0 0 100%;
     max-width: 100%;
   }
+}
+.custom-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+.custom-modal-backdrop .modal-dialog {
+  position: relative;
+  z-index: 1051;
 }
 </style>
