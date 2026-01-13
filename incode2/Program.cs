@@ -28,7 +28,12 @@ builder.Services.AddCors(options =>
       "http://localhost:7190",
       "http://localhost:5173",  // Vite 預設開發埠
       "http://localhost:8080",  // Vue CLI 預設開發埠
-      "http://localhost:3000"   // 其他可能的開發埠
+      "http://localhost:3000",   // 其他可能的開發埠
+      //SSL憑證
+      "https://localhost:7190",
+      "https://localhost:5173",
+      "https://localhost:8080",
+      "https://localhost:3000"
     )
     .AllowAnyMethod()
     .AllowAnyHeader()
@@ -76,6 +81,7 @@ else
   // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
   app.UseHsts();
 }
+
 
 // HTTP request pipeline configuration
 //重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定

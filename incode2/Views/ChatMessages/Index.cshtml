@@ -1,66 +1,68 @@
-﻿@{
-    ViewData["Title"] = "聊天助手";
+﻿@model IEnumerable<incode2.Models.ChatMessage>
+
+@{
+    ViewBag.Title = "後台訊息管理";
 }
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-<link rel="stylesheet" href="~/css/chat.css" />
+<h2>後台訊息管理</h2>
 
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
-<div id="app">
-    <div class="chat-widget" :class="{ 'open': isChatOpen }">
-
-        <div class="chat-header">
-            <div class="header-info">
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Avatar">
-                <span>聊天助手</span>
-            </div>
-            <button class="close-btn" v-onClick ="toggleChat">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-
-        <div class="chat-body" ref="chatBox">
-            <div v-for="(msg, index) in messages"
-                 :key="index"
-                 class="message-row"
-                 :class="msg.role">
-
-                <div v-if="msg.role === 'model'" class="avatar">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png">
-                </div>
-
-                <div class="message-bubble">
-                    {{ msg.body }}
-                </div>
-            </div>
-
-            <div v-if="isLoading" class="message-row model">
-                <div class="avatar">
-                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png">
-                </div>
-                <div class="message-bubble typing">
-                    <span>.</span><span>.</span><span>.</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="chat-footer">
-            <input type="text"
-                   v-model="userInput"
-                   v-onkeyup.enter="sendMessage"
-                   placeholder="請輸入問題..."
-                   :disabled="isLoading">
-            <button class="send-btn" v-onclick="sendMessage" :disabled="isLoading || !userInput.trim()">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-
-    <button class="chat-launcher" v-onclick="toggleChat" :class="{ 'hide': isChatOpen }">
-        <i class="fas fa-comment-dots"></i>
-    </button>
-</div>
-
-<script src="~/js/chat.js" asp-append-version="true"></script>
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>
+                對話群組 (Session)
+            </th>
+            <th>
+                角色 (Role)
+            </th>
+            <th>
+                訊息內容 (Body)
+            </th>
+            <th>
+                發送時間 (Created At)
+            </th>
+            <th>管理功能</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @(item.Session != null ? item.Session.Title : "Session #" + item.SessionId)
+                </td>
+                <td>
+                    @if (item.Role == "user")
+                    {
+                        <span class="badge bg-primary">使用者</span>
+                    }
+                    else if (item.Role == "assistant" || item.Role == "model")
+                    {
+                        <span class="badge bg-success">AI 機器人</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@item.Role</span>
+                    }
+                </td>
+                <td title="@item.Body">
+                    @if (!string.IsNullOrEmpty(item.Body) && item.Body.Length > 50)
+                    {
+                        @item.Body.Substring(0, 50) <text>...</text>
+                    }
+                    else
+                    {
+                        @item.Body
+                    }
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CreatedAt)
+                </td>
+                <td>
+                    @Html.ActionLink("刪除", "Delete", new { id = item.ChatMessageId },
+                    new { @class = "btn btn-danger btn-sm", onclick = "return confirm('確定要刪除這則訊息嗎？');" })
+            </td>
+        </tr>
+                }
+    </tbody>
+</table>

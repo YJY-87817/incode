@@ -21,7 +21,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__admin__43AA414179DE4119", x => x.admin_id);
+                    table.PrimaryKey("PK__admin__43AA4141FC110E9F", x => x.admin_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -36,7 +36,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___0FFD1C562A686356", x => x.content_category_id);
+                    table.PrimaryKey("PK__content___0FFD1C5607991151", x => x.content_category_id);
                     table.ForeignKey(
                         name: "FK__content_c__paren__1BC821DD",
                         column: x => x.parent_category_id,
@@ -55,7 +55,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__image_us__CA06DFFE0CC3174C", x => x.image_usage_location_id);
+                    table.PrimaryKey("PK__image_us__CA06DFFE62D84C77", x => x.image_usage_location_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -69,7 +69,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__interact__45DCC9966C6043B0", x => x.interaction_category_id);
+                    table.PrimaryKey("PK__interact__45DCC996EAE1ACC5", x => x.interaction_category_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -89,7 +89,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__mission__B5419AB27DA9B085", x => x.mission_id);
+                    table.PrimaryKey("PK__mission__B5419AB2B24EDB5C", x => x.mission_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -104,7 +104,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_ty__E69D541F0021BB09", x => x.point_type_definition_id);
+                    table.PrimaryKey("PK__point_ty__E69D541FBEBC7EA3", x => x.point_type_definition_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -126,7 +126,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__product__47027DF5D70EF6EF", x => x.product_id);
+                    table.PrimaryKey("PK__product__47027DF550E3C03F", x => x.product_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -147,7 +147,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__user__B9BE370FDEF54688", x => x.user_id);
+                    table.PrimaryKey("PK__user__B9BE370F791B81A2", x => x.user_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -165,7 +165,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__admin_im__66FA4961FA6BDEED", x => x.admin_image_id);
+                    table.PrimaryKey("PK__admin_im__66FA496135211D0B", x => x.admin_image_id);
                     table.ForeignKey(
                         name: "FK__admin_ima__admin__2645B050",
                         column: x => x.admin_id,
@@ -191,7 +191,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__chat_ses__B39120D4C2A75940", x => x.chat_session_id);
+                    table.PrimaryKey("PK__chat_ses__B39120D45D6C7304", x => x.chat_session_id);
                     table.ForeignKey(
                         name: "FK__chat_sess__user___3864608B",
                         column: x => x.user_id,
@@ -216,7 +216,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content__655FE5102F86F35D", x => x.content_id);
+                    table.PrimaryKey("PK__content__655FE510FC9CEA76", x => x.content_id);
                     table.ForeignKey(
                         name: "FK__content__categor__19DFD96B",
                         column: x => x.category_id,
@@ -250,7 +250,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__entrust___19471E9571A60FDE", x => x.entrust_mission_id);
+                    table.PrimaryKey("PK__entrust___19471E95D96E85DA", x => x.entrust_mission_id);
                     table.ForeignKey(
                         name: "FK__entrust_m__user___2FCF1A8A",
                         column: x => x.user_id,
@@ -268,7 +268,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__follow__710D19E6DC0C21A0", x => new { x.follower_id, x.followee_id });
+                    table.PrimaryKey("PK__follow__710D19E6F2BD132C", x => new { x.follower_id, x.followee_id });
                     table.ForeignKey(
                         name: "FK__follow__followee__29221CFB",
                         column: x => x.followee_id,
@@ -296,7 +296,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__mission___F43E603D02E022D3", x => x.mission_progress_id);
+                    table.PrimaryKey("PK__mission___F43E603D284951C6", x => x.mission_progress_id);
                     table.ForeignKey(
                         name: "FK__mission_p__missi__2EDAF651",
                         column: x => x.mission_id,
@@ -324,7 +324,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__orders__46596229017A50A0", x => x.order_id);
+                    table.PrimaryKey("PK__orders__4659622997205B2E", x => x.order_id);
                     table.ForeignKey(
                         name: "FK__orders__user_id__3493CFA7",
                         column: x => x.user_id,
@@ -349,7 +349,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_de__6DCA5DF694A4FF18", x => x.point_deposit_id);
+                    table.PrimaryKey("PK__point_de__6DCA5DF6DD31C78C", x => x.point_deposit_id);
                     table.ForeignKey(
                         name: "FK__point_dep__user___339FAB6E",
                         column: x => x.user_id,
@@ -373,7 +373,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__point_lo__E2EBFE7C29C87CAD", x => x.point_log_id);
+                    table.PrimaryKey("PK__point_lo__E2EBFE7C8C38304E", x => x.point_log_id);
                     table.ForeignKey(
                         name: "FK__point_log__point__2CF2ADDF",
                         column: x => x.point_type_definition_id,
@@ -401,7 +401,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__user_ima__A9249C9D39B49E49", x => x.user_image_id);
+                    table.PrimaryKey("PK__user_ima__A9249C9D98AC26AA", x => x.user_image_id);
                     table.ForeignKey(
                         name: "FK__user_imag__usage__25518C17",
                         column: x => x.usage_location,
@@ -442,7 +442,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__user_poi__B9BE370F93D52D68", x => x.user_id);
+                    table.PrimaryKey("PK__user_poi__B9BE370F024FE249", x => x.user_id);
                     table.ForeignKey(
                         name: "FK__user_poin__user___32AB8735",
                         column: x => x.user_id,
@@ -482,7 +482,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__chat_mes__1F897716A36FA0AF", x => x.chat_message_id);
+                    table.PrimaryKey("PK__chat_mes__1F897716445B9C4C", x => x.chat_message_id);
                     table.ForeignKey(
                         name: "FK__chat_mess__sessi__395884C4",
                         column: x => x.session_id,
@@ -505,7 +505,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___B783009414E2B78E", x => x.content_history_id);
+                    table.PrimaryKey("PK__content___B783009491927D45", x => x.content_history_id);
                     table.ForeignKey(
                         name: "FK__content_h__conte__1F98B2C1",
                         column: x => x.content_id,
@@ -531,7 +531,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___AA89BFE5F41BAD75", x => x.content_interaction_id);
+                    table.PrimaryKey("PK__content___AA89BFE545486E15", x => x.content_interaction_id);
                     table.ForeignKey(
                         name: "FK__content_i__categ__1CBC4616",
                         column: x => x.category_id,
@@ -563,7 +563,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__content___42595B28D2C3ADB7", x => x.content_notification_id);
+                    table.PrimaryKey("PK__content___42595B2826A6DFCD", x => x.content_notification_id);
                     table.ForeignKey(
                         name: "FK__content_n__categ__236943A5",
                         column: x => x.category,
@@ -596,7 +596,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__entrust___8F68D7F446631C93", x => x.entrust_mission_progress_id);
+                    table.PrimaryKey("PK__entrust___8F68D7F41ED6B983", x => x.entrust_mission_progress_id);
                     table.ForeignKey(
                         name: "FK__entrust_m__entru__31B762FC",
                         column: x => x.entrust_mission_id,
@@ -623,7 +623,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__orderdet__59AE7411BF74A464", x => x.orderdetail_id);
+                    table.PrimaryKey("PK__orderdet__59AE7411F13E165C", x => x.orderdetail_id);
                     table.ForeignKey(
                         name: "FK__orderdeta__order__3587F3E0",
                         column: x => x.order_id,
@@ -654,7 +654,7 @@ namespace incode2.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK__shipped___26C93C93C8E17EC4", x => x.shipped_detail_id);
+                    table.PrimaryKey("PK__shipped___26C93C93E78978E1", x => x.shipped_detail_id);
                     table.ForeignKey(
                         name: "FK__shipped_d__order__37703C52",
                         column: x => x.orderdetail_id,
@@ -793,7 +793,7 @@ namespace incode2.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "UQ__point_de__465C81B8B1493DFE",
+                name: "UQ__point_de__465C81B83C99628E",
                 table: "point_deposits",
                 column: "order_no",
                 unique: true);
@@ -809,7 +809,7 @@ namespace incode2.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "UQ__point_ty__543C4FD93F5DDD9A",
+                name: "UQ__point_ty__543C4FD91CFA668C",
                 table: "point_type_definition",
                 column: "type_name",
                 unique: true);
@@ -820,13 +820,13 @@ namespace incode2.Migrations
                 column: "orderdetail_id");
 
             migrationBuilder.CreateIndex(
-                name: "UQ__user__EA162E11BE758572",
+                name: "UQ__user__EA162E119BE2F79C",
                 table: "user",
                 column: "account",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "UQ__user__F3DBC572A64B840E",
+                name: "UQ__user__F3DBC572AADE1F42",
                 table: "user",
                 column: "username",
                 unique: true);

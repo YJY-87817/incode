@@ -28,12 +28,12 @@ namespace incode2.Controllers
     public async Task<IActionResult> Index()
     {
       ViewBag.Fuen = "這是從HomeController用ViewBag.Fuen傳過來的"; //傳資料到view用
-      Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId ==1);
+      Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId == 1);
       ViewBag.content = c;
       ViewBag.user = new SelectList(_context.Content.Select(x => x.Body).Distinct());
       //ViewBag.JS = $"alert('貼文總數:{_context.Content.Count()}篇')";
       HttpContext.Session.SetString("Session鍵", "Session");
-
+      
       //Index裡面做寫入
       MemoryCacheEntryOptions cacheOptions = new MemoryCacheEntryOptions();
       cacheOptions.SetSlidingExpiration(TimeSpan.FromDays(1));

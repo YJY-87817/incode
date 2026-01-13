@@ -38,7 +38,7 @@ namespace incode2.Migrations
                         .HasColumnName("type");
 
                     b.HasKey("AdminId")
-                        .HasName("PK__admin__43AA414179DE4119");
+                        .HasName("PK__admin__43AA4141FC110E9F");
 
                     b.ToTable("admin", (string)null);
                 });
@@ -84,7 +84,7 @@ namespace incode2.Migrations
                         .HasColumnName("usage_location");
 
                     b.HasKey("AdminImageId")
-                        .HasName("PK__admin_im__66FA4961FA6BDEED");
+                        .HasName("PK__admin_im__66FA496135211D0B");
 
                     b.HasIndex("AdminId");
 
@@ -125,7 +125,7 @@ namespace incode2.Migrations
                         .HasColumnName("session_id");
 
                     b.HasKey("ChatMessageId")
-                        .HasName("PK__chat_mes__1F897716A36FA0AF");
+                        .HasName("PK__chat_mes__1F897716445B9C4C");
 
                     b.HasIndex("SessionId");
 
@@ -164,7 +164,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ChatSessionId")
-                        .HasName("PK__chat_ses__B39120D4C2A75940");
+                        .HasName("PK__chat_ses__B39120D45D6C7304");
 
                     b.HasIndex("UserId");
 
@@ -220,7 +220,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentId")
-                        .HasName("PK__content__655FE5102F86F35D");
+                        .HasName("PK__content__655FE510FC9CEA76");
 
                     b.HasIndex("CategoryId");
 
@@ -256,7 +256,7 @@ namespace incode2.Migrations
                         .HasColumnName("parent_category_id");
 
                     b.HasKey("ContentCategoryId")
-                        .HasName("PK__content___0FFD1C562A686356");
+                        .HasName("PK__content___0FFD1C5607991151");
 
                     b.HasIndex("ParentCategoryId");
 
@@ -301,7 +301,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentHistoryId")
-                        .HasName("PK__content___B783009414E2B78E");
+                        .HasName("PK__content___B783009491927D45");
 
                     b.HasIndex("ContentId");
 
@@ -338,7 +338,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentInteractionId")
-                        .HasName("PK__content___AA89BFE5F41BAD75");
+                        .HasName("PK__content___AA89BFE545486E15");
 
                     b.HasIndex("CategoryId");
 
@@ -381,7 +381,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("ContentNotificationId")
-                        .HasName("PK__content___42595B28D2C3ADB7");
+                        .HasName("PK__content___42595B2826A6DFCD");
 
                     b.HasIndex("Category");
 
@@ -442,7 +442,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("EntrustMissionId")
-                        .HasName("PK__entrust___19471E9571A60FDE");
+                        .HasName("PK__entrust___19471E95D96E85DA");
 
                     b.HasIndex("UserId");
 
@@ -488,7 +488,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("EntrustMissionProgressId")
-                        .HasName("PK__entrust___8F68D7F446631C93");
+                        .HasName("PK__entrust___8F68D7F41ED6B983");
 
                     b.HasIndex("EntrustMissionId");
 
@@ -514,7 +514,7 @@ namespace incode2.Migrations
                         .HasDefaultValueSql("(getdate())");
 
                     b.HasKey("FollowerId", "FolloweeId")
-                        .HasName("PK__follow__710D19E6DC0C21A0");
+                        .HasName("PK__follow__710D19E6F2BD132C");
 
                     b.HasIndex("FolloweeId");
 
@@ -542,7 +542,7 @@ namespace incode2.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("ImageUsageLocationId")
-                        .HasName("PK__image_us__CA06DFFE0CC3174C");
+                        .HasName("PK__image_us__CA06DFFE62D84C77");
 
                     b.ToTable("image_usage_location", (string)null);
                 });
@@ -568,7 +568,7 @@ namespace incode2.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("InteractionCategoryId")
-                        .HasName("PK__interact__45DCC9966C6043B0");
+                        .HasName("PK__interact__45DCC996EAE1ACC5");
 
                     b.ToTable("interaction_category", (string)null);
                 });
@@ -629,7 +629,7 @@ namespace incode2.Migrations
                         .HasColumnName("target_type");
 
                     b.HasKey("MissionId")
-                        .HasName("PK__mission__B5419AB27DA9B085");
+                        .HasName("PK__mission__B5419AB2B24EDB5C");
 
                     b.ToTable("mission", (string)null);
                 });
@@ -670,7 +670,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("MissionProgressId")
-                        .HasName("PK__mission___F43E603D02E022D3");
+                        .HasName("PK__mission___F43E603D284951C6");
 
                     b.HasIndex("MissionId");
 
@@ -709,7 +709,7 @@ namespace incode2.Migrations
                         .HasColumnName("unit_point_at_purchase");
 
                     b.HasKey("OrderdetailId")
-                        .HasName("PK__orderdet__59AE7411BF74A464");
+                        .HasName("PK__orderdet__59AE7411F13E165C");
 
                     b.HasIndex("OrderId");
 
@@ -757,7 +757,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("OrderId")
-                        .HasName("PK__orders__46596229017A50A0");
+                        .HasName("PK__orders__4659622997205B2E");
 
                     b.HasIndex("UserId");
 
@@ -819,11 +819,11 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("PointDepositId")
-                        .HasName("PK__point_de__6DCA5DF694A4FF18");
+                        .HasName("PK__point_de__6DCA5DF6DD31C78C");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "OrderNo" }, "UQ__point_de__465C81B8B1493DFE")
+                    b.HasIndex(new[] { "OrderNo" }, "UQ__point_de__465C81B83C99628E")
                         .IsUnique();
 
                     b.ToTable("point_deposits", (string)null);
@@ -871,7 +871,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("PointLogId")
-                        .HasName("PK__point_lo__E2EBFE7C29C87CAD");
+                        .HasName("PK__point_lo__E2EBFE7C8C38304E");
 
                     b.HasIndex("PointTypeDefinitionId");
 
@@ -907,9 +907,9 @@ namespace incode2.Migrations
                         .HasColumnName("type_name");
 
                     b.HasKey("PointTypeDefinitionId")
-                        .HasName("PK__point_ty__E69D541F0021BB09");
+                        .HasName("PK__point_ty__E69D541FBEBC7EA3");
 
-                    b.HasIndex(new[] { "TypeName" }, "UQ__point_ty__543C4FD93F5DDD9A")
+                    b.HasIndex(new[] { "TypeName" }, "UQ__point_ty__543C4FD91CFA668C")
                         .IsUnique();
 
                     b.ToTable("point_type_definition", (string)null);
@@ -976,7 +976,7 @@ namespace incode2.Migrations
                         .HasDefaultValueSql("(getdate())");
 
                     b.HasKey("ProductId")
-                        .HasName("PK__product__47027DF5D70EF6EF");
+                        .HasName("PK__product__47027DF550E3C03F");
 
                     b.ToTable("product", (string)null);
                 });
@@ -1034,7 +1034,7 @@ namespace incode2.Migrations
                         .HasColumnName("shipped_date");
 
                     b.HasKey("ShippedDetailId")
-                        .HasName("PK__shipped___26C93C93C8E17EC4");
+                        .HasName("PK__shipped___26C93C93E78978E1");
 
                     b.HasIndex("OrderdetailId");
 
@@ -1103,12 +1103,12 @@ namespace incode2.Migrations
                         .HasColumnName("username");
 
                     b.HasKey("UserId")
-                        .HasName("PK__user__B9BE370FDEF54688");
+                        .HasName("PK__user__B9BE370F791B81A2");
 
-                    b.HasIndex(new[] { "Account" }, "UQ__user__EA162E11BE758572")
+                    b.HasIndex(new[] { "Account" }, "UQ__user__EA162E119BE2F79C")
                         .IsUnique();
 
-                    b.HasIndex(new[] { "Username" }, "UQ__user__F3DBC572A64B840E")
+                    b.HasIndex(new[] { "Username" }, "UQ__user__F3DBC572AADE1F42")
                         .IsUnique();
 
                     b.ToTable("user", (string)null);
@@ -1155,7 +1155,7 @@ namespace incode2.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("UserImageId")
-                        .HasName("PK__user_ima__A9249C9D39B49E49");
+                        .HasName("PK__user_ima__A9249C9D98AC26AA");
 
                     b.HasIndex("UsageLocation");
 
@@ -1207,7 +1207,7 @@ namespace incode2.Migrations
                         .HasDefaultValueSql("(getdate())");
 
                     b.HasKey("UserId")
-                        .HasName("PK__user_poi__B9BE370F93D52D68");
+                        .HasName("PK__user_poi__B9BE370F024FE249");
 
                     b.ToTable("user_point_wallet", (string)null);
                 });
