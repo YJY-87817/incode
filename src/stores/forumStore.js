@@ -8,7 +8,15 @@ export const useForumStore = defineStore('forum', {
   actions: {
     toggleNewTopicModal(value) {
       this.showNewTopicModal = value
+    },
+    triggerTopicRefresh() {
+      // 觸發主題刷新旗標
+      this.lastRefreshTime = Date.now()
     }
   },
+  state: () => ({
+    showNewTopicModal: false,
+    lastRefreshTime: 0  // 新增刷新時間戳記狀態
+  }),
   persist: true
 })

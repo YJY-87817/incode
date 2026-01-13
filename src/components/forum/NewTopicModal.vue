@@ -37,7 +37,7 @@ const submitNewTopic = () => {
     .post("/ContentApi", dto)
     .then(() => {
       alert("發表成功");
-      forumStore.handleTopicSubmitted();
+      forumStore.triggerTopicRefresh();
       closeNewTopic();
     })
     .catch((error) => {

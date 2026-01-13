@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, computed } from "vue";
+import { reactive, onMounted, computed, watch } from "vue";
 import axios from "axios";
 import { useForumStore } from "@/stores/forumStore";
 
@@ -185,6 +185,14 @@ onMounted(() => {
   fetchCategories();
   fetchTopics();
 });
+
+// 監聽主題刷新時間變更
+watch(
+  () => forumStore.lastRefreshTime,
+  () => {
+    fetchTopics(forumState.selectedCategory, forumState.pagination.currentPage);
+  }
+);
 </script>
 
 <template>
