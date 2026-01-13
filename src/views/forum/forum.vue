@@ -227,12 +227,12 @@ watch(
         <!-- 分類列表（已縮小按鈕） -->
         <div class="card shadow-sm mb-4">
           <div
-            class="card-header bg-white d-flex justify-content-between align-items-center"
+            class="card-header bg-white d-flex justify-content-between align-items-center py-3"
           >
             <h5 class="mb-0">📁 討論分類</h5>
             <small class="text-muted">點擊分類篩選主題</small>
           </div>
-          <div class="card-body">
+          <div class="p-3">
             <div
               v-if="forumState.isLoading && forumState.categories.length === 0"
               class="text-center py-3"
@@ -245,15 +245,19 @@ watch(
               </div>
             </div>
 
-            <div v-else class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-1">
+            <div
+              v-else
+              class="d-flex flex-wrap align-content-start p-0"
+              style="max-height: 400px"
+            >
               <div
                 v-for="category in forumState.categories"
                 :key="category.id"
-                class="col"
+                class="m-1"
               >
                 <!-- 這裡有問題 -->
                 <div
-                  class="category-card p-1 border rounded cursor-pointer justify-content-between"
+                  class="category-card p-0 border rounded cursor-pointer"
                   :class="{
                     'bg-info text-white':
                       forumState.selectedCategory === category.id,
@@ -263,10 +267,10 @@ watch(
                   :title="category.description"
                 >
                   <div class="d-flex justify-content-between align-items-start">
-                    <h6 class="mb-0 small fw-bold">{{ category.name }}</h6>
+                    <h6 class="mb-0 fw-bold">{{ category.name }}</h6>
                   </div>
                   <div
-                    class="d-flex small mt-1 align-items-start"
+                    class="category-tags mt-1"
                     :class="{
                       'text-white-50':
                         forumState.selectedCategory === category.id,
