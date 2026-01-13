@@ -72,13 +72,13 @@ namespace incode2.ApiController
 
     // GET: api/Content/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<ContentDetailDto>> GetContent(int id)
+    public async Task<ActionResult<ContentDto>> GetContent(int id)
     {
       var content = await _context.Content
           .Include(c => c.User)
           .Include(c => c.Category)
           .Where(c => c.ContentId == id && c.Ishidden == false)
-          .Select(c => new ContentDetailDto
+          .Select(c => new ContentDto
           {
             ContentId = c.ContentId,
             ParentContentId = c.ParentContentId,
@@ -183,24 +183,22 @@ namespace incode2.ApiController
   {
     public int ContentId { get; set; }
     public int? ParentContentId { get; set; }
+    public int UserId { get; set; }
+    public string CategoryName { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
     public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public bool? Ishidden { get; set; }
     public string Username { get; set; }
-    public string CategoryName { get; set; }
   }
 
-  public class ContentDetailDto : ContentDto
-  {
-    public DateTime? UpdatedAt { get; set; }
-    public int UserId { get; set; }
-  }
 
   public class CreateContentDto
   {
-    public int UserId { get; set; }
-    public int? CategoryId { get; set; }
     public int? ParentContentId { get; set; }
+    public int? CategoryId { get; set; }
+    public int UserId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
   }
