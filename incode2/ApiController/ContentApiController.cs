@@ -183,21 +183,21 @@ namespace incode2.ApiController
     public int ContentId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
     public string Username { get; set; }
     public string CategoryName { get; set; }
   }
 
   public class ContentDetailDto : ContentDto
   {
-    public DateTime UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public int UserId { get; set; }
   }
 
   public class CreateContentDto
   {
     public int UserId { get; set; }
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
   }
