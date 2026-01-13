@@ -32,7 +32,7 @@
                     <td>@Html.DisplayFor(modelItem => item.Status)</td>
                     <td>@Html.DisplayFor(modelItem => item.CanceledAt)</td>
                     <td>
-                        <a class="btn btn-primary" >詳細/修改</a>
+                        <a class="btn btn-primary" asp-controller="Order" asp-action="Edit" asp-route-OrderId="@item.OrderId">詳細/修改</a>
                     </td>
                 </tr>
             }
