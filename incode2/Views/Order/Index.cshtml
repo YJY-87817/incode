@@ -3,39 +3,86 @@
 @{
     ViewData["Title"] = "訂單管理";
 }
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center">
+            <h4 class="mb-0">訂單管理</h4>
+            <div class="ms-auto">
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fa fa-plus me-2" aria-hidden="true"></i> 新增訂單
+                </a>
+            </div>
+        </div>
 
-<h2>訂單管理</h2>
-<a asp-action="Create" class="btn btn-success mb-2">新增訂單</a>
-<div class="table-responsive">
-    <table class="table table-bordered" width="100%">
-        <thead>
-            <tr>
-                <th>訂單ID</th>
-                <th>會員ID</th>
-                <th>總點數</th>
-                <th>訂單時間</th>
-                <th>備註</th>
-                <th>訂單狀態</th>
-                <th>取消時間</th>
-                <th>詳細</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@Html.DisplayFor(modelItem => item.OrderId)</td>
-                    <td>@Html.DisplayFor(modelItem => item.UserId)</td>
-                    <td>@Html.DisplayFor(modelItem => item.TotalPoint)</td>
-                    <td>@Html.DisplayFor(modelItem => item.OrderDate)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Remark)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Status)</td>
-                    <td>@Html.DisplayFor(modelItem => item.CanceledAt)</td>
-                    <td>
-                        <a class="btn btn-primary" asp-controller="Order" asp-action="Edit" asp-route-OrderId="@item.OrderId">詳細/修改</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        <div class="card-body">
+            <div class="mb-3 row">
+                <div class="col-md-4">
+                    <input id="orderSearch" class="form-control" placeholder="搜尋訂單ID、會員ID或狀態..." />
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th style="width:90px">訂單ID</th>
+                            <th style="width:110px">會員ID</th>
+                            <th style="width:110px">總點數</th>
+                            <th style="width:170px">訂單時間</th>
+                            <th>備註</th>
+                            <th style="width:120px">狀態</th>
+                            <th style="width:170px">取消時間</th>
+                            <th style="width:120px">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.OrderId)</td>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.UserId)</td>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.TotalPoint)</td>
+                                <td class="text-center">@item.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@Html.DisplayFor(modelItem => item.Remark)</td>
+                                <td class="text-center">
+                                    @if (!string.IsNullOrEmpty(item.Status))
+                                    {
+                                        <span class="badge @(item.Status == "完成" ? "bg-success" : item.Status == "取消" ? "bg-danger" : "bg-secondary")">
+                                            @item.Status
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center">@(item.CanceledAt?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-primary" asp-controller="Order" asp-action="Edit" asp-route-OrderId="@item.OrderId">詳細/修改</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer text-muted">
+            共 @Model.Count() 筆訂單
+        </div>
+    </div>
 </div>
+
+@section Scripts
+{
+    <script>
+        // 簡單前端搜尋（客戶端 filter）
+        document.getElementById('orderSearch')?.addEventListener('input', function (e) {
+            var q = e.target.value.toLowerCase();
+            document.querySelectorAll('table tbody tr').forEach(function (tr) {
+                var orderId = (tr.children[0]?.innerText || '').toLowerCase();
+                var userId = (tr.children[1]?.innerText || '').toLowerCase();
+                var status = (tr.children[5]?.innerText || '').toLowerCase();
+                tr.style.display = (orderId.indexOf(q) !== -1 || userId.indexOf(q) !== -1 || status.indexOf(q) !== -1) ? '' : 'none';
+            });
+        });
+    </script>
+}
