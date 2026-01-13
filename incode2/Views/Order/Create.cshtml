@@ -63,8 +63,10 @@
                         </select>
                     </td>
                     <td><input type="number" class="form-control" name="orderdetails[0].Quantity" min="1" value="1" onchange="quantity(this)" /></td>
-                    <td><input type="number" class="form-control" name="orderdetails[0].UnitPointAtPurchase" min="1" value="1" readonly /></td>
-                    <td><input type="number" class="form-control" min="1" value="1" readonly /></td>
+                    @* 點數 *@
+                    <td><input type="number" class="form-control" name="orderdetails[0].UnitPointAtPurchase" min="1" value="1" readonly /></td> 
+                    @* 總點數 *@
+                    <td><input type="number" class="form-control countpoint" min="1" value="1" readonly /></td>
                     <td>
                         <input type="hidden" name="orderdetails[0].RequiresShipping" value="false" />
                         <input type="checkbox" class="form-check-input" name="orderdetails[0].RequiresShipping" value="true" />
@@ -98,9 +100,11 @@
                     }
                  </select>
             </td>
-            <td><input type="number" class="form-control" name="orderdetails[${index}].Quantity" min="1" value="1" /></td>
+            <td><input type="number" class="form-control" name="orderdetails[${index}].Quantity" min="1" value="1" onchange="quantity(this)" /></td>
+            @* 點數 *@
             <td><input type="number" class="form-control" name="orderdetails[${index}].UnitPointAtPurchase" min="1" value="1" readonly /></td>
-            <td><input type="number" class="form-control" min="1" value="1" readonly/></td>
+            @* 總點數 *@
+                 <td><input type="number" class="form-control countpoint" min="1" value="1" readonly/></td>
             <td>
                 <input type="hidden" name="orderdetails[0].RequiresShipping" value="false" />
                 <input type="checkbox" class="form-check-input" name="orderdetails[${index}].RequiresShipping" value="true" />
@@ -128,13 +132,14 @@
     function PointChange(select) {
          // 取得選中 option 的 data-point 屬性
          var point = $(select).find(':selected').data('point');
-
          // 找到同一列的單價輸入框並賦值
-              $(select).closest('tr').find('input[name*="UnitPointAtPurchase"]').val(point);
+         $(select).closest('tr').find('input[name*="UnitPointAtPurchase"]').val(point);
+         $(select).closest('tr').find('input[class*="countpoint"]').val(point);
     }
 
     function quantity(count) {
-        
+        var p = $(count).val();
+        console.log(p);
     }
 </script>
 }
