@@ -1,7 +1,8 @@
 ﻿// Controllers/ContentController.cs
-using Microsoft.AspNetCore.Mvc;
-using incode2.Models;
 using incode2.Data;
+using incode2.Models;
+using Microsoft.AspNetCore.Mvc;
+using incode2.Dtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.ApiController
@@ -10,7 +11,6 @@ namespace incode2.ApiController
   [Route("api/[controller]")]
   public class ContentApiController : ControllerBase
   {
-
     private readonly incodedatabaseContext _context;
 
     public ContentApiController(incodedatabaseContext context)
@@ -182,36 +182,5 @@ namespace incode2.ApiController
 
       return Ok(new { message = "刪除成功" });
     }
-  }
-
-  // DTOs
-  public class ContentDto
-  {
-    public int ContentId { get; set; }
-    public int? ParentContentId { get; set; }
-    public int UserId { get; set; }
-    public string CategoryName { get; set; }
-    public string Title { get; set; }
-    public string Body { get; set; }
-    public DateTime? CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public bool? Ishidden { get; set; }
-    public string Username { get; set; }
-  }
-
-
-  public class CreateContentDto
-  {
-    public int? ParentContentId { get; set; }
-    public int? CategoryId { get; set; }
-    public int UserId { get; set; }
-    public string Title { get; set; }
-    public string Body { get; set; }
-  }
-
-  public class UpdateContentDto
-  {
-    public string Title { get; set; }
-    public string Body { get; set; }
   }
 }
