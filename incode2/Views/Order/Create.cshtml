@@ -7,6 +7,10 @@
 
 <div class="col-8">
     <form asp-action="Create" method="post" enctype="multipart/form-data">
+        
+        <div class="d-grid gap-2 mt-4">
+            <button id="BtnCreate" type="submit" class="btn btn-primary">新增訂單</button>
+        </div>
 
         <div class="row">
             <div class="col-md-4 mb-3">
@@ -15,7 +19,7 @@
             </div>
             <div class="col-md-4 mb-3">
                 <label asp-for="TotalPoint" class="form-label fw-bold">總點數:</label>
-                <input asp-for="TotalPoint" type="number" class="form-control" min="0">
+                <input asp-for="TotalPoint" type="number" class="form-control" min="0" readonly>
             </div>
             <div class="col-md-4 mb-3">
                 <label asp-for="Status" class="form-label fw-bold">訂單狀態:</label>
@@ -33,9 +37,6 @@
             <textarea asp-for="Remark" class="form-control" rows="3"></textarea>
         </div>
 
-        <div class="d-grid gap-2 mt-4">
-            <button id="BtnCreate" type="submit" class="btn btn-primary">新增訂單</button>
-        </div>
 
         <table class="table table-bordered mt-4" width="100%">
             <thead>
@@ -129,17 +130,46 @@
     });
     }
 
+    
+    function updateRowTotal($row) {
+        // 取出單價與數量，計算總點數並更新該列與總計
+        var unit = parseFloat($row.find('input[name*=".UnitPointAtPurchase"]').val()) || 0;
+        var qty = parseFloat($row.find('input[name*=".Quantity"]').val()) || 0;
+        var total = unit * qty;
+        $row.find('input.countpoint').val(total);
+        updateTotalPoint();
+    }
+
     function PointChange(select) {
          // 取得選中 option 的 data-point 屬性
-         var point = $(select).find(':selected').data('point');
+         var point = parseFloat($(select).find(':selected').data('point')) || 0;
+         var $row = $(select).closest('tr');
          // 找到同一列的單價輸入框並賦值
-         $(select).closest('tr').find('input[name*="UnitPointAtPurchase"]').val(point);
-         $(select).closest('tr').find('input[class*="countpoint"]').val(point);
+         $row.find('input[name*="UnitPointAtPurchase"]').val(point);
+         // 計算並更新該列總點數
+         updateRowTotal($row);
     }
 
     function quantity(count) {
-        var p = $(count).val();
-        console.log(p);
+        var $row = $(count).closest('tr');
+        // 數量改變時重新計算該列總點數
+        updateRowTotal($row);
     }
+
+    function updateTotalPoint() {
+        var sum = 0;
+        $('#shoppingList').find('input.countpoint').each(function() {
+            sum += parseFloat($(this).val()) || 0;
+        });
+        // 更新表單上的 TotalPoint 欄位（name 為 TotalPoint）
+        $('input[name="TotalPoint"]').val(sum);
+    }
+
+    // 初始化：在頁面載入時計算一次（若你希望）
+    $(function() {
+        $('#shoppingList tr').each(function() {
+            updateRowTotal($(this));
+        });
+    });
 </script>
 }
