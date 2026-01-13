@@ -274,35 +274,43 @@ onMounted(() => {
           padding: 1rem;
         "
       >
-        <div
-          class="modal-header d-flex justify-content-between align-items-center mb-3"
-        >
-          <h5 class="modal-title mb-0">發表新主題</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="closeNewTopic"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">標題</label>
-            <input v-model="newTopicState.title" class="form-control" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">內容</label>
-            <textarea
-              v-model="newTopicState.body"
-              class="form-control"
-              rows="4"
-            ></textarea>
-          </div>
-        </div>
-        <div class="modal-footer d-flex justify-content-end">
-          <button class="btn btn-secondary me-2" @click="closeNewTopic">
-            取消
-          </button>
-          <button class="btn btn-primary" @click="submitNewTopic">發表</button>
+        <div class="modal-content">
+          <form @submit.prevent="submitNewTopic">
+            <div
+              class="modal-header d-flex justify-content-between align-items-center mb-3"
+            >
+              <h5 class="modal-title mb-0">發表新主題</h5>
+              <button
+                type="button"
+                class="btn-close"
+                @click="closeNewTopic"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">標題</label>
+                <input
+                  v-model="newTopicState.title"
+                  class="form-control"
+                  autofocus
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">內容</label>
+                <textarea
+                  v-model="newTopicState.body"
+                  class="form-control"
+                  rows="4"
+                ></textarea>
+              </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-end">
+              <button class="btn btn-secondary me-2" @click="closeNewTopic">
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary">發表</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -750,10 +758,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
+  z-index: 2000;
 }
 .custom-modal-backdrop .modal-dialog {
   position: relative;
-  z-index: 1051;
+  z-index: 2100;
+  pointer-events: auto;
 }
 </style>
