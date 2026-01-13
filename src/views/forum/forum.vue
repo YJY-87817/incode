@@ -4,6 +4,7 @@ import axios from "axios";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import NewTopicModal from "@/components/forum/NewTopicModal.vue";
 
 // 後端 API 基底網址
 const apiBaseUrl = "https://localhost:7190/api"; // 改成你的後端
@@ -31,13 +32,9 @@ const forumState = reactive({
   },
 });
 
-// 新主題狀態
+// 新主題狀態（只保留 show 狀態）
 const newTopicState = reactive({
   show: false,
-  title: "",
-  body: "",
-  // 若需要預設分類，可在此加入 categoryId
-  // categoryId: null,
 });
 
 // 取得分類列表
@@ -187,37 +184,15 @@ const openNewTopic = () => {
   newTopicState.body = "";
 };
 
+// 提交後刷新主題列表
+const handleTopicSubmitted = () => {
+  closeNewTopic();
+  fetchTopics();
+};
+
 // 關閉新主題 Modal
 const closeNewTopic = () => {
   newTopicState.show = false;
-};
-
-// 提交新主題
-const submitNewTopic = () => {
-  if (!newTopicState.title || !newTopicState.body) {
-    alert("請填寫標題與內容");
-    return;
-  }
-
-  const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: forumState.selectedCategory,
-    ParentContentId: null,
-    Title: newTopicState.title,
-    Body: newTopicState.body,
-  };
-
-  apiClient
-    .post("/ContentApi", dto)
-    .then(() => {
-      alert("發表成功");
-      closeNewTopic();
-      fetchTopics();
-    })
-    .catch((error) => {
-      console.error("發表失敗:", error);
-      alert("發表失敗，請稍後再試");
-    });
 };
 
 // 初始化
@@ -250,70 +225,13 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 新主題發表 Modal -->
-    <div
-      v-if="newTopicState.show"
-      class="custom-modal-backdrop"
-      @click.self="closeNewTopic"
-      style="
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      "
-    >
-      <div
-        class="modal-dialog"
-        style="
-          background: white;
-          border-radius: 0.3rem;
-          max-width: 500px;
-          width: 100%;
-          padding: 1rem;
-        "
-      >
-        <div class="modal-content">
-          <form @submit.prevent="submitNewTopic">
-            <div
-              class="modal-header d-flex justify-content-between align-items-center mb-3"
-            >
-              <h5 class="modal-title mb-0">發表新主題</h5>
-              <button
-                type="button"
-                class="btn-close"
-                @click="closeNewTopic"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">標題</label>
-                <input
-                  v-model="newTopicState.title"
-                  class="form-control"
-                  autofocus
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">內容</label>
-                <textarea
-                  v-model="newTopicState.body"
-                  class="form-control"
-                  rows="4"
-                ></textarea>
-              </div>
-            </div>
-            <div class="modal-footer d-flex justify-content-end">
-              <button class="btn btn-secondary me-2" @click="closeNewTopic">
-                取消
-              </button>
-              <button type="submit" class="btn btn-primary">發表</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+    <!-- 新主題發表 Modal 組件 -->
+    <NewTopicModal
+      :show="newTopicState.show"
+      :selectedCategory="forumState.selectedCategory"
+      @close="closeNewTopic"
+      @submitted="handleTopicSubmitted"
+    />
 
     <div class="row">
       <!-- 主要內容區 -->
@@ -750,19 +668,5 @@ onMounted(() => {
     flex: 0 0 100%;
     max-width: 100%;
   }
-}
-.custom-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-.custom-modal-backdrop .modal-dialog {
-  position: relative;
-  z-index: 2100;
-  pointer-events: auto;
 }
 </style>
