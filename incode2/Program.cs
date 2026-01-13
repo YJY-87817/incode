@@ -1,4 +1,5 @@
 using incode2.Data;
+using incode2.Services;
 using incode2.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,9 @@ builder.Services.AddCors(options =>
 //  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // 保持原始命名
 //  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // 處理循環參照
 //});
+
+// 註冊 GeminiService，並自動注入已設定好的 HttpClient
+builder.Services.AddHttpClient<GeminiService>();
 
 builder.Services.AddSession(options =>
 {
