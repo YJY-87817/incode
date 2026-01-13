@@ -99,7 +99,10 @@ namespace incode2.ApiController
       return Ok(content);
     }
 
-    // POST: api/Content
+    // POST: api/ContentApi
+    // https://localhost:7190/api/ContentApi
+
+    //新增文章
     [HttpPost]
     public async Task<ActionResult<Content>> CreateContent([FromBody] CreateContentDto dto)
     {
@@ -156,7 +159,10 @@ namespace incode2.ApiController
 
       await _context.SaveChangesAsync();
 
-      return Ok(new { message = "更新成功", content });
+      return Ok(new UpdateContentDto {
+        Title = content.Title, 
+        Body = content.Body
+      });
     }
 
     // DELETE: api/Content/5 (軟刪除)
