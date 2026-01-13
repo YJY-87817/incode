@@ -24,169 +24,169 @@ import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressB
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
 import Mission from "../views/task/Mission.vue";
+import Mytask from "../views/task/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
 import PointLog2 from "../views/point/PointLog2.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes:
-    [
-      {
-        path: "/",
-        name: "presentation",
-        component: PresentationView,
-      },
-      {
-        path: "/pages/landing-pages/about-us",
-        name: "about",
-        component: AboutView,
-      },
-      {
-        path: "/pages/landing-pages/contact-us",
-        name: "contactus",
-        component: ContactView,
-      },
-      {
-        path: "/pages/landing-pages/author",
-        name: "author",
-        component: AuthorView,
-      },
-      {
-        path: "/pages/landing-pages/basic",
-        name: "signin-basic",
-        component: SignInBasicView,
-      },
-      {
-        path: "/sections/page-sections/page-headers",
-        name: "page-headers",
-        component: PageHeaders,
-      },
-      {
-        path: "/sections/page-sections/features",
-        name: "page-features",
-        component: PageFeatures,
-      },
-      {
-        path: "/sections/navigation/navbars",
-        name: "navigation-navbars",
-        component: NavigationNavbars,
-      },
-      {
-        path: "/sections/navigation/nav-tabs",
-        name: "navigation-navtabs",
-        component: NavigationNavTabs,
-      },
-      {
-        path: "/sections/navigation/pagination",
-        name: "navigation-pagination",
-        component: NavigationPagination,
-      },
-      {
-        path: "/sections/input-areas/inputs",
-        name: "inputareas-inputs",
-        component: InputAreasInputs,
-      },
-      {
-        path: "/sections/input-areas/forms",
-        name: "inputareas-forms",
-        component: InputAreasForms,
-      },
-      {
-        path: "/sections/attention-catchers/alerts",
-        name: "ac-alerts",
-        component: ACAlerts,
-      },
-      {
-        path: "/sections/attention-catchers/modals",
-        name: "ac-modals",
-        component: ACModals,
-      },
-      {
-        path: "/sections/attention-catchers/tooltips-popovers",
-        name: "ac-tooltips-popovers",
-        component: ACTooltipsPopovers,
-      },
-      {
-        path: "/sections/elements/avatars",
-        name: "el-avatars",
-        component: ElAvatars,
-      },
-      {
-        path: "/sections/elements/badges",
-        name: "el-badges",
-        component: ElBadges,
-      },
-      {
-        path: "/sections/elements/breadcrumbs",
-        name: "el-breadcrumbs",
-        component: ElBreadcrumbs,
-      },
-      {
-        path: "/sections/elements/buttons",
-        name: "el-buttons",
-        component: ElButtons,
-      },
-      {
-        path: "/sections/elements/button-groups",
-        name: "el-button-groups",
-        component: ElButtonGroups,
-      },
-      {
-        path: "/sections/elements/dropdowns",
-        name: "el-dropdowns",
-        component: ElDropdowns,
-      },
-      {
-        path: "/sections/elements/progress-bars",
-        name: "el-progress-bars",
-        component: ElProgressBars,
-      },
-      {
-        path: "/sections/elements/toggles",
-        name: "el-toggles",
-        component: ElToggles,
-      },
-      {
-        path: "/sections/elements/typography",
-        name: "el-typography",
-        component: ElTypography,
-      },
-      {
-        path: "/forum",
-        name: "forum",
-        component: () => import('../views/forum.vue'),
-      },
-      {
-        path: "/PointShop",
-        name: "PointShop",
-        component: () => import('../views/PointShop.vue'),
-      },
-      {
-        path: "/point-log",
-        name: "point-log",
-        component: PointLog, //views的檔案 點數紀錄
-      },
-      {
-        path: "/point-log2",
-        name: "point-log2",
-        component: PointLog2, //views的檔案 點數紀錄
-      },
-      {
-        path: "/mission",
-        name: "mission",
-        component: Mission, //views的檔案 任務
-      },
-      {
-        path: "/recharge",
-        name: "recharge",
-        component: Recharge, //views的檔案 點數儲值
-      },
-      {
-        path: "/user",
-        name: "user",
-        component: () => import('@/views/user/user.vue'),
-      },
-    ],
+  routes: [
+    {
+      path: "/",
+      name: "presentation",
+      component: PresentationView,
+    },
+    {
+      path: "/pages/landing-pages/about-us",
+      name: "about",
+      component: AboutView,
+    },
+    {
+      path: "/pages/landing-pages/contact-us",
+      name: "contactus",
+      component: ContactView,
+    },
+    {
+      path: "/pages/landing-pages/author",
+      name: "author",
+      component: AuthorView,
+    },
+    {
+      path: "/pages/landing-pages/basic",
+      name: "signin-basic",
+      component: SignInBasicView,
+    },
+    {
+      path: "/sections/page-sections/page-headers",
+      name: "page-headers",
+      component: PageHeaders,
+    },
+    {
+      path: "/sections/page-sections/features",
+      name: "page-features",
+      component: PageFeatures,
+    },
+    {
+      path: "/sections/navigation/navbars",
+      name: "navigation-navbars",
+      component: NavigationNavbars,
+    },
+    {
+      path: "/sections/navigation/nav-tabs",
+      name: "navigation-navtabs",
+      component: NavigationNavTabs,
+    },
+    {
+      path: "/sections/navigation/pagination",
+      name: "navigation-pagination",
+      component: NavigationPagination,
+    },
+    {
+      path: "/sections/input-areas/inputs",
+      name: "inputareas-inputs",
+      component: InputAreasInputs,
+    },
+    {
+      path: "/sections/input-areas/forms",
+      name: "inputareas-forms",
+      component: InputAreasForms,
+    },
+    {
+      path: "/sections/attention-catchers/alerts",
+      name: "ac-alerts",
+      component: ACAlerts,
+    },
+    {
+      path: "/sections/attention-catchers/modals",
+      name: "ac-modals",
+      component: ACModals,
+    },
+    {
+      path: "/sections/attention-catchers/tooltips-popovers",
+      name: "ac-tooltips-popovers",
+      component: ACTooltipsPopovers,
+    },
+    {
+      path: "/sections/elements/avatars",
+      name: "el-avatars",
+      component: ElAvatars,
+    },
+    {
+      path: "/sections/elements/badges",
+      name: "el-badges",
+      component: ElBadges,
+    },
+    {
+      path: "/sections/elements/breadcrumbs",
+      name: "el-breadcrumbs",
+      component: ElBreadcrumbs,
+    },
+    {
+      path: "/sections/elements/buttons",
+      name: "el-buttons",
+      component: ElButtons,
+    },
+    {
+      path: "/sections/elements/button-groups",
+      name: "el-button-groups",
+      component: ElButtonGroups,
+    },
+    {
+      path: "/sections/elements/dropdowns",
+      name: "el-dropdowns",
+      component: ElDropdowns,
+    },
+    {
+      path: "/sections/elements/progress-bars",
+      name: "el-progress-bars",
+      component: ElProgressBars,
+    },
+    {
+      path: "/sections/elements/toggles",
+      name: "el-toggles",
+      component: ElToggles,
+    },
+    {
+      path: "/sections/elements/typography",
+      name: "el-typography",
+      component: ElTypography,
+    },
+    {
+      path: "/forum",
+      name: "forum",
+      component: () => import("../views/forum.vue"),
+    },
+    {
+      path: "/PointShop",
+      name: "PointShop",
+      component: () => import("../views/PointShop.vue"),
+    },
+    {
+      path: "/point-log",
+      name: "point-log",
+      component: PointLog, // 點數紀錄
+    },
+    {
+      path: "/mission",
+      name: "mission",
+      component: Mission, // 任務
+    },
+    {
+      path: "/mytask",
+      name: "mytask",
+      component: Mytask, // 我的任務
+    },
+    {
+      path: "/recharge",
+      name: "recharge",
+      component: Recharge, // 點數儲值
+    },
+    {
+      path: "/user",
+      name: "user",
+      component: () => import("@/views/user/user.vue"),
+    },
+  ],
 });
 
 export default router;
