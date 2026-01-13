@@ -251,8 +251,9 @@ watch(
                 :key="category.id"
                 class="col"
               >
+                <!-- 這裡有問題 -->
                 <div
-                  class="category-card p-1 border rounded cursor-pointer d-flex flex-column justify-content-between"
+                  class="category-card p-1 border rounded cursor-pointer justify-content-between"
                   :class="{
                     'bg-info text-white':
                       forumState.selectedCategory === category.id,
@@ -261,13 +262,11 @@ watch(
                   @click="onCategorySelect(category.id)"
                   :title="category.description"
                 >
-                  <div
-                    class="d-flex justify-content-between align-items-start mb-1"
-                  >
+                  <div class="d-flex justify-content-between align-items-start">
                     <h6 class="mb-0 small fw-bold">{{ category.name }}</h6>
                   </div>
                   <div
-                    class="d-flex justify-content-between small mt-1"
+                    class="d-flex small mt-1 align-items-start"
                     :class="{
                       'text-white-50':
                         forumState.selectedCategory === category.id,
