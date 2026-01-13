@@ -1,6 +1,7 @@
 <script setup>
 import { reactive } from "vue";
 import axios from "axios";
+import { useForumStore } from "@/stores/forumStore";
 
 const apiBaseUrl = "https://localhost:7190/api";
 const apiClient = axios.create({
@@ -11,12 +12,7 @@ const apiClient = axios.create({
   },
 });
 
-const props = defineProps({
-  show: Boolean,
-  selectedCategory: Number,
-});
-
-const emit = defineEmits(["close", "submitted"]);
+const forumStore = useForumStore();
 
 const newTopicState = reactive({
   title: "",
@@ -31,7 +27,7 @@ const submitNewTopic = () => {
 
   const dto = {
     UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: props.selectedCategory,
+    CategoryId: forumStore.selectedCategory,
     ParentContentId: null,
     Title: newTopicState.title,
     Body: newTopicState.body,
@@ -41,7 +37,7 @@ const submitNewTopic = () => {
     .post("/ContentApi", dto)
     .then(() => {
       alert("發表成功");
-      emit("submitted");
+      forumStore.handleTopicSubmitted();
       closeNewTopic();
     })
     .catch((error) => {
@@ -53,12 +49,16 @@ const submitNewTopic = () => {
 const closeNewTopic = () => {
   newTopicState.title = "";
   newTopicState.body = "";
-  emit("close");
+  forumStore.toggleNewTopicModal(false);
 };
 </script>
 
 <template>
-  <div v-if="show" class="custom-modal-backdrop" @click.self="closeNewTopic">
+  <div
+    v-if="forumStore.showNewTopicModal"
+    class="custom-modal-backdrop"
+    @click.self="closeNewTopic"
+  >
     <div class="modal-dialog">
       <div class="modal-content">
         <form @submit.prevent="submitNewTopic">

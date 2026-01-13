@@ -1,10 +1,13 @@
 <script setup>
 import { reactive, onMounted, computed } from "vue";
 import axios from "axios";
+import { useForumStore } from "@/stores/forumStore";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import NewTopicModal from "@/components/forum/NewTopicModal.vue";
+
+const forumStore = useForumStore();
 
 // 後端 API 基底網址
 const apiBaseUrl = "https://localhost:7190/api"; // 改成你的後端
@@ -30,11 +33,6 @@ const forumState = reactive({
     totalCount: 0,
     totalPages: 0,
   },
-});
-
-// 新主題狀態（只保留 show 狀態）
-const newTopicState = reactive({
-  show: false,
 });
 
 // 取得分類列表
@@ -179,20 +177,7 @@ const displayPages = computed(() => {
 
 // 開啟新主題 Modal
 const openNewTopic = () => {
-  newTopicState.show = true;
-  newTopicState.title = "";
-  newTopicState.body = "";
-};
-
-// 提交後刷新主題列表
-const handleTopicSubmitted = () => {
-  closeNewTopic();
-  fetchTopics();
-};
-
-// 關閉新主題 Modal
-const closeNewTopic = () => {
-  newTopicState.show = false;
+  forumStore.toggleNewTopicModal(true);
 };
 
 // 初始化
@@ -226,12 +211,7 @@ onMounted(() => {
     </div>
 
     <!-- 新主題發表 Modal 組件 -->
-    <NewTopicModal
-      :show="newTopicState.show"
-      :selectedCategory="forumState.selectedCategory"
-      @close="closeNewTopic"
-      @submitted="handleTopicSubmitted"
-    />
+    <NewTopicModal />
 
     <div class="row">
       <!-- 主要內容區 -->
