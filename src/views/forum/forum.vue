@@ -259,21 +259,13 @@ watch(
                     'border-light': forumState.selectedCategory !== category.id,
                   }"
                   @click="onCategorySelect(category.id)"
+                  :title="category.description"
                 >
                   <div
                     class="d-flex justify-content-between align-items-start mb-1"
                   >
                     <h6 class="mb-0 small fw-bold">{{ category.name }}</h6>
                   </div>
-                  <p
-                    class="text-muted mb-1 small text-truncate"
-                    :class="{
-                      'text-white-50':
-                        forumState.selectedCategory === category.id,
-                    }"
-                  >
-                    {{ category.description }}
-                  </p>
                   <div
                     class="d-flex justify-content-between small mt-1"
                     :class="{
@@ -300,8 +292,13 @@ watch(
               <span
                 class="badge bg-secondary me-2"
                 v-if="forumState.selectedCategory"
-                >已篩選</span
               >
+                {{
+                  forumState.categories.find(
+                    (c) => c.id === forumState.selectedCategory
+                  )?.name || "當前分類"
+                }}
+              </span>
               <span class="badge bg-info"
                 >共 {{ forumState.pagination.totalCount }} 筆</span
               >
@@ -606,9 +603,10 @@ watch(
 /* 分類卡片樣式 */
 .category-card {
   transition: all 0.2s ease;
-  border-width: 2px;
-  font-size: 0.85rem;
-  padding: 0.5rem !important;
+  border-width: 1px;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem !important;
+  min-height: 60px;
 }
 
 .category-card:hover {
