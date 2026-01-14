@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
-using incode2.Service;
-using incode2.DTO;
+using incode2.DTO.user;
+using incode2.Service.user;
 
-namespace incode2.ApiController
+namespace incode2.ApiController.user
 {
     [Route("api/Auth")]
     [ApiController]

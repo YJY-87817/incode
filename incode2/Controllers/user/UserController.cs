@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using incode2.Models;
 
-namespace incode2.Controllers
+namespace incode2.Controllers.user
 {
     public class UserController : Controller
     {

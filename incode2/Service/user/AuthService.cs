@@ -1,15 +1,15 @@
-﻿using incode2.DTO;
+﻿using incode2.DTO.user;
 using incode2.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace incode2.Service
+namespace incode2.Service.user
 {
-       public class UserService : IUserService
+       public class AuthService : IUserService
     { 
         private readonly incodedatabaseContext _context;
         private readonly IPasswordHasher<User> _passwordHasher;
 
-        public UserService(incodedatabaseContext context)
+        public AuthService(incodedatabaseContext context)
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();// 密碼雜湊

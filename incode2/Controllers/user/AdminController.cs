@@ -4,7 +4,7 @@ using incode2.Models;
 using System.Linq;
 using incode2.ViewModel;
 
-namespace incode2.Controllers
+namespace incode2.Controllers.user
 {
     public class AdminController : Controller
     {

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace incode2.DTO
+namespace incode2.DTO.user
 {
     public class LoginDto
     {
