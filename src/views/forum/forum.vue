@@ -509,89 +509,10 @@ watch(
                   forumState.pagination.totalCount
                 }}</strong>
               </div>
-              <div
-                class="d-flex justify-content-between align-items-center mb-1"
-              >
-                <span class="small text-muted">總回覆數</span>
-                <strong class="text-success">2,707</strong>
-              </div>
-              <div
-                class="d-flex justify-content-between align-items-center mb-1"
-              >
-                <span class="small text-muted">註冊會員</span>
-                <strong class="text-info">1,234</strong>
-              </div>
+
               <div class="d-flex justify-content-between align-items-center">
                 <span class="small text-muted">在線用戶</span>
                 <strong class="text-danger">45 👥</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h6 class="mb-0">🔥 熱門主題</h6>
-          </div>
-          <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-              <a href="#" class="list-group-item list-group-item-action small">
-                <div class="d-flex justify-content-between">
-                  <span class="text-truncate">Vue 3 最佳實踐</span>
-                  <span class="badge bg-primary rounded-pill">156</span>
-                </div>
-              </a>
-              <a href="#" class="list-group-item list-group-item-action small">
-                <div class="d-flex justify-content-between">
-                  <span class="text-truncate">前端效能優化技巧</span>
-                  <span class="badge bg-primary rounded-pill">132</span>
-                </div>
-              </a>
-              <a href="#" class="list-group-item list-group-item-action small">
-                <div class="d-flex justify-content-between">
-                  <span class="text-truncate">RESTful API 設計</span>
-                  <span class="badge bg-primary rounded-pill">98</span>
-                </div>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="card shadow-sm">
-          <div class="card-header bg-white">
-            <h6 class="mb-0">💬 最新回覆</h6>
-          </div>
-          <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-              <div class="list-group-item small">
-                <div class="d-flex align-items-center mb-1">
-                  <img
-                    src="https://ui-avatars.com/api/?name=User&background=random"
-                    class="rounded-circle me-2"
-                    width="24"
-                    height="24"
-                  />
-                  <strong>李四</strong>
-                </div>
-                <p class="mb-1 text-muted text-truncate">
-                  回覆了「Vue 3 使用心得」
-                </p>
-                <small class="text-muted">5 分鐘前</small>
-              </div>
-              <div class="list-group-item small">
-                <div class="d-flex align-items-center mb-1">
-                  <img
-                    src="https://ui-avatars.com/api/?name=User2&background=random"
-                    class="rounded-circle me-2"
-                    width="24"
-                    height="24"
-                  />
-                  <strong>王五</strong>
-                </div>
-                <p class="mb-1 text-muted text-truncate">
-                  回覆了「效能優化問題」
-                </p>
-                <small class="text-muted">15 分鐘前</small>
               </div>
             </div>
           </div>
