@@ -4,7 +4,6 @@ namespace incode2.DTO
 {
     public class OrderDTO
     {
-        public List<Orderdetail> orderdetails { get; set; }
         public int UserId { get; set; }
 
         public int TotalPoint { get; set; }
