@@ -33,7 +33,6 @@ namespace incode2.ApiControllers
             });
         }
 
-
         //取得OrderId的訂單資料
         // GET: api/Orderdetail/2
         [Route("/api/OrderDetail/{OrderId}")]
@@ -57,19 +56,19 @@ namespace incode2.ApiControllers
         // GET: api/ShippedDetail/2
         [Route("/api/ShippedDetail/{OrderdetailId}")]
         [HttpGet("{OrderdetailId}")]
-        public IEnumerable<OrderDetailDTO> ShippedDetail(int OrderdetailId)
+        public IEnumerable<ShippedDTO> ShippedDetail(int OrderdetailId)
         {
-            return _context.Orderdetail.Include(p => p.Product).Where(e => e.OrderId == OrderdetailId).Select(e => new OrderDetailDTO
+            return _context.ShippedDetail.Include(p => p.Orderdetail).ThenInclude(o=>o.Product).Where(e => e.OrderdetailId == OrderdetailId).Select(e => new ShippedDTO
             {
-                OrderdetailId = e.OrderdetailId,
-                OrderId = e.OrderId,
-                ProductId = e.ProductId,
-                ProductName = e.Product.Name,
-                ImageName = e.Product.ImageName,
-                Quantity = e.Quantity,
-                UnitPointAtPurchase = e.UnitPointAtPurchase,
-                RequiresShipping = e.RequiresShipping,
+               ShippedDate = e.ShippedDate,
+               ArrivalDate = e.ArrivalDate,
+               IsCompleted = e.IsCompleted,
+               IsFailed = e.IsFailed,
+               Remark = e.Remark,
+               OrderdetailId = e.OrderdetailId,
+               ProductId = e.Orderdetail.ProductId,
+               ProductName = e.Orderdetail.Product.Name,
             });
-        }//未完
+        }
     }
 }
