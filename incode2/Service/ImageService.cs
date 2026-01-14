@@ -2,7 +2,7 @@
 {
     public class ImageService : IImageService
     {
-        private readonly string _storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img");
+        private readonly string _storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/test");
 
         public ImageService()
         {
@@ -23,7 +23,7 @@
                 await file.CopyToAsync(stream);
             }
 
-            return $"/img/{fileName}"; // 回傳相對路徑
+            return $"/img/test/{fileName}"; // 回傳相對路徑
         }
     }
 }
