@@ -22,6 +22,7 @@
       目前沒有可兌換的商品。
     </div>
   </div>
+  <Test></Test>
   <DefaultFooter />
 </template>
 
@@ -29,10 +30,12 @@
 import { ref, onMounted } from "vue";
 import productService from "@/views/PointShop/services/productService";
 import ProductCard from "@/views/PointShop/componets/ProductCard.vue";
+import test from "@/views/PointShop/componets/ImageTest.vue";
 
 // Example components
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import Test from "./componets/ImageTest.vue";
 
 const products = ref([]);
 const loading = ref(true);
