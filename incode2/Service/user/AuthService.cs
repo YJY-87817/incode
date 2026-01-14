@@ -37,8 +37,8 @@ namespace incode2.Service.user
             {
                 return null;
             }
-            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
 
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
             if (result == PasswordVerificationResult.Success)
             {
                 return user; // 密碼正確，回傳使用者

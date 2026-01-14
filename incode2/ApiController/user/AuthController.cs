@@ -20,6 +20,20 @@ namespace incode2.ApiController.user
             _userService = userService;
         }
 
+        // POST: api/Auth/register
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] RegisterDto register)
+        {
+            if (_userService.UserExists(register.Email))
+            {
+                return BadRequest(new { message = "此 Email 已被註冊" });
+            }
+
+            _userService.Register(register);
+            return Ok(new { message = "註冊成功，請登入" });
+        }
+
+        // POST: api/Auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto login)
         {
@@ -36,9 +50,8 @@ namespace incode2.ApiController.user
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                // 存入權限等級，後續 Filter 會用到
-                new Claim("RoleId", user.RoleId.ToString())
+                new Claim(ClaimTypes.Name, user.Username),                
+                new Claim("RoleId", user.RoleId.ToString())// 存入權限等級，後續 Filter 會用到
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
@@ -55,6 +68,7 @@ namespace incode2.ApiController.user
             return Ok(new { message = "登入成功", username = user.Username });
         }
 
+        // POST: api/Auth/logout
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
@@ -67,8 +81,8 @@ namespace incode2.ApiController.user
             return Ok(new { message = "已登出" });
         }
 
-        // 增加一個 API 讓 Vue 確認登入狀態
-        [HttpGet("check")]
+        // GET: api/Auth/check
+        [HttpGet("check")]// 增加一個 API 讓 Vue 確認登入狀態
         public IActionResult CheckLogin()
         {
             if (User.Identity.IsAuthenticated)

@@ -7,5 +7,6 @@ namespace incode2.Service.user
     {
         User ValidateUser(string email, string password); //驗證使用者
         void Register(RegisterDto registerDto);
+        bool UserExists(string email); // 新增：檢查 Email 是否重複
     }
 }
