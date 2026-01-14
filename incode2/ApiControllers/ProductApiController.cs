@@ -10,7 +10,7 @@ namespace incode2.ApiControllers
     [Route("api/[controller]")]
     public class ProductApiController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;  
+        private readonly incodedatabaseContext _context;
 
         public ProductApiController(incodedatabaseContext context)
         {
@@ -21,7 +21,7 @@ namespace incode2.ApiControllers
         [HttpGet]
         public async Task<IEnumerable<ProductDTO>> GetProduct()
         {
-            return _context.Product.Select(e => new ProductDTO
+            return _context.Product.Where(e => e.OnSale == true).Select(e => new ProductDTO
             {
                 ProductId = e.ProductId,
                 Name = e.Name,
