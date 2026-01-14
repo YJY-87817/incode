@@ -180,6 +180,11 @@ const router = createRouter({
         name: "user",
         component: () => import('@/views/user/user.vue'),
       },
+      {
+        path: "/signup", 
+        name: "signup",
+        component: () => import('@/views/user/signup.vue'),
+      },
     ],
 });
 

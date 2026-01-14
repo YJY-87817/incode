@@ -74,9 +74,9 @@ function getClasses(size, success, error) {
     <label v-if="label" :class="label.class">{{
       typeof label == "string" ? label : label.text
     }}</label>
-    <span v-if="icon" class="input-group-text"
+    <!-- <span v-if="icon" class="input-group-text"
       ><i class="fas" :class="`fa-${icon}`" aria-hidden="true"></i
-    ></span>
+    ></span> -->
     <input
       :id="id"
       :type="type"
