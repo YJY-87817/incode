@@ -70,5 +70,11 @@ namespace incode2.ApiControllers
                ProductName = e.Orderdetail.Product.Name,
             });
         }
+
+        // 新增訂單
+        //  PUT: api/OrderApi/2
+        //[HttpPut("{UserId}")]
+
+
     }
 }

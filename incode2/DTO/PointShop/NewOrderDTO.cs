@@ -1,0 +1,30 @@
+﻿using incode2.Models;
+
+namespace incode2.DTO.PointShop
+{
+    // 1. 給前端傳入用的 (Input)
+    public class CreateOrderRequest
+    {
+        public int UserId { get; set; }
+        public string Remark { get; set; }
+        // 這裡的 Detail 只需要 ID 跟數量
+        public List<OrderItemRequest> Items { get; set; }
+    }
+
+    public class OrderItemRequest
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    // 2. 原本的 DTO，可以用來做 API 的回傳結果 (Output)
+    public class NewOrderDTO
+    {
+        public List<Orderdetail> orderdetails { get; set; }
+        public int UserId { get; set; }
+        public int TotalPoint { get; set; } // 這是由後端計算後填入的
+        public string Remark { get; set; }
+        public string Status { get; set; }
+        public int OrderId { get; set; }
+    }
+}
