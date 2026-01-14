@@ -2,6 +2,7 @@
 using incode2.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
 namespace incode2.ApiControllers
@@ -19,13 +20,22 @@ namespace incode2.ApiControllers
         }
 
         // GET: api/OrderApi
-        [HttpGet]
-        public async Task<IEnumerable<OrderDTO>> GetOrder(int OrderId)
+        [HttpGet("{UserId}")]
+        public async Task<IEnumerable<OrderDTO>> GetOrder(int UserId)
         {
+            var AllOrder = await _context.Orders
+                .Include(o => o.Orderdetail) // 載入明細
+                .Where(o => o.UserId == UserId)
+                .ToListAsync();
 
-            return _context.Product.Select(e => new OrderDTO
+            return AllOrder.Select(o => new OrderDTO
             {
-               
+                OrderId = o.OrderId,
+                UserId = o.UserId,
+                TotalPoint = o.TotalPoint,
+                Remark = o.Remark,
+                Status = o.Status,
+                //orderdetails = o.Orderdetail.ToList()
             });
         }
     }
