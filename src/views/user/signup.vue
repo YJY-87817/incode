@@ -2,6 +2,16 @@
 import { onMounted, reactive } from "vue";
 import axios from "axios";
 
+const form = reactive({
+  email: "",
+  password: "",
+});
+
+const errors = reactive({
+  email: "",
+  password: "",
+});
+
 // example components
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import Header from "@/examples/Header.vue";
@@ -16,88 +26,6 @@ import setMaterialInput from "@/assets/js/material-input";
 onMounted(() => {
   setMaterialInput();
 });
-
-// 表單數據
-const form = reactive({
-  email: "",
-  password: "",
-  confirmPassword: "",
-});
-
-// 錯誤訊息
-const errors = reactive({
-  email: "",
-  password: "",
-  confirmPassword: "",
-});
-
-// 驗證 Email 格式
-const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-};
-
-// 提交處理
-const handleSubmit = async () => {
-  // 1. 測試按鈕是否觸發
-  console.log("按鈕被點擊了！");
-
-  // 2. 測試資料是否綁定成功
-  console.log("目前的表單資料:", form);
-
-  errors.email = "";
-  errors.password = "";
-  errors.confirmPassword = "";
-  let isValid = true;
-
-  // 2. 前端驗證邏輯
-  if (!form.email) {
-    errors.email = "請輸入 Email";
-    isValid = false;
-  } else if (!validateEmail(form.email)) {
-    errors.email = "Email 格式不正確";
-    isValid = false;
-  }
-
-  if (!form.password) {
-    errors.password = "請輸入密碼";
-    isValid = false;
-  } else if (form.password.length < 6) {
-    errors.password = "密碼長度至少需 6 個字元";
-    isValid = false;
-  }
-
-  if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = "兩次輸入的密碼不一致";
-    isValid = false;
-  }
-
-  // 3. 驗證通過，發送 API 到後端
-  if (isValid) {
-    try {
-      const response = await axios.post(
-        "http://localhost:3000/api/auth/register",
-        {
-          email: form.email,
-          password: form.password,
-        }
-      );
-
-      // 註冊成功
-      alert("註冊成功！請重新登入");
-      console.log(response.data);
-      // 這裡可以導向登入頁，例如 router.push('/login')
-    } catch (error) {
-      // 處理後端回傳的錯誤 (例如 Email 已被註冊)
-      if (error.response && error.response.data) {
-        alert("註冊失敗: " + error.response.data.message);
-      } else {
-        alert("伺服器發生錯誤，請稍後再試");
-      }
-      console.error(error);
-    }
-  }
-};
 </script>
 <template>
   <DefaultNavbar transparent />
