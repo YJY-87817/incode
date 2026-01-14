@@ -27,8 +27,8 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import productService from "../PointShop/services/productService";
-import ProductCard from "../PointShop/componets/ProductCard.vue";
+import productService from "@/views/PointShop/services/productService";
+import ProductCard from "@/views/PointShop/componets/ProductCard.vue";
 
 // Example components
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
