@@ -157,7 +157,7 @@ const router = createRouter({
     {
       path: "/PointShop/PointShop",
       name: "PointShop",
-      component: () => import("@/views/PointShop/PointShop.vue"),
+      component: () => import("@/views/PointShop/PointShopView.vue"),
     },
     {
       path: "/point-log",
