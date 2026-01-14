@@ -1,4 +1,4 @@
-﻿@model incode2.Models.PointDeposits
+﻿@model incode2.Models.PointRecharge
 
 @{
     ViewData["Title"] = "Delete";
@@ -8,7 +8,7 @@
 
 <h3>Are you sure you want to delete this?</h3>
 <div>
-    <h4>PointDeposits</h4>
+    <h4>PointRecharge</h4>
     <hr />
     <dl class="row">
         <dt class = "col-sm-2">
@@ -62,7 +62,7 @@
     </dl>
     
     <form asp-action="Delete">
-        <input type="hidden" asp-for="PointDepositId" />
+        <input type="hidden" asp-for="PointRechargeId" />
         <input type="submit" value="Delete" class="btn btn-danger" /> |
         <a asp-action="Index">Back to List</a>
     </form>

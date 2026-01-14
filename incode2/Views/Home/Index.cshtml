@@ -4,7 +4,7 @@
 
 <div class="text-center">
   <div>@ViewBag.Fuen</div>
-  <div>@ViewBag.content.Body</div>
+  <div>@ViewBag.content?.Body</div>
   <select class="form-select" asp-items="@ViewBag.user">
     <option>這個選項是另外加的option，會在最上面，asp-items=""ViewBag會在下面</option>
   </select>

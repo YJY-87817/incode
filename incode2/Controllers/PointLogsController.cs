@@ -238,9 +238,9 @@ namespace incode2.Controllers
                 .Where(em => entrustMissionIds.Contains(em.EntrustMissionId))
                 .ToDictionaryAsync(em => em.EntrustMissionId, em => em.Title ?? "未知委託");
 
-            var pointDepost = await _context.PointDeposits
-                .Where(pd => pointDepositIds.Contains(pd.PointDepositId))
-                .ToDictionaryAsync(pd => pd.PointDepositId, pd => pd.PaymentMethod ?? "未知付款方式");
+            var pointDepost = await _context.PointRecharge
+                .Where(pd => pointDepositIds.Contains(pd.PointRechargeId))
+                .ToDictionaryAsync(pd => pd.PointRechargeId, pd => pd.PaymentMethod ?? "未知付款方式");
 
             var orderDict = new Dictionary<int, Orders>();
             if (orderIds.Any())

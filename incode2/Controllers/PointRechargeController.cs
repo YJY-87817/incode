@@ -9,23 +9,23 @@ using incode2.Models;
 
 namespace incode2.Controllers
 {
-    public class PointDepositsController : Controller
+    public class PointRechargeController : Controller
     {
         private readonly incodedatabaseContext _context;
 
-        public PointDepositsController(incodedatabaseContext context)
+        public PointRechargeController(incodedatabaseContext context)
         {
             _context = context;
         }
 
-        // GET: PointDeposits
+        // GET: PointRecharge
         public async Task<IActionResult> Index()
         {
-            var incodedatabaseContext = _context.PointDeposits.Include(p => p.User);
+            var incodedatabaseContext = _context.PointRecharge.Include(p => p.User);
             return View(await incodedatabaseContext.ToListAsync());
         }
 
-        // GET: PointDeposits/Details/5
+        // GET: PointRecharge/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -33,42 +33,42 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
-            var pointDeposits = await _context.PointDeposits
+            var pointRecharge = await _context.PointRecharge
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointDepositId == id);
-            if (pointDeposits == null)
+                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
+            if (pointRecharge == null)
             {
                 return NotFound();
             }
 
-            return View(pointDeposits);
+            return View(pointRecharge);
         }
 
-        // GET: PointDeposits/Create
+        // GET: PointRecharge/Create
         public IActionResult Create()
         {
             ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
             return View();
         }
 
-        // POST: PointDeposits/Create
+        // POST: PointRecharge/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PointDepositId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointDeposits pointDeposits)
+        public async Task<IActionResult> Create([Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointRecharge pointRecharge)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(pointDeposits);
+                _context.Add(pointRecharge);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointDeposits.UserId);
-            return View(pointDeposits);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            return View(pointRecharge);
         }
 
-        // GET: PointDeposits/Edit/5
+        // GET: PointRecharge/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -76,23 +76,23 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
-            var pointDeposits = await _context.PointDeposits.FindAsync(id);
-            if (pointDeposits == null)
+            var pointRecharge = await _context.PointRecharge.FindAsync(id);
+            if (pointRecharge == null)
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointDeposits.UserId);
-            return View(pointDeposits);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            return View(pointRecharge);
         }
 
-        // POST: PointDeposits/Edit/5
+        // POST: PointRecharge/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PointDepositId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointDeposits pointDeposits)
+        public async Task<IActionResult> Edit(int id, [Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointRecharge pointRecharge)
         {
-            if (id != pointDeposits.PointDepositId)
+            if (id != pointRecharge.PointRechargeId)
             {
                 return NotFound();
             }
@@ -101,12 +101,12 @@ namespace incode2.Controllers
             {
                 try
                 {
-                    _context.Update(pointDeposits);
+                    _context.Update(pointRecharge);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!PointDepositsExists(pointDeposits.PointDepositId))
+                    if (!PointRechargeExists(pointRecharge.PointRechargeId))
                     {
                         return NotFound();
                     }
@@ -117,11 +117,11 @@ namespace incode2.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointDeposits.UserId);
-            return View(pointDeposits);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            return View(pointRecharge);
         }
 
-        // GET: PointDeposits/Delete/5
+        // GET: PointRecharge/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -129,35 +129,35 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
-            var pointDeposits = await _context.PointDeposits
+            var pointRecharge = await _context.PointRecharge
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointDepositId == id);
-            if (pointDeposits == null)
+                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
+            if (pointRecharge == null)
             {
                 return NotFound();
             }
 
-            return View(pointDeposits);
+            return View(pointRecharge);
         }
 
-        // POST: PointDeposits/Delete/5
+        // POST: PointRecharge/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var pointDeposits = await _context.PointDeposits.FindAsync(id);
-            if (pointDeposits != null)
+            var pointRecharge = await _context.PointRecharge.FindAsync(id);
+            if (pointRecharge != null)
             {
-                _context.PointDeposits.Remove(pointDeposits);
+                _context.PointRecharge.Remove(pointRecharge);
             }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PointDepositsExists(int id)
+        private bool PointRechargeExists(int id)
         {
-            return _context.PointDeposits.Any(e => e.PointDepositId == id);
+            return _context.PointRecharge.Any(e => e.PointRechargeId == id);
         }
     }
 }
