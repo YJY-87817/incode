@@ -3,7 +3,6 @@ using incode2.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace incode2.ApiControllers
 {
@@ -19,24 +18,58 @@ namespace incode2.ApiControllers
             _context = context;
         }
 
-        // GET: api/OrderApi
+        //取得UserId的訂單資料
+        // GET: api/OrderApi/2
         [HttpGet("{UserId}")]
-        public async Task<IEnumerable<OrderDTO>> GetOrder(int UserId)
+        public IEnumerable<OrderDTO> GetOrder(int UserId)
         {
-            var AllOrder = await _context.Orders
-                .Include(o => o.Orderdetail) // 載入明細
-                .Where(o => o.UserId == UserId)
-                .ToListAsync();
-
-            return AllOrder.Select(o => new OrderDTO
+            return _context.Orders.Where(e => e.UserId == UserId).Select(e => new OrderDTO
             {
-                OrderId = o.OrderId,
-                UserId = o.UserId,
-                TotalPoint = o.TotalPoint,
-                Remark = o.Remark,
-                Status = o.Status,
-                //orderdetails = o.Orderdetail.ToList()
+                UserId = e.UserId,
+                TotalPoint = e.TotalPoint,
+                Remark = e.Remark,
+                Status = e.Status,
+                OrderId = e.OrderId,
             });
         }
+
+
+        //取得OrderId的訂單資料
+        // GET: api/Orderdetail/2
+        [Route("/api/OrderDetail/{OrderId}")]
+        [HttpGet("{OrderId}")]
+        public IEnumerable<OrderDetailDTO> GetOrderdetail(int OrderId)
+        {
+            return  _context.Orderdetail.Include(p => p.Product).Where(e => e.OrderId == OrderId).Select(e => new OrderDetailDTO
+            {
+                OrderdetailId = e.OrderdetailId,
+                OrderId = e.OrderId,
+                ProductId = e.ProductId,
+                ProductName = e.Product.Name,
+                ImageName = e.Product.ImageName,
+                Quantity = e.Quantity,
+                UnitPointAtPurchase = e.UnitPointAtPurchase,
+                RequiresShipping = e.RequiresShipping,
+            });
+        }
+
+        // 取得ShippedDetailId的訂單資料
+        // GET: api/ShippedDetail/2
+        [Route("/api/ShippedDetail/{OrderdetailId}")]
+        [HttpGet("{OrderdetailId}")]
+        public IEnumerable<OrderDetailDTO> ShippedDetail(int OrderdetailId)
+        {
+            return _context.Orderdetail.Include(p => p.Product).Where(e => e.OrderId == OrderdetailId).Select(e => new OrderDetailDTO
+            {
+                OrderdetailId = e.OrderdetailId,
+                OrderId = e.OrderId,
+                ProductId = e.ProductId,
+                ProductName = e.Product.Name,
+                ImageName = e.Product.ImageName,
+                Quantity = e.Quantity,
+                UnitPointAtPurchase = e.UnitPointAtPurchase,
+                RequiresShipping = e.RequiresShipping,
+            });
+        }//未完
     }
 }

@@ -1,5 +1,6 @@
 using incode2.Data;
 using incode2.Models;
+using incode2.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,6 +62,9 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
+//註冊 Service到 DI 容器，這樣 Controller 才能使用它
+builder.Services.AddScoped<IImageService, ImageService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -93,6 +97,9 @@ app.UseCors("VueApp");
 //身分驗證 => 授予權限
 app.UseAuthorization();
 app.UseSession();
+
+// 加上這行後，網址 https://localhost:xxxx/img/(圖片名稱位置)才能顯示
+app.UseStaticFiles();
 
 app.MapStaticAssets();
 
