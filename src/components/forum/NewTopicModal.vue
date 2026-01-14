@@ -1,5 +1,5 @@
 <script setup>
-import { reactive } from "vue";
+import { reactive, onMounted, watch } from "vue";
 import axios from "axios";
 import { useForumStore } from "@/stores/forumStore";
 
@@ -17,18 +17,69 @@ const forumStore = useForumStore();
 const newTopicState = reactive({
   title: "",
   body: "",
+  categoryId: null,
+  parentContentId: null,
+  categories: [],
+  topics: [],
 });
+
+const fetchCategories = () => {
+  apiClient
+    .get("/CategoryApi")
+    .then((response) => {
+      newTopicState.categories = response.data;
+    })
+    .catch((error) => {
+      console.error("載入分類失敗:", error);
+    });
+};
+
+const fetchTopics = (categoryId = null) => {
+  const params = {};
+  if (categoryId) params.categoryId = categoryId;
+  apiClient
+    .get("/ContentApi", { params })
+    .then((response) => {
+      newTopicState.topics = response.data.items.map((item) => ({
+        id: item.contentId,
+        title: item.title,
+      }));
+    })
+    .catch((error) => {
+      console.error("載入主題失敗:", error);
+    });
+};
+
+onMounted(() => {
+  fetchCategories();
+});
+
+watch(
+  () => newTopicState.categoryId,
+  (newCat) => {
+    newTopicState.parentContentId = null;
+    if (newCat) {
+      fetchTopics(newCat);
+    } else {
+      newTopicState.topics = [];
+    }
+  }
+);
 
 const submitNewTopic = () => {
   if (!newTopicState.title || !newTopicState.body) {
     alert("請填寫標題與內容");
     return;
   }
+  if (!newTopicState.categoryId) {
+    alert("請選擇分類");
+    return;
+  }
 
   const dto = {
     UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: forumStore.selectedCategory,
-    ParentContentId: null,
+    CategoryId: newTopicState.categoryId,
+    ParentContentId: newTopicState.parentContentId,
     Title: newTopicState.title,
     Body: newTopicState.body,
   };
@@ -49,6 +100,8 @@ const submitNewTopic = () => {
 const closeNewTopic = () => {
   newTopicState.title = "";
   newTopicState.body = "";
+  newTopicState.categoryId = null;
+  newTopicState.parentContentId = null;
   forumStore.toggleNewTopicModal(false);
 };
 </script>
@@ -88,6 +141,36 @@ const closeNewTopic = () => {
                 class="form-control"
                 rows="4"
               ></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">分類</label>
+              <select v-model="newTopicState.categoryId" class="form-select">
+                <option :value="null" disabled>請選擇分類</option>
+                <option
+                  v-for="cat in newTopicState.categories"
+                  :key="cat.id"
+                  :value="cat.id"
+                >
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">回覆至（可選）</label>
+              <select
+                v-model="newTopicState.parentContentId"
+                class="form-select"
+                :disabled="!newTopicState.categoryId"
+              >
+                <option :value="null">無（發表新主題）</option>
+                <option
+                  v-for="topic in newTopicState.topics"
+                  :key="topic.id"
+                  :value="topic.id"
+                >
+                  {{ topic.title }}
+                </option>
+              </select>
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
