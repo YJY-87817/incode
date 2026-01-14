@@ -1,5 +1,6 @@
 using incode2.Data;
 using incode2.Models;
+using incode2.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,7 +87,10 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
-//新增密碼驗證規則(下面)
+// 📌 在這裡註冊你的 Service
+builder.Services.AddScoped<IUserService, UserService>();
+
+//新增密碼驗證規則
 builder.Services.Configure<IdentityOptions>(options => {
   options.Password.RequireDigit = true;
   options.Password.RequireLowercase = true;
