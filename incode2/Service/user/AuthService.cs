@@ -48,5 +48,10 @@ namespace incode2.Service.user
                 return null; // 密碼錯誤
             }
         }
+
+        public bool UserExists(string email)
+        {
+            return _context.User.Any(u => u.Email == email);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using incode2.Models;
+﻿using incode2.DTO.user;
+using incode2.Models;
 using incode2.Service.user;
 
 namespace incode2.Service.user
@@ -20,5 +21,21 @@ namespace incode2.Service.user
             return user;
         }
 
+        public void Register(RegisterDto registerDto)
+        {
+            var user = new User
+            {
+                Email = registerDto.Email,
+                Password = registerDto.Password,
+                // 根據 RegisterDto 和 User 的定義補齊其他必要欄位
+            };
+            _context.User.Add(user);
+            _context.SaveChanges();
+        }
+
+        public bool UserExists(string email)
+        {
+            return _context.User.Any(u => u.Email == email);
+        }
     }
 }
