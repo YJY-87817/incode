@@ -6,6 +6,7 @@ import { useForumStore } from "@/stores/forumStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import NewTopicModal from "@/components/forum/NewTopicModal.vue";
+import InteractionButtons from "@/components/forum/InteractionButtons.vue";
 
 const forumStore = useForumStore();
 
@@ -375,6 +376,7 @@ watch(
                         <p class="mb-1 text-muted topic-body-preview">
                           {{ topic.content }}
                         </p>
+                        <InteractionButtons :contentId="topic.id" />
                       </div>
                     </div>
 
