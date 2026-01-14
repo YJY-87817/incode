@@ -1,5 +1,6 @@
 using incode2.Data;
 using incode2.Models;
+using incode2.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,6 +62,8 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IContentService, ContentService>();
+
 
 //新增密碼驗證規則(下面)
 builder.Services.Configure<IdentityOptions>(options => {
