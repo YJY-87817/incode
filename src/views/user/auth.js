@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import axios from "axios";
+// import axios from "axios";
 
 export const useAuthStore = defineStore("auth", () => {
   // 1. 定義狀態 (State)
@@ -11,10 +11,17 @@ export const useAuthStore = defineStore("auth", () => {
   });
 
   const errors = reactive({
-    email: "",
-    password: "",
-    confirmPassword: "",
+    email: "請輸入Email",
+    password: "請輸入密碼",
+    confirmPassword: "請確認密碼",
   });
+
+  //輔助動作：清除特定欄位的錯誤 (UX 優化)
+  const clearError = (field) => {
+    if (errors[field]) {
+      errors[field] = "";
+    }
+  };
 
   // 2. 驗證邏輯 (Actions)
   const validateEmail = (email) => {
@@ -24,7 +31,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   const validateForm = () => {
     let isValid = true;
-    
+
     // 重置錯誤
     errors.email = "";
     errors.password = "";
@@ -70,15 +77,15 @@ export const useAuthStore = defineStore("auth", () => {
         email: form.email,
         password: form.password,
       });
-      
+
       console.log("註冊成功回應:", response.data);
       alert("註冊成功！準備跳轉...");
-      
+
       // 清空表單
       form.email = "";
       form.password = "";
       form.confirmPassword = "";
-      
+
       return true; // 註冊成功
 
     } catch (error) {
@@ -94,5 +101,5 @@ export const useAuthStore = defineStore("auth", () => {
     errors,
     register,
   };
-  
+
 });

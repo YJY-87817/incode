@@ -3,7 +3,7 @@ import PresentationView from "../views/Presentation/PresentationView.vue";
 import AboutView from "../views/LandingPages/AboutUs/AboutView.vue";
 import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
-import Login from "@/views/user/signin.vue";
+import Login from "@/views/user/login.vue";
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
 import NavigationNavbars from "../layouts/sections/navigation/navbars/NavbarsView.vue";
@@ -51,8 +51,8 @@ const router = createRouter({
         component: AuthorView,
       },
       {
-        path: "/signin",
-        name: "signin",
+        path: "/login",
+        name: "login",
         component: Login,
       },
       {
@@ -181,9 +181,9 @@ const router = createRouter({
         component: () => import('@/views/user/user.vue'),
       },
       {
-        path: "/signup", 
-        name: "signup",
-        component: () => import('@/views/user/signup.vue'),
+        path: "/register",
+        name: "register",
+        component: () => import('@/views/user/register.vue'),
       },
     ],
 });
