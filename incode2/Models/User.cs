@@ -27,7 +27,9 @@ public partial class User
 
     public bool? IsActive { get; set; }
 
-    public int RoleId { get; set; }
+    public int? RoleId { get; set; }
+
+    public int? Employeeid { get; set; }
 
     public virtual ICollection<ChatSession> ChatSession { get; set; } = new List<ChatSession>();
 
