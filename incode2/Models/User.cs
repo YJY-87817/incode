@@ -39,6 +39,8 @@ public partial class User
 
     public virtual ICollection<EntrustMission> EntrustMission { get; set; } = new List<EntrustMission>();
 
+    public virtual ICollection<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; } = new List<EntrustMissionPointReserve>();
+
     public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
 
     public virtual ICollection<Follow> FollowFollowee { get; set; } = new List<Follow>();
@@ -47,13 +49,13 @@ public partial class User
 
     public virtual ICollection<MissionProgress> MissionProgress { get; set; } = new List<MissionProgress>();
 
-    public virtual ICollection<Orders> Orders { get; set; } = new List<Orders>();
+    public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();
 
-    public virtual ICollection<PointDeposits> PointDeposits { get; set; } = new List<PointDeposits>();
+    public virtual ICollection<Orders> Orders { get; set; } = new List<Orders>();
 
     public virtual ICollection<PointLog> PointLog { get; set; } = new List<PointLog>();
 
-    public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
+    public virtual ICollection<PointRecharge> PointRecharge { get; set; } = new List<PointRecharge>();
 
-    public virtual UserPointWallet UserPointWallet { get; set; }
+    public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
 }

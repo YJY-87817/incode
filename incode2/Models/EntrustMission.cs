@@ -11,6 +11,8 @@ public partial class EntrustMission
 
     public int UserId { get; set; }
 
+    public int ContentId { get; set; }
+
     public string Title { get; set; }
 
     public string Detail { get; set; }
@@ -22,6 +24,10 @@ public partial class EntrustMission
     public string Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Content Content { get; set; }
+
+    public virtual ICollection<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; } = new List<EntrustMissionPointReserve>();
 
     public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
 

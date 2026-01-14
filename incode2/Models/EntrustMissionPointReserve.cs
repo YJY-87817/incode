@@ -5,25 +5,23 @@ using System.Collections.Generic;
 
 namespace incode2.Models;
 
-public partial class PointDeposits
+public partial class EntrustMissionPointReserve
 {
-    public int PointDepositId { get; set; }
+    public int EntrustMissionPointReserveId { get; set; }
 
     public int UserId { get; set; }
 
-    public string OrderNo { get; set; }
+    public int EntrustMissionId { get; set; }
 
-    public decimal CashAmount { get; set; }
-
-    public int PointsGranted { get; set; }
-
-    public string PaymentMethod { get; set; }
-
-    public string RelatedOrderId { get; set; }
+    public int ReservedPoints { get; set; }
 
     public string Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public DateTime? ReleasedAt { get; set; }
+
+    public virtual EntrustMission EntrustMission { get; set; }
 
     public virtual User User { get; set; }
 }
