@@ -1,5 +1,6 @@
 ﻿namespace incode2.DTO
 {
+    // 給使用者查看Order用
     public class OrderDTO
     {
         public int UserId { get; set; }
@@ -13,6 +14,7 @@
         public int OrderId { get; set; }
     }
 
+    // 給使用者查看OrderDetail用
     public class OrderDetailDTO
     {
         public int OrderdetailId { get; set; }
@@ -31,6 +33,8 @@
 
         public bool RequiresShipping { get; set; }
     }
+
+    // 給使用者查看ShippedDetail用
     public class ShippedDTO
     {
         public DateTime? ShippedDate { get; set; }

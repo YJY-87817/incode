@@ -1,4 +1,5 @@
 ﻿using incode2.DTO;
+using incode2.DTO.PointShop;
 using incode2.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ namespace incode2.ApiControllers
             _context = context;
         }
 
-        //取得UserId的訂單資料
+        // 取得UserId的訂單資料
         // GET: api/OrderApi/2
         [HttpGet("{UserId}")]
         public IEnumerable<OrderDTO> GetOrder(int UserId)
@@ -33,13 +34,13 @@ namespace incode2.ApiControllers
             });
         }
 
-        //取得OrderId的訂單資料
+        // 取得OrderId的訂單資料
         // GET: api/Orderdetail/2
         [Route("/api/OrderDetail/{OrderId}")]
         [HttpGet("{OrderId}")]
         public IEnumerable<OrderDetailDTO> GetOrderdetail(int OrderId)
         {
-            return  _context.Orderdetail.Include(p => p.Product).Where(e => e.OrderId == OrderId).Select(e => new OrderDetailDTO
+            return _context.Orderdetail.Include(p => p.Product).Where(e => e.OrderId == OrderId).Select(e => new OrderDetailDTO
             {
                 OrderdetailId = e.OrderdetailId,
                 OrderId = e.OrderId,
@@ -58,23 +59,33 @@ namespace incode2.ApiControllers
         [HttpGet("{OrderdetailId}")]
         public IEnumerable<ShippedDTO> ShippedDetail(int OrderdetailId)
         {
-            return _context.ShippedDetail.Include(p => p.Orderdetail).ThenInclude(o=>o.Product).Where(e => e.OrderdetailId == OrderdetailId).Select(e => new ShippedDTO
+            return _context.ShippedDetail.Include(p => p.Orderdetail).ThenInclude(o => o.Product).Where(e => e.OrderdetailId == OrderdetailId).Select(e => new ShippedDTO
             {
-               ShippedDate = e.ShippedDate,
-               ArrivalDate = e.ArrivalDate,
-               IsCompleted = e.IsCompleted,
-               IsFailed = e.IsFailed,
-               Remark = e.Remark,
-               OrderdetailId = e.OrderdetailId,
-               ProductId = e.Orderdetail.ProductId,
-               ProductName = e.Orderdetail.Product.Name,
+                ShippedDate = e.ShippedDate,
+                ArrivalDate = e.ArrivalDate,
+                IsCompleted = e.IsCompleted,
+                IsFailed = e.IsFailed,
+                Remark = e.Remark,
+                OrderdetailId = e.OrderdetailId,
+                ProductId = e.Orderdetail.ProductId,
+                ProductName = e.Orderdetail.Product.Name,
             });
         }
 
         // 新增訂單
-        //  PUT: api/OrderApi/2
-        //[HttpPut("{UserId}")]
+        //  POST: api/OrderApi/2
+        [Route("/api/OrderApi/{UserId}")]
+        [HttpPost("{UserId}")]
+        public async Task<ResultDTO> PutNewOrder(int UserId, CreateOrderRequest NewOrder)
+        {
+            if (UserId != NewOrder.UserId)
+            {
+                return new ResultDTO { ok = false, code = 400 }; // 400
+            }
 
+            return new ResultDTO { ok = false, code = 404 };
+
+        }
 
     }
 }
