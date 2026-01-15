@@ -1,136 +1,135 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import axios from "axios";
-import Typed from "typed.js";
+  import { onMounted, onUnmounted, ref, computed } from "vue";
+  import { useRouter } from "vue-router";
+  import axios from "axios";
+  import Typed from "typed.js";
   // 引入 Store 以便取得 Token
   import { useAuthStore } from "@/views/user/auth";
   const authStore = useAuthStore();
 
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import bg0 from "@/assets/img/bg9.jpg";
-import Information from "@/views/user/Sections/userInformation.vue";
-import Profile from "@/views/user/Sections/userProfile.vue";
-import Posts from "@/views/user/Sections/userPosts.vue";
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+  import bg0 from "@/assets/img/bg9.jpg";
+  import Information from "@/views/user/Sections/userInformation.vue";
+  import Profile from "@/views/user/Sections/userProfile.vue";
+  import Posts from "@/views/user/Sections/userPosts.vue";
 
-const router = useRouter();
-const API_BASE_URL = "https://localhost:7190/api";
+  const router = useRouter();
+  const API_BASE_URL = "https://localhost:7190/api";
 
-const goToBasic = () => {
-  router.push("/login");
-};
+  const goToBasic = () => {
+    router.push("/login");
+  };
 
-const isLoading = ref(false);
-// 計算關注人數
-const followingCount = computed(() =>
-  followingList.value ? followingList.value.length : 0
-);
+  const isLoading = ref(false);
+  // 計算關注人數
+  const followingCount = computed(() =>
+    followingList.value ? followingList.value.length : 0
+  );
 
-const getAxiosConfig = () => {
+  const getAxiosConfig = () => {
     const config = {
       withCredentials: true, // 允許跨域請求攜帶 Cookie (Session)
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
     return config; //彈性方便改回 JWT 模式
-};
+  };
 
-// 關注清單
-const fetchFollowingList = async () => {
-  try {
-    isLoading.value = true;
-    console.log(`正在請求 API: ${API_BASE_URL}/Social/following`);
-    const response = await axios.get(
-      `${API_BASE_URL}/Social/following`,
-      getAxiosConfig()
-    );
-    //console.log("API 回傳原始資料:", response);
+  // 關注清單
+  const fetchFollowingList = async () => {
+    try {
+      isLoading.value = true;
+      console.log(`正在請求 API: ${API_BASE_URL}/Social/following`);
+      const response = await axios.get(
+        `${API_BASE_URL}/Social/following`,
+        getAxiosConfig()
+      );
+      //console.log("API 回傳原始資料:", response);
 
-    // 檢查 1: 如果回傳的是字串且包含 HTML 標籤，代表被導向去登入頁面了
-    if (
-      typeof response.data === "string" &&
-      response.data.trim().startsWith("<!DOCTYPE")
-    ) {
-      // console.error(
-      //   "錯誤：API 回傳了 HTML 頁面而非 JSON，通常代表未登入或 Cookie 無效。"
-      // );
-      alert("請先登入會員");
-      router.push("/login");
-      return;
+      // 檢查 1: 如果回傳的是字串且包含 HTML 標籤，代表被導向去登入頁面了
+      if (
+        typeof response.data === "string" &&
+        response.data.trim().startsWith("<!DOCTYPE")
+      ) {
+        // console.error(
+        //   "錯誤：API 回傳了 HTML 頁面而非 JSON，通常代表未登入或 Cookie 無效。"
+        // );
+        alert("請先登入會員");
+        router.push("/login");
+        return;
+      }
+
+      const data = response.data;
+      if (Array.isArray(data)) {
+        followingList.value = data;
+      } else if (data && Array.isArray(data.result)) {
+        followingList.value = data.result;
+      } else {
+        console.warn("API 回傳格式非陣列，設為空值");
+        followingList.value = [];
+      }
+    } catch (error) {
+      console.error("取得關注清單失敗:", error);
+      if (
+        error.response &&
+        (error.response.status === 401 || error.response.status === 403)
+      ) {
+        alert("權限不足或未登入");
+        router.push("/login");
+      }
+    } finally {
+      isLoading.value = false;
     }
+  };
+  // 取消關注功能
+  const unfollow = async (targetId) => {
+    if (!confirm("確定要取消關注嗎？")) return;
 
-    const data = response.data;
-    if (Array.isArray(data)) {
-      followingList.value = data;
-    } else if (data && Array.isArray(data.result)) {
-      followingList.value = data.result;
-    } else {
-      console.warn("API 回傳格式非陣列，設為空值");
-      followingList.value = [];
+    try {
+      await axios.post(
+        `${API_BASE_URL}/Social/unfollow/${targetId}`,
+        {}, // POST 需要有 body，即使是空的
+        getAxiosConfig()
+      );
+
+      // 成功後，從前端清單移除該使用者，避免重新整理頁面
+      followingList.value = followingList.value.filter((u) => u.id !== targetId);
+      alert("已取消關注");
+    } catch (error) {
+      console.error("取消關注失敗", error);
+      alert("操作失敗，請稍後再試");
     }
-  } catch (error) {
-    console.error("取得關注清單失敗:", error);
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403)
-    ) {
-      alert("權限不足或未登入");
-      router.push("/login");
+  };
+
+  //hooks
+  onMounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.add("about-us");
+    body.classList.add("bg-gray-200");
+
+    if (document.getElementById("typed")) {
+      new Typed("#typed", {
+        stringsElement: "#typed-strings",
+        typeSpeed: 90,
+        backSpeed: 90,
+        backDelay: 200,
+        startDelay: 500,
+        loop: true,
+      });
     }
-  } finally {
-    isLoading.value = false;
-  }
-};
-// 取消關注功能
-const unfollow = async (targetId) => {
-  if (!confirm("確定要取消關注嗎？")) return;
+    fetchFollowingList(); // 呼叫後端 API
+  });
 
-  try {
-    await axios.post(
-      `${API_BASE_URL}/Social/unfollow/${targetId}`,
-      {}, // POST 需要有 body，即使是空的
-      getAxiosConfig()
-    );
-
-    // 成功後，從前端清單移除該使用者，避免重新整理頁面
-    followingList.value = followingList.value.filter((u) => u.id !== targetId);
-    alert("已取消關注");
-  } catch (error) {
-    console.error("取消關注失敗", error);
-    alert("操作失敗，請稍後再試");
-  }
-};
-
-//hooks
-onMounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.add("about-us");
-  body.classList.add("bg-gray-200");
-
-  if (document.getElementById("typed")) {
-    new Typed("#typed", {
-      stringsElement: "#typed-strings",
-      typeSpeed: 90,
-      backSpeed: 90,
-      backDelay: 200,
-      startDelay: 500,
-      loop: true,
-    });
-  }
-  fetchFollowingList(); // 呼叫後端 API
-});
-
-onUnmounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.remove("about-us");
-  body.classList.remove("bg-gray-200");
-});
+  onUnmounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.remove("about-us");
+    body.classList.remove("bg-gray-200");
+  });
 </script>
 <template>
-  <DefaultNavbar
-    :action="{
+  <DefaultNavbar :action="{
       route: 'javascript:;',
       label: 'Buy Now',
       color: 'btn-white',
