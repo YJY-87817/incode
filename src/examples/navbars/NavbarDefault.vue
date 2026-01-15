@@ -209,6 +209,12 @@ watch(
                       >
                         <span>點數商城</span>
                       </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'Order' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>我的訂單</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>

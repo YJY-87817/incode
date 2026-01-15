@@ -1,37 +1,3 @@
-<template>
-  <div class="upload-container">
-    <h2>圖片上傳測試</h2>
-
-    <input type="file" @change="handleFileChange" accept="image/*" />
-
-    <div v-if="previewUrl" class="preview-box">
-      <p>預覽圖：</p>
-      <img :src="previewUrl" style="max-width: 200px; border: 1px solid #ccc" />
-    </div>
-
-    <button @click="uploadImage" :disabled="!selectedFile || isUploading">
-      {{ isUploading ? "上傳中..." : "開始上傳" }}
-    </button>
-
-    <hr />
-
-    <div v-if="resultUrl">
-      <p style="color: green">上傳成功！伺服器路徑：</p>
-      <code>{{ resultUrl }}</code>
-      <br />
-      <img
-        :src="resultUrl"
-        alt="Server Image"
-        style="max-width: 300px; margin-top: 10px"
-      />
-    </div>
-
-    <div v-if="errorMessage" style="color: red">
-      <p>錯誤：{{ errorMessage }}</p>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref } from "vue";
 
@@ -89,6 +55,40 @@ const uploadImage = async () => {
   }
 };
 </script>
+
+<template>
+  <div class="upload-container">
+    <h2>圖片上傳測試</h2>
+
+    <input type="file" @change="handleFileChange" accept="image/*" />
+
+    <div v-if="previewUrl" class="preview-box">
+      <p>預覽圖：</p>
+      <img :src="previewUrl" style="max-width: 200px; border: 1px solid #ccc" />
+    </div>
+
+    <button @click="uploadImage" :disabled="!selectedFile || isUploading">
+      {{ isUploading ? "上傳中..." : "開始上傳" }}
+    </button>
+
+    <hr />
+
+    <div v-if="resultUrl">
+      <p style="color: green">上傳成功！伺服器路徑：</p>
+      <code>{{ resultUrl }}</code>
+      <br />
+      <img
+        :src="resultUrl"
+        alt="Server Image"
+        style="max-width: 300px; margin-top: 10px"
+      />
+    </div>
+
+    <div v-if="errorMessage" style="color: red">
+      <p>錯誤：{{ errorMessage }}</p>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .upload-container {
