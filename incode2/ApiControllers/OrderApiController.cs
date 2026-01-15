@@ -145,7 +145,7 @@ namespace incode2.ApiControllers
                 {
                     UserId = Order.UserId,
                     Remark = Order.Remark ?? "",
-                    Status = "pending", // 可依需求調整預設狀態
+                    Status = "未完成", // 可依需求調整預設狀態
                     TotalPoint = 0 // 之後更新
                 };
 
