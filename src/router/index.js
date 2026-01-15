@@ -27,7 +27,6 @@ import Mission from "../views/task/Mission.vue";
 import Mytask from "../views/task/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
-import PointLog2 from "../views/point/PointLog2.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
