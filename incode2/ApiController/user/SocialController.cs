@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace incode2.ApiController.user
 {
-    [Route("api/Socialcontroller")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "2")]  //登入後才能使用
 

@@ -39,18 +39,7 @@ builder.Services.AddCors(options =>
   });
 });
 
-//claude���ڡA�n��Api�Ϊ�
-//�|�v�T�쥻��View��ܡA�����ѱ�
-// �]�w JSON �ǦC�ƿﶵ
-//builder.Services.AddControllers()
-//.AddJsonOptions(options =>
-//{
-//  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // �O����l�R�W
-//  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // �B�z�`���ѷ�
-//});
-
 builder.Services.AddDistributedMemoryCache(); // 使用記憶體暫存 (正式環境建議用 Redis)
-
 
 builder.Services.AddSession(options =>
 {
@@ -146,10 +135,8 @@ app.UseStaticFiles();
 //�ҥ�Url Routing(�S�٬�Url Rewriting)�����}���n���S�Ӧh��T
 app.UseRouting();
 
-//�ҥ�CORS
-app.UseCors("VueApp");
+app.UseCors("VueApp"); //CORS
 
-//身分驗證 => 授予權限
 app.UseAuthentication();//先驗證身分
 app.UseAuthorization();
 app.UseSession();

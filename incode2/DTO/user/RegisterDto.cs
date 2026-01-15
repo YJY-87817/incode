@@ -15,8 +15,7 @@ namespace incode2.DTO.user
         [Compare("Password", ErrorMessage = "兩次輸入的密碼不一致")] // 這是註冊獨有的
         public string ConfirmPassword { get; set; }
 
-        [Required]
         [StringLength(20, ErrorMessage = "暱稱不能超過 20 字元")]
-        public string Username { get; set; }
+        public string? Username { get; set; }
     }
 }

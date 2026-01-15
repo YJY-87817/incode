@@ -29,6 +29,12 @@ namespace incode2.ApiController.user
                 return BadRequest(new { message = "此 Email 已被註冊" });
             }
 
+            if (string.IsNullOrEmpty(register.Username))
+            {
+                register.Username = register.Email.Split('@')[0];
+                // 只用 @ 前面的字
+            }
+
             _userService.Register(register);
             return Ok(new { message = "註冊成功，請登入" });
         }
