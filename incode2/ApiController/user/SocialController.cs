@@ -1,21 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using incode2.Service.user;
+using incode2.Service.user.@interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace incode2.ApiController.user
 {
-    [Route("api/usercontroller")]
+    [Route("api/Socialcontroller")]
     [ApiController]
     [Authorize(Roles = "2")]  //登入後才能使用
 
     public class SocialController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly ISocialService _SocialService;
 
-        public SocialController(IUserService userService)
+        public SocialController(ISocialService SocialService)
         {
-            _userService = userService;
+            _SocialService = SocialService;
         }
 
         // 取得當前登入者 ID 的輔助方法
@@ -36,7 +38,7 @@ namespace incode2.ApiController.user
             try
             {
                 int userId = GetCurrentUserId();
-                var result = _userService.SearchUsers(keyword, userId);
+                var result = _SocialService.SearchUsers(keyword, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -50,7 +52,7 @@ namespace incode2.ApiController.user
         public IActionResult GetFollowing()
         {
             int userId = GetCurrentUserId();
-            var result = _userService.GetMyFollowingList(userId);
+            var result = _SocialService.GetMyFollowingList(userId);
             return Ok(result);
         }
 
@@ -62,7 +64,7 @@ namespace incode2.ApiController.user
             try
             {
                 int userId = GetCurrentUserId();
-                _userService.FollowUser(userId, targetId);
+                _SocialService.FollowUser(userId, targetId);
                 return Ok(new { message = "追蹤成功" });
             }
             catch (Exception ex)
@@ -79,7 +81,7 @@ namespace incode2.ApiController.user
             try
             {
                 int userId = GetCurrentUserId();
-                _userService.UnfollowUser(userId, targetId);
+                _SocialService.UnfollowUser(userId, targetId);
                 return Ok(new { message = "已取消追蹤" });
             }
             catch (Exception ex)
