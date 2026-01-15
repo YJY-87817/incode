@@ -1,6 +1,6 @@
 ﻿using incode2.DTO.user;
 
-namespace incode2.Service.user.@interface
+namespace incode2.Service.user
 {
     public interface ISocialService
     {        

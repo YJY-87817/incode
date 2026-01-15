@@ -1,30 +1,31 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using incode2.DTO.user;
+using incode2.Service.user;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using incode2.DTO.user;
-using incode2.Service.user.@interface;
 
-namespace incode2.ApiController.user
+namespace incode2.Service.user
 {
     [Route("api/Auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly AuthService _authService;
+        private readonly UserService _userService;
 
-        // 注入 User Service
-        public AuthController(IUserService userService)
+        public AuthController(AuthService authService, UserService userService)
         {
+            _authService = authService;
             _userService = userService;
         }
 
         // POST: api/Auth/register
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterDto register)
+        public async Task<IActionResult> Register([FromBody] RegisterDto register)
         {
-            if (_userService.UserExists(register.Email))
+            if (await _authService.UserExistsAsync(register.Email))
             {
                 return BadRequest(new { message = "此 Email 已被註冊" });
             }
@@ -35,7 +36,7 @@ namespace incode2.ApiController.user
                 // 只用 @ 前面的字
             }
 
-            _userService.Register(register);
+            await _authService.RegisterAsync(register);
             return Ok(new { message = "註冊成功，請登入" });
         }
 
@@ -53,11 +54,15 @@ namespace incode2.ApiController.user
             }
 
             // 1. 建立身分資訊 (Claims)
+            // 保護可能的 null 值，避免傳入 Claim 時丟出 CS8604 / NullReferenceException
+            var usernameClaimValue = user.Username ?? string.Empty;
+            var roleClaimValue = (user.RoleId?.ToString()) ?? string.Empty;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),                
-                new Claim(ClaimTypes.Role, user.RoleId.ToString())// 存入權限等級，後續 Filter 會用到
+                new Claim(ClaimTypes.Name, usernameClaimValue),
+                new Claim(ClaimTypes.Role, roleClaimValue) // 存入權限等級，後續 Filter 會用到
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
@@ -71,7 +76,7 @@ namespace incode2.ApiController.user
             });
 
             // 回傳 JSON 給 Vue
-            return Ok(new { message = "登入成功", username = user.Username });
+            return Ok(new { message = "登入成功", username = usernameClaimValue });
         }
 
         // POST: api/Auth/logout
@@ -91,9 +96,11 @@ namespace incode2.ApiController.user
         [HttpGet("check")]// 增加一個 API 讓 Vue 確認登入狀態
         public IActionResult CheckLogin()
         {
-            if (User.Identity.IsAuthenticated)
+            // 使用 null-conditional 確保 User 或 Identity 為 null 時不會發生 NullReferenceException
+            if (User?.Identity?.IsAuthenticated == true)
             {
-                return Ok(new { isLogin = true, name = User.Identity.Name });
+                var name = User.Identity?.Name ?? string.Empty;
+                return Ok(new { isLogin = true, name });
             }
             return Unauthorized(new { isLogin = false });
         }

@@ -1,5 +1,4 @@
 ﻿using incode2.Service.user;
-using incode2.Service.user.@interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ namespace incode2.ApiController.user
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "3")]  //之後要改登入後才能使用
+    [Authorize]  //之後要改登入後才能使用(Roles = "2")
 
     public class SocialController : ControllerBase
     {

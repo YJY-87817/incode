@@ -1,160 +1,153 @@
 using incode2.Data;
 using incode2.Models;
 using incode2.Service.user;
-using incode2.Service.user.@interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
-//註冊DI容器的地方
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the DI container.
-//身份驗證用的
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-//給要去DI容器取物件的人使用
 builder.Services.AddDbContext<incodedatabaseContext>(option =>
 {
-  option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+    option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-//claude���ڡA�n��Api�Ϊ�
-// �]�w CORS - ���\ Vue �e�ݦs��
+// ==========================================
+// AddIdentity 內部會自動註冊 "Identity.Application" 這個 Cookie Scheme。
+// 用AddAuthentication().AddCookie(...)，會發生 "Scheme already exists" 錯誤導致崩潰。
+// ==========================================
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // 密碼設定
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+
+    // 鎖定設定
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 3;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // 使用者設定
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    options.User.RequireUniqueEmail = true;
+    options.SignIn.RequireConfirmedAccount = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// ==========================================
+// 使用此方法來「修改」上面 AddIdentity 自動產生的 Cookie 設定
+// ==========================================
+builder.Services.ConfigureApplicationCookie(options => {
+    // 自訂 Cookie 名稱
+    options.Cookie.Name = "MyCookieAuth";
+
+    // 安全性設定
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.None; // 允許跨域 (Vue 必備)
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // 強制 HTTPS
+    options.ExpireTimeSpan = TimeSpan.FromDays(1);
+    options.SlidingExpiration = true;
+    
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
+});
+
+// ==========================================
+// 4. CORS 設定
+// ==========================================
 builder.Services.AddCors(options =>
 {
-  options.AddPolicy("VueApp", policy =>
-  {
-    policy.WithOrigins(
-      "http://localhost:7190",
-      "https://localhost:5173",
-      "http://localhost:5173",// Vite �w�]�}�o��
-      "http://localhost:8080",  // Vue CLI �w�]�}�o��
-      "http://localhost:3000"   // ��L�i�઺�}�o��
-    )
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .AllowCredentials();
-  });
+    options.AddPolicy("VueApp", policy =>
+    {
+        policy.WithOrigins(
+          "http://localhost:7190",
+          "https://localhost:5173",
+          "http://localhost:5173",
+          "http://localhost:8080",
+          "http://localhost:3000"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials(); // 允許帶 Cookie
+    });
 });
 
-builder.Services.AddDistributedMemoryCache(); // 使用記憶體暫存 (正式環境建議用 Redis)
+// ==========================================
+// 5. 其他服務註冊
+// ==========================================
+builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddSession(options =>
 {
-  options.Cookie.Name = ".incode2.Session"; //暫存資料 像購物車
-  options.IdleTimeout = TimeSpan.FromMinutes(60);
-  options.Cookie.IsEssential = true;
-  options.Cookie.HttpOnly = true;
-  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.Name = ".incode2.Session";
+    options.IdleTimeout = TimeSpan.FromMinutes(60);
+    options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
 });
-
-builder.Services.AddAuthentication(options =>
-{    
-    options.DefaultScheme = "MyCookieAuth";
-})
-    .AddCookie("MyCookieAuth", options =>
-    {
-        options.Cookie.Name = "MyCookieAuth"; // 身分驗證的 Cookie 名稱
-        options.ExpireTimeSpan = TimeSpan.FromDays(1); // 登入狀態可以維持 1 天
-        //options.SlidingExpiration = true;  如果有活動，自動延長過期時間
-        options.Cookie.HttpOnly = true;   // 前端 JS 讀不到，安全
-
-        // 如果未登入被攔截，回應 401 而不是跳轉頁面 (因為是前後端分離)
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = 401;
-            return Task.CompletedTask;
-        };
-        // 如果權限不足 (例如 Member 想進 Admin)，回應 403
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = 403;
-            return Task.CompletedTask;
-        };
-    });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
-// 在這裡註冊你的 Service
-builder.Services.AddScoped<IUserService, AuthService>();
+// 註冊你的自訂 Service
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
-
-//新增密碼驗證規則
-builder.Services.Configure<IdentityOptions>(options => {
-  options.Password.RequireDigit = true;
-  options.Password.RequireLowercase = true;
-  options.Password.RequireNonAlphanumeric = true;
-  options.Password.RequireUppercase = true;
-  options.Password.RequiredLength = 8;
-  options.Password.RequiredUniqueChars = 1;
-
-  options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-  options.Lockout.MaxFailedAccessAttempts = 3;
-  options.Lockout.AllowedForNewUsers = true;  //帳號創立後要去email收驗證信
-
-  options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-  options.User.RequireUniqueEmail = true;
-  options.SignIn.RequireConfirmedEmail = true;
-});
-builder.Services.ConfigureApplicationCookie(options => {
-  options.Cookie.HttpOnly = true;
-  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-  options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-  options.LoginPath = "/Identity/Account/Login";
-  options.AccessDeniedPath = "/Identity/Account/AccessDenied";
-  options.SlidingExpiration = true;
-});
-//新增密碼驗證規則(上面)
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//錯誤處理
-// 選擇在開發環境時顯示詳細的error資訊，如果是"服務"則要倒過來才可以看到詳細資訊
+// ==========================================
+// 6. Middleware Pipeline (請求處理流程)
+// ==========================================
+
 if (app.Environment.IsDevelopment())
 {
-  app.UseMigrationsEndPoint();
+    app.UseMigrationsEndPoint();
 }
 else
 {
-  app.UseExceptionHandler("/Home/Error");
-  // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-  app.UseHsts();
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
 
-// HTTP request pipeline configuration
-//重導。瀏覽HTTP網頁--自動重導至HTTPS網頁，多s是有加密協定
 app.UseHttpsRedirection();
-
-//啟用Url Routing(又稱為Url Rewriting)讓網址不要暴露太多資訊
 app.UseStaticFiles();
-
-//�ҥ�Url Routing(�S�٬�Url Rewriting)�����}���n���S�Ӧh��T
 app.UseRouting();
 
-app.UseCors("VueApp"); //CORS
+app.UseCors("VueApp"); // 必須放在 Auth 之前
 
-app.UseAuthentication();//先驗證身分
+app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
 app.MapStaticAssets();
 
-//網址列的route變化規則
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
-    //如果都沒填的預設
-    //Controller命名最後一定要是Controller結尾，不能有s
     .WithStaticAssets();
 
 app.MapRazorPages()
    .WithStaticAssets();
+
 app.Run();
