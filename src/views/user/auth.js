@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-// import axios from "axios";
+import axios from "axios";
 
 export const useAuthStore = defineStore("auth", () => {
-  // 1. 定義狀態 (State)
   const form = reactive({
     email: "",
     password: "",
@@ -11,28 +10,17 @@ export const useAuthStore = defineStore("auth", () => {
   });
 
   const errors = reactive({
-    email: "請輸入Email",
-    password: "請輸入密碼",
-    confirmPassword: "請確認密碼",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
-
-  //輔助動作：清除特定欄位的錯誤 (UX 優化)
-  const clearError = (field) => {
-    if (errors[field]) {
-      errors[field] = "";
-    }
-  };
-
-  // 2. 驗證邏輯 (Actions)
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
-  const validateForm = () => {
+const validateForm = () => {
     let isValid = true;
-
-    // 重置錯誤
     errors.email = "";
     errors.password = "";
     errors.confirmPassword = "";
@@ -50,13 +38,13 @@ export const useAuthStore = defineStore("auth", () => {
     if (!form.password) {
       errors.password = "請輸入密碼";
       isValid = false;
-    } else if (form.password.length < 6) {
-      errors.password = "密碼長度至少需 6 個字元";
+    } else if (form.password.length < 8) {
+      errors.password = "密碼長度至少需 8 個字元";
       isValid = false;
     }
 
-    // 驗證確認密碼
-    if (form.password !== form.confirmPassword) {
+    // 驗證確認密碼 (只在註冊時需要，如果你是登入頁面共用此 store，要注意邏輯)
+    if (form.confirmPassword && form.password !== form.confirmPassword) {
       errors.confirmPassword = "兩次輸入的密碼不一致";
       isValid = false;
     }
@@ -64,7 +52,23 @@ export const useAuthStore = defineStore("auth", () => {
     return isValid;
   };
 
-  // 3. 註冊動作 (Actions)
+  //清除特定欄位的錯誤 
+  const clearError = (field) => {
+    if (errors[field]) {
+      errors[field] = "";
+    }
+  };
+
+const resetForm = () => {
+    console.log("重置表單資料");
+    form.email = "";
+    form.password = "";
+    form.confirmPassword = "";
+    // 如果有 errors 也要清空
+    Object.keys(errors).forEach(key => delete errors[key]); 
+  };
+
+  // 註冊
   const register = async () => {
     // 先執行驗證
     if (!validateForm()) {
@@ -72,21 +76,16 @@ export const useAuthStore = defineStore("auth", () => {
     }
 
     try {
-      // 發送 API (請依實際後端網址修改)
-      const response = await axios.post("http://localhost:3000/api/auth/register", {
+         const response = await axios.post("https://localhost:7190/api/Auth/register", {
         email: form.email,
         password: form.password,
+        confirmPassword: form.confirmPassword
       });
 
       console.log("註冊成功回應:", response.data);
-      alert("註冊成功！準備跳轉...");
-
-      // 清空表單
-      form.email = "";
-      form.password = "";
-      form.confirmPassword = "";
-
-      return true; // 註冊成功
+      alert("註冊成功！請前往登入。");
+      resetForm();
+      return true; 
 
     } catch (error) {
       console.error("註冊錯誤:", error);
@@ -96,10 +95,38 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+// 登入
+  const login = async () => {
+    if (!form.email || !form.password) {
+        alert("請輸入帳號密碼");
+        return false;
+    }
+    try {
+        // 假設登入 API 路徑
+        const response = await axios.post("https://localhost:7190/api/Auth/login", {
+            email: form.email,
+            password: form.password
+        },
+        { 
+                withCredentials: true // 確保 Cookie 被包含在請求中
+            }
+      );
+        console.log("登入成功", response.data);
+        alert("登入成功");
+        return true;
+    } catch (error) {
+        alert("登入失敗: " + (error.response?.data?.message || error.message));
+        return false;
+    }
+  };
+
   return {
     form,
     errors,
     register,
+    login,     // 記得匯出 login
+    resetForm, // 記得匯出 resetForm
+    clearError,
   };
 
 });
