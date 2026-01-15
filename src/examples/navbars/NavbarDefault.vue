@@ -215,6 +215,12 @@ watch(
                       >
                         <span>我的訂單</span>
                       </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'Checkout' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>購物車</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>
