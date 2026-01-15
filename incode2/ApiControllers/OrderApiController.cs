@@ -9,6 +9,7 @@ namespace incode2.ApiControllers
 {
     [EnableCors("VueApp")]
     [ApiController]
+    [Route("api/[controller]")]
     public class OrderApiController : ControllerBase
     {
         private readonly incodedatabaseContext _context;
@@ -20,8 +21,7 @@ namespace incode2.ApiControllers
 
         // 取得UserId的訂單資料
         // GET: api/OrderApi/order/{UserId}
-        [Route("api/OrderApi/order/{UserId}")]
-        [HttpGet("{UserId}")]
+        [HttpGet("order/{UserId}")]
         public async Task<ActionResult<IEnumerable<OrderDTO>>> GetOrder(int userId)
         {
             // 1. 使用 ToListAsync 進行非同步查詢
@@ -48,8 +48,7 @@ namespace incode2.ApiControllers
 
         // 取得OrderId的訂單資料
         // GET: api/OrderApi/orderdetail/{OrderId}
-        [Route("api/OrderApi/orderdetail/{OrderId}")]
-        [HttpGet("{OrderId}")]
+        [HttpGet("orderdetail/{OrderId}")]
         public async Task<ActionResult<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
         {
             // 1. 執行非同步查詢
@@ -80,8 +79,7 @@ namespace incode2.ApiControllers
 
         // 取得ShippedDetailId的訂單資料
         // GET: api/OrderApi/shippeddetail/{OrderdetailId}
-        [Route("api/OrderApi/shippeddetail/{OrderdetailId}")]
-        [HttpGet("{OrderdetailId}")]
+        [HttpGet("shippeddetail/{OrderdetailId}")]
         public async Task<ActionResult<IEnumerable<ShippedDTO>>> GetShippedDetail(int orderDetailId)
         {
             var results = await _context.ShippedDetail
@@ -108,9 +106,8 @@ namespace incode2.ApiControllers
         }
 
         // 新增訂單
-        // POST: api/OrderApi/order
-        [Route("api/OrderPost/order")]
-        [HttpPost]
+        // POST: api/OrderApi/OrderPost
+        [HttpPost("OrderPost")]
         public async Task<ResultDTO> CreateOrder([FromBody] CreateOrderRequest Order)
         {
             if (Order == null || Order.Items == null || !Order.Items.Any())
