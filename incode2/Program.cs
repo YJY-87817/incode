@@ -3,6 +3,7 @@ using incode2.Models;
 using incode2.Service.user;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 //註冊DI容器的地方
 var builder = WebApplication.CreateBuilder(args);
@@ -89,6 +90,7 @@ builder.Services.AddControllersWithViews();
 
 // 在這裡註冊你的 Service
 builder.Services.AddScoped<IUserService, AuthService>();
+builder.Services.AddScoped<ISocialService, SocialService>();
 
 //新增密碼驗證規則
 builder.Services.Configure<IdentityOptions>(options => {
