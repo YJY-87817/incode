@@ -1,4 +1,4 @@
-using incode2.Services;
+ï»¿using incode2.Services;
 using incode2.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,9 +7,9 @@ namespace incode2.ApiController
   /// <summary>
   /// ContentInteraction API
   /// 
-  /// °òÂ¦ URI: https://localhost:7190/api/contentinteractionapi
+  /// åŸºç¤ URI: https://localhost:7190/api/contentinteractionapi
   /// 
-  /// ©Ò¦³ºİÂI³£¥H¦¹°òÂ¦ URI ¶}ÀY
+  /// æ‰€æœ‰ç«¯é»éƒ½ä»¥æ­¤åŸºç¤ URI é–‹é ­
   /// </summary>
   [ApiController]
   [Route("api/[controller]")]
@@ -23,11 +23,11 @@ namespace incode2.ApiController
     }
 
     /// <summary>
-    /// ¨ú±o¯S©w¤º®eªº©Ò¦³¤¬°Ê
+    /// å–å¾—ç‰¹å®šå…§å®¹çš„æ‰€æœ‰äº’å‹•
     /// 
     /// URI: GET /api/contentinteractionapi/content/{contentId}
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// GET https://localhost:7190/api/contentinteractionapi/content/1
     /// </summary>
     [HttpGet("content/{contentId}")]
@@ -43,29 +43,29 @@ namespace incode2.ApiController
     }
 
     /// <summary>
-    /// ¨ú±o¨Ï¥ÎªÌ¹ï¯S©w¤º®eªº¤¬°Ê
+    /// å–å¾—ä½¿ç”¨è€…å°ç‰¹å®šå…§å®¹çš„äº’å‹•
     /// 
     /// URI: GET /api/contentinteractionapi/user/{contentId}?userId={userId}
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// GET https://localhost:7190/api/contentinteractionapi/user/1?userId=10
     /// </summary>
     [HttpGet("user/{contentId}")]
     public async Task<IActionResult> GetUserInteraction(int contentId, [FromQuery] int userId)
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId ¥²¶·¤j©ó 0" });
+      if (userId <= 0) return BadRequest(new { message = "UserId å¿…é ˆå¤§æ–¼ 0" });
 
       var interaction = await _contentInteractionService.GetUserInteraction(contentId, userId);
       if (interaction == null)
-        return Ok(new { message = "¦¹¨Ï¥ÎªÌ©|¥¼¹ï¸Ó¤º®e¶i¦æ¤¬°Ê" });
+        return Ok(new { message = "æ­¤ä½¿ç”¨è€…å°šæœªå°è©²å…§å®¹é€²è¡Œäº’å‹•" });
 
       return Ok(interaction);
     }
 
     /// <summary>
-    /// ·s¼W©Î²¾°£¤¬°Ê¡]Toggle¡^
-    /// ¦P¤@­Ó content + user + category «ö¤@¦¸·s¼W¡A¦A«ö¤@¦¸²¾°£
-    /// ¦pªG¤¬°ÊÃş«¬¤£¦P¡A«h§ó·s¬°·sÃş«¬
+    /// æ–°å¢æˆ–ç§»é™¤äº’å‹•ï¼ˆToggleï¼‰
+    /// åŒä¸€å€‹ content + user + category æŒ‰ä¸€æ¬¡æ–°å¢ï¼Œå†æŒ‰ä¸€æ¬¡ç§»é™¤
+    /// å¦‚æœäº’å‹•é¡å‹ä¸åŒï¼Œå‰‡æ›´æ–°ç‚ºæ–°é¡å‹
     /// 
     /// URI: POST /api/contentinteractionapi
     /// 
@@ -76,37 +76,40 @@ namespace incode2.ApiController
     ///   "userId": 10
     /// }
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// POST https://localhost:7190/api/contentinteractionapi
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddOrUpdateInteraction([FromBody] CreateContentInteractionDto dto)
+    //[FromBody]æ˜¯ASP.NET Core çš„åƒæ•¸ç¶å®šå±¬æ€§ï¼Œå‘Šè¨´æ¡†æ¶ã€Œè¦å¾ HTTP è«‹æ±‚çš„å“ªå€‹éƒ¨åˆ†å–å€¼ã€ï¼Œdto æœƒå¾ Request Body çš„ JSON ååºåˆ—åŒ–è€Œä¾†5
     {
+      //ç¢ºèª[FromBody]æ˜¯å¦ç¬¦åˆdto
       if (!ModelState.IsValid) { return BadRequest(ModelState); }
-
+      //ç¢ºèªdtoå…§â€‹å„â€‹é …valueâ€‹æ˜¯å¦â€‹ç¬¦åˆè‡ªè¨‚è¦â€‹å‰‡(â€‹éƒ½â€‹å¤§æ–¼0)
       if (dto.ContentId <= 0 || dto.UserId <= 0 || dto.InteractionCategoryId <= 0)
-      { return BadRequest(new { message = "ContentId¡BUserId ©M InteractionCategoryId ¥²¶·¤j©ó 0" }); }
+      { return BadRequest(new { message = "ContentIdã€UserId å’Œ InteractionCategoryId å¿…é ˆå¤§æ–¼ 0" }); }
 
       try
       {
         var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
         
+        //å›å‚³æ–°å¢äº’å‹•æˆ–æ˜¯ç§»é™¤äº’å‹•
         if (result == null)
         {
-          // ¤¬°Ê¤w³Q²¾°£
+          // äº’å‹•å·²è¢«ç§»é™¤
           return Ok(new
           {
-            message = "¤¬°Ê¤w²¾°£",
+            message = "äº’å‹•å·²ç§»é™¤",
             isRemoved = true,
             data = (object)null
           });
         }
         else
         {
-          // ¤¬°Ê¤w³Q·s¼W©Î§ó·s
+          // äº’å‹•å·²è¢«æ–°å¢æˆ–æ›´æ–°
           return Ok(new
           {
-            message = "¤¬°Ê¤w·s¼W©Î§ó·s",
+            message = "äº’å‹•å·²æ–°å¢æˆ–æ›´æ–°",
             isRemoved = false,
             data = result
           });
@@ -119,31 +122,31 @@ namespace incode2.ApiController
     }
 
     /// <summary>
-    /// ²¾°£¤¬°Ê
+    /// ç§»é™¤äº’å‹•
     /// 
     /// URI: DELETE /api/contentinteractionapi/{contentId}/{userId}/{interactionCategoryId}
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// DELETE https://localhost:7190/api/contentinteractionapi/5/10/1
     /// </summary>
     [HttpDelete("{contentId}/{userId}/{interactionCategoryId}")]
     public async Task<IActionResult> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
       if (contentId <= 0 || userId <= 0 || interactionCategoryId <= 0)
-        return BadRequest(new { message = "©Ò¦³ ID °Ñ¼Æ¥²¶·¤j©ó 0" });
+        return BadRequest(new { message = "æ‰€æœ‰ ID åƒæ•¸å¿…é ˆå¤§æ–¼ 0" });
 
       var success = await _contentInteractionService.RemoveInteraction(contentId, userId, interactionCategoryId);
-      if (!success) return NotFound(new { message = "§ä¤£¨ì¦¹¤¬°Ê°O¿ı" });
+      if (!success) return NotFound(new { message = "æ‰¾ä¸åˆ°æ­¤äº’å‹•è¨˜éŒ„" });
 
-      return Ok(new { message = "¤¬°Ê¤w²¾°£" });
+      return Ok(new { message = "äº’å‹•å·²ç§»é™¤" });
     }
 
     /// <summary>
-    /// ¨ú±o¤¬°Ê¤ÀÃş¦Cªí
+    /// å–å¾—äº’å‹•åˆ†é¡åˆ—è¡¨
     /// 
     /// URI: GET /api/contentinteractionapi/categories
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// GET https://localhost:7190/api/contentinteractionapi/categories
     /// </summary>
     [HttpGet("categories")]
@@ -154,17 +157,17 @@ namespace incode2.ApiController
     }
 
     /// <summary>
-    /// ²Î­p¤º®eªº¤¬°Ê¼Æ¡]«ö¤ÀÃş¡^
+    /// çµ±è¨ˆå…§å®¹çš„äº’å‹•æ•¸ï¼ˆæŒ‰åˆ†é¡ï¼‰
     /// 
     /// URI: GET /api/contentinteractionapi/stats/{contentId}
     /// 
-    /// ½d¨Ò:
+    /// ç¯„ä¾‹:
     /// GET https://localhost:7190/api/contentinteractionapi/stats/1
     /// </summary>
     [HttpGet("stats/{contentId}")]
     public async Task<IActionResult> GetInteractionStats(int contentId)
     {
-      if (contentId <= 0) return BadRequest(new { message = "ContentId ¥²¶·¤j©ó 0" });
+      if (contentId <= 0) return BadRequest(new { message = "ContentId å¿…é ˆå¤§æ–¼ 0" });
 
       var stats = await _contentInteractionService.GetInteractionStats(contentId);
       return Ok(stats);

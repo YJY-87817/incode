@@ -61,10 +61,12 @@ namespace incode2.Services
     /// </summary>
     public async Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto)
     {
-      // 檢查內容是否存在
+      // 檢查content是否存在
       var contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId);
       if (!contentExists)
+      {
         throw new Exception($"內容 ID {dto.ContentId} 不存在");
+      }
 
       // 檢查互動分類是否存在
       var categoryExists = await _context.InteractionCategory
@@ -82,6 +84,7 @@ namespace incode2.Services
         if (existingInteraction.CategoryId == dto.InteractionCategoryId)
         {
           _context.ContentInteraction.Remove(existingInteraction);
+          //實際刪除在這行
           await _context.SaveChangesAsync();
           
           // 回傳 null 表示互動已被移除

@@ -93,6 +93,9 @@ builder.Services.ConfigureApplicationCookie(options => {
 });
 //新增密碼驗證規則(上面)
 
+//Service透過DI建立
+builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
