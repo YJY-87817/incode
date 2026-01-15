@@ -9,7 +9,7 @@ namespace incode2.ApiController.user
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "2")]  //登入後才能使用
+    [Authorize(Roles = "3")]  //之後要改登入後才能使用
 
     public class SocialController : ControllerBase
     {

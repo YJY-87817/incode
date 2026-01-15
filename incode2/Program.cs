@@ -29,7 +29,8 @@ builder.Services.AddCors(options =>
   {
     policy.WithOrigins(
       "http://localhost:7190",
-      "http://localhost:5173",  // Vite �w�]�}�o��
+      "https://localhost:5173",
+      "http://localhost:5173",// Vite �w�]�}�o��
       "http://localhost:8080",  // Vue CLI �w�]�}�o��
       "http://localhost:3000"   // ��L�i�઺�}�o��
     )
@@ -50,10 +51,13 @@ builder.Services.AddSession(options =>
   options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
-builder.Services.AddAuthentication("MyCookieAuth")
+builder.Services.AddAuthentication(options =>
+{    
+    options.DefaultScheme = "MyCookieAuth";
+})
     .AddCookie("MyCookieAuth", options =>
     {
-        options.Cookie.Name = ".ReviewPlatform.Auth"; // 身分驗證的 Cookie 名稱
+        options.Cookie.Name = "MyCookieAuth"; // 身分驗證的 Cookie 名稱
         options.ExpireTimeSpan = TimeSpan.FromDays(1); // 登入狀態可以維持 1 天
         //options.SlidingExpiration = true;  如果有活動，自動延長過期時間
         options.Cookie.HttpOnly = true;   // 前端 JS 讀不到，安全

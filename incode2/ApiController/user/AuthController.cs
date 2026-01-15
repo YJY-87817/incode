@@ -57,7 +57,7 @@ namespace incode2.ApiController.user
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),                
-                new Claim("RoleId", user.RoleId.ToString())// 存入權限等級，後續 Filter 會用到
+                new Claim(ClaimTypes.Role, user.RoleId.ToString())// 存入權限等級，後續 Filter 會用到
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
