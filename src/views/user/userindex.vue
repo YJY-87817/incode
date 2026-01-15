@@ -3,6 +3,9 @@ import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import Typed from "typed.js";
+  // 引入 Store 以便取得 Token
+  import { useAuthStore } from "@/views/user/auth";
+  const authStore = useAuthStore();
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
@@ -17,7 +20,7 @@ const API_BASE_URL = "https://localhost:7190/api";
 const goToBasic = () => {
   router.push("/login");
 };
-const followingList = ref([]);
+
 const isLoading = ref(false);
 // 計算關注人數
 const followingCount = computed(() =>
@@ -25,12 +28,13 @@ const followingCount = computed(() =>
 );
 
 const getAxiosConfig = () => {
-  return {
-    withCredentials: true, // 允許跨域請求自動攜帶 Cookie (Session)
+    const config = {
+      withCredentials: true, // 允許跨域請求攜帶 Cookie (Session)
     headers: {
       "Content-Type": "application/json",
     },
   };
+    return config; //彈性方便改回 JWT 模式
 };
 
 // 關注清單
@@ -79,7 +83,6 @@ const fetchFollowingList = async () => {
     isLoading.value = false;
   }
 };
-
 // 取消關注功能
 const unfollow = async (targetId) => {
   if (!confirm("確定要取消關注嗎？")) return;
@@ -131,14 +134,9 @@ onUnmounted(() => {
       route: 'javascript:;',
       label: 'Buy Now',
       color: 'btn-white',
-    }"
-    transparent
-  />
+    }" transparent />
   <header class="bg-gradient-dark">
-    <div
-      class="page-header min-vh-75"
-      :style="{ backgroundImage: `url(${bg0})` }"
-    >
+    <div class="page-header min-vh-75" :style="{ backgroundImage: `url(${bg0})` }">
       <span class="mask bg-gradient-dark opacity-6"></span>
       <div class="container">
         <div class="row justify-content-center">
@@ -151,11 +149,7 @@ onUnmounted(() => {
               <h1>~~~</h1>
             </div>
             <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button
-              type="submit"
-              class="btn bg-white text-dark"
-              @click="goToBasic"
-            >
+            <button type="submit" class="btn bg-white text-dark" @click="goToBasic">
               <span class="text-success text-gradient font-weight-bold">
                 登入
               </span>
@@ -174,19 +168,12 @@ onUnmounted(() => {
       <div class="col-md-8 col-12 mx-auto">
         <h5>關注列表詳情：({{ followingCount }}人)</h5>
         <ul class="list-group">
-          <li
-            v-for="user in followingList"
-            :key="user.userId"
-            class="list-group-item d-flex justify-content-between align-items-center"
-          >
+          <li v-for="user in followingList" :key="user.userId"
+            class="list-group-item d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
               <!-- 顯示頭像 (如果有) -->
-              <img
-                v-if="user.imageUrl"
-                :src="user.imageUrl"
-                class="avatar avatar-sm me-3 border-radius-lg"
-                alt="user"
-              />
+              <img v-if="user.imageUrl" :src="user.imageUrl" class="avatar avatar-sm me-3 border-radius-lg"
+                alt="user" />
               <div class="d-flex flex-column">
                 <!-- 修正：使用 username 對應 DTO -->
                 <h6 class="mb-1 text-dark text-sm">
@@ -195,10 +182,7 @@ onUnmounted(() => {
                 <span class="text-xs">{{ user.Email }}</span>
               </div>
             </div>
-            <button
-              class="btn btn-sm btn-outline-danger mb-0"
-              @click="unfollow(user.userId)"
-            >
+            <button class="btn btn-sm btn-outline-danger mb-0" @click="unfollow(user.userId)">
               取消關注
             </button>
           </li>
