@@ -108,19 +108,92 @@ namespace incode2.ApiControllers
         }
 
         // 新增訂單
-        // POST: api/OrderApi/order/{UserId}
-        [Route("api/OrderPost/order/{UserId}")]
-        [HttpPost("{UserId}")]
-        public async Task<ResultDTO> PutNewOrder(int UserId, CreateOrderRequest NewOrder)
+        // POST: api/OrderApi/order
+        [Route("api/OrderPost/order")]
+        [HttpPost]
+        public async Task<ResultDTO> CreateOrder([FromBody] CreateOrderRequest Order)
         {
-            if (UserId != NewOrder.UserId)
+            if (Order == null || Order.Items == null || !Order.Items.Any())
+                return new ResultDTO { ok = false, code = 400 };
+
+            // 檢查 user 是否存在
+            var user = await _context.User.FindAsync(Order.UserId);
+            if (user == null)
+                return new ResultDTO { ok = false, code = 400 };
+
+            // 取得所有商品
+            var productIds = Order.Items.Select(i => i.ProductId).Distinct().ToList();
+            var products = await _context.Product
+                .Where(p => productIds.Contains(p.ProductId))
+                .ToListAsync();
+
+            // 檢查商品是否都存在
+            var missing = productIds.Except(products.Select(p => p.ProductId)).ToList();
+            if (missing.Any())
+                return new ResultDTO { ok = false, code = 400 };
+
+            // 檢查庫存 (若需)
+            foreach (var it in Order.Items)
             {
-                return new ResultDTO { ok = false, code = 400 }; // 400
+                var prod = products.First(p => p.ProductId == it.ProductId);
+                if (prod.Stock < it.Quantity)
+                    return new ResultDTO { ok = false, code = 400 };
             }
 
-            return new ResultDTO { ok = false, code = 404 };
+            // 交易建立訂單與明細
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var order = new Orders
+                {
+                    UserId = Order.UserId,
+                    Remark = Order.Remark ?? "",
+                    Status = "pending", // 可依需求調整預設狀態
+                    TotalPoint = 0 // 之後更新
+                };
+
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync(); // 取得 order.OrderId
+
+                var orderdetails = new List<Orderdetail>();
+                var totalPoints = 0;
+
+                foreach (var item in Order.Items)
+                {
+                    var prod = products.First(p => p.ProductId == item.ProductId);
+
+                    var od = new Orderdetail
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = prod.ProductId,
+                        Quantity = item.Quantity,
+                        UnitPointAtPurchase = prod.Point,
+                        RequiresShipping = prod.IsPhysical
+                    };
+
+                    orderdetails.Add(od);
+                    _context.Orderdetail.Add(od);
+
+                    // 扣庫存（若業務需要）
+                    prod.Stock -= item.Quantity;
+                    _context.Product.Update(prod);
+
+                    totalPoints += item.Quantity * prod.Point;
+                }
+
+                order.TotalPoint = totalPoints;
+                _context.Orders.Update(order);
+
+                await _context.SaveChangesAsync();
+
+                return new ResultDTO { ok = true, code = 204 };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
 
         }
-
     }
 }
