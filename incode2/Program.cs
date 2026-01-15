@@ -63,6 +63,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 
 
 //新增密碼驗證規則(下面)
