@@ -233,7 +233,7 @@ namespace incode2.ApiControllers
 
                 return ResultDTO<int>.Success(shipped.ShippedDetailId, "寄送資料建立成功");
             }
-            catch (Exception ex)
+            catch
             {
                 return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
             }
