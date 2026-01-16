@@ -62,9 +62,7 @@ const contentInteractionApi = {
   like(contentId) {
     return this.postInteraction({ category_id: 1, content_id: contentId });
   },
-  dislike(contentId) {
-    return this.postInteraction({ category_id: 2, content_id: contentId });
-  },
+  
   bookmark(contentId) {
     return this.postInteraction({ category_id: 3, content_id: contentId });
   },

@@ -37,7 +37,6 @@ const props = defineProps({
  */
 const categories = ref([
   { id: 1, name: "like" },
-  { id: 2, name: "dislike" },
   { id: 3, name: "bookmark" },
   { id: 4, name: "block" },
   { id: 5, name: "hide" }, // 隱藏自己的內容
@@ -50,8 +49,7 @@ function buttonClass(name) {
   switch (name) {
     case "like":
       return "btn-outline-primary";
-    case "dislike":
-      return "btn-outline-danger";
+
     case "bookmark":
       return "btn-outline-success";
     case "block":
@@ -70,8 +68,7 @@ function iconClass(name) {
   switch (name) {
     case "like":
       return "fas fa-thumbs-up";
-    case "dislike":
-      return "fas fa-thumbs-down";
+
     case "bookmark":
       return "fas fa-bookmark";
     case "block":
