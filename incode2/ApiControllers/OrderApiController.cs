@@ -41,7 +41,7 @@ namespace incode2.ApiControllers
             // 2. 判斷是否找到資料 (選用：若使用者沒訂單回傳空陣列是合理的，若要嚴格檢查可用以下判斷)
             if (orders == null)
             {
-                return NotFound();
+                return NotFound($"找不到會員ID為 {userId} 的訂單資料");
             }
 
             return Ok(orders);
@@ -72,7 +72,7 @@ namespace incode2.ApiControllers
             // 3. 檢查是否有資料
             if (details == null || !details.Any())
             {
-                return NotFound($"找不到訂單編號為 {orderId} 的明細資料");
+                return NotFound($"找不到訂單編號為 {orderId} 的資料明細");
             }
 
             return Ok(details);
@@ -100,7 +100,7 @@ namespace incode2.ApiControllers
 
             if (results == null || !results.Any())
             {
-                return NotFound($"找不到訂單明細 ID 為 {orderDetailId} 的出貨資料");
+                return NotFound($"找不到訂單明細ID為 {orderDetailId} 的出貨資料");
             }
 
             return Ok(results);
@@ -185,6 +185,56 @@ namespace incode2.ApiControllers
             catch
             {
                 await transaction.RollbackAsync();
+                return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
+            }
+        }
+
+        // 新增訂單
+        // POST: api/OrderApi/ShippedPost
+        [HttpPost("ShippedPost")]
+        public async Task<ResultDTO<int>> CreateShipped([FromBody] NewShippedRequest Shipped)
+        {
+            // 檢驗是否空
+            if (Shipped == null)
+                return ResultDTO<int>.Failure("無效的請求數據");
+
+            // 檢驗ID是否存在
+            var orderdetail = await _context.User.FindAsync(Shipped.OrderdetailId);
+            if (orderdetail == null)
+                return ResultDTO<int>.Failure($"找不到該訂單細項{orderdetail}");
+
+            // 檢查寄送資料
+            if (Shipped.RecipientName == "" || Shipped.RecipientPhone == "" || Shipped.RecipientAddress == "")
+                return ResultDTO<int>.Failure($"寄送資料不完整");
+
+            // 存入資料
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 建立訂單主檔
+                var shipped = new ShippedDetail
+                {
+                    OrderdetailId = Shipped.OrderdetailId,
+                    RecipientName = Shipped.RecipientName,
+                    RecipientAddress = Shipped.RecipientAddress,
+                    RecipientPhone = Shipped.RecipientPhone,
+                    IsFailed = false,
+                    Remark = Shipped.Remark ?? "",
+                    IsCompleted = false,
+                    ShippedDate = null,
+                    ArrivalDate = null,
+                };
+
+                _context.ShippedDetail.Update(shipped);
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return ResultDTO<int>.Success(shipped.ShippedDetailId, "寄送資料建立成功");
+            }
+            catch (Exception ex)
+            {
                 return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
             }
         }
