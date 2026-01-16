@@ -236,8 +236,8 @@ namespace incode2.ApiControllers
         }
 
         // 修改寄送資料
-        // PUT: api/OrderApi/ShippedPost/{OrderdetailId}
-        [HttpPut("ShippedPost/{ShippedDetailId}")]
+        // PUT: api/OrderApi/ShippedPut/{OrderdetailId}
+        [HttpPut("ShippedPut/{ShippedDetailId}")]
         public async Task<ResultDTO<int>> DeitShipped(int ShippedDetailId, 
         [FromBody] NewShippedRequest Shipped)
         {
