@@ -81,10 +81,9 @@ namespace incode2.Areas.Identity.Pages.Account
       public string Email { get; set; }
       
       
-      [Display(Name ="員工編號")]
-      [Required(ErrorMessage ="必填")]
+      [Display(Name ="員工編號")]      
       [MaxLength(15)]
-      public string Account { get; set; }
+      public string? Account { get; set; }
 
       /// <summary>
       ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -119,8 +118,7 @@ namespace incode2.Areas.Identity.Pages.Account
       ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
       if (ModelState.IsValid)
       {
-        var user = CreateUser();
-        user.CountryCode = Input.Account;
+        var user = CreateUser();        
         await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         var result = await _userManager.CreateAsync(user, Input.Password);

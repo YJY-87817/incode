@@ -8,7 +8,7 @@ namespace incode2.ApiController.user
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]  //之後要改登入後才能使用(Roles = "2")
+    [Authorize(Roles = "2")]  //登入後才能使用
 
     public class SocialController : ControllerBase
     {
@@ -22,12 +22,14 @@ namespace incode2.ApiController.user
         // 取得當前登入者 ID 的輔助方法
         private int GetCurrentUserId()
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier); // 對應 Login 時存入的 ID
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
             if (idClaim != null && int.TryParse(idClaim.Value, out int userId))
             {
                 return userId;
             }
-            throw new UnauthorizedAccessException("無法識別使用者身分");
+            return 0;
+            //throw new UnauthorizedAccessException("無法識別使用者身分");
         }
 
         // GET: api/Social/search?keyword=小明
@@ -35,8 +37,10 @@ namespace incode2.ApiController.user
         public IActionResult Search([FromQuery] string keyword)
         {
             try
-            {
+            {               
                 int userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
+
                 var result = _SocialService.SearchUsers(keyword, userId);
                 return Ok(result);
             }
@@ -51,6 +55,8 @@ namespace incode2.ApiController.user
         public IActionResult GetFollowing()
         {
             int userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
+
             var result = _SocialService.GetMyFollowingList(userId);
             return Ok(result);
         }
@@ -63,12 +69,14 @@ namespace incode2.ApiController.user
             try
             {
                 int userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
+
                 _SocialService.FollowUser(userId, targetId);
                 return Ok(new { message = "追蹤成功" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "操作失敗" });
+                return BadRequest(new { message = "操作失敗", error = ex.Message });
             }
         }
 
@@ -80,12 +88,14 @@ namespace incode2.ApiController.user
             try
             {
                 int userId = GetCurrentUserId();
+                if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
+
                 _SocialService.UnfollowUser(userId, targetId);
                 return Ok(new { message = "已取消追蹤" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "操作失敗" });
+                return BadRequest(new { message = "操作失敗", error = ex.Message });
             }
         }
     }

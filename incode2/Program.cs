@@ -25,10 +25,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     // 密碼設定
     options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 8;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireLowercase = false; //測試用 之後可以改嚴
+    options.Password.RequireUppercase = false; //測試用
+    options.Password.RequireNonAlphanumeric = false;//測試用
 
     // 鎖定設定
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -38,7 +38,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     // 使用者設定
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
     options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedAccount = false;//測試用
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -110,7 +110,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 // 註冊你的自訂 Service
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
 

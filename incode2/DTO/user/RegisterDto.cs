@@ -9,7 +9,7 @@ namespace incode2.DTO.user
         public string Email { get; set; } 
 
         [Required]
-        [StringLength(100, MinimumLength = 8, ErrorMessage = "密碼至少需要 8 碼")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "密碼至少需要 6 碼")]
         public string Password { get; set; }
 
         [Compare("Password", ErrorMessage = "兩次輸入的密碼不一致")] // 這是註冊獨有的

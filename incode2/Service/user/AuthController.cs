@@ -1,10 +1,8 @@
-﻿using incode2.DTO.user;
-using incode2.Service.user;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
+﻿using incode2.Data;
+using incode2.DTO.user;
+using incode2.Models; 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace incode2.Service.user
 {
@@ -12,95 +10,108 @@ namespace incode2.Service.user
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AuthService _authService;
-        private readonly UserService _userService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
-        public AuthController(AuthService authService, UserService userService)
+        public AuthController(
+          UserManager<ApplicationUser> userManager,
+          SignInManager<ApplicationUser> signInManager)
         {
-            _authService = authService;
-            _userService = userService;
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
 
-        // POST: api/Auth/register
-        [HttpPost("register")]
+        // POST: api/Auth/register
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto register)
         {
-            if (await _authService.UserExistsAsync(register.Email))
+            // 1. 檢查 Email 是否已存在
+            var existingUser = await _userManager.FindByEmailAsync(register.Email);
+            if (existingUser != null)
             {
                 return BadRequest(new { message = "此 Email 已被註冊" });
             }
 
-            if (string.IsNullOrEmpty(register.Username))
+            // 2. 建立使用者物件
+            // 注意：Identity 要求 UserName 不能為空，通常我們將 Email 填入 UserName
+            var user = new ApplicationUser
             {
-                register.Username = register.Email.Split('@')[0];
-                // 只用 @ 前面的字
-            }
+                UserName = register.Email,
+                Email = register.Email,
+                // 如果 ApplicationUser 有自定義欄位，在這裡賦值 Name = register.Username
+                
+            };
 
-            await _authService.RegisterAsync(register);
-            return Ok(new { message = "註冊成功，請登入" });
+            // 3. 建立帳號
+            // CreateAsync 會自動進行密碼雜湊 (Hashing) 處理
+            var result = await _userManager.CreateAsync(user, register.Password);
+
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "註冊成功，請登入" });
+            }
+            else
+            {
+                // 回傳具體的錯誤原因 (例如：密碼需包含大寫字母)
+                var errorMsg = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = "註冊失敗", details = errorMsg });
+            }
         }
 
-        // POST: api/Auth/login
-        [HttpPost("login")]
+        // POST: api/Auth/login
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto login)
         {
-            // [ApiController] 會自動驗證 login 格式，這裡不需要寫 ModelState.IsValid
-
-            var user = _userService.ValidateUser(login.Email, login.Password);
+            // 1. 先確認帳號存在
+            var user = await _userManager.FindByEmailAsync(login.Email);
             if (user == null)
             {
-                // API 標準回傳：401 Unauthorized
                 return Unauthorized(new { message = "帳號或密碼錯誤" });
             }
 
-            // 1. 建立身分資訊 (Claims)
-            // 保護可能的 null 值，避免傳入 Claim 時丟出 CS8604 / NullReferenceException
-            var usernameClaimValue = user.Username ?? string.Empty;
-            var roleClaimValue = (user.RoleId?.ToString()) ?? string.Empty;
+            // 2. 使用 SignInManager 登入
+            // 參數說明: (user, password, isPersistent, lockoutOnFailure)
+            // 這行程式碼會自動處理 Scheme 和 Cookie，避免 500 錯誤
+            var result = await _signInManager.PasswordSignInAsync(user, login.Password, isPersistent: true, lockoutOnFailure: false);
 
-            var claims = new List<Claim>
+            if (result.Succeeded)
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, usernameClaimValue),
-                new Claim(ClaimTypes.Role, roleClaimValue) // 存入權限等級，後續 Filter 會用到
-            };
+                return Ok(new
+                {
+                    message = "登入成功",
+                    username = user.UserName,
+                    userId = user.Id
+                });
+            }
 
-            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-
-            // 2. 簽發 Cookie (登入)
-            await HttpContext.SignInAsync("MyCookieAuth", claimsPrincipal, new AuthenticationProperties
+            if (result.IsLockedOut)
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTime.UtcNow.AddDays(7)
-            });
+                return Unauthorized(new { message = "帳號已被鎖定，請稍後再試" });
+            }
 
-            // 回傳 JSON 給 Vue
-            return Ok(new { message = "登入成功", username = usernameClaimValue });
+            return Unauthorized(new { message = "帳號或密碼錯誤" });
         }
 
-        // POST: api/Auth/logout
-        [HttpPost("logout")]
+        // POST: api/Auth/logout
+        [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            // 登出
-            await HttpContext.SignOutAsync("MyCookieAuth");
+            await _signInManager.SignOutAsync();
 
-            // 如果有使用 Session 存暫存資料，順便清空
+            // 清除 Session (如果有用的話)
             HttpContext.Session.Clear();
 
             return Ok(new { message = "已登出" });
         }
 
-        // GET: api/Auth/check
-        [HttpGet("check")]// 增加一個 API 讓 Vue 確認登入狀態
+        // GET: api/Auth/check
+        [HttpGet("check")]
         public IActionResult CheckLogin()
         {
-            // 使用 null-conditional 確保 User 或 Identity 為 null 時不會發生 NullReferenceException
-            if (User?.Identity?.IsAuthenticated == true)
+            // User.Identity.IsAuthenticated 會自動讀取 Cookie 驗證狀態
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                var name = User.Identity?.Name ?? string.Empty;
-                return Ok(new { isLogin = true, name });
+                return Ok(new { isLogin = true, name = User.Identity.Name });
             }
             return Unauthorized(new { isLogin = false });
         }
