@@ -1,6 +1,7 @@
 ﻿using incode2.DTO;
 using incode2.DTO.PointShop;
 using incode2.Models;
+using incode2.Partials;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -108,72 +109,66 @@ namespace incode2.ApiControllers
         // 新增訂單
         // POST: api/OrderApi/OrderPost
         [HttpPost("OrderPost")]
-        public async Task<ResultDTO> CreateOrder([FromBody] CreateOrderRequest Order)
+        public async Task<ResultDTO<int>> CreateOrder([FromBody] CreateOrderRequest Order)
         {
             if (Order == null || Order.Items == null || !Order.Items.Any())
-                return new ResultDTO { ok = false, code = 400 };
+                return ResultDTO<int>.Failure("無效的請求數據");
 
             // 檢查 user 是否存在
             var user = await _context.User.FindAsync(Order.UserId);
             if (user == null)
-                return new ResultDTO { ok = false, code = 400 };
+                return ResultDTO<int>.Failure($"找不到該會員{user}");
 
             // 取得所有商品
             var productIds = Order.Items.Select(i => i.ProductId).Distinct().ToList();
-            var products = await _context.Product
+            var productDict = await _context.Product
                 .Where(p => productIds.Contains(p.ProductId))
-                .ToListAsync();
+                .ToDictionaryAsync(p => p.ProductId);
 
             // 檢查商品是否都存在
-            var missing = productIds.Except(products.Select(p => p.ProductId)).ToList();
-            if (missing.Any())
-                return new ResultDTO { ok = false, code = 400 };
-
-            // 檢查庫存 (若需)
-            foreach (var it in Order.Items)
+            foreach (var item in Order.Items)
             {
-                var prod = products.First(p => p.ProductId == it.ProductId);
-                if (prod.Stock < it.Quantity)
-                    return new ResultDTO { ok = false, code = 400 };
+                if (!productDict.TryGetValue(item.ProductId, out var prod))
+                    return ResultDTO<int>.Failure($"無此商品{item.ProductId}");
+
+                if (prod.Stock < item.Quantity)
+                    return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足" );
             }
 
             // 交易建立訂單與明細
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 建立訂單主檔
                 var order = new Orders
                 {
                     UserId = Order.UserId,
                     Remark = Order.Remark ?? "",
-                    Status = "未完成", // 可依需求調整預設狀態
-                    TotalPoint = 0 // 之後更新
+                    Status = "Pending", // 建議使用更正式的狀態
+                    OrderDate = DateTime.Now,
+                    TotalPoint = 0,
                 };
 
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync(); // 取得 order.OrderId
+                int totalPoints = 0;
 
-                var orderdetails = new List<Orderdetail>();
-                var totalPoints = 0;
-
+                // 5. 處理明細與庫存扣除
                 foreach (var item in Order.Items)
                 {
-                    var prod = products.First(p => p.ProductId == item.ProductId);
+                    var prod = productDict[item.ProductId];
 
-                    var od = new Orderdetail
+                    // 建立明細 (不需要手動填 OrderId，EF 會自動關聯)
+                    var detail = new Orderdetail
                     {
-                        OrderId = order.OrderId,
                         ProductId = prod.ProductId,
                         Quantity = item.Quantity,
                         UnitPointAtPurchase = prod.Point,
                         RequiresShipping = prod.IsPhysical
                     };
 
-                    orderdetails.Add(od);
-                    _context.Orderdetail.Add(od);
+                    order.Orderdetail.Add(detail);
 
-                    // 扣庫存（若業務需要）
+                    // 扣除庫存
                     prod.Stock -= item.Quantity;
-                    _context.Product.Update(prod);
 
                     totalPoints += item.Quantity * prod.Point;
                 }
@@ -183,14 +178,15 @@ namespace incode2.ApiControllers
 
                 await _context.SaveChangesAsync();
 
-                return new ResultDTO { ok = true, code = 204 };
+                await transaction.CommitAsync();
+
+                return ResultDTO<int>.Success(order.OrderId, "訂單建立成功");
             }
             catch
             {
                 await transaction.RollbackAsync();
-                throw;
+                return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
             }
-
         }
     }
 }
