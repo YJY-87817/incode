@@ -34,7 +34,8 @@ namespace incode2.ApiControllers
                 PointTypeDefinitionId=pl.PointTypeDefinitionId,
                 ChangeAmount =pl.ChangeAmount,
                 BalanceAfter=pl.BalanceAfter,
-                CreatedAt=pl.CreatedAt
+                Status=pl.Status,
+                CreatedAt =pl.CreatedAt
             });
         }
 
@@ -72,6 +73,7 @@ namespace incode2.ApiControllers
                     PointTypeDefinitionId = pl.PointTypeDefinitionId,
                     ChangeAmount = pl.ChangeAmount,
                     BalanceAfter = pl.BalanceAfter,
+                    Status = pl.Status,
                     CreatedAt = pl.CreatedAt
                 })
                 .ToListAsync();
@@ -95,6 +97,7 @@ namespace incode2.ApiControllers
                 Pl.PointTypeDefinitionId = PlDTO.PointTypeDefinitionId;
                 Pl.ChangeAmount = PlDTO.ChangeAmount;
                 Pl.BalanceAfter = PlDTO.BalanceAfter;
+                Pl.Status = PlDTO.Status;
                 Pl.CreatedAt = PlDTO.CreatedAt;
 
                 _context.Entry(Pl).State = EntityState.Modified;
@@ -131,7 +134,8 @@ namespace incode2.ApiControllers
                 PointTypeDefinitionId=PlDTO.PointTypeDefinitionId,
                 ChangeAmount =PlDTO.ChangeAmount,
                 BalanceAfter=PlDTO.BalanceAfter,
-                CreatedAt=PlDTO.CreatedAt,
+                Status=PlDTO.Status,
+                CreatedAt =PlDTO.CreatedAt,
             };
             _context.PointLog.Add(Pl);
             await _context.SaveChangesAsync(); //id+=? 你填的0會被覆蓋

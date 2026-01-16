@@ -21,6 +21,8 @@ public partial class PointLog
 
     public int BalanceAfter { get; set; }
 
+    public int Status { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual PointTypeDefinition PointTypeDefinition { get; set; }

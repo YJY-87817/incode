@@ -15,6 +15,7 @@
         public int ChangeAmount { get; set; }
 
         public int BalanceAfter { get; set; }
+        public int Status { get; set; }
 
         public DateTime? CreatedAt { get; set; }
     }
