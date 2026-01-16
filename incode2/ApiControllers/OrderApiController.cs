@@ -5,6 +5,7 @@ using incode2.Partials;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace incode2.ApiControllers
 {
@@ -19,6 +20,7 @@ namespace incode2.ApiControllers
         {
             _context = context;
         }
+
 
         // 取得UserId的訂單資料
         // GET: api/OrderApi/order/{UserId}
@@ -46,6 +48,7 @@ namespace incode2.ApiControllers
 
             return Ok(orders);
         }
+
 
         // 取得OrderId的訂單資料
         // GET: api/OrderApi/orderdetail/{OrderId}
@@ -78,6 +81,7 @@ namespace incode2.ApiControllers
             return Ok(details);
         }
 
+
         // 取得ShippedDetailId的訂單資料
         // GET: api/OrderApi/shippeddetail/{OrderdetailId}
         [HttpGet("shippeddetail/{OrderdetailId}")]
@@ -106,10 +110,11 @@ namespace incode2.ApiControllers
             return Ok(results);
         }
 
+
         // 新增訂單
         // POST: api/OrderApi/OrderPost
         [HttpPost("OrderPost")]
-        public async Task<ResultDTO<int>> CreateOrder([FromBody] CreateOrderRequest Order)
+        public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest Order)
         {
             if (Order == null || Order.Items == null || !Order.Items.Any())
                 return ResultDTO<int>.Failure("無效的請求數據");
@@ -132,7 +137,7 @@ namespace incode2.ApiControllers
                     return ResultDTO<int>.Failure($"無此商品{item.ProductId}");
 
                 if (prod.Stock < item.Quantity)
-                    return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足" );
+                    return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足");
             }
 
             // 交易建立訂單與明細
@@ -185,6 +190,7 @@ namespace incode2.ApiControllers
             }
         }
 
+
         // 新增寄送資料
         // POST: api/OrderApi/ShippedPost
         [HttpPost("ShippedPost")]
@@ -235,10 +241,11 @@ namespace incode2.ApiControllers
             }
         }
 
+
         // 修改寄送資料
-        // PUT: api/OrderApi/ShippedPut/{OrderdetailId}
+        // PUT: api/OrderApi/ShippedPut/{ShippedDetailId}
         [HttpPut("ShippedPut/{ShippedDetailId}")]
-        public async Task<ResultDTO<int>> DeitShipped(int ShippedDetailId, 
+        public async Task<ResultDTO<int>> EditShipped(int ShippedDetailId,
         [FromBody] NewShippedRequest Shipped)
         {
             // 檢驗是否空
@@ -268,6 +275,95 @@ namespace incode2.ApiControllers
                 await _context.SaveChangesAsync();
 
                 return ResultDTO<int>.Success(existingShipped.ShippedDetailId, "寄送資料修改成功");
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
+            }
+        }
+
+
+        // 修改訂單資料
+        // PUT: api/OrderApi/OrderPut/{OrderId}
+        [HttpPut("OrderPut/{OrderId}")]
+        public async Task<ResultDTO<int>> EditOrder(int OrderId, [FromBody] OrderRequest Order)
+        {
+            // 取得修改前訂單資料
+            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
+
+            if (oldOrder == null)
+                return ResultDTO<int>.Failure("找不到該訂單");
+
+            // 開啟交易(一個存失敗全部不做)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 更新備註
+                oldOrder.Remark = Order.Remark ?? "";
+
+                // 處理明細同步
+                // 取得前端傳來的 ProductId 集合
+                var productsdto = Order.Items.Select(i => i.ProductId).ToList();
+                var productDict = await _context.Product.Where(p => productsdto.Contains(p.ProductId)).ToDictionaryAsync(p => p.ProductId);
+
+                // A. 刪除：找出資料庫有但前端沒傳過來的項目
+                var itemsToRemove = oldOrder.Orderdetail
+                    .Where(d => !productsdto.Contains(d.ProductId)).ToList();
+
+                foreach (var removeItem in itemsToRemove)
+                {
+                    // 歸還庫存
+                    var prod = await _context.Product.FindAsync(removeItem.ProductId);
+                    if (prod != null) prod.Stock += removeItem.Quantity;
+
+                    _context.Orderdetail.Remove(removeItem);
+                }
+
+                // B. 更新與新增
+                int totalPoints = 0;
+                foreach (var itemDto in Order.Items)
+                {
+                    if (!productDict.TryGetValue(itemDto.ProductId, out var prod))
+                        return ResultDTO<int>.Failure($"找不到商品 {itemDto.ProductId}");
+
+                    var oldDetail = oldOrder.Orderdetail
+                        .FirstOrDefault(d => d.ProductId == itemDto.ProductId);
+
+                    if (oldDetail != null)
+                    {
+                        // --- 更新舊項目 ---
+                        // 處理庫存數量加減
+                        int diff = itemDto.Quantity - oldDetail.Quantity;
+                        if (prod.Stock < diff)
+                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
+
+                        prod.Stock -= diff;
+                        oldDetail.Quantity = itemDto.Quantity;
+                        oldDetail.UnitPointAtPurchase = prod.Point; // 更新當時點數
+                    }
+                    else
+                    {
+                        // --- 新增項目 ---
+                        if (prod.Stock < itemDto.Quantity)
+                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
+
+                        prod.Stock -= itemDto.Quantity;
+                        oldOrder.Orderdetail.Add(new Orderdetail
+                        {
+                            ProductId = itemDto.ProductId,
+                            Quantity = itemDto.Quantity,
+                            UnitPointAtPurchase = prod.Point,
+                            RequiresShipping = prod.IsPhysical
+                        });
+                    }
+                    totalPoints += itemDto.Quantity * prod.Point;
+                }
+
+                oldOrder.TotalPoint = totalPoints;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync(); // 關閉交易
+                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單更新成功");
             }
             catch (Exception ex)
             {

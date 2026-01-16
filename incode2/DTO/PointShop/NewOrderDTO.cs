@@ -3,7 +3,7 @@
 namespace incode2.DTO.PointShop
 {
     // 1. 給前端傳入用的 (Input)
-    public class CreateOrderRequest
+    public class OrderRequest
     {
         public int UserId { get; set; }
         public string Remark { get; set; }
