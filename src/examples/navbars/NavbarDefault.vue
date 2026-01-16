@@ -234,6 +234,10 @@
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
                 person</i>會員中心
             </RouterLink>
+            <RouterLink :to="{ name: 'test' }" class="dropdown-item border-radius-md">
+              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
+                person</i>test
+            </RouterLink>
 
           </li>
           <!-- <li class="nav-item dropdown dropdown-hover mx-2">
