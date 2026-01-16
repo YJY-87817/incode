@@ -136,7 +136,6 @@ namespace incode2.ApiControllers
             }
 
             // 交易建立訂單與明細
-            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 建立訂單主檔
@@ -178,18 +177,15 @@ namespace incode2.ApiControllers
 
                 await _context.SaveChangesAsync();
 
-                await transaction.CommitAsync();
-
                 return ResultDTO<int>.Success(order.OrderId, "訂單建立成功");
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
+                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
 
-        // 新增訂單
+        // 新增寄送資料
         // POST: api/OrderApi/ShippedPost
         [HttpPost("ShippedPost")]
         public async Task<ResultDTO<int>> CreateShipped([FromBody] NewShippedRequest Shipped)
@@ -233,9 +229,49 @@ namespace incode2.ApiControllers
 
                 return ResultDTO<int>.Success(shipped.ShippedDetailId, "寄送資料建立成功");
             }
-            catch
+            catch (Exception ex)
             {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤", 500);
+                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
+            }
+        }
+
+        // 修改寄送資料
+        // PUT: api/OrderApi/ShippedPost/{OrderdetailId}
+        [HttpPut("ShippedPost/{ShippedDetailId}")]
+        public async Task<ResultDTO<int>> DeitShipped(int ShippedDetailId, 
+        [FromBody] NewShippedRequest Shipped)
+        {
+            // 檢驗是否空
+            if (Shipped == null)
+                return ResultDTO<int>.Failure("無效的請求數據");
+
+            // 找出資料庫中現有的資料
+            var existingShipped = await _context.ShippedDetail.FindAsync(ShippedDetailId);
+
+            if (existingShipped == null)
+                return ResultDTO<int>.Failure($"找不到編號為 {ShippedDetailId} 的寄送資料");
+
+            // 檢查邏輯 (選填：例如已完成的訂單不可修改)
+            if (existingShipped.IsCompleted)
+                return ResultDTO<int>.Failure("已完成的寄送資料不可修改");
+
+            // 更新資料
+            try
+            {
+                // 更新欄位 (將新資料蓋過舊資料)
+                existingShipped.RecipientName = Shipped.RecipientName;
+                existingShipped.RecipientPhone = Shipped.RecipientPhone;
+                existingShipped.RecipientAddress = Shipped.RecipientAddress;
+                existingShipped.Remark = Shipped.Remark ?? existingShipped.Remark;
+
+                // 儲存變更 (EF Core 會自動追蹤 existingShipped 的變化)
+                await _context.SaveChangesAsync();
+
+                return ResultDTO<int>.Success(existingShipped.ShippedDetailId, "寄送資料修改成功");
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
     }

@@ -40,6 +40,5 @@ namespace incode2.DTO.PointShop
 
         public string Remark { get; set; }
 
-
     }
 }
