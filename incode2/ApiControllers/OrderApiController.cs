@@ -291,8 +291,13 @@ namespace incode2.ApiControllers
             // 取得修改前訂單資料
             var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
 
+
             if (oldOrder == null)
                 return ResultDTO<int>.Failure("找不到該訂單");
+
+            if (oldOrder.Status == "已完成")
+                return ResultDTO<int>.Failure("訂單已完成不能修改");
+
 
             // 開啟交易(一個存失敗全部不做)
             using var transaction = await _context.Database.BeginTransactionAsync();
