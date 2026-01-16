@@ -27,4 +27,19 @@ namespace incode2.DTO.PointShop
         public string Status { get; set; }
         public int OrderId { get; set; }
     }
+
+    public class NewShippedRequest
+    { 
+        public int OrderdetailId { get; set; }
+
+        public string RecipientName { get; set; }
+
+        public string RecipientAddress { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+        public string Remark { get; set; }
+
+
+    }
 }

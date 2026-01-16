@@ -4,8 +4,8 @@
     {
         public bool Ok { get; set; }
         public int Code { get; set; }
-        public string Message { get; set; }
-        public T Data { get; set; }
+        public string? Message { get; set; }
+        public T? Data { get; set; }
 
         // 靜態方法：成功時調用
         public static ResultDTO<T> Success(T data, string message = "操作成功", int code = 200)
