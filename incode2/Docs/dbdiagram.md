@@ -2,14 +2,14 @@
 // 內容
 table content {
   content_id int [pk, increment]
-  parent_content_id int [ref: > content.content_id, note: "自我關聯，支援巢狀結構"]
+  parent_content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content.content_id自我關聯，支援巢狀結構"]
   category_id int [ref: > content_category.content_category_id, note:"內容分類"]
-  user_id int [not null, ref: > user.user_id]
+  user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_user"]
   title nvarchar(200) [not null, note: "內容標題"]
   body nvarchar(max) [not null, note: "內容內文"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
-  ishidden bit [note: "自己的內容才可隱藏"]
+  ishidden int [note: "自己的內容才可隱藏"]
   note {"發文、留言、回文、留言回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從回覆提升成發文(因為下面討論熱烈)"}
 }
 
@@ -19,6 +19,7 @@ table content_category {
   parent_category_id int [ref: > content_category.content_category_id, note: "自我關聯，支援巢狀結構"]
   category_name nvarchar(100) [not null]
   description nvarchar(200)
+  ishidden int [note: "隱藏"]
   note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增，官方審核，通過後給點"}
 }
 
@@ -57,10 +58,11 @@ table content_notification {
   content_notification_id int [pk, increment]
   user_id int [ref: > user.user_id, note:"接收通知的人"]
   content_id int [ref: > content.content_id]
-  category int [ref: > interaction_category.interaction_category_id, note: "like, reply, bookmark..."] 
+  category_id int [ref: > interaction_category.interaction_category_id, note: "like, reply, bookmark..."] 
+  description nvarchar(200) [note:"此通知說明"]
   created_at datetime [default:`current_timestamp`]
   isread bit
-  note {"通知(有人回覆/互動)"}
+  note {"通知(有人回覆/互動)，當互動產"}
 }
 
 // 前台圖片管理
@@ -68,29 +70,9 @@ table user_image {
   user_image_id int [pk, increment]
   user_id int [not null, ref: > user.user_id, note: '使用者id']
   image_url nvarchar(500) [not null, note: '圖片url']
-  usage_location int [not null, ref: > image_usage_location.image_usage_location_id, note: '圖片使用在哪裡: 頭像、封面、內容等']
   caption nvarchar(200) [note: '圖片說明:帥氣的狗(用在優化體驗，當圖片顯示不出來時)']
   display_order int [default: 0, note: '顯示順序:輪播時可以調整順序']
   created_at datetime [default: `current_timestamp`]
-}
-
-// 後台圖片管理
-table admin_image {
-  admin_image_id int [pk, increment]
-  admin_id int [not null, ref: > admin.admin_id, note: '管理者id']
-  image_url nvarchar(500) [not null, note: '圖片url']
-  usage_location int [not null, ref: > image_usage_location.image_usage_location_id, note: '圖片使用在哪裡: 頭像、封面、內容等']
-  caption nvarchar(200) [note: '圖片說明:可愛的貓(用在優化體驗，當圖片顯示不出來時)']
-  display_order int [default: 0, note: '顯示順序:輪播時可以調整順序']
-  created_at datetime [default: `current_timestamp`]
-}
-
-// 圖片使用地點
-table image_usage_location {
-  image_usage_location_id int [pk, increment]
-  name nvarchar(100) [not null]
-  description nvarchar(200)
-  note {"圖片使用在哪裡: 頭像、封面、內容等"}
 }
 
 // User_凃恩雯
