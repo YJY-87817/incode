@@ -1,68 +1,247 @@
-﻿@model IEnumerable<incode2.Models.ChatMessage>
+﻿@model incode2.ViewModels.ChatIndexViewModel  
+@section Styles { <style>
+        /* 1. 滿版容器 */
+        .history-container-fluid {
+            width: 100%; /* 設定寬度為100%，讓容器佔滿父元素寬度 */
+            padding: 0 20px; /* 設定左右內距20px，上下0，避免內容貼邊 */
+        }
 
-@{
-    ViewBag.Title = "後台訊息管理";
+        /* 2. 覆寫 Bootstrap Accordion 樣式 */
+        .accordion-item {
+            border: 1px solid #e3e6f0; /* 設定1px淺灰色實線邊框 */
+            border-radius: 0.5rem !important; /* 強制設定0.5rem圓角，覆寫Bootstrap預設 */
+            margin-bottom: 1rem; /* 設定下方外距1rem，分開每個手風琴項 */
+            overflow: hidden; /* 隱藏溢出內容，確保圓角效果 */
+            box-shadow: 0 0.15rem 0.5rem 0 rgba(58, 59, 69, 0.10); /* 設定輕微陰影增加立體感 */
+            background-color: #fff; /* 設定背景色為白色 */
+        }
+
+        .accordion-item + .accordion-item {
+            border-top: 1px solid #e3e6f0; /* 設定連續項目的上邊框，保持視覺一致 */
+        }
+
+        /* 按鈕樣式 (Header) */
+        .accordion-button {
+            background-color: #fff; /* 設定按鈕背景為白色 */
+            color: #5a5c69; /* 設定文字顏色為深灰色 */
+            box-shadow: none !important; /* 移除Bootstrap預設的點擊陰影 */
+            padding: 15px 20px; /* 設定按鈕內距上下15px、左右20px */
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #f8f9fc; /* 展開狀態時的背景色為淺灰藍 */
+            color: #4e73df; /* 展開狀態時的文字顏色為藍色 */
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,.125); /* 底部加入內陰影作分隔線 */
+        }
+
+        .accordion-button::after {
+            background-size: 1rem; /* 設定箭頭圖示大小為1rem */
+        }
+
+        /* 3. 頭像與文字排版 */
+        .header-info-group {
+            display: flex; /* 使用Flexbox彈性排版 */
+            align-items: center; /* 垂直置中對齊 */
+            width: 100%; /* 寬度100%佔滿按鈕 */
+        }
+
+        .header-avatar {
+            width: 45px; /* 頭像寬度45px */
+            height: 45px; /* 頭像高度45px */
+            border-radius: 50%; /* 設定50%圓角，使頭像為圓形 */
+            object-fit: cover; /* 圖片裁切模式為cover，保持比例填滿容器 */
+            margin-right: 15px; /* 右側外距15px，與文字分開 */
+            border: 2px solid #fff; /* 2px白色邊框 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 輕微陰影增加立體感 */
+        }
+
+        .header-text {
+            display: flex; /* 使用Flexbox排版 */
+            flex-direction: column; /* 垂直方向排列子元素 */
+            text-align: left; /* 文字靠左對齊 */
+        }
+
+        .header-title {
+            font-weight: 700; /* 字體粗細700（粗體） */
+            font-size: 1.05rem; /* 字體大小略大於標準 */
+            margin-bottom: 2px; /* 下方外距2px */
+        }
+
+        .header-meta {
+            font-size: 0.85rem; /* 小字體0.85rem */
+            color: #858796; /* 淺灰色文字 */
+        }
+
+        /* 4. 內容區域 */
+        .accordion-body {
+            background-color: #f8f9fc; /* 內容區背景色 */
+            padding: 0; /* 內距0，讓捲動區域貼邊 */
+        }
+
+        .chat-scroll-area {
+            padding: 25px 20px; /* 內距上下25px、左右20px */
+            height: 400px; /* 固定高度400px */
+            overflow-y: auto; /* 垂直方向溢出時顯示捲軸 */
+        }
+
+        /* --- 氣泡樣式 --- */
+        .message-row {
+            display: flex; /* Flexbox排版 */
+            margin-bottom: 15px; /* 下方外距15px，分開每條訊息 */
+        }
+
+        .message-bubble {
+            padding: 10px 16px; /* 氣泡內距 */
+            border-radius: 1rem; /* 1rem圓角 */
+            font-size: 0.95rem; /* 字體大小0.95rem */
+            line-height: 1.5; /* 行高1.5倍 */
+            max-width: 90%; /* 最大寬度90%，避免氣泡過寬 */
+            word-wrap: break-word; /* 長單字自動換行 */
+            overflow: hidden; /* 隱藏溢出內容，確保圓角 */
+        }
+
+        .message-bubble img {
+            max-width: 100% !important; /* 圖片最大寬度與氣泡一致 */
+            height: 20% !important; /* 高度自動維持比例 */
+            display: block; /* 區塊顯示，避免圖片下方空白 */
+            margin-top: 5px; /* 上方外距5px，與文字分開 */
+            border-radius: 8px; /* 圖片圓角8px */
+        }
+
+        /* 左側 (User) */
+        .message-row.left {
+            justify-content: flex-start; /* 內容靠左對齊 */
+        }
+
+        .message-row.left .message-bubble {
+            background-color: #fff; /* 使用者訊息氣泡背景白色 */
+            color: #444; /* 文字深灰色 */
+            border: 1px solid #e3e6f0; /* 淺灰色邊框 */
+            border-bottom-left-radius: 0; /* 左下角無圓角，模擬氣泡尾巴 */
+        }
+
+        /* 右側 (AI/Admin) */
+        .message-row.right {
+            justify-content: flex-end; /* 內容靠右對齊 */
+        }
+
+        .message-row.right .message-bubble {
+            background-color: #eaecf4; /* AI訊息氣泡背景淺藍灰 */
+            color: #333; /* 文字深灰色 */
+            border: 1px solid #d1d3e2; /* 稍深的邊框色 */
+            border-bottom-right-radius: 0; /* 右下角無圓角，模擬氣泡尾巴 */
+        }
+
+        .message-time {
+            font-size: 0.7rem; /* 極小字體0.7rem */
+            color: #aaa; /* 淺灰色 */
+            margin-top: 4px; /* 上方外距4px */
+            min-width: 45px; /* 最小寬度45px */
+        }
+
+        .message-row.right .message-time {
+            text-align: right; /* 靠右訊息的時間文字靠右對齊 */
+        }
+
+        /* Loading 動畫 */
+        .loading-spinner {
+            display: flex; /* Flexbox排版 */
+            justify-content: center; /* 水平置中 */
+            align-items: center; /* 垂直置中 */
+            height: 100%; /* 高度100%佔滿父容器 */
+            color: #4e73df; /* 顏色為藍色 */
+        }
+    </style>
 }
 
-<h2>後台訊息管理</h2>
+<div class="container-fluid mt-4 history-container-fluid"> <!-- 滿版流體容器，margin-top:4，套用自訂樣式 -->
+    <div class="d-flex align-items-center justify-content-between mb-4 px-2"> <!-- 彈性排版：垂直置中+左右對齊，下方外距4 -->
+        <h2>訊息管理</h2> <!-- 頁面標題 -->
+        <span class="badge badge-primary py-2">共 @(Model.Sessions?.Count ?? 0) 筆對話</span> <!-- 顯示對話總筆數，null合併避免空值錯誤 -->
+    </div>
 
-<table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>
-                對話群組 (Session)
-            </th>
-            <th>
-                角色 (Role)
-            </th>
-            <th>
-                訊息內容 (Body)
-            </th>
-            <th>
-                發送時間 (Created At)
-            </th>
-            <th>管理功能</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
+    <div class="accordion" id="chatHistoryAccordion"> <!-- Bootstrap手風琴容器，ID為chatHistoryAccordion -->
+        @if (Model.Sessions != null && Model.Sessions.Any()) // 判斷Sessions是否不為null且有資料
         {
-            <tr>
-                <td>
-                    @(item.Session != null ? item.Session.Title : "Session #" + item.SessionId)
-                </td>
-                <td>
-                    @if (item.Role == "user")
-                    {
-                        <span class="badge bg-primary">使用者</span>
-                    }
-                    else if (item.Role == "assistant" || item.Role == "model")
-                    {
-                        <span class="badge bg-success">AI 機器人</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">@item.Role</span>
-                    }
-                </td>
-                <td title="@item.Body">
-                    @if (!string.IsNullOrEmpty(item.Body) && item.Body.Length > 50)
-                    {
-                        @item.Body.Substring(0, 50) <text>...</text>
-                    }
-                    else
-                    {
-                        @item.Body
-                    }
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.CreatedAt)
-                </td>
-                <td>
-                    @Html.ActionLink("刪除", "Delete", new { id = item.ChatMessageId },
-                    new { @class = "btn btn-danger btn-sm", onclick = "return confirm('確定要刪除這則訊息嗎？');" })
-            </td>
-        </tr>
-                }
-    </tbody>
-</table>
+            foreach (var session in Model.Sessions) // 遍歷每一筆Session資料
+            {
+                bool isActive = session.ChatSessionId == Model.CurrentChatSessionId; // 判斷當前Session是否為要展開的項目
+                var sessionAvatar = !string.IsNullOrEmpty(session.User?.ImageUrl) ? session.User.ImageUrl : "https://bootdey.com/img/Content/avatar/avatar1.png"; // 決定頭像URL，優先使用使用者自訂頭像，否則用預設
+
+                <div class="accordion-item"> <!-- 手風琴單個項目 -->
+                    <h2 class="accordion-header" id="heading-@session.ChatSessionId"> <!-- 手風琴標題列，ID唯一 -->
+                        <button class="accordion-button @(isActive ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@(session.ChatSessionId)" aria-expanded="@(isActive ? "true" : "false")" aria-controls="collapse-@(session.ChatSessionId)" onclick="loadHistory(@session.ChatSessionId)"> <!-- 手風琴按鈕，根據isActive決定收合狀態，點擊呼叫loadHistory函式 -->
+                            <div class="header-info-group"> <img src="@sessionAvatar" class="header-avatar" alt="User"> <div class="header-text"> <div class="header-title"> @(session.User?.Username ?? "未命名使用者") </div> <div class="header-meta"> @(session.CreatedAt.HasValue? session.CreatedAt.Value.ToString("yyyy/MM/dd HH:mm") : "") </div> </div> </div> <!-- 標題列內容：頭像+使用者名稱+建立時間 -->
+                        </button>
+                    </h2>
+
+                    <div id="collapse-@session.ChatSessionId" class="accordion-collapse collapse @(isActive ? "show" : "")" aria-labelledby="heading-@session.ChatSessionId" data-bs-parent="#chatHistoryAccordion"> <div class="accordion-body"> <div class="chat-scroll-area" id="scroll-area-@session.ChatSessionId"> @if (isActive && Model.CurrentMessages != null) // 手風琴折疊內容區，根據isActive決定是否顯示，內含訊息捲動區域，判斷是否預渲染訊息
+                                {
+                                    foreach (var msg in Model.CurrentMessages) // 遍歷預載的訊息列表
+                                    {
+                                        var isAssistant = msg.Role != "user"; // 判斷是否為AI訊息
+                                        <div class="message-row @(isAssistant ? "right" : "left")"> <div> <div class="small text-gray-500 mb-1 @(isAssistant ? "text-right" : "")"> @(isAssistant ? "AI / 系統" : (session.User?.Username ?? "會員")) </div> <div class="message-bubble">@Html.Raw(msg.Body)</div> <div class="message-time"> @(msg.CreatedAt.HasValue? msg.CreatedAt.Value.ToString("MM/dd HH:mm") : "") </div> </div> </div> <!-- 單條訊息列：根據角色決定左右對齊，顯示發送者、內容、時間 -->
+                                    }
+                                    <div class="text-center mt-4 mb-2"><span class="badge badge-light text-gray-500 border">--- 對話紀錄結束 ---</span></div> <!-- 對話結束提示 -->
+                                }
+                                else
+                                {
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-secondary text-center">尚無紀錄</div> <!-- 無Session資料時顯示提示 -->
+        }
+
+    </div>
+</div>
+
+@section Scripts { <script>
+        var loadedSessions = []; // 全域陣列，紀錄已載入的Session ID，避免重複呼叫API
+        $(document).ready(function() { // 頁面DOM載入完成後執行
+            var currentId = '@Model.CurrentChatSessionId'; // 取得後端傳來的當前Session ID
+            if(currentId && currentId > 0) { loadedSessions.push(parseInt(currentId)); scrollToBottom(currentId); } // 若ID有效，加入已載入陣列並捲動到底部
+        });
+
+        function loadHistory(sessionId) { // 載入指定Session的歷史訊息函式
+            var containerId = `#scroll-area-${sessionId}`; var $container = $(containerId); // 組合捲動區域ID並選取元素
+            setTimeout(() => { scrollToBottom(sessionId); }, 300); // 延遲300ms捲動，等待折疊動畫完成
+            if (loadedSessions.includes(sessionId)) return; // 若已載入，直接返回避免重複請求
+            $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i></div>'); // 顯示Loading動畫
+
+            $.ajax({ url: '/api/ChatMessages/GetHistory/' + sessionId, type: 'GET', // 發送GET請求到歷史訊息API
+                success: function(data) { // 請求成功的回調函式
+                    $container.empty(); // 清空Loading動畫
+                    if (!data || data.length === 0) { $container.html('<div class="text-center text-muted mt-5">無對話內容</div>'); return; } // 無資料時顯示提示
+
+                    var html = ''; // 初始化HTML字串
+                    data.forEach(function(msg) { // 遍歷API回傳的訊息
+                        var isAssistant = (msg.role !== 'user'); var alignClass = isAssistant ? 'right' : 'left'; var name = isAssistant ? 'AI / 系統' : '會員'; var timeStr = msg.createdAt ? msg.createdAt.substring(5, 16).replace('-', '/') : ''; // 判斷角色、排版類別、顯示名稱、格式化時間
+                        html += `
+                            <div class="message-row ${alignClass}">
+                                <div>
+                                    <div class="small text-gray-500 mb-1 ${isAssistant ? 'text-right' : ''}">
+                                        ${name}
+                                    </div>
+                                    <div class="message-bubble">${msg.body}</div> 
+                                    <div class="message-time">${timeStr}</div>
+                                </div>
+                            </div>
+                        `; // 組合單條訊息HTML
+                    });
+
+                    html += '<div class="text-center mt-4 mb-2"><span class="badge badge-light text-gray-500 border">--- 對話紀錄結束 ---</span></div>'; // 加入對話結束提示
+                    $container.html(html); loadedSessions.push(sessionId); scrollToBottom(sessionId); // 插入HTML、加入已載入陣列、捲動到底部
+                },
+                error: function(err) { $container.html('<div class="text-danger text-center mt-5">載入失敗，請稍後再試</div>'); console.error(err); } // 請求失敗時顯示錯誤提示並列印錯誤
+            });
+        }
+
+        function scrollToBottom(sessionId) { var $area = $(`#scroll-area-${sessionId}`); if ($area.length) { $area.scrollTop($area.prop("scrollHeight")); } } // 將指定Session的捲動區域捲動到底部的輔助函式
+    </script>
+}

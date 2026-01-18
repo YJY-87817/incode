@@ -3,6 +3,7 @@ using incode2.Services;
 using incode2.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using incode2.Hubs;
 
 //註冊DI容器的地方
 var builder = WebApplication.CreateBuilder(args);
@@ -30,7 +31,7 @@ builder.Services.AddCors(options =>
       "http://localhost:5173",  // Vite 預設開發埠
       "http://localhost:8080",  // Vue CLI 預設開發埠
       "http://localhost:3000",   // 其他可能的開發埠
-      //SSL憑證
+      //HTTPS (SSL憑證)
       "https://localhost:7190",
       "https://localhost:5173",
       "https://localhost:8080",
@@ -52,8 +53,12 @@ builder.Services.AddCors(options =>
 //  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // 處理循環參照
 //});
 
-// 註冊 GeminiService，並自動注入已設定好的 HttpClient
+// Gemini服務
 builder.Services.AddHttpClient<GeminiService>();
+
+// SignalR服務
+builder.Services.AddSignalR();
+
 
 builder.Services.AddSession(options =>
 {
@@ -116,4 +121,8 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+//SignalR的路由 設定聊天室的連線端點
+app.MapHub<ChatHub>("/chatHub");
+
 app.Run();
