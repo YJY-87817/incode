@@ -30,7 +30,6 @@ namespace incode2.Services
                     PointLogId = l.PointLogId,
                     CreatedAt = l.CreatedAt ?? DateTime.MinValue,
                     ChangeAmount = l.ChangeAmount,
-                    BalanceAfter = l.BalanceAfter,
                     SourceType = l.SourceType,
                     SourceId = l.SourceId,
                     DisplayName = l.PointTypeDefinition != null

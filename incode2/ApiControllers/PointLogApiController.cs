@@ -33,7 +33,6 @@ namespace incode2.ApiControllers
                 SourceId=pl.SourceId,
                 PointTypeDefinitionId=pl.PointTypeDefinitionId,
                 ChangeAmount =pl.ChangeAmount,
-                BalanceAfter=pl.BalanceAfter,
                 Status=pl.Status,
                 CreatedAt =pl.CreatedAt
             });
@@ -72,7 +71,6 @@ namespace incode2.ApiControllers
                     SourceId = pl.SourceId,
                     PointTypeDefinitionId = pl.PointTypeDefinitionId,
                     ChangeAmount = pl.ChangeAmount,
-                    BalanceAfter = pl.BalanceAfter,
                     Status = pl.Status,
                     CreatedAt = pl.CreatedAt
                 })
@@ -96,7 +94,6 @@ namespace incode2.ApiControllers
                 Pl.SourceId = PlDTO.SourceId;
                 Pl.PointTypeDefinitionId = PlDTO.PointTypeDefinitionId;
                 Pl.ChangeAmount = PlDTO.ChangeAmount;
-                Pl.BalanceAfter = PlDTO.BalanceAfter;
                 Pl.Status = PlDTO.Status;
                 Pl.CreatedAt = PlDTO.CreatedAt;
 
@@ -133,7 +130,6 @@ namespace incode2.ApiControllers
                 SourceId=PlDTO.SourceId,
                 PointTypeDefinitionId=PlDTO.PointTypeDefinitionId,
                 ChangeAmount =PlDTO.ChangeAmount,
-                BalanceAfter=PlDTO.BalanceAfter,
                 Status=PlDTO.Status,
                 CreatedAt =PlDTO.CreatedAt,
             };

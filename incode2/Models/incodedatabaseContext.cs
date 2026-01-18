@@ -75,7 +75,7 @@ public partial class incodedatabaseContext : DbContext
     {
         modelBuilder.Entity<Admin>(entity =>
         {
-            entity.HasKey(e => e.AdminId).HasName("PK__admin__43AA414119AF4C0E");
+            entity.HasKey(e => e.AdminId).HasName("PK__admin__43AA41418B65AE98");
 
             entity.ToTable("admin");
 
@@ -90,7 +90,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<AdminImage>(entity =>
         {
-            entity.HasKey(e => e.AdminImageId).HasName("PK__admin_im__66FA496192732DE6");
+            entity.HasKey(e => e.AdminImageId).HasName("PK__admin_im__66FA4961E3B5CF2D");
 
             entity.ToTable("admin_image");
 
@@ -125,7 +125,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F8977165D6223D5");
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F897716F1DC541E");
 
             entity.ToTable("chat_message");
 
@@ -152,7 +152,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ChatSession>(entity =>
         {
-            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D495E8043A");
+            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D4E836DEDC");
 
             entity.ToTable("chat_session");
 
@@ -179,7 +179,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Content>(entity =>
         {
-            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE5103AE3A568");
+            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE510677AEC95");
 
             entity.ToTable("content");
 
@@ -220,7 +220,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ContentCategory>(entity =>
         {
-            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C56535AC602");
+            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C564FF85DD3");
 
             entity.ToTable("content_category");
 
@@ -241,7 +241,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ContentHistory>(entity =>
         {
-            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094E68A8BD1");
+            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B78300945375733A");
 
             entity.ToTable("content_history");
 
@@ -271,7 +271,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ContentInteraction>(entity =>
         {
-            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE5D29D70E6");
+            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE52469C60F");
 
             entity.ToTable("content_interaction");
 
@@ -302,7 +302,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ContentNotification>(entity =>
         {
-            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B28364DB8C4");
+            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B289430D858");
 
             entity.ToTable("content_notification");
 
@@ -331,7 +331,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<EntrustMission>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E952CBE4E8B");
+            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E953DCF43CB");
 
             entity.ToTable("entrust_mission");
 
@@ -376,7 +376,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<EntrustMissionPointReserve>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___15006470317C3266");
+            entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___15006470309DC3F9");
 
             entity.ToTable("entrust_mission_point_reserve");
 
@@ -410,7 +410,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<EntrustMissionProgress>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F4F17477B2");
+            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F4E73160DD");
 
             entity.ToTable("entrust_mission_progress");
 
@@ -445,7 +445,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Follow>(entity =>
         {
-            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E6E5A0BD78");
+            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E662ECC716");
 
             entity.ToTable("follow");
 
@@ -469,7 +469,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ImageUsageLocation>(entity =>
         {
-            entity.HasKey(e => e.ImageUsageLocationId).HasName("PK__image_us__CA06DFFED0D33A28");
+            entity.HasKey(e => e.ImageUsageLocationId).HasName("PK__image_us__CA06DFFE0ED24B31");
 
             entity.ToTable("image_usage_location");
 
@@ -485,7 +485,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<InteractionCategory>(entity =>
         {
-            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC99619EE562C");
+            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC9964A904F74");
 
             entity.ToTable("interaction_category");
 
@@ -501,7 +501,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Mission>(entity =>
         {
-            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB2889D0D81");
+            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB252058E39");
 
             entity.ToTable("mission");
 
@@ -537,7 +537,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<MissionProgress>(entity =>
         {
-            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603DD83C7F66");
+            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D90532598");
 
             entity.ToTable("mission_progress");
 
@@ -574,7 +574,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Notifications>(entity =>
         {
-            entity.HasKey(e => e.NotificationsId).HasName("PK__notifica__144A108B395A0C95");
+            entity.HasKey(e => e.NotificationsId).HasName("PK__notifica__144A108B83AC8950");
 
             entity.ToTable("notifications");
 
@@ -612,7 +612,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Orderdetail>(entity =>
         {
-            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE74111CAC2884");
+            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE74112FF28BEC");
 
             entity.ToTable("orderdetail");
 
@@ -636,7 +636,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Orders>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__orders__46596229C6C0E9BB");
+            entity.HasKey(e => e.OrderId).HasName("PK__orders__46596229CB8880B7");
 
             entity.ToTable("orders");
 
@@ -666,12 +666,11 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<PointLog>(entity =>
         {
-            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C6704F8D6");
+            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C76D44A8C");
 
             entity.ToTable("point_log");
 
             entity.Property(e => e.PointLogId).HasColumnName("point_log_id");
-            entity.Property(e => e.BalanceAfter).HasColumnName("balance_after");
             entity.Property(e => e.ChangeAmount).HasColumnName("change_amount");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -703,11 +702,11 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<PointRecharge>(entity =>
         {
-            entity.HasKey(e => e.PointRechargeId).HasName("PK__point_re__2FCEC81C92E4AC33");
+            entity.HasKey(e => e.PointRechargeId).HasName("PK__point_re__2FCEC81C572887CE");
 
             entity.ToTable("point_recharge");
 
-            entity.HasIndex(e => e.OrderNo, "UQ__point_re__465C81B85ECC7D81").IsUnique();
+            entity.HasIndex(e => e.OrderNo, "UQ__point_re__465C81B859A465E5").IsUnique();
 
             entity.Property(e => e.PointRechargeId).HasColumnName("point_recharge_id");
             entity.Property(e => e.CashAmount)
@@ -746,7 +745,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<PointTypeDefinition>(entity =>
         {
-            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541F2CCB927C");
+            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541FA2CF09D2");
 
             entity.ToTable("point_type_definition");
 
@@ -776,7 +775,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF5859746AC");
+            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF58CAC3688");
 
             entity.ToTable("product");
 
@@ -812,7 +811,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<ShippedDetail>(entity =>
         {
-            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C9315051BDA");
+            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C9348013F6A");
 
             entity.ToTable("shipped_detail");
 
@@ -850,13 +849,13 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370F4EFDB4A4");
+            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FDF571D50");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Account, "UQ__user__EA162E114C805262").IsUnique();
+            entity.HasIndex(e => e.Account, "UQ__user__EA162E11637F3C41").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572CFDF3F82").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572DDC27C21").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Account)
@@ -895,7 +894,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<UserImage>(entity =>
         {
-            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9DBBAEA0A0");
+            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9D459C1E57");
 
             entity.ToTable("user_image");
 
