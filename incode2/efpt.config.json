@@ -129,6 +129,18 @@
       {
          "Name": "[dbo].[user_status]",
          "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[point_change]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[product_image]",
+         "ObjectType": 0
+      },
+      {
+        "Name": "[dbo].[ship_address]",
+        "ObjectType": 0
       }
    ],
    "UiHint": null,
