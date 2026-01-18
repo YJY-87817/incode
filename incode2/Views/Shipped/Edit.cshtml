@@ -1,54 +1,83 @@
 ﻿@model incode2.Models.ShippedDetail
 
 @{
-    ViewData["Title"] = "寄送管理";
+    ViewData["Title"] = "編輯寄送資料";
 }
 
-<h2>寄送管理</h2>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white py-3">
+                    <h4 class="mb-0 fs-5">編輯寄送資訊 (ID: @Model.ShippedDetailId)</h4>
+                </div>
 
-<div class="col-6">
-    <form asp-action="Edit" method="post">
-        <div class="mb-3">
-            <input type="hidden" asp-for="ShippedDetailId" />
-            <label asp-for="OrderdetailId" class="form-label fw-bold">需寄送訂單詳細ID:</label>
-            <input asp-for="OrderdetailId" type="number" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱:</label>
-            <input asp-for="RecipientName" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址:</label>
-            <input asp-for="RecipientAddress" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話:</label>
-            <input asp-for="RecipientPhone" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="ShippedDate" class="form-label fw-bold">寄送日期:</label>
-            <input asp-for="ShippedDate" class="form-control">
-        </div>
-        <div class="mb-3">
-            <label asp-for="ArrivalDate" class="form-label fw-bold">送達日期:</label>
-            <input asp-for="ArrivalDate" class="form-control">
-        </div>
-        <div class="mb-3">
-            <label asp-for="Remark" class="form-label fw-bold">備註:</label>
-            <textarea asp-for="Remark" class="form-control" rows="3"></textarea>
-        </div>
-        <div class="mb-3 d-flex gap-4">
-            <div class="form-check">
-                <input asp-for="IsFailed" class="form-check-input" type="checkbox">
-                <label asp-for="IsFailed" class="form-check-label">寄送失敗</label>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="ShippedDetailId" />
+
+                        <div class="mb-4">
+                            <label asp-for="OrderdetailId" class="form-label fw-bold text-dark">訂單詳細明細 ID</label>
+                            <input asp-for="OrderdetailId" type="number" class="form-control bg-light" readonly required>
+                            <div class="form-text text-muted small"><i class="bi bi-info-circle me-1"></i>明細 ID 通常不建議修改，僅供對照。</div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-primary mb-3"><i class="bi bi-person-badge me-2"></i>收件人資訊</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱</label>
+                                <input asp-for="RecipientName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話</label>
+                                <input asp-for="RecipientPhone" class="form-control" required>
+                            </div>
+                            <div class="col-12 mb-4">
+                                <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址</label>
+                                <input asp-for="RecipientAddress" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <h5 class="text-primary mb-3"><i class="bi bi-clock-history me-2"></i>物流排程與備註</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ShippedDate" class="form-label fw-bold">寄送日期</label>
+                                <input asp-for="ShippedDate" type="date" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ArrivalDate" class="form-label fw-bold">送達日期</label>
+                                <input asp-for="ArrivalDate" type="date" class="form-control">
+                            </div>
+                            <div class="col-12 mb-4">
+                                <label asp-for="Remark" class="form-label fw-bold">備註說明</label>
+                                <textarea asp-for="Remark" class="form-control" rows="3" placeholder="請填寫配送細節或異常狀況..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body py-3 d-flex gap-5 justify-content-center">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsFailed" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsFailed" class="form-check-label fw-bold text-danger">寄送失敗</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsCompleted" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsCompleted" class="form-check-label fw-bold text-success">寄送完成</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button id="BtnEdit" type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold">
+                                <i class="bi bi-save me-1"></i> 儲存所有修改
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-link text-secondary">返回列表</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-check">
-                <input asp-for="IsCompleted" class="form-check-input" type="checkbox">
-                <label asp-for="IsCompleted" class="form-check-label">是否完成</label>
-            </div>
         </div>
-        <div class="d-grid gap-2 mt-4">
-            <button id="BtnEdit" type="submit" class="btn btn-primary">儲存修改</button>
-        </div>
-    </form>
+    </div>
 </div>
