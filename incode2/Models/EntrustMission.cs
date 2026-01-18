@@ -23,6 +23,8 @@ public partial class EntrustMission
 
     public string Status { get; set; }
 
+    public bool IsActive { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual Content Content { get; set; }

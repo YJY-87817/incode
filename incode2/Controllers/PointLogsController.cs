@@ -1,21 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.Models;
+using incode2.Services;
+using incode2.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 
 namespace incode2.Controllers
 {
     [Route("/PointLogs/{action=Index}/{PointLogId?}")]
     public class PointLogsController : Controller
     {
+        private readonly IPointLogService _pointLogService;
         private readonly incodedatabaseContext _context;
 
-        public PointLogsController(incodedatabaseContext context)
+        public PointLogsController(IPointLogService pointLogService, incodedatabaseContext context)
         {
+            _pointLogService = pointLogService;
             _context = context;
         }
 
@@ -180,142 +185,29 @@ namespace incode2.Controllers
 
         //----------------------------------------------------------------------------
         // GET: PointLogs/PointLogsDetail
-        public async Task<IActionResult> PointLogsDetail(int? UserId = null)  //目前後台查看任意使用者點數明細 //之後改成登入者 ID
+        public async Task<IActionResult> PointLogsDetail(int? UserId = null)
         {
-
-            //載入所有使用者到下拉選單
+            // 載入使用者清單給下拉選單
             var userList = await _context.User
-           .Select(u => new { u.UserId, u.Username })
-           .OrderBy(u => u.UserId)
-           .ToListAsync();
-
-            ViewBag.UserList = new SelectList(userList, "UserId", "Username");
-            // ★ 加這行傳總數給 debug 用
-            ViewBag.UserCount = userList.Count;
-
-            // 如果沒有選擇使用者，預設顯示第一個
-            if (!UserId.HasValue && userList.Any())
-            {
-                UserId = userList.First().UserId;
-            }
-
-            if (!UserId.HasValue || !userList.Any())
-            {
-                return View(new List<ViewModels.PointLogsViewModel>());
-            }
-
-            // 取出該使用者的所有點數異動紀錄（舊 → 新）
-            var logs = await _context.PointLog
-                .Include(l => l.PointTypeDefinition)
-                .Where(l => l.UserId == UserId.Value)
-                .OrderBy(l => l.CreatedAt)
+                .Select(u => new { u.UserId, u.Username })
+                .OrderBy(u => u.UserId)
                 .ToListAsync();
 
-            if (!logs.Any())
-            {
-                ViewBag.SelectedUserId = UserId.Value;
-                ViewBag.CurrentTotalPoints = 0;
-                return View(new List<ViewModels.PointLogsViewModel>());
-            }
+            ViewBag.UserList = new SelectList(userList, "UserId", "Username");
+            ViewBag.UserCount = userList.Count;
 
-            // 收集各來源類型的 ID
-            var missionIds = logs.Where(l => l.SourceType == "mission").Select(l => l.SourceId).Distinct().ToList();
+            if (!UserId.HasValue && userList.Any())
+                UserId = userList.First().UserId;
 
-            var entrustMissionIds = logs.Where(l => l.SourceType == "entrust_mission").Select(l => l.SourceId).Distinct().ToList();
+            if (!UserId.HasValue)
+                return View(new List<PointLogsViewModel>());
 
-            var pointDepositIds = logs.Where(l => l.SourceType == "point_deposits").Select(l => l.SourceId).Distinct().ToList();
+            var logs = await _pointLogService.GetDetailedLogsAsync(UserId.Value);
 
-            var orderIds = logs.Where(l => l.SourceType == "order").Select(l => l.SourceId).Distinct().ToList();
-
-            //var entrustIds = logs.Where(l => l.SourceType == "user_point_wallet").Select(l => l.SourceId).Distinct().ToList();
-
-            // 批量載入相關資料
-            var mission = await _context.Mission
-                .Where(m => missionIds.Contains(m.MissionId))
-                .ToDictionaryAsync(m => m.MissionId, m => m.MissionName ?? "未知任務");
-
-            var entrustMission = await _context.EntrustMission
-                .Where(em => entrustMissionIds.Contains(em.EntrustMissionId))
-                .ToDictionaryAsync(em => em.EntrustMissionId, em => em.Title ?? "未知委託");
-
-            var pointDepost = await _context.PointRecharge
-                .Where(pd => pointDepositIds.Contains(pd.PointRechargeId))
-                .ToDictionaryAsync(pd => pd.PointRechargeId, pd => pd.PaymentMethod ?? "未知付款方式");
-
-            var orderDict = new Dictionary<int, Orders>();
-            if (orderIds.Any())
-            {
-                orderDict = await _context.Orders
-                    .Include(o => o.Orderdetail)
-                        .ThenInclude(od => od.Product)
-                    .Where(o => orderIds.Contains(o.OrderId))
-                    .AsNoTracking()           // ← 加這行，唯讀查詢更快
-                    .ToDictionaryAsync(o => o.OrderId, o => o);
-            }
-
-            // 建立 ViewModel
-            var viewModels = new List<ViewModels.PointLogsViewModel>();
-            int runningBalance = 0;
-
-            foreach (var log in logs)
-            {
-                runningBalance += log.ChangeAmount;
-
-                string description = log.SourceType switch
-                {
-                    "mission" => mission.GetValueOrDefault(log.SourceId, "未知任務"),
-
-                    "entrust_mission" => entrustMission.GetValueOrDefault(log.SourceId, "未知委託"),
-
-                    "order" => orderDict.TryGetValue(log.SourceId, out var o)
-                          ? GetOrderDisplayText(o)
-                          : $"訂單 #{log.SourceId}（找不到資料）",
-
-                    "deposit" => $"點數儲值紀錄 #{log.SourceId}",
-
-                    _ => string.IsNullOrEmpty(log.SourceType) ? "系統調整" : $"其他：{log.SourceType}"
-                };
-
-                viewModels.Add(new ViewModels.PointLogsViewModel
-                {
-                    CreatedAt = log.CreatedAt ?? DateTime.Now,
-                    ChangeAmount = log.ChangeAmount,
-                    Description = description,
-                    NewBalance = runningBalance,
-                    TypeDisplayName = log.PointTypeDefinition?.DisplayName ?? "未知類型"
-                });
-            }
-
-            // 最新紀錄顯示在上
-            viewModels.Reverse();
-
-            ViewBag.CurrentTotalPoints = runningBalance;
+            ViewBag.CurrentTotalPoints = await _pointLogService.GetCurrentBalanceAsync(UserId.Value);
             ViewBag.SelectedUserId = UserId.Value;
 
-            return View(viewModels);
+            return View(logs);
         }
-
-        // 輔助方法：美化點數商店訂單顯示文字
-        private string GetOrderDisplayText(Orders order)
-        {
-            if (order?.Orderdetail == null || !order.Orderdetail.Any())
-                return $"點數商店消費（訂單 #{order?.OrderId})";
-
-            var details = order.Orderdetail;
-            var firstProductName = details.First().Product?.Name ?? "商品";
-
-            if (details.Count == 1)
-            {
-                var qty = details.First().Quantity;
-                return qty == 1
-                    ? $"購買 {firstProductName}（訂單 #{order.OrderId}）"
-                    : $"購買 {firstProductName} × {qty}（訂單 #{order.OrderId}）";
-            }
-
-            // 多項商品
-            var totalItems = details.Sum(d => d.Quantity);
-            return $"購買 {firstProductName} 等 {totalItems} 件（訂單 #{order.OrderId}）";
-        }
-    
     }
 }

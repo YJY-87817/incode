@@ -1,5 +1,6 @@
 using incode2.Data;
 using incode2.Models;
+using incode2.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,8 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
 {
   option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
+
+builder.Services.AddScoped<IPointLogService, PointLogService>();
 
 //claude給我，要給Api用的
 // 設定 CORS - 允許 Vue 前端存取
