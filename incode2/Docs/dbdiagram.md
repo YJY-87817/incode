@@ -1,5 +1,5 @@
 ﻿// forum_李宥廷
-// 內容
+// 內容(我的部分)
 table content {
   content_id int [pk, increment]
   parent_content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content_content 自我關聯，支援巢狀結構"]
@@ -10,7 +10,7 @@ table content {
   type int [not null, note: "1:貼文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:留言回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
-  is_active int [not null, note: "此內容是否被隱藏"]
+  is_active int [not null, note: "1:顯示, 2:隱藏"]
   note {"發文、留言、回文、留言回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從回覆提升成發文(因為下面討論熱烈)"}
 }
 
