@@ -1,7 +1,7 @@
 ﻿using Azure.Core;
 using Google.GenAI;
 using Google.GenAI.Types;
-using incode2.Data;
+
 using incode2.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;

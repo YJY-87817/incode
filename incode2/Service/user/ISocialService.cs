@@ -3,15 +3,14 @@
 namespace incode2.Service.user
 {
     public interface ISocialService
-    {        
+    {
         // 搜尋使用者 (排除自己，並標記是否已追蹤)
-        List<UserSummaryDto> SearchUsers(string keyword, int currentUserId);
-
+        Task<List<FollowingUserDto>> SearchUsersAsync(string keyword, int currentUserId);
         // 取得我的追蹤名單 (我關注了誰)
-        List<UserSummaryDto> GetMyFollowingList(int currentUserId);
+        Task<List<FollowingUserDto>> GetMyFollowingListAsync(int userId);
 
-        void FollowUser(int currentUserId, int targetUserId);// 追蹤某人
+        Task FollowUserAsync(int currentUserId, int targetUserId);// 追蹤某人
 
-        void UnfollowUser(int currentUserId, int targetUserId);// 取消追蹤某人
+        Task UnfollowUserAsync(int currentUserId, int targetUserId);// 取消追蹤某人
     }
 }

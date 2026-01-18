@@ -14,15 +14,15 @@ namespace incode2.Service.user
         }
 
         // 1. 搜尋使用者
-        public List<UserSummaryDto> SearchUsers(string keyword, int currentUserId)
+        public async Task<List<FollowingUserDto>> SearchUsersAsync(string keyword, int currentUserId)
         {
-            if (string.IsNullOrWhiteSpace(keyword)) return new List<UserSummaryDto>();
+            if (string.IsNullOrWhiteSpace(keyword)) return new List<FollowingUserDto>();
 
             // 搜尋 username 或 email 包含關鍵字的人，且排除自己
             var query = _context.User
                 .Where(u => u.UserId != currentUserId &&
                            (u.Username.Contains(keyword) || u.Email.Contains(keyword)))
-                .Select(u => new UserSummaryDto
+                .Select(u => new FollowingUserDto
                 {
                     UserId = u.UserId,
                     Username = u.Username,
@@ -32,37 +32,35 @@ namespace incode2.Service.user
                     IsFollowing = _context.Follow.Any(f => f.FollowerId == currentUserId && f.FolloweeId == u.UserId)
                 });
 
-            return query.ToList();
+            return await query.ToListAsync();
         }
 
         // 2. 取得我追蹤的名單
-        public List<UserSummaryDto> GetMyFollowingList(int currentUserId)
+        public async Task<List<FollowingUserDto>> GetMyFollowingListAsync(int currentUserId)
         {
             // 從 Follow 表出發，找出 FollowerId 是我的人，並關聯出對方(Followee)的資料
             var list = _context.Follow
                 .Where(f => f.FollowerId == currentUserId)
                 .Include(f => f.Followee) // 載入被追蹤者的資料
-                .Select(f => new UserSummaryDto
+                .Select(f => new FollowingUserDto
                 {
                     UserId = f.Followee.UserId,
                     Username = f.Followee.Username,
                     Email = f.Followee.Email,
                     ImageUrl = f.Followee.ImageUrl,
                     IsFollowing = true // 既然在追蹤名單內，當然是 true
-                })
-                .ToList();
-
-            return list;
+                });
+            return await list.ToListAsync();
         }
 
         // 3. 追蹤使用者
-        public void FollowUser(int currentUserId, int targetUserId)
+        public async Task FollowUserAsync(int currentUserId, int targetUserId)
         {
             // 防止追蹤自己
             if (currentUserId == targetUserId) return;
 
             // 檢查是否已經追蹤過
-            bool exists = _context.Follow.Any(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
+            bool exists = await _context.Follow.AnyAsync(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
             if (exists) return;
 
             var follow = new Follow
@@ -73,19 +71,19 @@ namespace incode2.Service.user
             };
 
             _context.Follow.Add(follow);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         // 4. 取消追蹤
-        public void UnfollowUser(int currentUserId, int targetUserId)
+        public async Task UnfollowUserAsync(int currentUserId, int targetUserId)
         {
-            var follow = _context.Follow
-                .FirstOrDefault(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
+            var follow = await _context.Follow
+                .FirstOrDefaultAsync(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
 
             if (follow != null)
             {
                 _context.Follow.Remove(follow);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
     }

@@ -1,7 +1,7 @@
 ﻿// Controllers/ContentController.cs
 using Microsoft.AspNetCore.Mvc;
 using incode2.Models;
-using incode2.Data;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.ApiController

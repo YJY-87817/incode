@@ -9,5 +9,8 @@ namespace incode2.DTO.user
 
         [Required(ErrorMessage = "請輸入密碼")]
         public string Password { get; set; }
+
+        [Display(Name = "記住我")]
+        public bool RememberMe { get; set; }
     }
 }

@@ -1,40 +1,50 @@
-﻿using incode2.DTO.user;
-using incode2.Models;
+﻿using incode2.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Service.user
 {
     public class UserService : IUserService
     {
         private readonly incodedatabaseContext _context;
-        private readonly IUserService _userService;
-
         public UserService(incodedatabaseContext context)
         {
             _context = context;
         }
 
-        public User? ValidateUser(string email, string password)
+        public async Task<User?> GetUserByEmailAsync(string email)
         {
-            // 這裡應該要有密碼雜湊的驗證，這裡簡化處理
-            var user = _context.User.FirstOrDefault(u => u.Email == email && u.Password == password);
-            return user;
+            return await _context.User.FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public void Register(RegisterDto registerDto)
+        public async Task<List<User>> SearchUsersAsync(string keyword)
         {
-            var user = new User
+            // 搜尋 Email 或 Username
+            var query = _context.User.AsQueryable();
+
+            if (!string.IsNullOrEmpty(keyword))
             {
-                Email = registerDto.Email,
-                Password = registerDto.Password,
-                // 根據 RegisterDto 和 User 的定義補齊其他必要欄位
-            };
-            _context.User.Add(user);
-            _context.SaveChanges();
+                query = query.Where(u => u.Email.Contains(keyword) || u.Username.Contains(keyword));
+            }
+
+            return await query.ToListAsync();
         }
 
-        public bool UserExists(string email)
+        public async Task<User?> GetUserByIdAsync(int id)
         {
-            return _context.User.Any(u => u.Email == email);
+            return await _context.User.FindAsync(id);
+        }
+
+        // 檢查 Email 是否存在 (單純的資料查詢)
+        public async Task<bool> IsEmailExistAsync(string email)
+        {
+            return await _context.User.AnyAsync(u => u.Email == email);
+        }
+
+        // 新增使用者 (單純的資料寫入)
+        public async Task CreateUserAsync(User user)
+        {
+            _context.User.Add(user);
+            await _context.SaveChangesAsync();
         }
     }
 }

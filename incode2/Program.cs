@@ -1,84 +1,30 @@
-using incode2.Data;
 using incode2.Models;
 using incode2.Service.user;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-builder.Services.AddDbContext<incodedatabaseContext>(option =>
-{
-    option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+// ==========================================
+// 1. 資料庫連線 & Migration 支援
+// ==========================================
+// 註冊你的資料庫 Context
+builder.Services.AddDbContext<incodedatabaseContext>(options => {
+    options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-// ==========================================
-// AddIdentity 內部會自動註冊 "Identity.Application" 這個 Cookie Scheme。
-// 用AddAuthentication().AddCookie(...)，會發生 "Scheme already exists" 錯誤導致崩潰。
-// ==========================================
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    // 密碼設定
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireLowercase = false; //測試用 之後可以改嚴
-    options.Password.RequireUppercase = false; //測試用
-    options.Password.RequireNonAlphanumeric = false;//測試用
-
-    // 鎖定設定
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 3;
-    options.Lockout.AllowedForNewUsers = true;
-
-    // 使用者設定
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-    options.User.RequireUniqueEmail = true;
-    options.SignIn.RequireConfirmedAccount = false;//測試用
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+// 補上這個服務，才能讓下面的 app.UseMigrationsEndPoint() 正常運作
+// 它會捕捉資料庫錯誤並顯示「Apply Migrations」的藍色按鈕頁面
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ==========================================
-// 使用此方法來「修改」上面 AddIdentity 自動產生的 Cookie 設定
-// ==========================================
-builder.Services.ConfigureApplicationCookie(options => {
-    // 自訂 Cookie 名稱
-    options.Cookie.Name = "MyCookieAuth";
-
-    // 安全性設定
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.None; // 允許跨域 (Vue 必備)
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // 強制 HTTPS
-    options.ExpireTimeSpan = TimeSpan.FromDays(1);
-    options.SlidingExpiration = true;
-    
-    options.Events.OnRedirectToLogin = context =>
-    {
-        context.Response.StatusCode = 401;
-        return Task.CompletedTask;
-    };
-
-    options.Events.OnRedirectToAccessDenied = context =>
-    {
-        context.Response.StatusCode = 403;
-        return Task.CompletedTask;
-    };
-});
-
-// ==========================================
-// 4. CORS 設定
+// 2. CORS 設定 (指定 Vue 前端來源)
 // ==========================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueApp", policy =>
     {
-        policy.WithOrigins(
-          "http://localhost:7190",
+        policy.WithOrigins(          
           "https://localhost:5173",
           "http://localhost:5173",
           "http://localhost:8080",
@@ -86,41 +32,83 @@ builder.Services.AddCors(options =>
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
-        .AllowCredentials(); // 允許帶 Cookie
+        .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
     });
 });
 
 // ==========================================
-// 5. 其他服務註冊
+// 3. Cookie 驗證 (混合模式：API vs 後台)
 // ==========================================
-builder.Services.AddDistributedMemoryCache();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        // Cookie 安全設定
+        options.Cookie.HttpOnly = true; // 防止 XSS       
+        options.Cookie.SameSite = SameSiteMode.None; // 前後端不同網域(Cross-Site)可能需設為 None + Secure
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //瀏覽器規定：只要 SameSite=None，Secure 屬性必須為 true，否則 Cookie 會被拒收！
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
 
-builder.Services.AddSession(options =>
-{
-    options.Cookie.Name = ".incode2.Session";
-    options.IdleTimeout = TimeSpan.FromMinutes(60);
-    options.Cookie.IsEssential = true;
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.None;
-});
+        // 設定後台 MVC 用的導向路徑
+        options.LoginPath = "/Auth/Login";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
 
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+        // 區分 API 還是 網頁
+
+        // 1. 當未登入 (401)
+        options.Events.OnRedirectToLogin = context =>
+        {
+            // 如果請求網址是以 /api 開頭 -> 回傳 401 (給前端 Vue 看，不跳轉)
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+
+            // 如果是後台網頁 -> 執行預設行為 (跳轉到 LoginPath)
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+
+        // 2. 當權限不足 (403)
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            // 如果請求網址是以 /api 開頭 -> 回傳 403 (給前端 Vue 看，不跳轉)
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+
+            // 如果是後台網頁 -> 執行預設行為 (跳轉到 AccessDeniedPath)
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+    });
+
+// ==========================================
+// 4. 註冊 MVC 服務 (包含 API 與 View)
+// ==========================================
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
 
-// 註冊你的自訂 Service
+// ==========================================
+// 5. 註冊 Service
+// ==========================================
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
 
 var app = builder.Build();
 
 // ==========================================
-// 6. Middleware Pipeline (請求處理流程)
+// 5. HTTP 請求管線 (Middleware)
 // ==========================================
 
+// 環境判斷
 if (app.Environment.IsDevelopment())
 {
+    // 當資料庫與 Model 不一致時，顯示 Migration 錯誤頁面
+    // 需搭配上面的 AddDatabaseDeveloperPageExceptionFilter 使用
     app.UseMigrationsEndPoint();
 }
 else
@@ -133,20 +121,14 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseCors("VueApp"); // 必須放在 Auth 之前
+//  順序很重要：CORS -> 驗證 -> 授權
+app.UseCors("VueApp");
+app.UseAuthentication(); // 檢查你是誰 (讀取 Cookie)
+app.UseAuthorization();  // 檢查你能做什麼 (讀取 Role)
 
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseSession();
-
-app.MapStaticAssets();
-
+// 路由設定
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
-app.MapRazorPages()
-   .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

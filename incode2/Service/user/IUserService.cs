@@ -1,12 +1,13 @@
-﻿using incode2.DTO.user;
-using incode2.Models;
+﻿using incode2.Models;
 
 namespace incode2.Service.user
 {
     public interface IUserService
     {
-        User? ValidateUser(string email, string password); //驗證使用者
-        void Register(RegisterDto registerDto);
-        bool UserExists(string email); // 檢查 Email 是否重複
+        Task<List<User>> SearchUsersAsync(string keyword);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User?> GetUserByIdAsync(int id);
+        Task<bool> IsEmailExistAsync(string email);
+        Task CreateUserAsync(User user);
     }
 }

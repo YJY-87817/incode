@@ -113,7 +113,7 @@ table user{
 // 管理者權限
 table role {
   role_id integer [primary key]
-  role_name varchar [note: 'superadmin, admin, member']
+  role_name varchar(20) [note: 'superadmin, admin, member']
   authority integer [note: '權限等級：0=SuperAdmin, 1=Admin, 2=Member']
 }
 
@@ -125,20 +125,40 @@ table follow {
 }
 
 // 登入紀錄
-table user_login{ 
+table user_loginlog{ 
+  loginlog_id integer [primary key, increment]
   user_id integer [ref: >user.user_id]
   logintime datetime [default: `CURRENT_TIMESTAMP`]
-  location varchar 
+  ip_address varchar(50) 
 }
 
 // 目前狀態
 table user_status{ 
-   user_id integer [ref: >user.user_id]
-   experience integer
-   rank integer
-   item_id integer
-   quantity integer
+   user_id integer [primary key,ref: >user.user_id]
+   experience integer [default: 0]
+   rank integer [default: 1]
+   points integer [default: 0, note: '積分或點數']
  }
+
+ //背包
+ table user_inventory {
+   inventory_id integer [primary key, increment]
+   user_id integer [ref: > user.user_id]
+   item_id integer [note: '對應到另外的 item 表']
+   quantity integer [default: 0]  
+}
+
+ //通知
+ table user_notification{ 
+   user_notification_id integer [primary key, increment]
+   user_id integer [ref: >user.user_id]
+   title nvarchar(50)
+   content nvarchar(200)
+   target_url nvarchar(500)
+   is_read bit [default: 0]
+   type varchar(20) [note: 'system, reply, like']
+   created_at datetime [default: `CURRENT_TIMESTAMP`]
+   }
 
 //Point_Mission_Wallet_邱揚雅
 //功能:點數/任務/金流
