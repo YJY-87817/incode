@@ -38,20 +38,21 @@ namespace incode2.ApiControllers
             });
         }
 
-        // GET: api/PointLogApi/5
+        //GET: api/PointLogApi/5
         //[HttpGet("{id}")]
         //public async Task<PointLogDTO> GetPointLog(int id)
         //{
-        //     PointLogDTO? PlDTO = await _context.PointLog.Select(pl=>new PointLogDTO {
-        //         PointLogId = pl.PointLogId,
-        //         UserId = pl.UserId,
-        //         SourceType = pl.SourceType,
-        //         SourceId = pl.SourceId,
-        //         PointTypeDefinitionId = pl.PointTypeDefinitionId,
-        //         ChangeAmount = pl.ChangeAmount,
-        //         BalanceAfter = pl.BalanceAfter,
-        //         CreatedAt = pl.CreatedAt
-        //     }).FirstOrDefaultAsync(pl=>pl.PointLogId==id);  
+        //    PointLogDTO? PlDTO = await _context.PointLog.Select(pl => new PointLogDTO
+        //    {
+        //        PointLogId = pl.PointLogId,
+        //        UserId = pl.UserId,
+        //        SourceType = pl.SourceType,
+        //        SourceId = pl.SourceId,
+        //        PointTypeDefinitionId = pl.PointTypeDefinitionId,
+        //        ChangeAmount = pl.ChangeAmount,
+        //        BalanceAfter = pl.BalanceAfter,
+        //        CreatedAt = pl.CreatedAt
+        //    }).FirstOrDefaultAsync(pl => pl.PointLogId == id);
 
         //    return PlDTO;
         //}
@@ -86,6 +87,7 @@ namespace incode2.ApiControllers
             {
                 return new ResultDTO { Ok=false, Code=400};
             }
+
             PointLog Pl = await _context.PointLog.FindAsync(id);
             if (Pl != null)
             {
