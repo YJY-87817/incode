@@ -12,6 +12,4 @@ public partial class Admin
     public string Type { get; set; }
 
     public int? Autority { get; set; }
-
-    public virtual ICollection<AdminImage> AdminImage { get; set; } = new List<AdminImage>();
 }
