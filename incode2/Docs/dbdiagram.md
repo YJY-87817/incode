@@ -2,77 +2,86 @@
 // 內容
 table content {
   content_id int [pk, increment]
-  parent_content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content.content_id自我關聯，支援巢狀結構"]
-  category_id int [ref: > content_category.content_category_id, note:"內容分類"]
+  parent_content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content_content 自我關聯，支援巢狀結構"]
+  category_id int [ref: > content_category.content_category_id, note:"CONSTRAINT FK_content_content_category 內容分類"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_user"]
   title nvarchar(200) [not null, note: "內容標題"]
   body nvarchar(max) [not null, note: "內容內文"]
+  type int [not null, note: "1:貼文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:留言回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
-  ishidden int [note: "自己的內容才可隱藏"]
+  is_active int [not null, note: "此內容是否被隱藏"]
   note {"發文、留言、回文、留言回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從回覆提升成發文(因為下面討論熱烈)"}
 }
 
 // 內容分類
 table content_category {
-  content_category_id int [pk, increment, note:"有1個id是新增用"]
-  parent_category_id int [ref: > content_category.content_category_id, note: "自我關聯，支援巢狀結構"]
+  content_category_id int [pk, increment, note:""]
+  parent_category_id int [ref: > content_category.content_category_id, note: "CONSTRAINT FK_content_category_content_category 自我關聯，支援巢狀結構"]
   category_name nvarchar(100) [not null]
   description nvarchar(200)
-  ishidden int [note: "隱藏"]
+  is_active int [not null, note: "1:會員新增待審核, 2:會員新增成功, 3:官方提供, 4:不再使用"]
   note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增，官方審核，通過後給點"}
 }
 
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"互動分類:like、dislike、block、bookmark、隱藏自己的內容"]
-  content_id int [not null, ref: > content.content_id]
-  user_id int [not null, ref: > user.user_id]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:like、block、bookmark、隱藏自己的內容"]
+  content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
+  user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
   created_at datetime [default:`current_timestamp`]
+  updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
   note {"類似按讚表的擴增"}
 }
 
-// 互動分類
+// 互動、通知分類(2個共用)
 table interaction_category {
   interaction_category_id int [pk, increment]
   name nvarchar(100) [not null]
   description nvarchar(200)
-  note {"互動分類:like、dislike、block、bookmark、隱藏自己的內容"}
+  created_at datetime [default:`current_timestamp`]
+  updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
+  is_active int [not null, note: "1:啟用, 2:不再使用"]
+  note {"互動分類:like、block、bookmark、隱藏自己的內容; 通知分類:有人留言、按讚"}
 }
 
 // 內容歷史紀錄(編輯版控)
 table content_history {
   content_history_id int [pk, increment]
-  content_id int [ref: > content.content_id]
-  user_id int [ref: > user.user_id]
-  old_title nvarchar(200) [note:"舊標題"]
+  content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content_history_content"]
+  user_id int [ref: > user.user_id, note: "CONSTRAINT FK_content_history_user"]
+  old_title nvarchar(200) [not null, note:"舊標題"]
   old_body nvarchar(max) [not null, note:"舊內文"]
-  ishidden bit [note: "自己的內容才可隱藏"]
-  edited_at datetime [default:`current_timestamp`]
+  created_at datetime [default:`current_timestamp`, note: "修改文章的時間"]
+  updated_at datetime [default:`current_timestamp`, note: "修改此歷史修改的時間(管理員用)"]
   note {"編輯歷史，只存舊資料"}
 }
 
 // 通知(有人回覆/互動)
 table content_notification {
   content_notification_id int [pk, increment]
-  user_id int [ref: > user.user_id, note:"接收通知的人"]
-  content_id int [ref: > content.content_id]
-  category_id int [ref: > interaction_category.interaction_category_id, note: "like, reply, bookmark..."] 
+  user_id int [ref: > user.user_id, note:"CONSTRAINT FK_content_notification_user 接收通知的人"]
+  content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content_notification_content"]
+  category_id int [ref: > interaction_category.interaction_category_id, note: "CONSTRAINT FK_content_notification_interaction_category"] 
+  title nvarchar(200) [not null, note: "此通知標題"]
   description nvarchar(200) [note:"此通知說明"]
   created_at datetime [default:`current_timestamp`]
-  isread bit
-  note {"通知(有人回覆/互動)，當互動產"}
+  updated_at datetime [default:`current_timestamp`, note: "修改此歷史修改的時間(管理員用)"]
+  isread int [not null, note: "是否已讀取"]
+  note {"通知(有人回覆/互動)"}
 }
 
-// 前台圖片管理
+// 圖片管理
 table user_image {
   user_image_id int [pk, increment]
   user_id int [not null, ref: > user.user_id, note: '使用者id']
   image_url nvarchar(500) [not null, note: '圖片url']
   caption nvarchar(200) [note: '圖片說明:帥氣的狗(用在優化體驗，當圖片顯示不出來時)']
   display_order int [default: 0, note: '顯示順序:輪播時可以調整順序']
-  created_at datetime [default: `current_timestamp`]
+  created_at datetime [default:`current_timestamp`]
+  updated_at datetime [default:`current_timestamp`, note: "修改時間(管理員用)"]
+  note {"圖片管理"}
 }
 
 // User_凃恩雯
