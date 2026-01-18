@@ -38,25 +38,20 @@
   };
 
   // 關注清單
+  const followingList = ref([]);
   const fetchFollowingList = async () => {
     try {
       isLoading.value = true;
-      console.log(`正在請求 API: ${API_BASE_URL}/Social/following`);
       const response = await axios.get(
         `${API_BASE_URL}/Social/following`,
         getAxiosConfig()
       );
-      //console.log("API 回傳原始資料:", response);
 
       // 檢查 1: 如果回傳的是字串且包含 HTML 標籤，代表被導向去登入頁面了
       if (
         typeof response.data === "string" &&
-        response.data.trim().startsWith("<!DOCTYPE")
-      ) {
-        // console.error(
-        //   "錯誤：API 回傳了 HTML 頁面而非 JSON，通常代表未登入或 Cookie 無效。"
-        // );
-        alert("請先登入會員");
+        response.data.includes("<!DOCTYPE")) {
+        alert("請重新登入");
         router.push("/login");
         return;
       }
@@ -67,7 +62,6 @@
       } else if (data && Array.isArray(data.result)) {
         followingList.value = data.result;
       } else {
-        console.warn("API 回傳格式非陣列，設為空值");
         followingList.value = [];
       }
     } catch (error) {
@@ -76,7 +70,7 @@
         error.response &&
         (error.response.status === 401 || error.response.status === 403)
       ) {
-        alert("權限不足或未登入");
+        alert("請先登入");
         router.push("/login");
       }
     } finally {
@@ -119,7 +113,7 @@
         loop: true,
       });
     }
-    fetchFollowingList(); // 呼叫後端 API
+    fetchFollowingList(); //呼叫後端 API
   });
 
   onUnmounted(() => {
@@ -176,7 +170,7 @@
               <div class="d-flex flex-column">
                 <!-- 修正：使用 username 對應 DTO -->
                 <h6 class="mb-1 text-dark text-sm">
-                  {{ user.Username || "未命名使用者" }}
+                  {{ user.username || "未命名使用者" }}
                 </h6>
                 <span class="text-xs">{{ user.Email }}</span>
               </div>

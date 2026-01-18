@@ -66,7 +66,6 @@ export const useAuthStore = defineStore("auth", {
             email: this.form.email,
             password: this.form.password,
             confirmPassword: this.form.confirmPassword,
-            username: this.form.email.split('@')[0]
           },
           {
             headers: { "Content-Type": "application/json" }

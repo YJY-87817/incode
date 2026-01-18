@@ -51,11 +51,6 @@ const router = createRouter({
         component: AuthorView,
       },
       {
-        path: "/login",
-        name: "login",
-        component: Login,
-      },
-      {
         path: "/sections/page-sections/page-headers",
         name: "page-headers",
         component: PageHeaders,
@@ -175,6 +170,7 @@ const router = createRouter({
         name: "recharge",
         component: Recharge, //views的檔案名稱
       },
+      // owen
       {
         path: "/user",
         name: "user",
@@ -186,10 +182,11 @@ const router = createRouter({
         component: () => import('@/views/user/register.vue'),
       },
       {
-        path: "/test",
-        name: "test",
-        component: () => import('@/views/user/test.vue'),
+        path: "/login",
+        name: "login",
+        component: Login,
       },
+      // owen  
     ],
 });
 
