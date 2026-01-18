@@ -19,7 +19,7 @@ namespace incode2.Services
       var query = _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.Ishidden == false)
+      .Where(c => c.IsActive = false)
       .OrderByDescending(c => c.CreatedAt)
       .AsQueryable();
 
