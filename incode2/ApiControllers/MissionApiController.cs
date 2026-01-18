@@ -79,7 +79,7 @@ namespace incode2.ApiControllers
                 m.RewardExp = MDTO.RewardExp;
                 m.ResetType = MDTO.ResetType;
 
-                _context.Entry(MDTO).State = EntityState.Modified;
+                _context.Entry(m).State = EntityState.Modified;
 
                 try
                 {
@@ -111,7 +111,9 @@ namespace incode2.ApiControllers
                 TargetCount = MDTO.TargetCount,
                 RewardPoints = MDTO.RewardPoints,
                 RewardExp = MDTO.RewardExp,
-                ResetType = MDTO.ResetType
+                ResetType = MDTO.ResetType,
+                IsActive = MDTO.IsActive,
+                CreatedAt = MDTO.CreatedAt
             };
             _context.Mission.Add(m);
             await _context.SaveChangesAsync();

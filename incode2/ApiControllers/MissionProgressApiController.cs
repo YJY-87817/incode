@@ -68,7 +68,7 @@ namespace incode2.ApiControllers
             }
 
             MissionProgress Mg = await _context.MissionProgress.FindAsync(id);
-            if (Mg == null)
+            if (Mg != null)
             {
                 Mg.MissionProgressId = MgDTO.MissionProgressId;
                 Mg.UserId = MgDTO.UserId;

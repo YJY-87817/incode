@@ -20,6 +20,8 @@ builder.Services.AddDbContext<incodedatabaseContext>(option =>
 });
 
 builder.Services.AddScoped<IPointLogService, PointLogService>();
+builder.Services.AddScoped<IMissionService, MissionService>();
+builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
 
 //claude給我，要給Api用的
 // 設定 CORS - 允許 Vue 前端存取
