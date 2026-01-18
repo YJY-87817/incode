@@ -4,142 +4,200 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Web; // 需要 System.Web for UrlEncode (如果是 .NET Core 可能需用 System.Net.WebUtility)
 
 namespace incode2.Services
 {
+    // 定義 GeminiService 類別，這是一個封裝好的服務，負責與 Google Gemini API 進行溝通
     public class GeminiService
     {
-        private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
+        private readonly HttpClient _httpClient; // 宣告唯讀的 HttpClient 物件，用來發送 HTTP 網路請求 (例如 GET, POST)
+        private readonly IConfiguration _configuration; // 宣告唯讀的 IConfiguration 物件，用來讀取專案設定檔 (appsettings.json)
 
-        // 透過 DI 注入 HttpClient 和 Configuration
+        // 建構子 (Constructor)：透過依賴注入 (DI) 取得 HttpClient 與 Configuration 的實例
         public GeminiService(HttpClient httpClient, IConfiguration configuration)
         {
-            _httpClient = httpClient;
-            _configuration = configuration;
+            _httpClient = httpClient; // 將注入的 HttpClient 指派給私有欄位，供類別內部使用
+            _configuration = configuration; // 將注入的 Configuration 指派給私有欄位
         }
 
+        // ==========================================
+        // 1. 純文字對話功能
+        // 參數 userContent: 使用者輸入的文字訊息
+        // 回傳 Task<string>: 非同步回傳 AI 的回應字串
+        // ==========================================
         public async Task<string> GetGeminiReplyAsync(string userContent)
         {
-            // 1. 讀取 Keys (建議放在 secrets.json)
-            string geminiApiKey = _configuration["GeminiApiKey"];
-            string tmdbApiKey = _configuration["TmdbApiKey"];
+            string geminiApiKey = _configuration["GeminiApiKey"]; // 從 appsettings.json 中讀取名為 "GeminiApiKey" 的字串
 
-            if (string.IsNullOrEmpty(geminiApiKey)) return "系統錯誤：Gemini API Key 未設定";
+            // 檢查 API Key 是否存在，若為空則直接回傳錯誤，避免發送無效請求
+            if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定";
 
-            // 2. TMDB 邏輯
-            string currentDate = DateTime.Now.ToString("yyyy年MM月dd日");
-            string tmdbInfo = null;
+            // ★ 修正：將模型名稱指定為 gemini-1.5-flash，這是目前 Google 提供的免費且快速的穩定版本
+            // 組合 API 請求的 URL，並將 API Key 以 Query String 的方式附加在後方
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key={geminiApiKey}";
 
-            // 簡易判斷
-            bool isMovieQuery = userContent.Contains("電影") || userContent.Contains("movie") ||
-                                userContent.Contains("上映") || userContent.Contains("演");
+            string currentTime = DateTime.Now.ToString("yyyy年MM月dd日"); // 取得伺服器當下的日期，並格式化為中文格式
 
-            if (!string.IsNullOrEmpty(tmdbApiKey) && isMovieQuery)
+            // 設定系統指令 (System Instruction)，這是一段 Prompt，用來定義 AI 的角色、語氣和限制
+            // 這裡使用了 C# 的字串插值 ($) 和多行字串 (@) 功能
+            string systemInstruction = $@"你是一個精簡扼要的電影 AI 助手。現在時間是 {currentTime}。
+            嚴格遵守以下規則：
+            1. 只能回答電影與影評相關問題。
+            2. 回答請保持簡潔，若需推薦電影，請限制「最多 3 點」，若需推薦文章，請限制「最多 3 篇」。
+            3. 每部電影的介紹請用「一句話」完成，不要廢話。
+            4. 回答中請勿提及「現在時間」或「系統基準」等設定字眼。";
+
+            // 組合最終要送給 AI 的提示詞，將「系統指令」與「使用者問題」合併
+            // 特別要求使用繁體中文，確保回應符合台灣使用者習慣
+            string finalPrompt = $"{systemInstruction}\n\n使用者問題：{userContent} (請用繁體中文(台灣)回答)";
+
+            // 建立匿名物件 (Anonymous Object) 作為請求的 Payload (負載資料)
+            // 這個結構必須符合 Google Gemini API 的 JSON 格式要求
+            var payload = new
             {
-                tmdbInfo = await SearchTmdbApi(userContent, tmdbApiKey);
-            }
-
-            // 3. 組合 Prompt
-            string finalPrompt = BuildPrompt(userContent, tmdbInfo, currentDate);
-
-            // 4. 呼叫 Gemini
-            return await CallGeminiApi(finalPrompt, geminiApiKey);
-        }
-
-        private string BuildPrompt(string userContent, string tmdbInfo, string currentDate)
-        {
-            if (!string.IsNullOrEmpty(tmdbInfo))
-            {
-                // 情況 1: 有 TMDB 資料
-                return $@"
-                    【系統強制設定】：
-                    1. 現在的時間是：{currentDate} (我們身處未來)。
-                    2. 你的身分是 2026 年的電影評論家。
-                    
-                    【輸入資料】：
-                    - 參考資料 (舊資料庫)：{tmdbInfo}
-                    - 使用者問題：{userContent}
-                    
-                    【決策邏輯】：
-                    若使用者問舊電影，參考資料回答。
-                    若使用者問「最新」、「今年(2026)」電影，請忽略舊資料，直接「創作」或「預測」2026 年的上映清單 (如阿凡達3、蜘蛛人4等)，語氣要篤定。
-                ";
-            }
-            else
-            {
-                // 情況 2: 無 TMDB 資料
-                return $@"
-                    【系統設定】：
-                    現在時間是 {currentDate}。
-                    使用者詢問電影相關問題，但目前沒有具體資料。
-                    請發揮創意，扮演 2026 年的電影達人，直接推薦幾部這個時間點(2026)可能正在熱映的電影。
-                    
-                    【使用者問題】：
-                    {userContent}";
-            }
-        }
-
-        private async Task<string> SearchTmdbApi(string query, string apiKey)
-        {
-            try
-            {
-                string cleanQuery = query.Replace("電影", "").Replace("movie", "").Replace("上映", "").Trim();
-                string encodedQuery = System.Net.WebUtility.UrlEncode(cleanQuery); // .NET Core 建議寫法
-                string url = $"https://api.themoviedb.org/3/search/movie?api_key={apiKey}&language=zh-TW&query={encodedQuery}";
-
-                var response = await _httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
+                contents = new[] // contents 是一個陣列，包含對話的歷史或當前內容
                 {
-                    var jsonString = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonString))
+                    new
                     {
-                        var results = doc.RootElement.GetProperty("results");
-                        if (results.GetArrayLength() > 0)
-                        {
-                            var movie = results[0];
-                            string title = movie.GetProperty("title").GetString();
-                            string overview = movie.GetProperty("overview").GetString();
-                            string date = movie.TryGetProperty("release_date", out var d) ? d.GetString() : "未知";
-                            double vote = movie.TryGetProperty("vote_average", out var v) ? v.GetDouble() : 0;
+                        parts = new[] { new { text = finalPrompt } } // parts 包含實際的文字內容 (text)
+                    }
+                },
 
-                            return $"片名：{title}\n上映日：{date}\n評分：{vote}/10\n劇情簡介：{overview}";
+                generationConfig = new // 設定生成的配置參數，控制 AI 的回答風格
+                {
+                    temperature = 0.5, // 溫度參數 (0.0 - 1.0)。設為 0.5 代表平衡，既不會太死板也不會太隨機胡扯
+                    maxOutputTokens = 70, // 限制 AI 回答的最大長度 (Token 數)，避免回答過長被截斷或浪費資源
+                    topP = 0.9, // Nucleus sampling 參數，控制選詞的多樣性
+                    topK = 20 // Top-K sampling 參數，限制選詞的大小
+                }
+            };
+
+            // 呼叫共用的發送方法 SendToGemini，將網址和資料傳送出去，並等待結果
+            return await SendToGemini(url, payload);
+        }
+
+        // ==========================================
+        // 2. 以圖搜圖功能
+        // 參數 base64Image: 圖片的 Base64 編碼字串
+        // 參數 mimeType: 圖片的格式 (例如 image/jpeg, image/png)
+        // 參數 prompt: 使用者針對這張圖片的文字提問
+        // ==========================================
+        public async Task<string> GetGeminiImageReplyAsync(string base64Image, string mimeType, string prompt)
+        {
+            string geminiApiKey = _configuration["GeminiApiKey"]; // 讀取 API Key
+            if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定"; // 防呆檢查
+
+            // ★ 修正：同樣使用 gemini-1.5-flash 模型，此模型支援視覺辨識 (Vision)
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key={geminiApiKey}";
+
+            string currentTime = DateTime.Now.ToString("yyyy年MM月dd日"); // 取得當前時間
+
+            // 組合針對圖片的系統指令，限制 AI 的回答範圍
+            string finalPrompt = $"你是一個電影 AI。現在時間是 {currentTime}。請分析這張圖片內容是否與電影相關。{prompt} (注意：回答時請勿提及「現在時間」或「系統基準」，直接針對圖片內容回答)";
+
+            // 建立圖片請求的 Payload，結構與純文字稍有不同
+            var payload = new
+            {
+                contents = new[] // 對話內容陣列
+                {
+                    new
+                    {
+                        parts = new object[] // parts 陣列，這裡混合了「圖片資料」與「文字提示」
+                        {
+                            new
+                            {
+                                inline_data = new // 設定內嵌的二進位資料 (圖片)
+                                {
+                                    mime_type = mimeType, // 告訴 API 這是什麼格式的圖片 (如 image/png)
+                                    data = base64Image // 填入圖片的 Base64 數據
+                                }
+                            },
+                            new { text = finalPrompt } // 圖片後面的文字提示
                         }
                     }
+                },
+                generationConfig = new // 生成配置
+                {
+                    temperature = 0.7, // 圖片描述通常需要一點創意，所以溫度稍微調高到 0.7
+                    maxOutputTokens = 2000, // 圖片分析的文字量通常較大，給予 2000 Token 的空間
+                    topP = 0.9, // 取樣參數
+                    topK = 40 // 取樣參數
                 }
-                return null;
-            }
-            catch { return null; }
+            };
+
+            // 呼叫共用的發送方法
+            return await SendToGemini(url, payload);
         }
 
-        private async Task<string> CallGeminiApi(string prompt, string apiKey)
+        // ==========================================
+        // 3. 共用的 HTTP 發送邏輯 (私有方法，不對外公開)
+        // 參數 url: API 的完整網址
+        // 參數 payload: 要傳送的資料物件 (C# 物件)
+        // ==========================================
+        private async Task<string> SendToGemini(string url, object payload)
         {
-            try
+            try // 使用 try-catch 區塊來捕捉連線過程中可能發生的任何錯誤
             {
-                string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}"; // 注意模型版本
-                var payload = new { contents = new[] { new { parts = new[] { new { text = prompt } } } } };
+                // 設定 JSON 序列化選項：
+                // PropertyNamingPolicy = CamelCase (將 C# 的 PascalCase 屬性名轉為 JSON 的 camelCase，例如 MaxOutputTokens -> maxOutputTokens)
+                // IgnoreNullValues = true (忽略值為 null 的屬性，減少傳輸量)
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, IgnoreNullValues = true };
 
-                var jsonContent = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                // 將 C# payload 物件序列化成 JSON 字串，並設定編碼為 UTF-8，Content-Type 為 application/json
+                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
+
+                // 使用 HttpClient 發送非同步 POST 請求到 Google API，並等待伺服器回應
                 var response = await _httpClient.PostAsync(url, jsonContent);
 
+                // A. 判斷 HTTP 狀態碼是否為成功 (200-299 之間)
                 if (response.IsSuccessStatusCode)
                 {
+                    // 讀取回應內容為字串 (JSON 格式)
                     var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                    // 使用 JsonDocument 解析 JSON 字串 (這比反序列化成物件更高效，適合唯讀)
                     using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
                     {
-                        return doc.RootElement.GetProperty("candidates")[0]
-                                              .GetProperty("content")
-                                              .GetProperty("parts")[0]
-                                              .GetProperty("text")
-                                              .GetString();
+                        // 取得根節點下的 "candidates" 陣列 (這是 Gemini 回傳候選答案的地方)
+                        var candidates = doc.RootElement.GetProperty("candidates");
+
+                        // 檢查是否有候選答案 (Array Length > 0)
+                        if (candidates.GetArrayLength() > 0)
+                        {
+                            // 取得第一個候選答案的 "content" 物件
+                            var content = candidates[0].GetProperty("content");
+                            // 取得 "content" 下的 "parts" 陣列
+                            var parts = content.GetProperty("parts");
+
+                            // 檢查 parts 是否有內容
+                            if (parts.GetArrayLength() > 0)
+                            {
+                                // 取出第一個 part 的 "text" 屬性，並轉為字串回傳 (這就是 AI 的最終回答)
+                                return parts[0].GetProperty("text").GetString();
+                            }
+                        }
                     }
+                    // 如果狀態碼成功，但解析不出內容 (極罕見情況)，回傳自定義錯誤訊息
+                    return "[系統異常] AI 回傳了空的內容。";
                 }
-                return $"Gemini API 錯誤: {response.StatusCode}";
+
+                // B. 如果 API 回傳錯誤狀態碼 (如 400 參數錯, 429 配額滿, 500 Google 內部錯誤)
+                // 讀取錯誤的詳細內容 (通常包含 Google 給的錯誤原因 JSON)
+                string errorMsg = await response.Content.ReadAsStringAsync();
+
+                // 回傳帶有特定前綴 "[AI API 錯誤]" 的訊息，讓前端 Vue 可以識別並顯示紅字警告
+                return $"[AI API 錯誤] Google 回傳狀態碼 {response.StatusCode}: {errorMsg}";
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex) // 捕捉 HTTP 請求層級的異常 (例如後端伺服器沒網路、DNS 解析失敗)
             {
-                return $"AI 回應解析失敗: {ex.Message}";
+                // C. 網路連線錯誤
+                // 回傳帶有特定前綴 "[伺服器連線問題]" 的訊息
+                return $"[伺服器連線問題] 後端無法連接到 Google Gemini: {ex.Message}";
+            }
+            catch (Exception ex) // 捕捉其他所有未預期的程式邏輯錯誤
+            {
+                // D. 其他內部錯誤
+                return $"[系統內部錯誤] {ex.Message}";
             }
         }
     }
