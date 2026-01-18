@@ -113,7 +113,7 @@ namespace incode2.ApiControllers
                 RewardExp = MDTO.RewardExp,
                 ResetType = MDTO.ResetType,
                 IsActive = MDTO.IsActive,
-                CreatedAt = MDTO.CreatedAt
+                CreatedAt = DateTime.Now
             };
             _context.Mission.Add(m);
             await _context.SaveChangesAsync();

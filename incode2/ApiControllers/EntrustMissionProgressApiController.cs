@@ -58,7 +58,7 @@ namespace incode2.ApiControllers
         // PUT: api/EntrustMissionProgressApi/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ResultDTO> PutEntrustMissionProgress(int id, EntrustMissionProgress EmgDTO)
+        public async Task<ResultDTO> PutEntrustMissionProgress(int id, EntrustMissionProgressDTO EmgDTO)
         {
             if (id != EmgDTO.EntrustMissionProgressId)
             {
@@ -75,7 +75,7 @@ namespace incode2.ApiControllers
                 emg.CompletedAt = EmgDTO.CompletedAt;
                 emg.RewardedAt = EmgDTO.RewardedAt;
 
-                _context.Entry(EmgDTO).State = EntityState.Modified;
+                _context.Entry(emg).State = EntityState.Modified;
 
                 try
                 {
@@ -105,7 +105,8 @@ namespace incode2.ApiControllers
                 Status = EmgDTO.Status,
                 AcceptedAt = EmgDTO.AcceptedAt,
                 CompletedAt = EmgDTO.CompletedAt,
-                RewardedAt = EmgDTO.RewardedAt
+                RewardedAt = EmgDTO.RewardedAt,
+
             };
             _context.EntrustMissionProgress.Add(emg);
             await _context.SaveChangesAsync();

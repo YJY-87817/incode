@@ -115,7 +115,7 @@ namespace incode2.ApiControllers
                 PointsGranted = PrDTO.PointsGranted,
                 PaymentMethod = PrDTO.PaymentMethod,
                 Status = PrDTO.Status,
-                CreatedAt = DateTime.UtcNow //後端程式碼產生
+                CreatedAt = DateTime.Now //後端程式碼產生
             };
             _context.PointRecharge.Add(Pr);
             await _context.SaveChangesAsync();

@@ -85,7 +85,7 @@ namespace incode2.ApiControllers
                 Em.IsActive = EmDTO.IsActive;
                 Em.CreatedAt = EmDTO.CreatedAt;
 
-                _context.Entry(EmDTO).State = EntityState.Modified;
+                _context.Entry(Em).State = EntityState.Modified;
 
                 try
                 {
@@ -121,7 +121,7 @@ namespace incode2.ApiControllers
                 MaxParticipants = EmDTO.MaxParticipants,
                 Status = EmDTO.Status,
                 IsActive = EmDTO.IsActive,
-                CreatedAt = EmDTO.CreatedAt,
+                CreatedAt = DateTime.Now,
             };
             _context.EntrustMission.Add(em);
             await _context.SaveChangesAsync();
