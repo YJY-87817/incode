@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.user
 {
-    public class SocialService : ISocialService
+    public class FollowService : IFollowService
     {
         private readonly incodedatabaseContext _context;
 
-        public SocialService(incodedatabaseContext context)
+        public FollowService(incodedatabaseContext context)
         {
             _context = context;
         }
