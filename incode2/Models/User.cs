@@ -71,7 +71,5 @@ public partial class User
 
     public virtual ICollection<UserNotification> UserNotification { get; set; } = new List<UserNotification>();
 
-    public virtual UserPointWallet UserPointWallet { get; set; }
-
     public virtual UserStatus UserStatus { get; set; }
 }
