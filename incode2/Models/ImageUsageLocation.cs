@@ -13,7 +13,5 @@ public partial class ImageUsageLocation
 
     public string Description { get; set; }
 
-    public virtual ICollection<AdminImage> AdminImage { get; set; } = new List<AdminImage>();
-
     public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
 }

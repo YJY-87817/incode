@@ -5,7 +5,7 @@
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "IrregularWords": null,
-   "MinimumProductVersion": "2.6.1248",
+   "MinimumProductVersion": "2.6.1301",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models",
@@ -18,14 +18,6 @@
    "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
-      {
-         "Name": "[dbo].[admin]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[admin_image]",
-         "ObjectType": 0
-      },
       {
          "Name": "[dbo].[chat_message]",
          "ObjectType": 0
@@ -107,6 +99,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[role]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[shipped_detail]",
          "ObjectType": 0
       },
@@ -119,7 +115,15 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[user_login]",
+         "Name": "[dbo].[user_inventory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[user_loginlog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[user_notification]",
          "ObjectType": 0
       },
       {

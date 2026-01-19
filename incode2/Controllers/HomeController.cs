@@ -1,3 +1,4 @@
+using CoreMVCValidation.ViewModels;
 using incode2.Models;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -27,9 +28,14 @@ namespace incode2.Controllers
     //()內沒有值，預設抓Index.cshtml(同名函式的.cshtml)
     public async Task<IActionResult> Index()
     {
+      return View();
+      //return View("Privacy"); //指定要回傳的view名稱改為Privacy
+    }
+    public async Task<IActionResult> Test()
+    {
       ViewBag.Fuen = "這是從HomeController用ViewBag.Fuen傳過來的"; //傳資料到view用
-      Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId ==1);
-      ViewBag.content = c;
+      Content c = await _context.Content.FirstOrDefaultAsync(x => x.UserId == 1);
+      ViewBag.content = c ?? new Content { Body = "" };
       ViewBag.user = new SelectList(_context.Content.Select(x => x.Body).Distinct());
       //ViewBag.JS = $"alert('貼文總數:{_context.Content.Count()}篇')";
       HttpContext.Session.SetString("Session鍵", "Session");
@@ -47,8 +53,9 @@ namespace incode2.Controllers
       Response.Cookies.Append("CookieKey", "Cookie值", cookieOptions);
 
       return View();
-      //return View("Privacy"); //指定要回傳的view名稱改為Privacy
+
     }
+
 
     public IActionResult Privacy()
     {
@@ -91,7 +98,7 @@ namespace incode2.Controllers
     {
       if (ModelState.IsValid) //Server端驗證通過
       {
-        //處理==>寫入資料庫
+        //處理==>寫入資料庫(這邊自己還沒寫)
         return RedirectToAction("Index", "Home");
       }
       //return View(null);

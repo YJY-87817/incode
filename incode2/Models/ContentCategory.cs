@@ -7,17 +7,17 @@ namespace incode2.Models;
 
 public partial class ContentCategory
 {
-  public int ContentCategoryId { get; set; }
+    public int ContentCategoryId { get; set; }
 
-  public int? ParentCategoryId { get; set; }
+    public int? ParentCategoryId { get; set; }
 
-  public string CategoryName { get; set; }
+    public string CategoryName { get; set; }
 
-  public string Description { get; set; }
+    public string Description { get; set; }
 
-  public virtual ICollection<Content> Content { get; set; } = new List<Content>();
+    public virtual ICollection<Content> Content { get; set; } = new List<Content>();
 
-  public virtual ICollection<ContentCategory> InverseParentCategory { get; set; } = new List<ContentCategory>();
+    public virtual ICollection<ContentCategory> InverseParentCategory { get; set; } = new List<ContentCategory>();
 
-  public virtual ContentCategory ParentCategory { get; set; }
+    public virtual ContentCategory ParentCategory { get; set; }
 }

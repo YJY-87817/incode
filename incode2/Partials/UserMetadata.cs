@@ -10,9 +10,9 @@ namespace incode2.Partials
             [Required]
         public int UserId { get; set; }
 
-        [Display(Name = "帳號")]
+        [Display(Name = "Email")]
         [Required]
-        public string Account { get; set; }
+        public string Email { get; set; }
 
         [Display(Name = "暱稱")]
            
@@ -24,6 +24,12 @@ namespace incode2.Partials
 
             [Display(Name = "電話")]
             public int? Phone { get; set; }
+
+        [Display(Name = "生日")]
+        public DateOnly? Birthday { get; set; }
+
+        [Display(Name = "地址")]
+        public string Address { get; set; }
 
         [Display(Name = "大頭照")]
         public string? ImageUrl { get; set; }
