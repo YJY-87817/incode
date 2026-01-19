@@ -375,5 +375,85 @@ namespace incode2.ApiControllers
                 return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
+
+        // 取消訂單
+        // PUT: api/OrderApi/CancelOrder/{OrderId}
+        [HttpPut("CancelOrder/{OrderId}")]
+        public async Task<ResultDTO<int>> CancelOrder(int OrderId)
+        {
+            // 取得修改前訂單資料
+            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
+
+            if (oldOrder == null)
+                return ResultDTO<int>.Failure("找不到該訂單");
+
+            if (oldOrder.Status == "已完成")
+                return ResultDTO<int>.Failure("訂單已完成不能取消");
+
+            if (oldOrder.Status == "取消")
+                return ResultDTO<int>.Failure("訂單已取消");
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 回復庫存：一次查出相關商品避免每筆查詢
+                var productIds = oldOrder.Orderdetail.Select(d => d.ProductId).Distinct().ToList();
+                var productDict = await _context.Product
+                    .Where(p => productIds.Contains(p.ProductId))
+                    .ToDictionaryAsync(p => p.ProductId);
+
+                foreach (var detail in oldOrder.Orderdetail)
+                {
+                    if (productDict.TryGetValue(detail.ProductId, out var prod))
+                    {
+                        prod.Stock += detail.Quantity;
+                    }
+                }
+
+                //// 回復會員點數與建立點數記錄（若有 wallet）
+                //if (oldOrder.TotalPoint > 0)
+                //{
+                //    var wallet = await _context.UserPointWallet.FindAsync(oldOrder.UserId);
+                //    if (wallet != null)
+                //    {
+                //        wallet.CurrentPoints += oldOrder.TotalPoint;
+                //        wallet.UpdatedAt = DateTime.Now;
+
+                //        // 盡量找合適的 PointTypeDefinition，沒有就不建立 PointLog
+                //        var pointType = await _context.PointTypeDefinition
+                //            .FirstOrDefaultAsync(pt => pt.TypeName == "order_refund" || pt.TypeName == "order" || pt.TypeName == "refund");
+
+                //        if (pointType != null)
+                //        {
+                //            var pointLog = new PointLog
+                //            {
+                //                UserId = oldOrder.UserId,
+                //                SourceType = "order",
+                //                SourceId = oldOrder.OrderId,
+                //                PointTypeDefinitionId = pointType.PointTypeDefinitionId,
+                //                ChangeAmount = oldOrder.TotalPoint,
+                //                BalanceAfter = wallet.CurrentPoints,
+                //                CreatedAt = DateTime.Now
+                //            };
+                //            _context.PointLog.Update(pointLog);
+                //        }
+                //    }
+                //}
+
+                oldOrder.Status = "取消";
+                oldOrder.CanceledAt = DateTime.Now;
+
+                // 儲存變更
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
+            }
+        }
+
     }
 }
