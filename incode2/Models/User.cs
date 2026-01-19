@@ -63,6 +63,8 @@ public partial class User
 
     public virtual Role Role { get; set; }
 
+    public virtual ICollection<Shipaddress> Shipaddress { get; set; } = new List<Shipaddress>();
+
     public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
 
     public virtual ICollection<UserInventory> UserInventory { get; set; } = new List<UserInventory>();

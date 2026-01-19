@@ -1,4 +1,4 @@
-﻿namespace incode2.Service
+﻿namespace incode2.Services
 {
     public interface IImageService
     {

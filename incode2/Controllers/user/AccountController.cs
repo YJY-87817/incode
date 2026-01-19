@@ -1,11 +1,11 @@
 ﻿using incode2.Enums;
-using incode2.Service.user;
+using incode2.Services.user;
 using incode2.ViewModel;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims; 
+using System.Security.Claims;
 
 namespace incode2.Controllers.user
 {

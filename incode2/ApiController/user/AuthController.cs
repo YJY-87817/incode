@@ -1,7 +1,7 @@
 ﻿using Azure.Core;
 using incode2.DTO.user;
 using incode2.Enums;
-using incode2.Service.user;
+using incode2.Services.user;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
