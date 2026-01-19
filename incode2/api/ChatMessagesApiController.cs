@@ -1,5 +1,4 @@
-﻿using incode2.Data;
-using incode2.Models;
+﻿using incode2.Models;
 using incode2.Services;
 using incode2.DTO;
 using incode2.Hubs;
@@ -195,7 +194,7 @@ namespace incode2.Controllers
                 {
                     UserId = 1, // TODO: 替換為真實 UserID（暫時寫死為1）
                     ImageUrl = dbRelativeUrl, // 圖片訪問路徑：存入相對路徑
-                    UsageLocation = 1, // ★ 注意：請確保 ImageUsageLocation 表中有 ID=1 的資料 (例如代表"Chat")
+                    //UsageLocation = 1, // ★ 注意：請確保 ImageUsageLocation 表中有 ID=1 的資料 (例如代表"Chat")
                     Caption = aiReply.Length > 200 ? aiReply.Substring(0, 197) + "..." : aiReply, // 圖片描述：截斷超過200字的內容，避免欄位溢位
                     DisplayOrder = 0, // 顯示順序：預設為0
                     CreatedAt = DateTime.Now // 建立時間：當前伺服器時間
