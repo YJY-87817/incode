@@ -1,5 +1,4 @@
-﻿
-namespace incode2.Service.user
+﻿namespace incode2.Services.user
 {
     public class PasswordService : IPasswordService
     {

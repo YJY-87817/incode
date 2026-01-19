@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace incode2.Models;
 
-public partial class ShipAddress
+public partial class Shipaddress
 {
     public int ShipaddressId { get; set; }
 
@@ -16,4 +16,6 @@ public partial class ShipAddress
     public string RecipientAddress { get; set; }
 
     public string RecipientPhone { get; set; }
+
+    public virtual User User { get; set; }
 }

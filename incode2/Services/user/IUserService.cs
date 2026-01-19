@@ -1,6 +1,6 @@
 ﻿using incode2.Models;
 
-namespace incode2.Service.user
+namespace incode2.Services.user
 {
     public interface IUserService
     {

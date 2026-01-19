@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace incode2.Models;
 
-public partial class PointChange
+public partial class Pointchange
 {
     public int PointchangeId { get; set; }
 
@@ -14,4 +14,6 @@ public partial class PointChange
     public int Point { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+
+    public virtual Product Product { get; set; }
 }

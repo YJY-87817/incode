@@ -1,6 +1,6 @@
 using incode2.Models;
-using incode2.Service.user;
 using incode2.Services;
+using incode2.Services.user;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,12 +17,6 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // ==========================================
 // 2. CORS 設定 (指定 Vue 前端來源)
 // ==========================================
-builder.Services.AddScoped<IPointLogService, PointLogService>();
-builder.Services.AddScoped<IMissionService, MissionService>();
-builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
-builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
-builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueApp", policy =>
@@ -96,20 +90,22 @@ builder.Services.AddAuthorization();
 // ==========================================
 builder.Services.AddControllersWithViews();
 
-// ==========================================
-// 5. 註冊 Service
-// ==========================================
+//owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
-
-//Service透過DI建立
+//tim
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentService, ContentService>();
-
-//註冊 Service到 DI 容器，這樣 Controller 才能使用它
+//yjy
 builder.Services.AddScoped<IImageService, ImageService>();
+//qiu
+builder.Services.AddScoped<IPointLogService, PointLogService>();
+builder.Services.AddScoped<IMissionService, MissionService>();
+builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
+builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
+builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
 
 var app = builder.Build();
 

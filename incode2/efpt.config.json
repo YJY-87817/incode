@@ -99,11 +99,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[pointchange]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[product]",
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[productimage]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[role]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[shipaddress]",
          "ObjectType": 0
       },
       {
@@ -133,18 +145,6 @@
       {
          "Name": "[dbo].[user_status]",
          "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[point_change]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[product_image]",
-         "ObjectType": 0
-      },
-      {
-        "Name": "[dbo].[ship_address]",
-        "ObjectType": 0
       }
    ],
    "UiHint": null,

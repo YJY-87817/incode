@@ -2,7 +2,7 @@
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace incode2.Service.user
+namespace incode2.Services.user
 {
     public class SocialService : ISocialService
     {

@@ -1,4 +1,4 @@
-﻿using incode2.Service.user;
+﻿using incode2.Services.user;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
