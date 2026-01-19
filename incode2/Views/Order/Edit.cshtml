@@ -1,6 +1,226 @@
-﻿
+﻿@model incode2.ViewModels.OrderViewModel
 
 @{
-    ViewData["Title"] = "訂單管理";
+    ViewData["Title"] = "編輯訂單"; // 修改標題
 }
-<h2>訂單管理</h2>
+
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark py-3">
+            <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>編輯訂單 - 單號: @Model.OrderId</h4>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+
+                <input type="hidden" asp-for="OrderId" />
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label asp-for="UserId" class="form-label fw-bold text-secondary">會員 ID</label>
+                        <input asp-for="UserId" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="TotalPoint" class="form-label fw-bold text-secondary">訂單總點數</label>
+                        <div class="input-group">
+                            <input asp-for="TotalPoint" type="number" class="form-control bg-light" readonly>
+                            <span class="input-group-text">Pts</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Status" class="form-label fw-bold text-secondary">訂單狀態</label>
+                        <select asp-for="Status" class="form-select border-primary-subtle">
+                            <option value="未完成">未完成</option>
+                            <option value="完成">完成</option>
+                            <option value="取消">取消</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Remark" class="form-label fw-bold text-secondary">訂單備註</label>
+                    <textarea asp-for="Remark" class="form-control" rows="2"></textarea>
+                </div>
+
+                <hr class="my-4 text-muted">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-list-check me-2"></i>商品明細</h5>
+                    <button id="BtnNewProduct" type="button" class="btn btn-outline-success btn-sm" onclick="newOrderList()">
+                        <i class="bi bi-plus-lg"></i> 加入商品
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th style="min-width: 250px;">商品名稱</th>
+                                <th style="width: 120px;">數量</th>
+                                <th style="width: 120px;">單價(點數)</th>
+                                <th style="width: 120px;">總計</th>
+                                <th style="width: 100px;">需寄送</th>
+                                <th style="width: 80px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shoppingList">
+                            @if (Model.orderdetails != null)
+                            {
+                                for (int i = 0; i < Model.orderdetails.Count; i++)
+                                {
+                                    <tr class="text-center">
+                                        <td>
+                                            <input type="hidden" name="orderdetails[@i].OrderDetailId" value="@Model.orderdetails[i].OrderdetailId" />
+                                            <select class="form-select" name="orderdetails[@i].ProductId" onchange="PointChange(this)" required>
+                                                <option value="">-- 請選擇商品 --</option>
+                                                @if (ViewBag.Products != null)
+                                                {
+                                                    foreach (var p in (List<Product>)ViewBag.Products)
+                                                    {
+                                                        var isSelected = p.ProductId == Model.orderdetails[i].ProductId ? "selected" : null;
+                                                        <!option value="@p.ProductId" data-point="@p.Point" @isSelected>@p.Name (@p.Point 點)</!option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-center" name="orderdetails[@i].Quantity"
+                                                   min="1" value="@Model.orderdetails[i].Quantity" onchange="quantity(this)" />
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-center bg-light" name="orderdetails[@i].UnitPointAtPurchase"
+                                                   value="@Model.orderdetails[i].UnitPointAtPurchase" readonly />
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-center bg-light countpoint"
+                                                   value="@(Model.orderdetails[i].Quantity * Model.orderdetails[i].UnitPointAtPurchase)" readonly />
+                                        </td>
+                                        <td>
+                                            <div class="form-check d-flex justify-content-center">
+                                                <input type="hidden" name="orderdetails[@i].RequiresShipping" value="false" />
+                                                <input type="checkbox" class="form-check-input border-secondary" name="orderdetails[@i].RequiresShipping"
+                                                       value="true" @(Model.orderdetails[i].RequiresShipping ? "checked" : "") />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">刪除</button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-5 d-flex gap-3">
+                    <button id="BtnUpdate" type="submit" class="btn btn-warning px-5 py-2 fw-bold shadow-sm">
+                        儲存修改
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-light px-4 py-2 border">取消返回</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function newOrderList() {
+        let index = $("#shoppingList tr").length; // 取得目前列數作為索引
+        let newRow =
+            `<tr class="text-center">
+                <td>
+                   <select id="select[${index}]" class="form-select" name="orderdetails[${index}].ProductId" onchange="PointChange(this)" required>
+                        <option value="">-- 請選擇商品 --</option>
+                        @if (ViewBag.Products != null)
+                        {
+                                    foreach (var p in (List<Product>)ViewBag.Products)
+                                    {
+                                                <option value="@p.ProductId" data-point="@p.Point">@p.Name (@p.Point 點) | 庫存:@p.Stock</option>
+                                    }
+                        }
+                    </select>
+                </td>
+                <td>
+                   <input type="number" class="form-control text-center" name="orderdetails[${index}].Quantity" min="1" value="1" onchange="quantity(this)" />
+                </td>
+                <td>
+                   <input type="number" class="form-control text-center bg-light" name="orderdetails[${index}].UnitPointAtPurchase" value="0" readonly />
+                </td>
+                <td>
+                    <input type="number" class="form-control text-center bg-light countpoint" value="0" readonly />
+                </td>
+                <td>
+                    <div class="form-check d-flex justify-content-center">
+                       <input type="hidden" name="orderdetails[${index}].RequiresShipping" value="false" />
+                       <input type="checkbox" class="form-check-input border-secondary" name="orderdetails[${index}].RequiresShipping" value="true" />
+                    </div>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">
+                        刪除
+                    </button>
+                </td>
+            </tr>`
+        $("#shoppingList").append(newRow);
+        }
+
+        function removeRow(btn) {
+        $(btn).closest('tr').remove();
+        reIndexTable(); // 重新排序索引以確保連續性
+        updateTotalPoint();
+        }
+
+        function reIndexTable() {
+        $("#shoppingList tr").each(function(i) {
+            $(this).find("[name]").each(function() {
+                var name = $(this).attr("name");
+                // 將 orderdetails[x].Prop 替換為 orderdetails[i].Prop
+                $(this).attr("name", name.replace(/\[\d+\]/, "[" + i + "]"));
+            });
+        });
+        }
+
+        function updateRowTotal($row) {
+            // 取出單價與數量，計算總點數並更新該列與總計
+            var unit = parseFloat($row.find('input[name*=".UnitPointAtPurchase"]').val()) || 0;
+            var qty = parseFloat($row.find('input[name*=".Quantity"]').val()) || 0;
+            var total = unit * qty;
+            $row.find('input.countpoint').val(total);
+            updateTotalPoint();
+        }
+
+        function PointChange(select) {
+             // 取得選中 option 的 data-point 屬性
+             var point = parseFloat($(select).find(':selected').data('point')) || 0;
+             var $row = $(select).closest('tr');
+             // 找到同一列的單價輸入框並賦值
+             $row.find('input[name*="UnitPointAtPurchase"]').val(point);
+             // 計算並更新該列總點數
+             updateRowTotal($row);
+        }
+
+        function quantity(count) {
+            var $row = $(count).closest('tr');
+            // 數量改變時重新計算該列總點數
+            updateRowTotal($row);
+        }
+
+        function updateTotalPoint() {
+            var sum = 0;
+            $('#shoppingList').find('input.countpoint').each(function() {
+                sum += parseFloat($(this).val()) || 0;
+            });
+            // 更新表單上的 TotalPoint 欄位（name 為 TotalPoint）
+            $('input[name="TotalPoint"]').val(sum);
+        }
+
+        // 初始化：在頁面載入時計算一次（若你希望）
+        $(function() {
+            $('#shoppingList tr').each(function() {
+                updateRowTotal($(this));
+            });
+        });
+    </script>
+}

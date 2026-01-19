@@ -269,9 +269,8 @@ Table notifications {
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-//PointShop_嚴家胤 
-
-//商品資料管理
+// PointShop_嚴家胤 
+// 商品資料管理
 table product {
   product_id INT [pk, increment, note: '商品ID (主鍵)']
   name NVARCHAR(50) [not null, note: '商品名稱']
@@ -287,10 +286,10 @@ table product {
   note {'商品預計只下架、不刪除資料'}
 }
 
-//訂單
+// 訂單
 table orders {
   order_id INT [pk, increment, note: '訂單ID (主鍵)']
-  user_id INT [not null, ref:>user.user_id, note: '購買人ID (外來鍵，連結到User表)']
+  user_id INT [not null, ref:>user.user_id, note: "CONSTRAINT FK_orders_user"]
   total_point INT [not null, note: '訂單總點數']
   order_date DATETIME [not null, default: `CURRENT_TIMESTAMP`, note: '訂單成立時間']
   remark NVARCHAR(300) [note: '訂單備註資訊']
@@ -299,20 +298,20 @@ table orders {
   note {'order為資料庫保留字，怕會出問題所以加s，訂單只取消不刪除'}
  }
 
-//訂單Detail
+// 訂單Detail
 table orderdetail {
   orderdetail_id INT [pk, increment, note: 'ID (主鍵)']
-  order_id INT [not null, ref:>orders.order_id , note: '訂單ID (外來鍵)'] 
-  product_id INT [not null, ref:> product.product_id ,note: '商品ID (外來鍵)']
+  order_id INT [not null, ref:>orders.order_id , note: 'CONSTRAINT FK_orderdetail_orders'] 
+  product_id INT [not null, ref:> product.product_id ,note: 'CONSTRAINT FK_orderdetail_product']
   quantity INT [not null, note: '購買數量']
   unit_point_at_purchase INT [not null, note: '購買時單價']
   requires_shipping BIT [not null, note: '是否需寄送商品 (1=需要, 0=不需)']
 }
 
-//寄送Detail
+// 寄送Detail
 table shipped_detail{
   shipped_detail_id INT [pk, increment, note: 'ID (主鍵)']
-  orderdetail_id INT [not null, ref:> orderdetail.orderdetail_id , note: '訂單DetailID (外來鍵)']
+  orderdetail_id INT [not null, ref:> orderdetail.orderdetail_id , note: 'CONSTRAINT FK_shippeddetail_orderdetail']
   recipient_name NVARCHAR(50) [not null, note: '收件人姓名']
   recipient_address NVARCHAR(50) [not null, note: '收件人地址']
   recipient_phone NVARCHAR(50) [not null, note: '收件人電話']
@@ -321,6 +320,33 @@ table shipped_detail{
   is_failed BIT [not null,default: 0, note:'寄送失敗']
   remark NVARCHAR(300) [note: '寄送備註']
   is_completed BIT [not null, default: 0, note: '是否完成']
+}
+
+// 價格紀錄
+table pointchange{
+  pointchange_id INT [pk, increment, note: 'ID (主鍵)']
+  product_id INT [not null, ref:> product.product_id ,note: 'CONSTRAINT FK_pointchange_product']
+  point INT [not null, note: '當時點數']
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`, note: '修改時間']
+  note {'先建立出來備用'}
+}
+
+// 商品多圖
+table productimage{
+  productimage_id INT [pk, increment, note: 'ID (主鍵)']
+  product_id INT [not null, ref:> product.product_id ,note: 'CONSTRAINT FK_productimage_product']
+  image_name NVARCHAR(50) [note: '圖片檔案名稱']
+  note {'先建立出來備用'}
+}
+
+// 寄送資料紀錄
+table shipaddress{
+  shipaddress_id INT [pk, increment, note: 'ID (主鍵)']
+  user_id INT [not null, ref:>user.user_id, note: "CONSTRAINT FK_shipaddress_user"]
+  recipient_name NVARCHAR(50) [not null, note: '收件人姓名']
+  recipient_address NVARCHAR(50) [not null, note: '收件人地址']
+  recipient_phone NVARCHAR(50) [not null, note: '收件人電話']
+  note {'先建立出來備用'}
 }
 
 // chatroom_林宜蒨

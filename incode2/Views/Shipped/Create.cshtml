@@ -4,40 +4,73 @@
     ViewData["Title"] = "寄送管理";
 }
 
-<h2>新增寄送資料</h2>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="mb-0 fs-5"><i class="bi bi-truck me-2"></i>新增寄送資料</h4>
+                </div>
 
-<div class="col-6">
-    <form asp-action="Create" method="post">
-        <div class="mb-3">
-            <label asp-for="OrderdetailId" class="form-label fw-bold">需寄送訂單詳細ID:</label>
-            <input asp-for="OrderdetailId" type="number" class="form-control" required>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+
+                        <div class="mb-4">
+                            <label asp-for="OrderdetailId" class="form-label fw-bold text-dark">
+                                需寄送訂單詳細 ID
+                            </label>
+                            <input asp-for="OrderdetailId" type="number" class="form-control border-success-subtle" placeholder="請輸入訂單明細編號" required>
+                            <div class="form-text">此欄位關聯至訂單詳細明細。</div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-secondary mb-3"><i class="bi bi-person-circle me-2"></i>收件人資訊</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label fw-bold text-dark">收件人名稱</label>
+                                <input asp-for="RecipientName" class="form-control" placeholder="請輸入全名" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientPhone" class="form-label fw-bold text-dark">收件人電話</label>
+                                <input asp-for="RecipientPhone" class="form-control" placeholder="09xx-xxx-xxx" required>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="RecipientAddress" class="form-label fw-bold text-dark">收件地址</label>
+                                <input asp-for="RecipientAddress" class="form-control" placeholder="請輸入詳細地址" required>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-secondary mb-3"><i class="bi bi-calendar-event me-2"></i>物流排程</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="ShippedDate" class="form-label fw-bold text-dark">寄送日期</label>
+                                <input asp-for="ShippedDate" type="date" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ArrivalDate" class="form-label fw-bold text-dark">送達日期</label>
+                                <input asp-for="ArrivalDate" type="date" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Remark" class="form-label fw-bold text-dark">備註</label>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="例如：警衛室代收、週末不配送等..."></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-2">
+                            <button id="BtnCreate" type="submit" class="btn btn-success px-4 py-2 flex-grow-1 fw-bold shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i>確認新增寄送
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">
+                                取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱:</label>
-            <input asp-for="RecipientName" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址:</label>
-            <input asp-for="RecipientAddress" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話:</label>
-            <input asp-for="RecipientPhone" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label asp-for="ShippedDate" class="form-label fw-bold">寄送日期:</label>
-            <input asp-for="ShippedDate" class="form-control">
-        </div>
-        <div class="mb-3">
-            <label asp-for="ArrivalDate" class="form-label fw-bold">送達日期:</label>
-            <input asp-for="ArrivalDate" class="form-control">
-        </div>
-        <div class="mb-3">
-            <label asp-for="Remark" class="form-label fw-bold">備註:</label>
-            <textarea asp-for="Remark" class="form-control" rows="3"></textarea>
-        </div>
-        <div class="d-grid gap-2 mt-4">
-            <button id="BtnCreate" type="submit" class="btn btn-primary">新增寄送資料</button>
-        </div>
-    </form>
+    </div>
 </div>

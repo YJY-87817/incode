@@ -6,10 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// 1. ��Ʈw�s�u & Migration �䴩
-// ==========================================
-// ���U�A����Ʈw Context
 builder.Services.AddDbContext<incodedatabaseContext>(options => {
     options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
@@ -112,6 +108,9 @@ builder.Services.AddScoped<ISocialService, SocialService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 
+//註冊 Service到 DI 容器，這樣 Controller 才能使用它
+builder.Services.AddScoped<IImageService, ImageService>();
+
 var app = builder.Build();
 
 // ==========================================
@@ -139,6 +138,11 @@ app.UseRouting();
 app.UseCors("VueApp");
 app.UseAuthentication(); // 檢查你是誰 (讀取 Cookie)
 app.UseAuthorization();  // 檢查你能做什麼 (讀取 Role)
+
+// 加上這行後，網址 https://localhost:xxxx/img/(圖片名稱位置)才能顯示
+app.UseStaticFiles();
+app.MapStaticAssets();
+// 先留著，建置失敗再說
 
 // 路由設定
 app.MapControllerRoute(
