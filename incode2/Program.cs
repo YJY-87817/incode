@@ -3,6 +3,8 @@ using incode2.Services;
 using incode2.Services.user;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using incode2.Hubs;
+using incode2.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,12 +12,12 @@ builder.Services.AddDbContext<incodedatabaseContext>(options => {
     options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-// 補上這個服務，才能讓下面的 app.UseMigrationsEndPoint() 正常運作
-// 它會捕捉資料庫錯誤並顯示「Apply Migrations」的藍色按鈕頁面
+// �ɤW�o�ӪA�ȡA�~�����U���� app.UseMigrationsEndPoint() ���`�B�@
+// ���|������Ʈw���~����ܡuApply Migrations�v���Ŧ���s����
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ==========================================
-// 2. CORS 設定 (指定 Vue 前端來源)
+// 2. CORS �]�w (���w Vue �e�ݨӷ�)
 // ==========================================
 builder.Services.AddCors(options =>
 {
@@ -35,16 +37,24 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Gemini服務
+builder.Services.AddHttpClient<GeminiService>();
+// SignalR服務
+builder.Services.AddSignalR();
+
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
 // ==========================================
-// 3. Cookie 驗證 (混合模式：API vs 後台)
+// 3. Cookie ���� (�V�X�Ҧ��GAPI vs ��x)
 // ==========================================
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-      // Cookie 安全設定
-      options.Cookie.HttpOnly = true; // 防止 XSS       
-      options.Cookie.SameSite = SameSiteMode.None; // 前後端不同網域(Cross-Site)可能需設為 None + Secure
-      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //瀏覽器規定：只要 SameSite=None，Secure 屬性必須為 true，否則 Cookie 會被拒收！
+      // Cookie �w���]�w
+      options.Cookie.HttpOnly = true; // ���� XSS       
+      options.Cookie.SameSite = SameSiteMode.None; // �e��ݤ��P���(Cross-Site)�i��ݳ]�� None + Secure
+      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //�s�����W�w�G�u�n SameSite=None�ASecure �ݩʥ����� true�A�_�h Cookie �|�Q�ڦ��I
       options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
 
       // 設定後台 MVC 用的導向路徑
@@ -86,7 +96,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 
 // ==========================================
-// 4. 註冊 MVC 服務 (包含 API 與 View)
+// 4. ���U MVC �A�� (�]�t API �P View)
 // ==========================================
 builder.Services.AddControllersWithViews();
 
@@ -110,14 +120,14 @@ builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgres
 var app = builder.Build();
 
 // ==========================================
-// 5. HTTP 請求管線 (Middleware)
+// 5. HTTP �ШD�޽u (Middleware)
 // ==========================================
 
-// 環境判斷
+// ��ҧP�_
 if (app.Environment.IsDevelopment())
 {
-  // 當資料庫與 Model 不一致時，顯示 Migration 錯誤頁面
-  // 需搭配上面的 AddDatabaseDeveloperPageExceptionFilter 使用
+  // ���Ʈw�P Model ���@�P�ɡA��� Migration ���~����
+  // �ݷf�t�W���� AddDatabaseDeveloperPageExceptionFilter �ϥ�
   app.UseMigrationsEndPoint();
 }
 else
@@ -130,19 +140,26 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-//  順序很重要：CORS -> 驗證 -> 授權
+//  ���ǫܭ��n�GCORS -> ���� -> ���v
 app.UseCors("VueApp");
-app.UseAuthentication(); // 檢查你是誰 (讀取 Cookie)
-app.UseAuthorization();  // 檢查你能做什麼 (讀取 Role)
+app.UseAuthentication(); // �ˬd�A�O�� (Ū�� Cookie)
+app.UseAuthorization();  // �ˬd�A�వ���� (Ū�� Role)
 
-// 加上這行後，網址 https://localhost:xxxx/img/(圖片名稱位置)才能顯示
+// �[�W�o���A��} https://localhost:xxxx/img/(�Ϥ��W�٦�m)�~�����
 app.UseStaticFiles();
 app.MapStaticAssets();
-// 先留著，建置失敗再說
+// ���d�ۡA�ظm���ѦA��
 
-// 路由設定
+// ��ѳ]�w
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+//lin
+app.MapRazorPages()
+   .WithStaticAssets();
+
+//SignalR的路由 設定聊天室的連線端點
+app.MapHub<ChatHub>("/chatHub");
 
 app.Run();
