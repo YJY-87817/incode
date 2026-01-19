@@ -150,6 +150,9 @@ const router = createRouter({
         name: "el-typography",
         component: ElTypography,
       },
+
+
+      // 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由
       // 以下是tim的路由
       {
         path: "/forum",
@@ -162,26 +165,7 @@ const router = createRouter({
         component: () => import('@/views/forum/test.vue'),
       },
       // 以上是tim的路由
-      {
-        path: "/PointShop",
-        name: "PointShop",
-        component: () => import('../views/PointShop.vue'),
-      },
-      {
-        path: "/point-log",
-        name: "point-log",
-        component: PointLog, //views的檔案名稱
-      },
-      {
-        path: "/mission",
-        name: "mission",
-        component: Mission, //views的檔案名稱
-      },
-      {
-        path: "/recharge",
-        name: "recharge",
-        component: Recharge, //views的檔案名稱
-      },
+
       // owen
       {
         path: "/user",
@@ -200,22 +184,29 @@ const router = createRouter({
       },
       // owen  
 
-      // qiu
-          {
-      path: "/point-log",
-      name: "point-log",
-      component: PointLog, // 點數紀錄
-    },
-    {
-      path: "/mission",
-      name: "mission",
-      component: Mission, // 任務
-    },
+      // qiu以下
     {
       path: "/mytask",
       name: "mytask",
       component: Mytask, // 我的任務
     },
+          {
+        path: "/point-log",
+        name: "point-log",
+        component: PointLog, //views的檔案名稱
+      },
+      {
+        path: "/mission",
+        name: "mission",
+        component: Mission, //views的檔案名稱
+      },
+      {
+        path: "/recharge",
+        name: "recharge",
+        component: Recharge, //views的檔案名稱
+      },
+      // qiu以上
+
     // yjy 以下
     {
       path: "/PointShop/PointShop",
