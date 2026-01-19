@@ -3,7 +3,7 @@ import PresentationView from "../views/Presentation/PresentationView.vue";
 import AboutView from "../views/LandingPages/AboutUs/AboutView.vue";
 import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
-import SignInBasicView from "../views/LandingPages/SignIn/BasicView.vue";
+import Login from "@/views/user/login.vue";
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
 import NavigationNavbars from "../layouts/sections/navigation/navbars/NavbarsView.vue";
@@ -49,11 +49,6 @@ const router = createRouter({
         path: "/pages/landing-pages/author",
         name: "author",
         component: AuthorView,
-      },
-      {
-        path: "/pages/landing-pages/basic",
-        name: "signin-basic",
-        component: SignInBasicView,
       },
       {
         path: "/sections/page-sections/page-headers",
@@ -175,11 +170,23 @@ const router = createRouter({
         name: "recharge",
         component: Recharge, //views的檔案名稱
       },
+      // owen
       {
         path: "/user",
         name: "user",
-        component: () => import('@/views/user/user.vue'),
+        component: () => import('@/views/user/userindex.vue'),
       },
+      {
+        path: "/register",
+        name: "register",
+        component: () => import('@/views/user/register.vue'),
+      },
+      {
+        path: "/login",
+        name: "login",
+        component: Login,
+      },
+      // owen  
     ],
 });
 

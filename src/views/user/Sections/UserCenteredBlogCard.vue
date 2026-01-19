@@ -28,7 +28,11 @@ defineProps({
   <div class="card">
     <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
       <a :href="action.route" class="d-block blur-shadow-image">
-        <img :src="image" :alt="title" class="img-fluid border-radius-lg" />
+        <img
+          :src="image"
+          alt="img-blur-shadow"
+          class="img-fluid border-radius-lg"
+        />
       </a>
     </div>
     <div class="card-body text-center">
