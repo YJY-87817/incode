@@ -32,12 +32,9 @@ namespace incode2.Controllers
         Body = d.Body,
         CreatedAt = d.CreatedAt,
         UpdatedAt = d.UpdatedAt,
-        Ishidden = d.Ishidden,
-        ContentHistoryId = d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault().ContentHistoryId : 0,
-        OldTitle = d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault().OldTitle : string.Empty,
-        OldBody = d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault().OldBody : string.Empty,
-        HistoryIshidden = d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault().Ishidden : null,
-        EditedAt = d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.EditedAt).FirstOrDefault().EditedAt : null
+        ContentHistoryId = d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault().ContentHistoryId : 0,
+        OldTitle = d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault().OldTitle : string.Empty,
+        OldBody = d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault() != null ? d.ContentHistory.OrderByDescending(ch => ch.CreatedAt).FirstOrDefault().OldBody : string.Empty,
       });
       return View(ContentEditViewModel);
     }

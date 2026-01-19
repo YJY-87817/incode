@@ -13,13 +13,19 @@ public partial class ContentNotification
 
     public int? ContentId { get; set; }
 
-    public int? Category { get; set; }
+    public int? CategoryId { get; set; }
+
+    public string Title { get; set; }
+
+    public string Description { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
-    public bool? Isread { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-    public virtual InteractionCategory CategoryNavigation { get; set; }
+    public int Isread { get; set; }
+
+    public virtual InteractionCategory Category { get; set; }
 
     public virtual Content Content { get; set; }
 

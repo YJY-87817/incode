@@ -46,7 +46,7 @@ namespace incode2.ApiController
         //   - ishidden：比照你 ContentApiController 的寫法，只算「沒被隱藏」的
         var counts = await _context.Content
           .AsNoTracking()
-          .Where(c => (bool)!c.Ishidden && c.CategoryId != null)
+          .Where(c => c.IsActive!=4 && c.CategoryId != null)
           .GroupBy(c => c.CategoryId.Value)
           .Select(g => new
           {

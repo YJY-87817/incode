@@ -7,21 +7,21 @@ namespace incode2.Models;
 
 public partial class ContentHistory
 {
-  public int ContentHistoryId { get; set; }
+    public int ContentHistoryId { get; set; }
 
-  public int? ContentId { get; set; }
+    public int? ContentId { get; set; }
 
-  public int? UserId { get; set; }
+    public int? UserId { get; set; }
 
-  public string OldTitle { get; set; }
+    public string OldTitle { get; set; }
 
-  public string OldBody { get; set; }
+    public string OldBody { get; set; }
 
-  public bool? Ishidden { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-  public DateTime? EditedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-  public virtual Content Content { get; set; }
+    public virtual Content Content { get; set; }
 
-  public virtual User User { get; set; }
+    public virtual User User { get; set; }
 }

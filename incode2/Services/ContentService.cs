@@ -19,7 +19,7 @@ namespace incode2.Services
       var query = _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.Ishidden == false)
+      .Where(c => c.IsActive != 4)
       .OrderByDescending(c => c.CreatedAt)
       .AsQueryable();
 
@@ -58,7 +58,7 @@ namespace incode2.Services
       return await _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.ContentId == id && c.Ishidden == false)
+      .Where(c => c.ContentId == id && c.IsActive != 4)
       .Select(c => new ContentDto
       {
         ContentId = c.ContentId,
@@ -85,7 +85,7 @@ namespace incode2.Services
         Body = dto.Body,
         CreatedAt = DateTime.Now,
         UpdatedAt = DateTime.Now,
-        Ishidden = false
+        IsActive = 1
       };
 
       _context.Content.Add(content);
@@ -104,8 +104,7 @@ namespace incode2.Services
         UserId = content.UserId,
         OldTitle = content.Title,
         OldBody = content.Body,
-        Ishidden = content.Ishidden,
-        EditedAt = DateTime.Now
+        CreatedAt = DateTime.Now
       };
       _context.ContentHistory.Add(history);
 
@@ -127,7 +126,7 @@ namespace incode2.Services
       var content = await _context.Content.FindAsync(id);
       if (content == null) return false;
 
-      content.Ishidden = true;
+      content.IsActive = 2;
       content.UpdatedAt = DateTime.Now;
       await _context.SaveChangesAsync();
       return true;
