@@ -13,6 +13,10 @@ public partial class incodedatabaseContext : DbContext
     {
     }
 
+    public virtual DbSet<AdminImage> AdminImage { get; set; }
+
+    public virtual DbSet<AdminImage> AdminImage { get; set; }
+
     public virtual DbSet<ChatMessage> ChatMessage { get; set; }
 
     public virtual DbSet<ChatSession> ChatSession { get; set; }
@@ -32,8 +36,6 @@ public partial class incodedatabaseContext : DbContext
     public virtual DbSet<EntrustMissionProgress> EntrustMissionProgress { get; set; }
 
     public virtual DbSet<Follow> Follow { get; set; }
-
-    public virtual DbSet<ImageUsageLocation> ImageUsageLocation { get; set; }
 
     public virtual DbSet<InteractionCategory> InteractionCategory { get; set; }
 
@@ -69,10 +71,85 @@ public partial class incodedatabaseContext : DbContext
 
     public virtual DbSet<UserPointWallet> UserPointWallet { get; set; }
 
-    public virtual DbSet<UserStatus> UserStatus { get; set; }
+        });
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F897716866AB150");
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F89771635A9DB38");
+        {
+            entity.HasKey(e => e.AdminImageId).HasName("PK__admin_im__66FA496135211D0B");
+
+            entity.ToTable("admin_image");
+
+            entity.Property(e => e.AdminImageId).HasColumnName("admin_image_id");
+            entity.Property(e => e.AdminId).HasColumnName("admin_id");
+            entity.Property(e => e.Caption)
+                .HasMaxLength(200)
+                .HasColumnName("caption");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DisplayOrder)
+                .HasDefaultValue(0)
+                .HasColumnName("display_order");
+            entity.Property(e => e.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(500)
+                .HasColumnName("image_url");
+                .HasConstraintName("FK__chat_mess__sessi__367C1819");
+                .HasConstraintName("FK__chat_mess__sessi__41EDCAC5");
+
+            entity.HasOne(d => d.Admin).WithMany(p => p.AdminImage)
+                .HasForeignKey(d => d.AdminId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D4A2581417");
+            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D49B933C6E");
+
+            entity.HasOne(d => d.UsageLocationNavigation).WithMany(p => p.AdminImage)
+                .HasForeignKey(d => d.UsageLocation)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__admin_ima__usage__2739D489");
+        });
+
+        });
+
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F897716445B9C4C");
+        {
+            entity.HasKey(e => e.AdminImageId).HasName("PK__admin_im__66FA496135211D0B");
+
+            entity.ToTable("admin_image");
+
+            entity.Property(e => e.AdminImageId).HasColumnName("admin_image_id");
+            entity.Property(e => e.AdminId).HasColumnName("admin_id");
+            entity.Property(e => e.Caption)
+                .HasMaxLength(200)
+                .HasColumnName("caption");
+            entity.Property(e => e.CreatedAt)
+                .HasConstraintName("FK__chat_sess__user___3587F3E0");
+                .HasConstraintName("FK__chat_sess__user___40F9A68C");
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DisplayOrder)
+                .HasDefaultValue(0)
+            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE51091796CB8");
+            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE510BAD1285B");
+            entity.Property(e => e.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(500)
+                .HasColumnName("image_url");
+                .HasConstraintName("FK__chat_mess__sessi__395884C4");
+
+            entity.HasOne(d => d.Admin).WithMany(p => p.AdminImage)
+                .HasForeignKey(d => d.AdminId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D45D6C7304");
+
+            entity.HasOne(d => d.UsageLocationNavigation).WithMany(p => p.AdminImage)
+                .HasForeignKey(d => d.UsageLocation)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__admin_ima__usage__2739D489");
+        });
+
         modelBuilder.Entity<ChatMessage>(entity =>
         {
             entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F89771635A9DB38");
@@ -87,17 +164,18 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Role)
+                .HasConstraintName("FK__chat_sess__user___3864608B");
                 .IsRequired()
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasColumnName("role");
-            entity.Property(e => e.SessionId).HasColumnName("session_id");
+            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE510FC9CEA76");
 
             entity.HasOne(d => d.Session).WithMany(p => p.ChatMessage)
                 .HasForeignKey(d => d.SessionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__chat_mess__sessi__41EDCAC5");
+            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C5686629D18");
+            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C56CA8C0FE8");
         });
 
         modelBuilder.Entity<ChatSession>(entity =>
@@ -119,7 +197,8 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B78300949B63D431");
+            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094C0960DA8");
 
             entity.HasOne(d => d.User).WithMany(p => p.ChatSession)
                 .HasForeignKey(d => d.UserId)
@@ -134,7 +213,7 @@ public partial class incodedatabaseContext : DbContext
             entity.ToTable("content");
 
             entity.Property(e => e.ContentId).HasColumnName("content_id");
-            entity.Property(e => e.Body)
+            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C5607991151");
                 .IsRequired()
                 .HasColumnName("body");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
@@ -142,20 +221,22 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.Ishidden).HasColumnName("ishidden");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.ParentContentId).HasColumnName("parent_content_id");
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(200)
                 .HasColumnName("title");
+            entity.Property(e => e.Type).HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE549FE4617");
+            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE5C62B0908");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Content)
-                .HasForeignKey(d => d.CategoryId)
+            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B783009491927D45");
                 .HasConstraintName("FK__content__categor__2180FB33");
 
             entity.HasOne(d => d.ParentContent).WithMany(p => p.InverseParentContent)
@@ -182,13 +263,15 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(200)
                 .HasColumnName("description");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.ParentCategoryId).HasColumnName("parent_category_id");
 
             entity.HasOne(d => d.ParentCategory).WithMany(p => p.InverseParentCategory)
                 .HasForeignKey(d => d.ParentCategoryId)
-                .HasConstraintName("FK__content_c__paren__236943A5");
+            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B285DAEF4E9");
+            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B2851D31D7E");
         });
-
+            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE545486E15");
         modelBuilder.Entity<ContentHistory>(entity =>
         {
             entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094C0960DA8");
@@ -197,19 +280,26 @@ public partial class incodedatabaseContext : DbContext
 
             entity.Property(e => e.ContentHistoryId).HasColumnName("content_history_id");
             entity.Property(e => e.ContentId).HasColumnName("content_id");
-            entity.Property(e => e.EditedAt)
+            entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
-                .HasColumnName("edited_at");
-            entity.Property(e => e.Ishidden).HasColumnName("ishidden");
+                .HasColumnName("created_at");
             entity.Property(e => e.OldBody)
                 .IsRequired()
                 .HasColumnName("old_body");
             entity.Property(e => e.OldTitle)
+                .IsRequired()
                 .HasMaxLength(200)
                 .HasColumnName("old_title");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+            entity.HasOne(d => d.Category).WithMany(p => p.ContentNotification)
+                .HasForeignKey(d => d.CategoryId)
+                .HasConstraintName("FK__content_n__categ__236943A5");
+            entity.HasOne(d => d.CategoryNavigation).WithMany(p => p.ContentNotification)
+                .HasForeignKey(d => d.Category)
+                .HasConstraintName("FK__content_n__categ__2B0A656D");
             entity.HasOne(d => d.Content).WithMany(p => p.ContentHistory)
                 .HasForeignKey(d => d.ContentId)
                 .HasConstraintName("FK__content_h__conte__2739D489");
@@ -219,10 +309,11 @@ public partial class incodedatabaseContext : DbContext
                 .HasConstraintName("FK__content_h__user___282DF8C2");
         });
 
-        modelBuilder.Entity<ContentInteraction>(entity =>
+            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B2826A6DFCD");
         {
             entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE5C62B0908");
-
+            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E95608981D3");
+            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E955CCD6BA2");
             entity.ToTable("content_interaction");
 
             entity.Property(e => e.ContentInteractionId).HasColumnName("content_interaction_id");
@@ -232,6 +323,10 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Category).WithMany(p => p.ContentInteraction)
@@ -240,47 +335,63 @@ public partial class incodedatabaseContext : DbContext
                 .HasConstraintName("FK__content_i__categ__245D67DE");
 
             entity.HasOne(d => d.Content).WithMany(p => p.ContentInteraction)
-                .HasForeignKey(d => d.ContentId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__content_i__conte__25518C17");
+            entity.HasOne(d => d.CategoryNavigation).WithMany(p => p.ContentNotification)
+                .HasForeignKey(d => d.Category)
+                .HasConstraintName("FK__content_n__categ__236943A5");
 
             entity.HasOne(d => d.User).WithMany(p => p.ContentInteraction)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__content_i__user___2645B050");
         });
-
+                .HasConstraintName("FK__entrust_m__user___2CF2ADDF");
+                .HasConstraintName("FK__entrust_m__user___3864608B");
         modelBuilder.Entity<ContentNotification>(entity =>
         {
             entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B2851D31D7E");
 
-            entity.ToTable("content_notification");
-
+            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F4388C2CBD");
+            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F4316D2117");
+            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E95D96E85DA");
             entity.Property(e => e.ContentNotificationId).HasColumnName("content_notification_id");
-            entity.Property(e => e.Category).HasColumnName("category");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.ContentId).HasColumnName("content_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.Description)
+                .HasMaxLength(200)
+                .HasColumnName("description");
             entity.Property(e => e.Isread).HasColumnName("isread");
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("title");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.CategoryNavigation).WithMany(p => p.ContentNotification)
                 .HasForeignKey(d => d.Category)
-                .HasConstraintName("FK__content_n__categ__2B0A656D");
+                .HasConstraintName("FK__entrust_m__entru__2EDAF651");
+                .HasConstraintName("FK__entrust_m__entru__3A4CA8FD");
 
             entity.HasOne(d => d.Content).WithMany(p => p.ContentNotification)
                 .HasForeignKey(d => d.ContentId)
                 .HasConstraintName("FK__content_n__conte__2A164134");
-
+                .HasConstraintName("FK__entrust_m__user___2DE6D218");
+                .HasConstraintName("FK__entrust_m__user___395884C4");
             entity.HasOne(d => d.User).WithMany(p => p.ContentNotification)
-                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK__entrust_m__user___2FCF1A8A");
                 .HasConstraintName("FK__content_n__user___29221CFB");
         });
-
+            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E635E35C35");
+            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E6D19D7896");
         modelBuilder.Entity<EntrustMission>(entity =>
-        {
+            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F41ED6B983");
             entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E955CCD6BA2");
 
             entity.ToTable("entrust_mission");
@@ -292,33 +403,36 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("created_at");
             entity.Property(e => e.Detail)
                 .IsRequired()
-                .HasMaxLength(500)
+                .HasConstraintName("FK__follow__followee__2645B050");
+                .HasConstraintName("FK__follow__followee__2FCF1A8A");
                 .HasColumnName("detail");
             entity.Property(e => e.MaxParticipants)
                 .HasDefaultValue(1)
                 .HasColumnName("max_participants");
-            entity.Property(e => e.RewardPoints).HasColumnName("reward_points");
-            entity.Property(e => e.Status)
-                .IsRequired()
-                .HasMaxLength(50)
-                .HasDefaultValue("open")
-                .HasColumnName("status");
-            entity.Property(e => e.Title)
-                .IsRequired()
-                .HasMaxLength(150)
-                .HasColumnName("title");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.User).WithMany(p => p.EntrustMission)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__user___3864608B");
+                .HasConstraintName("FK__follow__follower__25518C17");
+                .HasConstraintName("FK__follow__follower__2EDAF651");
         });
 
-        modelBuilder.Entity<EntrustMissionProgress>(entity =>
+        modelBuilder.Entity<ImageUsageLocation>(entity =>
+        {
+            entity.HasKey(e => e.ImageUsageLocationId).HasName("PK__image_us__CA06DFFE18FD462A");
+
+            entity.ToTable("image_usage_location");
+
+            entity.Property(e => e.ImageUsageLocationId).HasColumnName("image_usage_location_id");
+            entity.Property(e => e.Description)
+                .HasMaxLength(200)
+                .HasColumnName("description");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("name");
+
+            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E6F2BD132C");
         {
             entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F4316D2117");
-
+            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC996410FD5BE");
+            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC9966ADABB4D");
             entity.ToTable("entrust_mission_progress");
 
             entity.Property(e => e.EntrustMissionProgressId).HasColumnName("entrust_mission_progress_id");
@@ -329,33 +443,34 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("completed_at");
-            entity.Property(e => e.EntrustMissionId).HasColumnName("entrust_mission_id");
+                .HasConstraintName("FK__follow__followee__29221CFB");
             entity.Property(e => e.RewardedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("rewarded_at");
             entity.Property(e => e.Status)
-                .HasMaxLength(50)
-                .HasDefaultValue("accepted")
-                .HasColumnName("status");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.EntrustMission).WithMany(p => p.EntrustMissionProgress)
-                .HasForeignKey(d => d.EntrustMissionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__entru__3A4CA8FD");
-
-            entity.HasOne(d => d.User).WithMany(p => p.EntrustMissionProgress)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__user___395884C4");
+                .HasConstraintName("FK__follow__follower__282DF8C2");
         });
 
-        modelBuilder.Entity<Follow>(entity =>
+        modelBuilder.Entity<ImageUsageLocation>(entity =>
+        {
+            entity.HasKey(e => e.ImageUsageLocationId).HasName("PK__image_us__CA06DFFE62D84C77");
+
+            entity.ToTable("image_usage_location");
+
+            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB20D20EC13");
+            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB2218223A2");
+            entity.Property(e => e.Description)
+                .HasMaxLength(200)
+                .HasColumnName("description");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("name");
         {
             entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E6D19D7896");
 
             entity.ToTable("follow");
-
+            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC996EAE1ACC5");
             entity.Property(e => e.FollowerId).HasColumnName("follower_id");
             entity.Property(e => e.FolloweeId).HasColumnName("followee_id");
             entity.Property(e => e.CreatedAt)
@@ -377,10 +492,11 @@ public partial class incodedatabaseContext : DbContext
         modelBuilder.Entity<ImageUsageLocation>(entity =>
         {
             entity.HasKey(e => e.ImageUsageLocationId).HasName("PK__image_us__CA06DFFE18FD462A");
-
+            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D6809CCEC");
+            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D2BEAE763");
             entity.ToTable("image_usage_location");
 
-            entity.Property(e => e.ImageUsageLocationId).HasColumnName("image_usage_location_id");
+            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB2B24EDB5C");
             entity.Property(e => e.Description)
                 .HasMaxLength(200)
                 .HasColumnName("description");
@@ -397,15 +513,27 @@ public partial class incodedatabaseContext : DbContext
             entity.ToTable("interaction_category");
 
             entity.Property(e => e.InteractionCategoryId).HasColumnName("interaction_category_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasConstraintName("FK__mission_p__missi__2BFE89A6");
+                .HasConstraintName("FK__mission_p__missi__37703C52");
+                .HasColumnName("created_at");
             entity.Property(e => e.Description)
                 .HasMaxLength(200)
                 .HasColumnName("description");
+                .HasConstraintName("FK__mission_p__user___2B0A656D");
+                .HasConstraintName("FK__mission_p__user___367C1819");
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("name");
+            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE741123FA418B");
+            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE7411506B7AE1");
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
         });
-
+            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D284951C6");
         modelBuilder.Entity<Mission>(entity =>
         {
             entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB2218223A2");
@@ -414,30 +542,33 @@ public partial class incodedatabaseContext : DbContext
 
             entity.Property(e => e.MissionId).HasColumnName("mission_id");
             entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
+                .HasConstraintName("FK__orderdeta__order__32AB8735");
+                .HasConstraintName("FK__orderdeta__order__3E1D39E1");
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.MissionDetail)
                 .IsRequired()
-                .HasMaxLength(500)
+                .HasConstraintName("FK__orderdeta__produ__339FAB6E");
+                .HasConstraintName("FK__orderdeta__produ__3F115E1A");
                 .HasColumnName("mission_detail");
             entity.Property(e => e.MissionName)
                 .IsRequired()
                 .HasMaxLength(100)
-                .HasColumnName("mission_name");
+            entity.HasKey(e => e.OrderId).HasName("PK__orders__465962294BDA52B8");
+            entity.HasKey(e => e.OrderId).HasName("PK__orders__465962296292A29E");
             entity.Property(e => e.ResetType)
                 .IsRequired()
-                .HasMaxLength(50)
+                .HasConstraintName("FK__mission_p__missi__2EDAF651");
                 .HasDefaultValue("none")
                 .HasColumnName("reset_type");
             entity.Property(e => e.RewardExp).HasColumnName("reward_exp");
             entity.Property(e => e.RewardPoints).HasColumnName("reward_points");
-            entity.Property(e => e.TargetCount).HasColumnName("target_count");
+                .HasConstraintName("FK__mission_p__user___2DE6D218");
             entity.Property(e => e.TargetType)
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasDefaultValue("")
-                .HasColumnName("target_type");
+            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE7411F13E165C");
         });
 
         modelBuilder.Entity<MissionProgress>(entity =>
@@ -449,19 +580,22 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.MissionProgressId).HasColumnName("mission_progress_id");
             entity.Property(e => e.AcceptedAt)
                 .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
+                .HasConstraintName("FK__orders__user_id__31B762FC");
+                .HasConstraintName("FK__orders__user_id__3D2915A8");
                 .HasColumnName("accepted_at");
-            entity.Property(e => e.CompletedAt)
+                .HasConstraintName("FK__orderdeta__order__3587F3E0");
                 .HasColumnType("datetime")
                 .HasColumnName("completed_at");
-            entity.Property(e => e.CurrentCount).HasColumnName("current_count");
+            entity.HasKey(e => e.PointDepositId).HasName("PK__point_de__6DCA5DF6031E769D");
+            entity.HasKey(e => e.PointDepositId).HasName("PK__point_de__6DCA5DF619F32726");
             entity.Property(e => e.MissionId).HasColumnName("mission_id");
-            entity.Property(e => e.RewardedAt)
+                .HasConstraintName("FK__orderdeta__produ__367C1819");
                 .HasColumnType("datetime")
-                .HasColumnName("rewarded_at");
+            entity.HasIndex(e => e.OrderNo, "UQ__point_de__465C81B8632214C3").IsUnique();
+            entity.HasIndex(e => e.OrderNo, "UQ__point_de__465C81B86780B66A").IsUnique();
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.Mission).WithMany(p => p.MissionProgress)
+            entity.HasKey(e => e.OrderId).HasName("PK__orders__4659622997205B2E");
                 .HasForeignKey(d => d.MissionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__mission_p__missi__37703C52");
@@ -486,18 +620,20 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.UnitPointAtPurchase).HasColumnName("unit_point_at_purchase");
 
             entity.HasOne(d => d.Order).WithMany(p => p.Orderdetail)
-                .HasForeignKey(d => d.OrderId)
+                .HasConstraintName("FK__orders__user_id__3493CFA7");
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__orderdeta__order__3E1D39E1");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Orderdetail)
-                .HasForeignKey(d => d.ProductId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+            entity.HasKey(e => e.PointDepositId).HasName("PK__point_de__6DCA5DF6DD31C78C");
+                .HasConstraintName("FK__point_dep__user___30C33EC3");
+                .HasConstraintName("FK__point_dep__user___3C34F16F");
                 .HasConstraintName("FK__orderdeta__produ__3F115E1A");
         });
-
+            entity.HasIndex(e => e.OrderNo, "UQ__point_de__465C81B83C99628E").IsUnique();
         modelBuilder.Entity<Orders>(entity =>
-        {
+            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C26361853");
+            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C2E05E2AA");
             entity.HasKey(e => e.OrderId).HasName("PK__orders__465962296292A29E");
 
             entity.ToTable("orders");
@@ -519,22 +655,26 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("status");
             entity.Property(e => e.TotalPoint).HasColumnName("total_point");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
+                .HasConstraintName("FK__point_log__point__2A164134");
+                .HasConstraintName("FK__point_log__point__3587F3E0");
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__orders__user_id__3D2915A8");
-        });
+                .HasConstraintName("FK__point_log__user___29221CFB");
+                .HasConstraintName("FK__point_log__user___3493CFA7");
 
         modelBuilder.Entity<PointDeposits>(entity =>
         {
             entity.HasKey(e => e.PointDepositId).HasName("PK__point_de__6DCA5DF619F32726");
-
+            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541FB911B988");
+            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541FF65F5244");
             entity.ToTable("point_deposits");
 
             entity.HasIndex(e => e.OrderNo, "UQ__point_de__465C81B86780B66A").IsUnique();
-
-            entity.Property(e => e.PointDepositId).HasColumnName("point_deposit_id");
+            entity.HasIndex(e => e.TypeName, "UQ__point_ty__543C4FD90CED655E").IsUnique();
+            entity.HasIndex(e => e.TypeName, "UQ__point_ty__543C4FD95ED96A30").IsUnique();
+            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C8C38304E");
             entity.Property(e => e.CashAmount)
                 .HasColumnType("decimal(12, 2)")
                 .HasColumnName("cash_amount");
@@ -551,26 +691,27 @@ public partial class incodedatabaseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false)
-                .HasColumnName("payment_method");
+            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF54C6B5588");
+            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF56C1364CC");
             entity.Property(e => e.PointsGranted).HasColumnName("points_granted");
             entity.Property(e => e.RelatedOrderId)
                 .HasMaxLength(100)
                 .IsUnicode(false)
-                .HasColumnName("related_order_id");
+                .HasConstraintName("FK__point_log__point__2CF2ADDF");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasDefaultValue("pending")
                 .HasColumnName("status");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                .HasConstraintName("FK__point_log__user___2BFE89A6");
 
             entity.HasOne(d => d.User).WithMany(p => p.PointDeposits)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__point_dep__user___3C34F16F");
+            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541FBEBC7EA3");
         });
 
         modelBuilder.Entity<PointLog>(entity =>
-        {
+            entity.HasIndex(e => e.TypeName, "UQ__point_ty__543C4FD91CFA668C").IsUnique();
             entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C2E05E2AA");
 
             entity.ToTable("point_log");
@@ -588,7 +729,7 @@ public partial class incodedatabaseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("source_type");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF550E3C03F");
 
             entity.HasOne(d => d.PointTypeDefinition).WithMany(p => p.PointLog)
                 .HasForeignKey(d => d.PointTypeDefinitionId)
@@ -603,7 +744,8 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<PointTypeDefinition>(entity =>
         {
-            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541FF65F5244");
+            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C931D8C944F");
+            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C93D90B6ACA");
 
             entity.ToTable("point_type_definition");
 
@@ -636,18 +778,22 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("created_at");
             entity.Property(e => e.Description)
                 .HasMaxLength(300)
-                .HasColumnName("description");
+                .HasConstraintName("FK__shipped_d__order__3493CFA7");
+                .HasConstraintName("FK__shipped_d__order__40058253");
             entity.Property(e => e.ImageName)
                 .HasMaxLength(50)
                 .HasColumnName("image_name");
-            entity.Property(e => e.IsPhysical).HasColumnName("is_physical");
-            entity.Property(e => e.Name)
+            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C93E78978E1");
+            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FF89C13AB");
+            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FF0CAF316");
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("name");
-            entity.Property(e => e.OnSale)
+            entity.HasIndex(e => e.Account, "UQ__user__EA162E11A3CAC1C2").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__user__AB6E6164698ABA96").IsUnique();
                 .HasDefaultValue(true)
-                .HasColumnName("on_sale");
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572F8493E9F").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC5725E313238").IsUnique();
             entity.Property(e => e.Point).HasColumnName("point");
             entity.Property(e => e.Stock).HasColumnName("stock");
             entity.Property(e => e.Type)
@@ -673,25 +819,26 @@ public partial class incodedatabaseContext : DbContext
                 .HasMaxLength(20)
                 .IsUnicode(false)
                 .HasColumnName("role_name");
-        });
+                .HasConstraintName("FK__shipped_d__order__37703C52");
 
         modelBuilder.Entity<ShippedDetail>(entity =>
         {
             entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C93D90B6ACA");
-
+            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370F791B81A2");
             entity.ToTable("shipped_detail");
 
             entity.Property(e => e.ShippedDetailId).HasColumnName("shipped_detail_id");
-            entity.Property(e => e.ArrivalDate)
+            entity.HasIndex(e => e.Account, "UQ__user__EA162E119BE2F79C").IsUnique();
                 .HasColumnType("datetime")
-                .HasColumnName("arrival_date");
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572AADE1F42").IsUnique();
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed");
             entity.Property(e => e.IsFailed).HasColumnName("is_failed");
             entity.Property(e => e.OrderdetailId).HasColumnName("orderdetail_id");
             entity.Property(e => e.RecipientAddress)
                 .IsRequired()
                 .HasMaxLength(50)
-                .HasColumnName("recipient_address");
+            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9DF27872C3");
+            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9DC5DBDA71");
             entity.Property(e => e.RecipientName)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -716,10 +863,10 @@ public partial class incodedatabaseContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FF0CAF316");
-
-            entity.ToTable("user");
-
-            entity.HasIndex(e => e.Email, "UQ__user__AB6E6164698ABA96").IsUnique();
+            entity.HasOne(d => d.UsageLocationNavigation).WithMany(p => p.UserImage)
+                .HasForeignKey(d => d.UsageLocation)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__user_imag__usage__2CF2ADDF");
 
             entity.HasIndex(e => e.Username, "UQ__user__F3DBC5725E313238").IsUnique();
 
@@ -728,7 +875,7 @@ public partial class incodedatabaseContext : DbContext
                 .HasMaxLength(500)
                 .HasColumnName("address");
             entity.Property(e => e.Birthday).HasColumnName("birthday");
-            entity.Property(e => e.CreatedAt)
+            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9D98AC26AA");
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
@@ -753,10 +900,10 @@ public partial class incodedatabaseContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("phone");
             entity.Property(e => e.RoleId).HasColumnName("role_id");
-            entity.Property(e => e.Username)
-                .IsRequired()
-                .HasMaxLength(150)
-                .HasColumnName("username");
+            entity.HasOne(d => d.UsageLocationNavigation).WithMany(p => p.UserImage)
+                .HasForeignKey(d => d.UsageLocation)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__user_imag__usage__25518C17");
 
             entity.HasOne(d => d.Role).WithMany(p => p.User)
                 .HasForeignKey(d => d.RoleId)
@@ -784,23 +931,28 @@ public partial class incodedatabaseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500)
                 .HasColumnName("image_url");
-            entity.Property(e => e.UsageLocation).HasColumnName("usage_location");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.UsageLocationNavigation).WithMany(p => p.UserImage)
                 .HasForeignKey(d => d.UsageLocation)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__user_imag__usage__2CF2ADDF");
+                .HasConstraintName("FK__user_imag__usage__25518C17");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserImage)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__user_imag__user___2BFE89A6");
+                .HasConstraintName("FK__user_logi__user___2739D489");
+                .HasConstraintName("FK__user_noti__user___339FAB6E");
         });
 
         modelBuilder.Entity<UserInventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__user_inv__B59ACC49C9801113");
+            entity.HasKey(e => e.UserId).HasName("PK__user_poi__B9BE370F108273C2");
+            entity.HasKey(e => e.UserId).HasName("PK__user_poi__B9BE370F2A3DF56F");
 
             entity.ToTable("user_inventory");
 
@@ -817,7 +969,8 @@ public partial class incodedatabaseContext : DbContext
         });
 
         modelBuilder.Entity<UserLoginlog>(entity =>
-        {
+                .HasConstraintName("FK__user_poin__user___2FCF1A8A");
+                .HasConstraintName("FK__user_poin__user___3B40CD36");
             entity.HasKey(e => e.LoginlogId).HasName("PK__user_log__2AF68B1EF3B38243");
 
             entity.ToTable("user_loginlog");
@@ -832,16 +985,20 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("logintime");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
+                .HasConstraintName("FK__user_logi__user___2A164134");
             entity.HasOne(d => d.User).WithMany(p => p.UserLoginlog)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__user_logi__user___30C33EC3");
         });
-
+            entity.HasKey(e => e.UserId).HasName("PK__user_poi__B9BE370F024FE249");
         modelBuilder.Entity<UserNotification>(entity =>
-        {
-            entity.HasKey(e => e.UserNotificationId).HasName("PK__user_not__64BFFBDB07402FFF");
-
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK__user_stat__user___282DF8C2");
+            entity.HasOne(d => d.User).WithOne(p => p.UserStatus)
+                .HasForeignKey<UserStatus>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__user_stat__user___31B762FC");
             entity.ToTable("user_notification");
 
             entity.Property(e => e.UserNotificationId).HasColumnName("user_notification_id");
@@ -854,7 +1011,7 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("created_at");
             entity.Property(e => e.IsRead)
                 .HasDefaultValue(false)
-                .HasColumnName("is_read");
+                .HasConstraintName("FK__user_poin__user___32AB8735");
             entity.Property(e => e.TargetUrl)
                 .HasMaxLength(500)
                 .HasColumnName("target_url");
@@ -876,10 +1033,9 @@ public partial class incodedatabaseContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("PK__user_poi__B9BE370F2A3DF56F");
 
-            entity.ToTable("user_point_wallet");
-
-            entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK__user_stat__user___2B0A656D");
                 .HasColumnName("user_id");
             entity.Property(e => e.CurrentPoints).HasColumnName("current_points");
             entity.Property(e => e.FrozenPoints).HasColumnName("frozen_points");

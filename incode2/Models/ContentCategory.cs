@@ -15,6 +15,8 @@ public partial class ContentCategory
 
     public string Description { get; set; }
 
+    public int IsActive { get; set; }
+
     public virtual ICollection<Content> Content { get; set; } = new List<Content>();
 
     public virtual ICollection<ContentCategory> InverseParentCategory { get; set; } = new List<ContentCategory>();

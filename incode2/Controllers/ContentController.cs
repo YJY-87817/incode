@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using incode2.Models;
-using incode2.Models.ViewModels;
+using incode2.ViewModels;
 
 namespace incode2.Controllers
 {
@@ -16,24 +16,26 @@ namespace incode2.Controllers
     }
 
     // GET: Content
+    [HttpGet]
     public IActionResult Index()
     {
       // 查詢所有貼文（包含作者和分類）
       var contentList = _context.Content
-          .Include(c => c.Category)          // 關聯查詢：分類
-          .Include(c => c.Category)          // 關聯查詢：分類
-          .Where(c => c.ParentContentId == null)  // 只要主貼文（不要回覆）
-          .OrderByDescending(c => c.CreatedAt)    // 最新的在前面
-          .Select(c => new ContentListViewModel
-          {
-            ContentId = c.ContentId,
-            Title = c.Title,
-            Body = c.Body.Substring(0, Math.Min(100, c.Body.Length)), // 只取前100字
-            CreatedAt = (DateTime)c.CreatedAt,
-            AuthorName = c.User.Username,
-            CategoryName = c.Category.CategoryName
-          })
-          .ToList();
+      .Include(c => c.Category)          // 關聯查詢：分類
+      //.Where(c => c.ParentContentId == null)  // 只要主貼文（不要回覆）
+      .OrderBy(c => c.ContentId)    // 最新的在前面
+      .Select(c => new ContentViewModel
+      {
+        ContentId = c.ContentId,
+        ParentContentId = c.ParentContentId,
+        Title = c.Title,
+        Body = c.Body.Substring(0, Math.Min(100, c.Body.Length)), // 只取前100字
+        CreatedAt = (DateTime)c.CreatedAt,
+        AuthorName = c.User.Username,
+        CategoryName = c.Category.CategoryName
+      })
+      .ToList();
+      Console.WriteLine("主貼文總數：" + contentList.Count);
 
       return View(contentList);
     }

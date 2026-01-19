@@ -1,5 +1,6 @@
 using incode2.Models;
 using incode2.Service.user;
+using incode2.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,9 @@ builder.Services.AddCors(options =>
           "https://localhost:5173",
           "http://localhost:5173",
           "http://localhost:8080",
-          "http://localhost:3000"
+          "http://localhost:3000",
+          "http://localhost:7190",
+          "http://localhost:3001"
         )
         .AllowAnyMethod()
         .AllowAnyHeader()
@@ -98,6 +101,9 @@ builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISocialService, SocialService>();
+
+//Service透過DI建立
+builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 
 var app = builder.Build();
 

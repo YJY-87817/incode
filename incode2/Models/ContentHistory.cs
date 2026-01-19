@@ -17,9 +17,9 @@ public partial class ContentHistory
 
     public string OldBody { get; set; }
 
-    public bool? Ishidden { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public DateTime? EditedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual Content Content { get; set; }
 

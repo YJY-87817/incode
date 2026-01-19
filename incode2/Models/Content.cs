@@ -19,11 +19,13 @@ public partial class Content
 
     public string Body { get; set; }
 
+    public int Type { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
-    public bool? Ishidden { get; set; }
+    public int IsActive { get; set; }
 
     public virtual ContentCategory Category { get; set; }
 
