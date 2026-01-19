@@ -27,6 +27,10 @@ import Mission from "../views/task/Mission.vue";
 import Mytask from "../views/task/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
+import PointShopView from "@/views/PointShop/PointShopView.vue";
+import OrderView from "@/views/PointShop/OrderView.vue";
+import Checkout from "@/views/PointShop/CheckoutView.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes:
@@ -211,7 +215,24 @@ const router = createRouter({
       path: "/mytask",
       name: "mytask",
       component: Mytask, // 我的任務
+    },
+    // yjy 以下
+    {
+      path: "/PointShop/PointShop",
+      name: "PointShop",
+      component: PointShopView,
+    },
+    {
+      path: "/PointShop/Order",
+      name: "Order",
+      component: OrderView,
+    },
+    {
+      path: "/PointShop/Checkout",
+      name: "Checkout",
+      component: Checkout,
     }
+        // yjy 以上
     ],
 });
 
