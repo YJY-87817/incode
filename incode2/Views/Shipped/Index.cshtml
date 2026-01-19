@@ -3,48 +3,102 @@
 @{
     ViewData["Title"] = "寄送管理";
 }
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center">
+            <h4 class="mb-0">寄送管理</h4>
+            <div class="ms-auto">
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fa fa-plus me-2" aria-hidden="true"></i> 新增寄送資料
+                </a>
+            </div>
+        </div>
 
-<h2>寄送管理</h2>
+        <div class="card-body">
+            <div class="mb-3 row">
+                <div class="col-md-4">
+                    <input id="shippedSearch" class="form-control" placeholder="搜尋收件人、電話或訂單ID..." />
+                </div>
+            </div>
 
-<a asp-action="Create" class="btn btn-success mb-2">新增寄送資料</a>
-<div class="table-responsive">
-    <table class="table table-bordered" width="100%">
-        <thead>
-            <tr>
-                <th>詳細訂單ID</th>
-                <th>姓名</th>
-                <th>地址</th>
-                <th>電話</th>
-                <th>寄送日期</th>
-                <th>送達日期</th>
-                <th>寄送失敗</th>
-                <th>說明</th>
-                <th>完成</th>
-                <th>詳細/修改</th>
-                <th>刪除</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr>
-                    <td>@Html.DisplayFor(modelItem => item.OrderdetailId)</td>
-                    <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
-                    <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
-                    <td>@Html.DisplayFor(modelItem => item.RecipientPhone)</td>
-                    <td>@Html.DisplayFor(modelItem => item.ShippedDate)</td>
-                    <td>@Html.DisplayFor(modelItem => item.ArrivalDate)</td>
-                    <td>@Html.DisplayFor(modelItem => item.IsFailed)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Remark)</td>
-                    <td>@Html.DisplayFor(modelItem => item.IsCompleted)</td>
-                    <td>
-                        <a class="btn btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">詳細/修改</a>
-                    </td>
-                    <td>
-                        <a class="btn btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover align-middle">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th style="width:110px">詳細訂單ID</th>
+                            <th>姓名</th>
+                            <th>地址</th>
+                            <th style="width:130px">電話</th>
+                            <th style="width:150px">寄送日期</th>
+                            <th style="width:150px">送達日期</th>
+                            <th style="width:100px">失敗</th>
+                            <th>說明</th>
+                            <th style="width:100px">完成</th>
+                            <th style="width:140px">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.OrderdetailId)</td>
+                                <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
+                                <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.RecipientPhone)</td>
+                                <td class="text-center">@(item.ShippedDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center">@(item.ArrivalDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center">
+                                    @if (item.IsFailed)
+                                    {
+                                        <span class="badge bg-danger">是</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">否</span>
+                                    }
+                                </td>
+                                <td>@Html.DisplayFor(modelItem => item.Remark)</td>
+                                <td class="text-center">
+                                    @if (item.IsCompleted)
+                                    {
+                                        <span class="badge bg-success">完成</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">未完成</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">詳細/修改</a>
+                                        <a class="btn btn-sm btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer text-muted">
+            共 @Model.Count() 筆寄送紀錄
+        </div>
+    </div>
 </div>
+
+@section Scripts
+{
+    <script>
+        // 簡單前端搜尋（客戶端 filter）
+        document.getElementById('shippedSearch')?.addEventListener('input', function (e) {
+            var q = e.target.value.toLowerCase();
+            document.querySelectorAll('table tbody tr').forEach(function (tr) {
+                var orderDetailId = (tr.children[0]?.innerText || '').toLowerCase();
+                var name = (tr.children[1]?.innerText || '').toLowerCase();
+                var phone = (tr.children[3]?.innerText || '').toLowerCase();
+                tr.style.display = (orderDetailId.indexOf(q) !== -1 || name.indexOf(q) !== -1 || phone.indexOf(q) !== -1) ? '' : 'none';
+            });
+        });
+    </script>
+}
