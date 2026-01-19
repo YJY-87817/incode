@@ -4,7 +4,6 @@ using incode2.Services.user;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using incode2.Hubs;
-using incode2.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,12 +11,11 @@ builder.Services.AddDbContext<incodedatabaseContext>(options => {
     options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-// �ɤW�o�ӪA�ȡA�~�����U���� app.UseMigrationsEndPoint() ���`�B�@
-// ���|������Ʈw���~����ܡuApply Migrations�v���Ŧ���s����
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ==========================================
-// 2. CORS �]�w (���w Vue �e�ݨӷ�)
+// 2. CORS
 // ==========================================
 builder.Services.AddCors(options =>
 {
@@ -46,15 +44,15 @@ builder.Services.AddSignalR();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // ==========================================
-// 3. Cookie ���� (�V�X�Ҧ��GAPI vs ��x)
+// 3. Cookie
 // ==========================================
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-      // Cookie �w���]�w
-      options.Cookie.HttpOnly = true; // ���� XSS       
-      options.Cookie.SameSite = SameSiteMode.None; // �e��ݤ��P���(Cross-Site)�i��ݳ]�� None + Secure
-      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //�s�����W�w�G�u�n SameSite=None�ASecure �ݩʥ����� true�A�_�h Cookie �|�Q�ڦ��I
+      // Cookie 
+      options.Cookie.HttpOnly = true; //      
+      options.Cookie.SameSite = SameSiteMode.None; // 
+      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //
       options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
 
       // 設定後台 MVC 用的導向路徑
@@ -96,7 +94,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 
 // ==========================================
-// 4. ���U MVC �A�� (�]�t API �P View)
+// 4.
 // ==========================================
 builder.Services.AddControllersWithViews();
 
@@ -120,14 +118,14 @@ builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgres
 var app = builder.Build();
 
 // ==========================================
-// 5. HTTP �ШD�޽u (Middleware)
+// 5. HTTP
 // ==========================================
 
-// ��ҧP�_
+// 
 if (app.Environment.IsDevelopment())
 {
-  // ���Ʈw�P Model ���@�P�ɡA��� Migration ���~����
-  // �ݷf�t�W���� AddDatabaseDeveloperPageExceptionFilter �ϥ�
+  //  Model Migration
+  // AddDatabaseDeveloperPageExceptionFilte
   app.UseMigrationsEndPoint();
 }
 else
@@ -140,17 +138,17 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-//  ���ǫܭ��n�GCORS -> ���� -> ���v
+// 
 app.UseCors("VueApp");
-app.UseAuthentication(); // �ˬd�A�O�� (Ū�� Cookie)
-app.UseAuthorization();  // �ˬd�A�వ���� (Ū�� Role)
+app.UseAuthentication(); //  Cookie)
+app.UseAuthorization();  //  Role)
 
-// �[�W�o���A��} https://localhost:xxxx/img/(�Ϥ��W�٦�m)�~�����
+// https://localhost:xxxx/img/
 app.UseStaticFiles();
 app.MapStaticAssets();
-// ���d�ۡA�ظm���ѦA��
+// 
 
-// ��ѳ]�w
+//
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
