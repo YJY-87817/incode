@@ -84,6 +84,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             return Task.CompletedTask;
         };
     });
+builder.Services.AddAuthorization();
 
 // ==========================================
 // 4. 註冊 MVC 服務 (包含 API 與 View)
