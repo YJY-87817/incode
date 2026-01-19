@@ -34,7 +34,9 @@ namespace incode2.ApiControllers
                 TargetCount = m.TargetCount,
                 RewardPoints = m.RewardPoints,
                 RewardExp = m.RewardExp,
-                ResetType = m.ResetType
+                ResetType = m.ResetType,
+                IsActive = m.IsActive,
+                CreatedAt = m.CreatedAt
             });
         }
 
@@ -51,7 +53,9 @@ namespace incode2.ApiControllers
                 TargetCount = m.TargetCount,
                 RewardPoints = m.RewardPoints,
                 RewardExp = m.RewardExp,
-                ResetType = m.ResetType
+                ResetType = m.ResetType,
+                IsActive = m.IsActive,
+                CreatedAt = m.CreatedAt
             }).FirstOrDefaultAsync(m=>m.MissionId == id);
 
             return MDTO;
@@ -78,6 +82,9 @@ namespace incode2.ApiControllers
                 m.RewardPoints = MDTO.RewardPoints;
                 m.RewardExp = MDTO.RewardExp;
                 m.ResetType = MDTO.ResetType;
+                m.IsActive = MDTO.IsActive;
+                // 只有當前端真的有傳新時間才更新，否則保留資料庫原始時間
+                m.CreatedAt = MDTO.CreatedAt ?? m.CreatedAt;
 
                 _context.Entry(m).State = EntityState.Modified;
 
@@ -112,8 +119,8 @@ namespace incode2.ApiControllers
                 RewardPoints = MDTO.RewardPoints,
                 RewardExp = MDTO.RewardExp,
                 ResetType = MDTO.ResetType,
-                IsActive = MDTO.IsActive,
-                CreatedAt = DateTime.Now
+                IsActive = true,           // 新增時預設啟用
+                CreatedAt = DateTime.Now   // 強制後端時間
             };
             _context.Mission.Add(m);
             await _context.SaveChangesAsync();

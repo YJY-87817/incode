@@ -75,9 +75,29 @@ namespace incode2.ApiControllers
                 Mg.MissionId = MgDTO.MissionId;
                 Mg.CurrentCount = MgDTO.CurrentCount;
                 Mg.Status = MgDTO.Status;
-                Mg.AcceptedAt = MgDTO.AcceptedAt;
-                Mg.CompletedAt = MgDTO.CompletedAt;
-                Mg.RewardedAt = MgDTO.RewardedAt;
+                // 2. 保護 AcceptedAt：如果前端沒傳，就保留資料庫原有的值
+                Mg.AcceptedAt = MgDTO.AcceptedAt ?? Mg.AcceptedAt;
+                // 3. 智慧型時間處理：針對狀態自動補時
+                // 如果改為 "completed" 且資料庫還沒存過完工時間
+                if (MgDTO.Status == "completed" && Mg.CompletedAt == null)
+                {
+                    Mg.CompletedAt = DateTime.Now;
+                }
+                else
+                {
+                    // 否則，依照前端傳入的值（可能是 null 或特定時間）更新
+                    Mg.CompletedAt = MgDTO.CompletedAt ?? Mg.CompletedAt;
+                }
+
+                // 4. 領獎時間邏輯同上
+                if (MgDTO.Status == "rewarded" && Mg.RewardedAt == null)
+                {
+                    Mg.RewardedAt = DateTime.Now;
+                }
+                else
+                {
+                    Mg.RewardedAt = MgDTO.RewardedAt ?? Mg.RewardedAt;
+                }
 
 
                 _context.Entry(Mg).State = EntityState.Modified;

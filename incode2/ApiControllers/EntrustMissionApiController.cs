@@ -118,7 +118,7 @@ namespace incode2.ApiControllers
                 Detail = EmDTO.Detail,
                 RewardPoints = EmDTO.RewardPoints,
                 MaxParticipants = EmDTO.MaxParticipants,
-                Status = EmDTO.Status ?? "pending", // 給予預設狀態
+                Status = EmDTO.Status ?? "open", // 給予預設狀態
                 IsActive = true,                     // 新增時預設啟用
                 CreatedAt = DateTime.Now             // 強制後端時間
             };
