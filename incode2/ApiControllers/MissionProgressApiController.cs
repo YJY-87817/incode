@@ -111,9 +111,7 @@ namespace incode2.ApiControllers
                 MissionId = MgDTO.MissionId,
                 CurrentCount = MgDTO.CurrentCount,
                 Status = MgDTO.Status,
-                AcceptedAt = MgDTO.AcceptedAt,
-                CompletedAt = MgDTO.CompletedAt,
-                RewardedAt = MgDTO.RewardedAt,
+                AcceptedAt = DateTime.Now
             };
 
             _context.MissionProgress.Add(Mg);

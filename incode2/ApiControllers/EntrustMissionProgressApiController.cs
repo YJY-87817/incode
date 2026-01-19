@@ -71,9 +71,30 @@ namespace incode2.ApiControllers
                 emg.UserId = EmgDTO.UserId;
                 emg.EntrustMissionId = EmgDTO.EntrustMissionId;
                 emg.Status = EmgDTO.Status;
-                emg.AcceptedAt = EmgDTO.AcceptedAt;
-                emg.CompletedAt = EmgDTO.CompletedAt;
-                emg.RewardedAt = EmgDTO.RewardedAt;
+                // 2. 保護 AcceptedAt：如果前端沒傳，就保留資料庫原有的值
+                emg.AcceptedAt = EmgDTO.AcceptedAt ?? emg.AcceptedAt;
+
+                // 3. 智慧型時間處理：針對狀態自動補時
+                // 如果改為 "completed" 且資料庫還沒存過完工時間
+                if (EmgDTO.Status == "completed" && emg.CompletedAt == null)
+                {
+                    emg.CompletedAt = DateTime.Now;
+                }
+                else
+                {
+                    // 否則，依照前端傳入的值（可能是 null 或特定時間）更新
+                    emg.CompletedAt = EmgDTO.CompletedAt ?? emg.CompletedAt;
+                }
+
+                // 4. 領獎時間邏輯同上
+                if (EmgDTO.Status == "rewarded" && emg.RewardedAt == null)
+                {
+                    emg.RewardedAt = DateTime.Now;
+                }
+                else
+                {
+                    emg.RewardedAt = EmgDTO.RewardedAt ?? emg.RewardedAt;
+                }
 
                 _context.Entry(emg).State = EntityState.Modified;
 
@@ -102,11 +123,8 @@ namespace incode2.ApiControllers
             {
                 UserId = EmgDTO.UserId,
                 EntrustMissionId = EmgDTO.EntrustMissionId,
-                Status = EmgDTO.Status,
-                AcceptedAt = EmgDTO.AcceptedAt,
-                CompletedAt = EmgDTO.CompletedAt,
-                RewardedAt = EmgDTO.RewardedAt,
-
+                Status = "ongoing",     // 新增時強制設定為進行中
+                AcceptedAt = DateTime.Now // 強制設定為現在時間
             };
             _context.EntrustMissionProgress.Add(emg);
             await _context.SaveChangesAsync();

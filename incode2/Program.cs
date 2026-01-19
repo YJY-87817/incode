@@ -35,7 +35,8 @@ builder.Services.AddCors(options =>
       "http://localhost:7190",
       "http://localhost:5173",  // Vite 預設開發埠
       "http://localhost:8080",  // Vue CLI 預設開發埠
-      "http://localhost:3000"   // 其他可能的開發埠
+      "http://localhost:3000",
+      "http://localhost:3001"  // 其他可能的開發埠
     )
     .AllowAnyMethod()
     .AllowAnyHeader()

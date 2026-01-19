@@ -74,7 +74,6 @@ namespace incode2.ApiControllers
             EntrustMission Em = await _context.EntrustMission.FindAsync(id);
             if (Em != null)
             {
-                Em.EntrustMissionId = EmDTO.EntrustMissionId;
                 Em.UserId = EmDTO.UserId;
                 Em.ContentId = EmDTO.ContentId;
                 Em.Title = EmDTO.Title;
@@ -83,7 +82,8 @@ namespace incode2.ApiControllers
                 Em.MaxParticipants = EmDTO.MaxParticipants;
                 Em.Status = EmDTO.Status;
                 Em.IsActive = EmDTO.IsActive;
-                Em.CreatedAt = EmDTO.CreatedAt;
+                // 只有當前端真的有傳新時間才更新，否則保留資料庫原始時間
+                Em.CreatedAt = EmDTO.CreatedAt ?? Em.CreatedAt;
 
                 _context.Entry(Em).State = EntityState.Modified;
 
@@ -112,16 +112,15 @@ namespace incode2.ApiControllers
         {
             EntrustMission em = new EntrustMission
             {
-                EntrustMissionId = EmDTO.EntrustMissionId,
                 UserId = EmDTO.UserId,
                 ContentId = EmDTO.ContentId,
                 Title = EmDTO.Title,
                 Detail = EmDTO.Detail,
                 RewardPoints = EmDTO.RewardPoints,
                 MaxParticipants = EmDTO.MaxParticipants,
-                Status = EmDTO.Status,
-                IsActive = EmDTO.IsActive,
-                CreatedAt = DateTime.Now,
+                Status = EmDTO.Status ?? "pending", // 給予預設狀態
+                IsActive = true,                     // 新增時預設啟用
+                CreatedAt = DateTime.Now             // 強制後端時間
             };
             _context.EntrustMission.Add(em);
             await _context.SaveChangesAsync();
