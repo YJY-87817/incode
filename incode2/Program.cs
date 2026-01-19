@@ -154,8 +154,8 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 //lin
-app.MapRazorPages()
-   .WithStaticAssets();
+//app.MapRazorPages()
+   //.WithStaticAssets();
 
 //SignalR的路由 設定聊天室的連線端點
 app.MapHub<ChatHub>("/chatHub");
