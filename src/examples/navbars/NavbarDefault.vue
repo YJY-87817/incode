@@ -133,7 +133,10 @@
       <div class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0" id="navigation">
         <ul class="navbar-nav navbar-nav-hover ms-auto">
           <li class="nav-item dropdown dropdown-hover mx-2">
-            <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+            <RouterLink
+              :to="{ name: 'PointShop' }"
+              class="dropdown-item border-radius-md"
+            >
               <span>點數商城</span>
             </RouterLink>
           </li>
@@ -158,7 +161,22 @@
                       <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
                         <span>討論區</span>
                       </RouterLink>
-                      <RouterLink :to="{ name: 'about' }" class="dropdown-item border-radius-md">
+                      <RouterLink
+                        :to="{ name: 'test' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>test</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'user' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>會員中心</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'about' }"
+                        class="dropdown-item border-radius-md"
+                      >
                         <span>About Us</span>
                       </RouterLink>
                       <RouterLink :to="{ name: 'contactus' }" class="dropdown-item border-radius-md">
