@@ -107,6 +107,24 @@
           </div>
         </div>
       </li>
+
+      <!-- Nav Item - Pages Collapse Menu -->
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMessage"
+            aria-expanded="true" aria-controls="collapseMessage">
+            <i class="fas fa-fw fa-cog"></i>
+            <span>聊天室</span>
+        </a>
+      <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+          <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item" asp-area="" asp-controller="ChatMessages" asp-action="Index">訊息管理</a>
+          </div>
+      </div>
+      </li>
+
+
+
+
       <!-- Nav Item - Charts -->
       @* <li class="nav-item">
                 <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
@@ -114,6 +132,7 @@
                     <span>Privacy</span>
                 </a>
             </li> *@
+      
 
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
