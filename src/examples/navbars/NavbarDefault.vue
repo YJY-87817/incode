@@ -141,6 +141,14 @@
             </RouterLink>
           </li>
           <li class="nav-item dropdown dropdown-hover mx-2">
+            <RouterLink
+              :to="{ name: 'PointShop' }"
+              class="dropdown-item border-radius-md"
+            >
+              <span>點數商城</span>
+            </RouterLink>
+          </li>
+          <li class="nav-item dropdown dropdown-hover mx-2">
             <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
               id="dropdownMenuPages" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
@@ -168,14 +176,13 @@
                         <span>test</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'user' }"
+                        :to="{ name: 'recharge' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>會員中心</span>
+                        <span>點數儲值</span>
                       </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'about' }"
-                        class="dropdown-item border-radius-md"
+                      <div
+                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
                       >
                         <span>About Us</span>
                       </RouterLink>

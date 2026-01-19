@@ -23,9 +23,10 @@ import ElDropdowns from "../layouts/sections/elements/dropdowns/DropdownsView.vu
 import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressBarsView.vue";
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
-import PointLog from "../views/pointlog/PointLog.vue";
 import Mission from "../views/task/Mission.vue";
-import Recharge from "../views/recharge/Recharge.vue";
+import Mytask from "../views/task/Mytask.vue";
+import Recharge from "../views/point/Recharge.vue";
+import PointLog from "../views/point/PointLog.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes:
@@ -194,6 +195,23 @@ const router = createRouter({
         component: Login,
       },
       // owen  
+
+      // qiu
+          {
+      path: "/point-log",
+      name: "point-log",
+      component: PointLog, // 點數紀錄
+    },
+    {
+      path: "/mission",
+      name: "mission",
+      component: Mission, // 任務
+    },
+    {
+      path: "/mytask",
+      name: "mytask",
+      component: Mytask, // 我的任務
+    }
     ],
 });
 
