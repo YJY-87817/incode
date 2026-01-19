@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// 1. 資料庫連線 & Migration 支援
+// 1. ��Ʈw�s�u & Migration �䴩
 // ==========================================
-// 註冊你的資料庫 Context
+// ���U�A����Ʈw Context
 builder.Services.AddDbContext<incodedatabaseContext>(options => {
     options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
@@ -21,6 +21,12 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // ==========================================
 // 2. CORS 設定 (指定 Vue 前端來源)
 // ==========================================
+builder.Services.AddScoped<IPointLogService, PointLogService>();
+builder.Services.AddScoped<IMissionService, MissionService>();
+builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
+builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
+builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueApp", policy =>
@@ -45,47 +51,47 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        // Cookie 安全設定
-        options.Cookie.HttpOnly = true; // 防止 XSS       
-        options.Cookie.SameSite = SameSiteMode.None; // 前後端不同網域(Cross-Site)可能需設為 None + Secure
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //瀏覽器規定：只要 SameSite=None，Secure 屬性必須為 true，否則 Cookie 會被拒收！
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+      // Cookie 安全設定
+      options.Cookie.HttpOnly = true; // 防止 XSS       
+      options.Cookie.SameSite = SameSiteMode.None; // 前後端不同網域(Cross-Site)可能需設為 None + Secure
+      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //瀏覽器規定：只要 SameSite=None，Secure 屬性必須為 true，否則 Cookie 會被拒收！
+      options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
 
-        // 設定後台 MVC 用的導向路徑
-        options.LoginPath = "/Auth/Login";
-        options.AccessDeniedPath = "/Auth/AccessDenied";
+      // 設定後台 MVC 用的導向路徑
+      options.LoginPath = "/Auth/Login";
+      options.AccessDeniedPath = "/Auth/AccessDenied";
 
-        // 區分 API 還是 網頁
+      // 區分 API 還是 網頁
 
-        // 1. 當未登入 (401)
-        options.Events.OnRedirectToLogin = context =>
+      // 1. 當未登入 (401)
+      options.Events.OnRedirectToLogin = context =>
+      {
+        // 如果請求網址是以 /api 開頭 -> 回傳 401 (給前端 Vue 看，不跳轉)
+        if (context.Request.Path.StartsWithSegments("/api"))
         {
-            // 如果請求網址是以 /api 開頭 -> 回傳 401 (給前端 Vue 看，不跳轉)
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
-            }
+          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          return Task.CompletedTask;
+        }
 
-            // 如果是後台網頁 -> 執行預設行為 (跳轉到 LoginPath)
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+        // 如果是後台網頁 -> 執行預設行為 (跳轉到 LoginPath)
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
 
-        // 2. 當權限不足 (403)
-        options.Events.OnRedirectToAccessDenied = context =>
+      // 2. 當權限不足 (403)
+      options.Events.OnRedirectToAccessDenied = context =>
+      {
+        // 如果請求網址是以 /api 開頭 -> 回傳 403 (給前端 Vue 看，不跳轉)
+        if (context.Request.Path.StartsWithSegments("/api"))
         {
-            // 如果請求網址是以 /api 開頭 -> 回傳 403 (給前端 Vue 看，不跳轉)
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                return Task.CompletedTask;
-            }
+          context.Response.StatusCode = StatusCodes.Status403Forbidden;
+          return Task.CompletedTask;
+        }
 
-            // 如果是後台網頁 -> 執行預設行為 (跳轉到 AccessDeniedPath)
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+        // 如果是後台網頁 -> 執行預設行為 (跳轉到 AccessDeniedPath)
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
     });
 builder.Services.AddAuthorization();
 
@@ -115,14 +121,14 @@ var app = builder.Build();
 // 環境判斷
 if (app.Environment.IsDevelopment())
 {
-    // 當資料庫與 Model 不一致時，顯示 Migration 錯誤頁面
-    // 需搭配上面的 AddDatabaseDeveloperPageExceptionFilter 使用
-    app.UseMigrationsEndPoint();
+  // 當資料庫與 Model 不一致時，顯示 Migration 錯誤頁面
+  // 需搭配上面的 AddDatabaseDeveloperPageExceptionFilter 使用
+  app.UseMigrationsEndPoint();
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+  app.UseExceptionHandler("/Home/Error");
+  app.UseHsts();
 }
 
 app.UseHttpsRedirection();

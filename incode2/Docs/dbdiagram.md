@@ -153,99 +153,120 @@ table user_status{
 
 //Point_Mission_Wallet_邱揚雅
 //功能:點數/任務/金流
-//=========點數===========
-
-//點數交易明細
-table point_log {
+// 點數交易明細
+Table point_log {
   point_log_id int [pk, increment, note: '點數異動紀錄主鍵']
-  user_id int [not null, note: '獲得/扣除點數的用戶', ref: > user.user_id]
-  source_type nvarchar(50) [not null, note:'點數異動來源類型']
-  source_id int [not null, note:'點數異動來源類型的id']
-  point_type_definition_id int [not null, note: '點數異動類型', ref: > point_type_definition.point_type_definition_id]
+  user_id int [not null, ref: > user.user_id, note: '獲得/扣除點數的用戶']
+  source_type nvarchar(50) [not null, note: '點數異動來源類型']
+  source_id int [ note: '點數異動來源類型的 id']
+  point_type_definition_id int [not null, ref: > point_type_definition.point_type_definition_id, note: '點數異動類型']
   change_amount int [not null, note: '本次變動點數（正數＝收入，負數＝支出）']
-  balance_after int [not null, note: '變動後的可用餘額']
+  status nvarchar(50) [not null,check: `[status] IN ('pending','success','failed','cancelled','system')`, default: 'success', note: 'pending, success, failed, cancelled, system']  
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-//任務類型定義
-table point_type_definition {
+// 點數類型定義
+Table point_type_definition {
   point_type_definition_id int [pk, increment, note: '點數類型主鍵']
-  type_name nvarchar(50) [unique, not null, note: '程式用代碼，例如：recharge、mission_reward']
-  display_name nvarchar(100) [not null, note: '前台顯示名稱，例如：儲值點數、任務獎勵,扣除委託任務點數']
-  description nvarchar(100) [note: '後台管理員看的詳細說明，可很長']
+  type_name nvarchar(50) [ not null, note: '程式用代碼，例如：recharge, mission, shopping']
+  display_name nvarchar(100) [not null, note: '前台顯示名稱，例如：儲值點數、任務獎勵']
+  description nvarchar(100) [note: '後台管理員看的詳細說明']
+  is_active bit [not null, default: 1]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime
 }
 
-//=========任務===========
-//平台任務 
+//========= 平台任務 ===========
+
 Table mission {
   mission_id int [pk, increment, note: '平台任務主鍵']
   mission_name nvarchar(100) [not null, note: '任務標題']
   mission_detail nvarchar(500) [not null, note: '任務詳細說明']
-  target_type nvarchar(50) [not null, default: '', note: '目標類型，例如：post、comment、login']
-  target_count int [not null, check: `[target_count] >= 1`,  note: '需要達成的次數/數量']
-  reward_points int [not null, check: `[reward_points] >= 1`, note: '完成後獎勵點數']
-  reward_exp int [not null, check: `[reward_exp] >= 1`, note: '完成後獎勵經驗值']
-  reset_type NVARCHAR(50) [not null, check: `[reset_type] IN ('none','daily','weekly','monthly','yearly')`, default: 'none', note: '重置週期']
+  target_type nvarchar(50) [not null, note: '目標類型，例如：post、comment、login']
+  target_count int [not null, check: `[target_count] >= 1`, note: '需要達成的次數/數量']
+  reward_points int [not null, check: `[reward_points] >= 0`, note: '完成後獎勵點數']
+  reward_exp int [not null, check: `[reward_exp] >= 0`, note: '完成後獎勵經驗值']
+  reset_type NVARCHAR(50) [not null, check: `[reset_type] IN ('none','daily','weekly','monthly','yearly','quarterly')`, default: 'none', note: '重置週期']
+  is_active bit [not null, default: 1]
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-//平台任務:會員接任務狀態(含歷史) 
 Table mission_progress {
   mission_progress_id int [pk, increment, note: '用戶任務進度主鍵']
-  user_id int [not null,note: '用戶ID', ref: > user.user_id]
-  mission_id int [not null,note: '所屬平台任務', ref: > mission.mission_id]
-  current_count int [not null, default: 0, note: '目前已完成次數']
+  user_id int [not null, ref: > user.user_id, note: '用戶 ID']
+  mission_id int [not null, ref: > mission.mission_id, note: '所屬平台任務']
+  current_count int [not null, check: `[current_count] >= 0`, note: '目前已完成次數']
+  status nvarchar(50) [not null, check: `[status] IN ('ongoing','completed','rewarded','falsed','cancelled')`, default: 'ongoing', note: 'ongoing=進行中, completed=已完成, rewarded=已領獎']
   accepted_at datetime [default: `CURRENT_TIMESTAMP`, note: '開始計算進度的時間']
-  completed_at datetime [null, note: '實際完成時間']
-  rewarded_at datetime [null, note: '實際撥款的時間:user點選領取點數按鈕']
+  completed_at datetime [note: '實際完成時間']
+  rewarded_at datetime [note: '實際撥款的時間(點選領取按鈕)']
 }
 
-//會員委託任務
+//========= 委託任務 ===========
+
 Table entrust_mission {
   entrust_mission_id int [pk, increment, note: '委託任務主鍵']
-  user_id int [not null, note: '發布者ID', ref: > user.user_id]
+  user_id int [not null, ref: > user.user_id, note: '發布者 ID']
+  content_id int [not null, ref: > content.content_id, note: '發文 ID']
   title nvarchar(150) [not null, note: '委託任務標題']
   detail nvarchar(500) [not null, note: '委託任務詳細內容']
-  reward_points int [not null, check: `[reward_points] >= 1`, note: '完成可得點數']
-  max_participants int [not null, default: `1`, note:'接取任務人數只能1位']
+  reward_points int [not null, check: `[reward_points] >= 0`, note: '完成可得點數']
+  max_participants int [not null, default: 1, note: '接取任務人數限制']
   status nvarchar(50) [not null, check: `[status] IN ('open','closed','cancelled')`, default: 'open', note: '任務狀態']
+  is_active bit [not null, default: 1]
   created_at datetime [default: `CURRENT_TIMESTAMP`, note: '發布時間']
 }
 
-//會員委託任務的目前進度
 Table entrust_mission_progress {
   entrust_mission_progress_id int [pk, increment, note: '委託任務進度主鍵']
-  user_id int [not null, note: '接任務者ID', ref: > user.user_id]
-  entrust_mission_id int [not null, note: '所屬委託任務', ref: > entrust_mission.entrust_mission_id]
-  status nvarchar(50) [check: `[status] IN ('accepted','submitted','completed','falsed','cancelled')`, default: 'accepted', note: 'pending=已接取 → submitted=已提交證明 → approved=通過發獎 → rejected=駁回']
-  accepted_at datetime [default: `CURRENT_TIMESTAMP`, note: '開始計算進度的時間']
-  completed_at datetime [null, note: '實際完成時間']
-  rewarded_at datetime [null, note: '實際撥款的時間:user點選領取點數按鈕']
+  user_id int [not null, ref: > user.user_id, note: '接任務者 ID']
+  entrust_mission_id int [not null, ref: > entrust_mission.entrust_mission_id, note: '所屬委託任務']
+  status nvarchar(50) [check: `[status] IN ('ongoing','completed','rewarded','falsed','cancelled')`, default: 'ongoing', note: '進度狀態流轉']
+  accepted_at datetime [default: `CURRENT_TIMESTAMP`]
+  completed_at datetime
+  rewarded_at datetime
 }
 
-//會員委託任務預扣點數
-Table user_point_wallet {
-  user_id int [pk,ref: > user.user_id]
-  current_points int [not null, default: 0, note: '可用點數']
-  frozen_points int [not null, default: 0, note: '凍結中點數']
-  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+Table entrust_mission_point_reserve {
+  entrust_mission_point_reserve_id int [pk, increment, note: '委託點數預扣主鍵']
+  user_id int [not null, ref: > user.user_id, note: '發布者 ID']
+  entrust_mission_id int [not null, ref: > entrust_mission.entrust_mission_id, note: '關連委託 ID']
+  reserved_points int [not null, check: `[reserved_points] >= 0`, note: '本次預扣點數']
+  status nvarchar(50) [not null, check: `[status] IN ('reserved','consumed','released')`, default: 'reserved', note: 'reserved=凍結中, consumed=已支付, released=已退還']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  released_at datetime
 }
 
-//任務表:從哪裡拉你接的是甚麼任務(留言表)
+//========= 金流儲值 ===========
 
-//金流
-//錢包
-// 儲值成功紀錄表（只有成功才會寫入這張表）
-Table point_deposits {
-  point_deposit_id int [pk, increment, note: '儲值成功紀錄主鍵']
-  user_id int [not null, note: '用戶ID', ref: > user.user_id]
-  order_no varchar(100) [unique, not null, note: '內部或第三方訂單編號']
-  cash_amount decimal(12,2) [not null, note: '實際支付台幣金額']
-  points_granted int [not null, note: '本次給予的點數']
-  payment_method varchar(50) [not null, note: '付款方式：credit_card, convenience_store, line_pay 等']
-  related_order_id varchar(100) [note: '第三方金流返回的訂單號（如藍新 MerchantTradeNo）']
-  status nvarchar(50) [check: `[status] IN ('pending', 'success', 'failed', 'expired')`, default: 'pending', note: 'pending(待付), success(成功), failed(失敗), expired(過期)']
-  created_at datetime [default: `CURRENT_TIMESTAMP`, note: '付款成功時間']
+Table point_recharge {
+  point_recharge_id int [pk, increment, note: '儲值成功紀錄主鍵']
+  user_id int [not null, ref: > user.user_id, note: '用戶 ID']
+  order_no varchar(100) [unique, not null, note: '內部訂單編號']
+  cash_amount decimal(12,2) [not null, note: '支付台幣金額']
+  points_granted int [not null, note: '給予點數']
+  payment_method varchar(50) [not null, note: '付款方式']
+  related_order_id varchar(100) [note: '第三方金流編號']
+  status nvarchar(50) [check: `[status] IN ('pending', 'success', 'failed', 'expired')`, default: 'pending', note: '訂單狀態']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+// ================系統通知表 (單表架構)====================
+Table notifications {
+  notifications_id int [pk, increment]
+  // 目標設定
+  target_user_id int [null, ref: > user.user_id, note: '特定使用者ID。若為 NULL 則視為全體廣播']
+  // 內容
+  title nvarchar(255) [not null]
+  content nvarchar(255) [not null]
+  category nvarchar(50) [note: '類型：SYSTEM, PROMOTION, ORDER']
+  // 跳轉與關聯
+  related_id nvarchar(100) [null, note: '關聯的單號或任務ID']
+  link_url nvarchar(500) [null, note: '點擊跳轉的頁面網址']
+  // 狀態 (針對個人通知)
+  is_read bit [default: 0]
+  // 時間
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
 //PointShop_嚴家胤 

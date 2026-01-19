@@ -29,6 +29,8 @@ public partial class incodedatabaseContext : DbContext
 
     public virtual DbSet<EntrustMission> EntrustMission { get; set; }
 
+    public virtual DbSet<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; }
+
     public virtual DbSet<EntrustMissionProgress> EntrustMissionProgress { get; set; }
 
     public virtual DbSet<Follow> Follow { get; set; }
@@ -39,13 +41,15 @@ public partial class incodedatabaseContext : DbContext
 
     public virtual DbSet<MissionProgress> MissionProgress { get; set; }
 
+    public virtual DbSet<Notifications> Notifications { get; set; }
+
     public virtual DbSet<Orderdetail> Orderdetail { get; set; }
 
     public virtual DbSet<Orders> Orders { get; set; }
 
-    public virtual DbSet<PointDeposits> PointDeposits { get; set; }
-
     public virtual DbSet<PointLog> PointLog { get; set; }
+
+    public virtual DbSet<PointRecharge> PointRecharge { get; set; }
 
     public virtual DbSet<PointTypeDefinition> PointTypeDefinition { get; set; }
 
@@ -305,6 +309,7 @@ public partial class incodedatabaseContext : DbContext
             entity.ToTable("entrust_mission");
 
             entity.Property(e => e.EntrustMissionId).HasColumnName("entrust_mission_id");
+            entity.Property(e => e.ContentId).HasColumnName("content_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -313,6 +318,9 @@ public partial class incodedatabaseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500)
                 .HasColumnName("detail");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.MaxParticipants)
                 .HasDefaultValue(1)
                 .HasColumnName("max_participants");
@@ -328,10 +336,49 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("title");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
+            entity.HasOne(d => d.Content).WithMany(p => p.EntrustMission)
+                .HasForeignKey(d => d.ContentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__entrust_m__conte__3B40CD36");
+
             entity.HasOne(d => d.User).WithMany(p => p.EntrustMission)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__entrust_m__user___3B40CD36");
+        });
+
+        modelBuilder.Entity<EntrustMissionPointReserve>(entity =>
+        {
+            entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___15006470309DC3F9");
+
+            entity.ToTable("entrust_mission_point_reserve");
+
+            entity.Property(e => e.EntrustMissionPointReserveId).HasColumnName("entrust_mission_point_reserve_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.EntrustMissionId).HasColumnName("entrust_mission_id");
+            entity.Property(e => e.ReleasedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("released_at");
+            entity.Property(e => e.ReservedPoints).HasColumnName("reserved_points");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("reserved")
+                .HasColumnName("status");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.EntrustMission).WithMany(p => p.EntrustMissionPointReserve)
+                .HasForeignKey(d => d.EntrustMissionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__entrust_m__entru__3F115E1A");
+
+            entity.HasOne(d => d.User).WithMany(p => p.EntrustMissionPointReserve)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__entrust_m__user___3E1D39E1");
         });
 
         modelBuilder.Entity<EntrustMissionProgress>(entity =>
@@ -354,7 +401,7 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("rewarded_at");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .HasDefaultValue("accepted")
+                .HasDefaultValue("ongoing")
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -429,6 +476,9 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.MissionDetail)
                 .IsRequired()
                 .HasMaxLength(500)
@@ -448,7 +498,6 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.TargetType)
                 .IsRequired()
                 .HasMaxLength(50)
-                .HasDefaultValue("")
                 .HasColumnName("target_type");
         });
 
@@ -471,6 +520,11 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.RewardedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("rewarded_at");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("ongoing")
+                .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Mission).WithMany(p => p.MissionProgress)
@@ -538,15 +592,15 @@ public partial class incodedatabaseContext : DbContext
                 .HasConstraintName("FK__orders__user_id__40058253");
         });
 
-        modelBuilder.Entity<PointDeposits>(entity =>
+        modelBuilder.Entity<PointRecharge>(entity =>
         {
             entity.HasKey(e => e.PointDepositId).HasName("PK__point_de__6DCA5DF6379D5060");
 
-            entity.ToTable("point_deposits");
+            entity.ToTable("point_recharge");
 
             entity.HasIndex(e => e.OrderNo, "UQ__point_de__465C81B8C65DA7C8").IsUnique();
 
-            entity.Property(e => e.PointDepositId).HasColumnName("point_deposit_id");
+            entity.Property(e => e.PointRechargeId).HasColumnName("point_recharge_id");
             entity.Property(e => e.CashAmount)
                 .HasColumnType("decimal(12, 2)")
                 .HasColumnName("cash_amount");
@@ -575,21 +629,19 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.User).WithMany(p => p.PointDeposits)
+            entity.HasOne(d => d.User).WithMany(p => p.PointRecharge)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__point_dep__user___3F115E1A");
         });
 
-        modelBuilder.Entity<PointLog>(entity =>
+        modelBuilder.Entity<PointTypeDefinition>(entity =>
         {
             entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7CF9438A2A");
 
-            entity.ToTable("point_log");
+            entity.ToTable("point_type_definition");
 
-            entity.Property(e => e.PointLogId).HasColumnName("point_log_id");
-            entity.Property(e => e.BalanceAfter).HasColumnName("balance_after");
-            entity.Property(e => e.ChangeAmount).HasColumnName("change_amount");
+            entity.Property(e => e.PointTypeDefinitionId).HasColumnName("point_type_definition_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -629,10 +681,16 @@ public partial class incodedatabaseContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("display_name");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.TypeName)
                 .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("type_name");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
         });
 
         modelBuilder.Entity<Product>(entity =>

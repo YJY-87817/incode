@@ -51,6 +51,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[entrust_mission_point_reserve]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[entrust_mission_progress]",
          "ObjectType": 0
       },
@@ -71,6 +75,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[notifications]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[orderdetail]",
          "ObjectType": 0
       },
@@ -79,11 +87,11 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[point_deposits]",
+         "Name": "[dbo].[point_log]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[point_log]",
+         "Name": "[dbo].[point_recharge]",
          "ObjectType": 0
       },
       {
@@ -120,10 +128,6 @@
       },
       {
          "Name": "[dbo].[user_notification]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[user_point_wallet]",
          "ObjectType": 0
       },
       {
