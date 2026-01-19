@@ -1,5 +1,4 @@
-﻿using incode2.Data;
-using incode2.Dtos;
+﻿using incode2.Dtos;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
 

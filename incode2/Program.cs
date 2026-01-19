@@ -104,6 +104,7 @@ builder.Services.AddScoped<ISocialService, SocialService>();
 
 //Service透過DI建立
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 var app = builder.Build();
 
