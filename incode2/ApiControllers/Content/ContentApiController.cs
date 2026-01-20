@@ -41,7 +41,7 @@ namespace incode2.ApiControllers.Content
     //[Authorize]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
-      var userName = User.Identity.Name;
+      var userId = User.Claims.FirstOrDefault().Value;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
       var content = await _contentService.CreateContent(dto);
