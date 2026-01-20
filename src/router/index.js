@@ -23,8 +23,8 @@ import ElDropdowns from "../layouts/sections/elements/dropdowns/DropdownsView.vu
 import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressBarsView.vue";
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
-import Mission from "../views/task/Mission.vue";
-import Mytask from "../views/task/Mytask.vue";
+import Mission from "../views/point/Mission.vue";
+import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
 import PointShopView from "@/views/PointShop/PointShopView.vue";
@@ -33,179 +33,177 @@ import Checkout from "@/views/PointShop/CheckoutView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes:
-    [
-      {
-        path: "/",
-        name: "presentation",
-        component: PresentationView,
-      },
-      {
-        path: "/pages/landing-pages/about-us",
-        name: "about",
-        component: AboutView,
-      },
-      {
-        path: "/pages/landing-pages/contact-us",
-        name: "contactus",
-        component: ContactView,
-      },
-      {
-        path: "/pages/landing-pages/author",
-        name: "author",
-        component: AuthorView,
-      },
-      {
-        path: "/sections/page-sections/page-headers",
-        name: "page-headers",
-        component: PageHeaders,
-      },
-      {
-        path: "/sections/page-sections/features",
-        name: "page-features",
-        component: PageFeatures,
-      },
-      {
-        path: "/sections/navigation/navbars",
-        name: "navigation-navbars",
-        component: NavigationNavbars,
-      },
-      {
-        path: "/sections/navigation/nav-tabs",
-        name: "navigation-navtabs",
-        component: NavigationNavTabs,
-      },
-      {
-        path: "/sections/navigation/pagination",
-        name: "navigation-pagination",
-        component: NavigationPagination,
-      },
-      {
-        path: "/sections/input-areas/inputs",
-        name: "inputareas-inputs",
-        component: InputAreasInputs,
-      },
-      {
-        path: "/sections/input-areas/forms",
-        name: "inputareas-forms",
-        component: InputAreasForms,
-      },
-      {
-        path: "/sections/attention-catchers/alerts",
-        name: "ac-alerts",
-        component: ACAlerts,
-      },
-      {
-        path: "/sections/attention-catchers/modals",
-        name: "ac-modals",
-        component: ACModals,
-      },
-      {
-        path: "/sections/attention-catchers/tooltips-popovers",
-        name: "ac-tooltips-popovers",
-        component: ACTooltipsPopovers,
-      },
-      {
-        path: "/sections/elements/avatars",
-        name: "el-avatars",
-        component: ElAvatars,
-      },
-      {
-        path: "/sections/elements/badges",
-        name: "el-badges",
-        component: ElBadges,
-      },
-      {
-        path: "/sections/elements/breadcrumbs",
-        name: "el-breadcrumbs",
-        component: ElBreadcrumbs,
-      },
-      {
-        path: "/sections/elements/buttons",
-        name: "el-buttons",
-        component: ElButtons,
-      },
-      {
-        path: "/sections/elements/button-groups",
-        name: "el-button-groups",
-        component: ElButtonGroups,
-      },
-      {
-        path: "/sections/elements/dropdowns",
-        name: "el-dropdowns",
-        component: ElDropdowns,
-      },
-      {
-        path: "/sections/elements/progress-bars",
-        name: "el-progress-bars",
-        component: ElProgressBars,
-      },
-      {
-        path: "/sections/elements/toggles",
-        name: "el-toggles",
-        component: ElToggles,
-      },
-      {
-        path: "/sections/elements/typography",
-        name: "el-typography",
-        component: ElTypography,
-      },
+  routes: [
+    {
+      path: "/",
+      name: "presentation",
+      component: PresentationView,
+    },
+    {
+      path: "/pages/landing-pages/about-us",
+      name: "about",
+      component: AboutView,
+    },
+    {
+      path: "/pages/landing-pages/contact-us",
+      name: "contactus",
+      component: ContactView,
+    },
+    {
+      path: "/pages/landing-pages/author",
+      name: "author",
+      component: AuthorView,
+    },
+    {
+      path: "/sections/page-sections/page-headers",
+      name: "page-headers",
+      component: PageHeaders,
+    },
+    {
+      path: "/sections/page-sections/features",
+      name: "page-features",
+      component: PageFeatures,
+    },
+    {
+      path: "/sections/navigation/navbars",
+      name: "navigation-navbars",
+      component: NavigationNavbars,
+    },
+    {
+      path: "/sections/navigation/nav-tabs",
+      name: "navigation-navtabs",
+      component: NavigationNavTabs,
+    },
+    {
+      path: "/sections/navigation/pagination",
+      name: "navigation-pagination",
+      component: NavigationPagination,
+    },
+    {
+      path: "/sections/input-areas/inputs",
+      name: "inputareas-inputs",
+      component: InputAreasInputs,
+    },
+    {
+      path: "/sections/input-areas/forms",
+      name: "inputareas-forms",
+      component: InputAreasForms,
+    },
+    {
+      path: "/sections/attention-catchers/alerts",
+      name: "ac-alerts",
+      component: ACAlerts,
+    },
+    {
+      path: "/sections/attention-catchers/modals",
+      name: "ac-modals",
+      component: ACModals,
+    },
+    {
+      path: "/sections/attention-catchers/tooltips-popovers",
+      name: "ac-tooltips-popovers",
+      component: ACTooltipsPopovers,
+    },
+    {
+      path: "/sections/elements/avatars",
+      name: "el-avatars",
+      component: ElAvatars,
+    },
+    {
+      path: "/sections/elements/badges",
+      name: "el-badges",
+      component: ElBadges,
+    },
+    {
+      path: "/sections/elements/breadcrumbs",
+      name: "el-breadcrumbs",
+      component: ElBreadcrumbs,
+    },
+    {
+      path: "/sections/elements/buttons",
+      name: "el-buttons",
+      component: ElButtons,
+    },
+    {
+      path: "/sections/elements/button-groups",
+      name: "el-button-groups",
+      component: ElButtonGroups,
+    },
+    {
+      path: "/sections/elements/dropdowns",
+      name: "el-dropdowns",
+      component: ElDropdowns,
+    },
+    {
+      path: "/sections/elements/progress-bars",
+      name: "el-progress-bars",
+      component: ElProgressBars,
+    },
+    {
+      path: "/sections/elements/toggles",
+      name: "el-toggles",
+      component: ElToggles,
+    },
+    {
+      path: "/sections/elements/typography",
+      name: "el-typography",
+      component: ElTypography,
+    },
 
+    // 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由
+    // 以下是tim的路由
+    {
+      path: "/forum",
+      name: "forum",
+      component: () => import("@/views/forum/forum.vue"),
+    },
+    {
+      path: "/test",
+      name: "test",
+      component: () => import("@/views/forum/test.vue"),
+    },
+    // 以上是tim的路由
 
-      // 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由
-      // 以下是tim的路由
-      {
-        path: "/forum",
-        name: "forum",
-        component: () => import('@/views/forum/forum.vue'),
-      },
-      {
-        path: "/test",
-        name: "test",
-        component: () => import('@/views/forum/test.vue'),
-      },
-      // 以上是tim的路由
+    // owen
+    {
+      path: "/user",
+      name: "user",
+      component: () => import("@/views/user/userindex.vue"),
+    },
+    {
+      path: "/register",
+      name: "register",
+      component: () => import("@/views/user/register.vue"),
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: Login,
+    },
+    // owen
 
-      // owen
-      {
-        path: "/user",
-        name: "user",
-        component: () => import('@/views/user/userindex.vue'),
-      },
-      {
-        path: "/register",
-        name: "register",
-        component: () => import('@/views/user/register.vue'),
-      },
-      {
-        path: "/login",
-        name: "login",
-        component: Login,
-      },
-      // owen  
-
-      // qiu以下
+    // qiu以下
     {
       path: "/mytask",
       name: "mytask",
       component: Mytask, // 我的任務
     },
-          {
-        path: "/point-log",
-        name: "point-log",
-        component: PointLog, //views的檔案名稱
-      },
-      {
-        path: "/mission",
-        name: "mission",
-        component: Mission, //views的檔案名稱
-      },
-      {
-        path: "/recharge",
-        name: "recharge",
-        component: Recharge, //views的檔案名稱
-      },
-      // qiu以上
+    {
+      path: "/point-log",
+      name: "point-log",
+      component: PointLog, //views的檔案名稱
+    },
+    {
+      path: "/mission",
+      name: "mission",
+      component: Mission, //views的檔案名稱
+    },
+    {
+      path: "/recharge",
+      name: "recharge",
+      component: Recharge, //views的檔案名稱
+    },
+    // qiu以上
 
     // yjy 以下
     {
@@ -222,9 +220,9 @@ const router = createRouter({
       path: "/PointShop/Checkout",
       name: "Checkout",
       component: Checkout,
-    }
-        // yjy 以上
-    ],
+    },
+    // yjy 以上
+  ],
 });
 
 export default router;
