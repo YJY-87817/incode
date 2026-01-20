@@ -221,6 +221,16 @@ const router = createRouter({
       name: "Checkout",
       component: Checkout,
     },
+    {
+      path: "/forum/list",
+      name: "forum-list",
+      component: () => import("@/views/forum/ForumList.vue"),
+    },
+    {
+      path: "/thread/:id",
+      name: "thread-detail",
+      component: () => import("@/views/forum/ThreadDetail.vue"),
+    },
     // yjy 以上
   ],
 });

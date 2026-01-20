@@ -20,11 +20,7 @@ function btnGet() {
 </script>
 
 <template>
-  <DefaultNavbar
-    :action="{
-      route: 'javascript:;',
-    }"
-  />
+  <DefaultNavbar light />
 
   <div class="container mt-5 mb-5">
     <button @click="btnGet()">GET</button>

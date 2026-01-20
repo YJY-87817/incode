@@ -197,11 +197,7 @@ watch(
 </script>
 
 <template>
-  <DefaultNavbar
-    :action="{
-      route: 'javascript:;',
-    }"
-  />
+  <DefaultNavbar light />
 
   <div class="container mt-5 mb-5">
     <!-- 論壇標題區 -->
