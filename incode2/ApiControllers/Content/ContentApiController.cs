@@ -1,9 +1,12 @@
 ﻿using incode2.Dtos;
+using incode2.Extensions;
 using incode2.Models;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
 using incode2.Services.Contents;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+
 
 namespace incode2.ApiControllers.Content
 {
@@ -33,9 +36,13 @@ namespace incode2.ApiControllers.Content
       return Ok(content);
     }
 
+    //創立貼文
     [HttpPost]
+    //[Authorize]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
+      var userName = User.Identity.Name;
+
       if (!ModelState.IsValid) return BadRequest(ModelState);
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
