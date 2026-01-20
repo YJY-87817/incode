@@ -6,16 +6,17 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using incode2.Extensions;
 
 namespace incode2.ApiControllers.user
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthApiController : ControllerBase
     {
         private readonly IAuthService _authService;
 
-        public AuthController(IAuthService authService)
+        public AuthApiController(IAuthService authService)
         {
             _authService = authService;
         }
@@ -116,9 +117,12 @@ namespace incode2.ApiControllers.user
         {
             if (User.Identity.IsAuthenticated)
             {
+                int currentUserId = User.GetId();
+
                 return Ok(new
                 {
                     isLoggedIn = true,
+                    userId = currentUserId,
                     username = User.Identity.Name,
                     role = User.FindFirst(ClaimTypes.Role)?.Value
                 });
