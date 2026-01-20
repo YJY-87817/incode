@@ -61,7 +61,7 @@ export const useAuthStore = defineStore("auth", {
         // 2. 發送 API
         // 注意：這裡假設您的後端 API 路徑
         const response = await axios.post(
-          "https://localhost:7190/api/Auth/register",
+          "https://localhost:7190/api/AuthApi/register",
           {
             email: this.form.email,
             password: this.form.password,
@@ -104,7 +104,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         const response = await axios.post(
-          "https://localhost:7190/api/Auth/login",
+          "https://localhost:7190/api/AuthApi/login",
           this.form,
           {
             withCredentials: true, // 關鍵：允許 Cookie
@@ -133,7 +133,7 @@ export const useAuthStore = defineStore("auth", {
     async logout() {
       // ... 您的登出邏輯 (保持不變)
       try {
-        await axios.post("https://localhost:7190/api/Auth/logout", {}, { withCredentials: true });
+        await axios.post("https://localhost:7190/api/AuthApi/logout", {}, { withCredentials: true });
         this.user = null;
       } catch (error) {
         console.error("登出失敗", error);

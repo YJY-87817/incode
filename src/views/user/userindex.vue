@@ -20,6 +20,9 @@
   const goToBasic = () => {
     router.push("/login");
   };
+  const goToindex = () => {
+    router.push("/");
+  };
 
   const isLoading = ref(false);
   // 計算關注人數
@@ -142,9 +145,14 @@
               <h1>~~~</h1>
             </div>
             <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button type="submit" class="btn bg-white text-dark" @click="goToBasic">
+            <button type="submit" class="btn bg-white text-dark" @click="authStore.login();goToBasic">
               <span class="text-success text-gradient font-weight-bold">
                 登入
+              </span>
+            </button>
+            <button type="submit" class="btn bg-white text-dark" @click="authStore.logout(); goToindex()">
+              <span class="text-success text-gradient font-weight-bold">
+                登出
               </span>
             </button>
           </div>
