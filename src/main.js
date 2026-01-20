@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
+import piniaPluginPersist from 'pinia-plugin-persist';
 import App from "./App.vue";
 
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -12,12 +13,15 @@ import "./assets/css/nucleo-icons.css";
 import "./assets/css/nucleo-svg.css";
 
 import materialKit from "./material-kit";
-
+import axios from 'axios';
+axios.defaults.withCredentials = true;
 
 const app = createApp(App);
 
 
-app.use(createPinia());
+const pinia = createPinia();
+pinia.use(piniaPluginPersist);
+app.use(pinia);
 app.use(router);
 app.use(materialKit);
 app.mount("#app");
