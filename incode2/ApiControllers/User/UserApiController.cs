@@ -14,11 +14,11 @@ namespace incode2.ApiControllers.user
   //https://localhost:7190/api/User
   [Route("api/[controller]")]
   [ApiController]
-  public class UserController : ControllerBase
+  public class UserApiController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
 
-    public UserController(incodedatabaseContext context)
+    public UserApiController(incodedatabaseContext context)
     {
       _context = context;
     }
