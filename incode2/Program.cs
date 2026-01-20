@@ -1,109 +1,166 @@
-using incode2.Data;
 using incode2.Models;
-using Microsoft.AspNetCore.Identity;
+using incode2.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using incode2.Hubs;
+using incode2.Services.Point;
+using incode2.Services.Users;
+using incode2.Services.Contents;
+using incode2.Services.Chat;
 
-//µù¥UDI®e¾¹ªº¦a¤è
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the DI container.
-//¨­¥÷ÅçÃÒ¥Îªº
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-//µ¹­n¥hDI®e¾¹¨úª«¥óªº¤H¨Ï¥Î
-builder.Services.AddDbContext<incodedatabaseContext>(option =>
-{
-  option.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+builder.Services.AddDbContext<incodedatabaseContext>(options => {
+    options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
-//claudeµ¹§Ú¡A­nµ¹Api¥Îªº
-// ³]©w CORS - ¤¹³\ Vue «eºİ¦s¨ú
-builder.Services.AddCors(options =>
-{
-  options.AddPolicy("VueApp", policy =>
-  {
-    policy.WithOrigins(
-      "http://localhost:7190",
-      "http://localhost:5173",  // Vite ¹w³]¶}µo°ğ
-      "http://localhost:8080",  // Vue CLI ¹w³]¶}µo°ğ
-      "http://localhost:3000"   // ¨ä¥L¥i¯àªº¶}µo°ğ
-    )
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .AllowCredentials();
-  });
-});
-
-//claudeµ¹§Ú¡A­nµ¹Api¥Îªº
-//·|¼vÅT­ì¥»ªºViewÅã¥Ü¡A¥ıµù¸Ñ±¼
-// ³]©w JSON §Ç¦C¤Æ¿ï¶µ
-//builder.Services.AddControllers()
-//.AddJsonOptions(options =>
-//{
-//  //options.JsonSerializerOptions.PropertyNamingPolicy = null; // «O«ù­ì©l©R¦W
-//  options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // ³B²z´`Àô°Ñ·Ó
-//});
-
-builder.Services.AddSession(options =>
-{
-  options.Cookie.Name = ".incode2.Session";
-  options.IdleTimeout = TimeSpan.FromMinutes(5);
-  options.Cookie.IsEssential = true;
-  options.Cookie.HttpOnly = true;
-  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+// ==========================================
+// 2. CORS
+// ==========================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("VueApp", policy =>
+    {
+        policy.WithOrigins(          
+          "https://localhost:5173",
+          "http://localhost:5173",
+          "http://localhost:8080",
+          "http://localhost:3000",
+          "http://localhost:7190",
+          "http://localhost:3001"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials(); // å…è¨±å¸¶ Cookie (å‰å¾Œç«¯åˆ†é›¢é©—è­‰å¿…å‚™)
+    });
+});
+
+// Geminiæœå‹™
+builder.Services.AddHttpClient<GeminiService>();
+// SignalRæœå‹™
+builder.Services.AddSignalR();
+
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+// ==========================================
+// 3. Cookie
+// ==========================================
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+      // Cookie 
+      options.Cookie.HttpOnly = true; //      
+      options.Cookie.SameSite = SameSiteMode.None; // 
+      options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //
+      options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+
+      // è¨­å®šå¾Œå° MVC ç”¨çš„å°å‘è·¯å¾‘
+      options.LoginPath = "/Auth/Login";
+      options.AccessDeniedPath = "/Auth/AccessDenied";
+
+      // å€åˆ† API é‚„æ˜¯ ç¶²é 
+
+      // 1. ç•¶æœªç™»å…¥ (401)
+      options.Events.OnRedirectToLogin = context =>
+      {
+        // å¦‚æœè«‹æ±‚ç¶²å€æ˜¯ä»¥ /api é–‹é ­ -> å›å‚³ 401 (çµ¦å‰ç«¯ Vue çœ‹ï¼Œä¸è·³è½‰)
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          return Task.CompletedTask;
+        }
+
+        // å¦‚æœæ˜¯å¾Œå°ç¶²é  -> åŸ·è¡Œé è¨­è¡Œç‚º (è·³è½‰åˆ° LoginPath)
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
+
+      // 2. ç•¶æ¬Šé™ä¸è¶³ (403)
+      options.Events.OnRedirectToAccessDenied = context =>
+      {
+        // å¦‚æœè«‹æ±‚ç¶²å€æ˜¯ä»¥ /api é–‹é ­ -> å›å‚³ 403 (çµ¦å‰ç«¯ Vue çœ‹ï¼Œä¸è·³è½‰)
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+          context.Response.StatusCode = StatusCodes.Status403Forbidden;
+          return Task.CompletedTask;
+        }
+
+        // å¦‚æœæ˜¯å¾Œå°ç¶²é  -> åŸ·è¡Œé è¨­è¡Œç‚º (è·³è½‰åˆ° AccessDeniedPath)
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
+    });
+builder.Services.AddAuthorization();
+
+// ==========================================
+// 4.
+// ==========================================
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+//owen
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISocialService, SocialService>();
+//tim
+builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
+builder.Services.AddScoped<IContentService, ContentService>();
+//yjy
+builder.Services.AddScoped<IImageService, ImageService>();
+//qiu
+builder.Services.AddScoped<IPointLogService, PointLogService>();
+builder.Services.AddScoped<IMissionService, MissionService>();
+builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
+builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
+builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//¿ù»~³B²z
-// ¿ï¾Ü¦b¶}µoÀô¹Ò®ÉÅã¥Ü¸Ô²Óªºerror¸ê°T¡A¦pªG¬O"ªA°È"«h­n­Ë¹L¨Ó¤~¥i¥H¬İ¨ì¸Ô²Ó¸ê°T
+// ==========================================
+// 5. HTTP
+// ==========================================
+
+// 
 if (app.Environment.IsDevelopment())
 {
+  //  Model Migration
+  // AddDatabaseDeveloperPageExceptionFilte
   app.UseMigrationsEndPoint();
 }
 else
 {
   app.UseExceptionHandler("/Home/Error");
-  // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
   app.UseHsts();
 }
 
-// HTTP request pipeline configuration
-//­«¾É¡CÂsÄıHTTPºô­¶--¦Û°Ê­«¾É¦ÜHTTPSºô­¶¡A¦hs¬O¦³¥[±K¨ó©w
 app.UseHttpsRedirection();
-
-// ÅıÂsÄı¾¹¥i¥H¤U¸ü wwwroot ¸Ì­±ªºÀÉ®× (¤£µM Vue ªºµe­±·|¶]¤£¥X¨Ó)
 app.UseStaticFiles();
-
-//±Ò¥ÎUrl Routing(¤SºÙ¬°Url Rewriting)Åıºô§}¤£­n¼ÉÅS¤Ó¦h¸ê°T
 app.UseRouting();
 
-//±Ò¥ÎCORS
+// 
 app.UseCors("VueApp");
+app.UseAuthentication(); //  Cookie)
+app.UseAuthorization();  //  Role)
 
-//¨­¤ÀÅçÃÒ => ±Â¤©Åv­­
-app.UseAuthorization();
-app.UseSession();
-
+// https://localhost:xxxx/img/
+app.UseStaticFiles();
 app.MapStaticAssets();
+// 
 
-//ºô§}¦CªºrouteÅÜ¤Æ³W«h
+//
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    //¦pªG³£¨S¶ñªº¹w³]
-    //Controller©R¦W³Ì«á¤@©w­n¬OControllerµ²§À¡A¤£¯à¦³s
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
+//lin
 app.MapRazorPages()
    .WithStaticAssets();
+
+//SignalRçš„è·¯ç”± è¨­å®šèŠå¤©å®¤çš„é€£ç·šç«¯é»
+app.MapHub<ChatHub>("/chatHub");
+
 app.Run();

@@ -9,7 +9,7 @@ public partial class User
 {
     public int UserId { get; set; }
 
-    public string Account { get; set; }
+    public string Email { get; set; }
 
     public string Username { get; set; }
 
@@ -27,6 +27,10 @@ public partial class User
 
     public bool? IsActive { get; set; }
 
+    public int? RoleId { get; set; }
+
+    public int? Employeeid { get; set; }
+
     public virtual ICollection<ChatSession> ChatSession { get; set; } = new List<ChatSession>();
 
     public virtual ICollection<Content> Content { get; set; } = new List<Content>();
@@ -39,6 +43,8 @@ public partial class User
 
     public virtual ICollection<EntrustMission> EntrustMission { get; set; } = new List<EntrustMission>();
 
+    public virtual ICollection<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; } = new List<EntrustMissionPointReserve>();
+
     public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
 
     public virtual ICollection<Follow> FollowFollowee { get; set; } = new List<Follow>();
@@ -47,13 +53,25 @@ public partial class User
 
     public virtual ICollection<MissionProgress> MissionProgress { get; set; } = new List<MissionProgress>();
 
-    public virtual ICollection<Orders> Orders { get; set; } = new List<Orders>();
+    public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();
 
-    public virtual ICollection<PointDeposits> PointDeposits { get; set; } = new List<PointDeposits>();
+    public virtual ICollection<Orders> Orders { get; set; } = new List<Orders>();
 
     public virtual ICollection<PointLog> PointLog { get; set; } = new List<PointLog>();
 
+    public virtual ICollection<PointRecharge> PointRecharge { get; set; } = new List<PointRecharge>();
+
+    public virtual Role Role { get; set; }
+
+    public virtual ICollection<Shipaddress> Shipaddress { get; set; } = new List<Shipaddress>();
+
     public virtual ICollection<UserImage> UserImage { get; set; } = new List<UserImage>();
 
-    public virtual UserPointWallet UserPointWallet { get; set; }
+    public virtual ICollection<UserInventory> UserInventory { get; set; } = new List<UserInventory>();
+
+    public virtual ICollection<UserLoginlog> UserLoginlog { get; set; } = new List<UserLoginlog>();
+
+    public virtual ICollection<UserNotification> UserNotification { get; set; } = new List<UserNotification>();
+
+    public virtual UserStatus UserStatus { get; set; }
 }

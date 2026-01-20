@@ -5,7 +5,7 @@
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "IrregularWords": null,
-   "MinimumProductVersion": "2.6.1248",
+   "MinimumProductVersion": "2.6.1301",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models",
@@ -18,14 +18,6 @@
    "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
-      {
-         "Name": "[dbo].[admin]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[admin_image]",
-         "ObjectType": 0
-      },
       {
          "Name": "[dbo].[chat_message]",
          "ObjectType": 0
@@ -59,15 +51,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[entrust_mission_point_reserve]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[entrust_mission_progress]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[follow]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[image_usage_location]",
          "ObjectType": 0
       },
       {
@@ -83,6 +75,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[notifications]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[orderdetail]",
          "ObjectType": 0
       },
@@ -91,11 +87,11 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[point_deposits]",
+         "Name": "[dbo].[point_log]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[point_log]",
+         "Name": "[dbo].[point_recharge]",
          "ObjectType": 0
       },
       {
@@ -103,7 +99,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[pointchange]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[product]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[productimage]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[role]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[shipaddress]",
          "ObjectType": 0
       },
       {
@@ -119,11 +131,15 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[user_login]",
+         "Name": "[dbo].[user_inventory]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[user_point_wallet]",
+         "Name": "[dbo].[user_loginlog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[user_notification]",
          "ObjectType": 0
       },
       {

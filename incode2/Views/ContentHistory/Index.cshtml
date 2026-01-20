@@ -31,10 +31,7 @@
         @Html.DisplayNameFor(model => model.OldBody)
       </th>
       <th>
-        @Html.DisplayNameFor(model => model.Ishidden)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.EditedAt)
+        @Html.DisplayNameFor(model => model.CreatedAt)
       </th>
       <th>
         @Html.DisplayNameFor(model => model.User)
@@ -56,13 +53,10 @@
           @Html.DisplayFor(modelItem => item.OldBody)
         </td>
         <td>
-          @Html.DisplayFor(modelItem => item.Ishidden)
+          @Html.DisplayFor(modelItem => item.CreatedAt)
         </td>
         <td>
-          @Html.DisplayFor(modelItem => item.EditedAt)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.User.Account)
+                    @Html.DisplayFor(modelItem => item.User.Email)
         </td>
         <td>
           <a asp-controller="ContentHistory" asp-action="Edit" asp-route-content_history_id="@item.ContentHistoryId">Edit</a> |

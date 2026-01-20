@@ -1,0 +1,70 @@
+﻿@using incode2.ViewModels
+@model LoginViewModel
+
+@{
+    ViewBag.Title = "會員登入";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-xl-10 col-lg-12 col-md-9">
+        <div class="card o-hidden border-0 shadow-lg my-5">
+            <div class="card-body p-0">
+                <div class="row">
+                    <div class="col-lg-6 d-none d-lg-block bg-login-image"
+                         style="background: url('https://source.unsplash.com/K4mSJ7kc0As/600x800'); background-position: center; background-size: cover;">
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="p-5">
+                            <div class="text-center">
+                                <h1 class="h4 text-gray-900 mb-4">歡迎回來！</h1>
+                            </div>
+
+                            <form class="user" asp-controller="Account" asp-action="Login" method="post">
+
+                                @* 顯示錯誤訊息 (例如帳號密碼錯誤) *@
+                                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                                <div class="form-group">
+                                    <input asp-for="Email" class="form-control form-control-user"
+                                           placeholder="請輸入 Email...">
+                                    <span asp-validation-for="Email" class="text-danger ml-2"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <input asp-for="Password" class="form-control form-control-user"
+                                           placeholder="密碼">
+                                    <span asp-validation-for="Password" class="text-danger ml-2"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="custom-control custom-checkbox small">
+                                        @* 這裡預留 Checkbox，雖然 ViewModel 還沒加 RememberMe，但先做畫面沒關係 *@
+                                        <input type="checkbox" class="custom-control-input" id="customCheck">
+                                        <label class="custom-control-label" for="customCheck">記住我</label>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-user btn-block">
+                                    登入
+                                </button>
+
+                            </form>
+
+                            <hr>
+                            <div class="text-center">
+                                <a class="small" asp-action="Register">還沒有帳號？立即註冊！</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

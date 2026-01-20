@@ -51,9 +51,8 @@
           <span>會員</span>
         </a>
         <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">   
-            <a class="collapse-item" asp-area="" asp-controller="CVM" asp-action="Index">會員社群相關資料</a>
-            <a class="nav-link text-dark" asp-area="" asp-controller="AVM" asp-action="Index">會員管理</a>
+          <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item" asp-area="" asp-controller="user" asp-action="Index">會員管理</a>
           </div>
         </div>
       </li>
@@ -88,7 +87,7 @@
             <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="PointLogsDetail">會員點數查詢</a>
             <a class="collapse-item" asp-area="" asp-controller="Mission" asp-action="Index">平台任務</a>
             <a class="collapse-item" asp-area="" asp-controller="EntrustMission" asp-action="Index">委託任務</a>
-            <a class="collapse-item" asp-area="" asp-controller="PointDeposits" asp-action="Index">點數儲值</a>
+            <a class="collapse-item" asp-area="" asp-controller="PointRecharge" asp-action="Index">點數儲值</a>
         </div>
         </div>
       </li>
@@ -108,6 +107,24 @@
           </div>
         </div>
       </li>
+
+      <!-- Nav Item - Pages Collapse Menu -->
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMessage"
+            aria-expanded="true" aria-controls="collapseMessage">
+            <i class="fas fa-fw fa-cog"></i>
+            <span>聊天室</span>
+        </a>
+      <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+          <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item" asp-area="" asp-controller="ChatMessages" asp-action="Index">訊息管理</a>
+          </div>
+      </div>
+      </li>
+
+
+
+
       <!-- Nav Item - Charts -->
       @* <li class="nav-item">
                 <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
@@ -115,25 +132,10 @@
                     <span>Privacy</span>
                 </a>
             </li> *@
+      
 
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
-
-      <!-- Nav Item - Tables -->
-      <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">
-          <i class="fas fa-fw fa-table"></i>
-          <span>Register</span>
-        </a>
-      </li>
-
-      <!-- Nav Item - Tables -->
-      <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">
-          <i class="fas fa-fw fa-table"></i>
-          <span>Login</span>
-        </a>
-      </li>
 
       <!-- Sidebar Toggler (Sidebar) -->
       <div class="text-center d-none d-md-inline">
@@ -155,34 +157,7 @@
           </button>
 
           <!-- Topbar Navbar -->
-          <ul class="navbar-nav ml-auto">
-
-            <!-- Nav Item - User Information -->
-            <li class="nav-item dropdown no-arrow">
-              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <span class="mr-2 d-none d-lg-inline text-gray-600 small">admin</span>
-                <img class="img-profile rounded-circle" src="~/img/undraw_profile.svg">
-              </a>
-              <!-- Dropdown - User Information -->
-              <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                   aria-labelledby="userDropdown">
-                <a class="dropdown-item" href="#">
-                  <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                  Profile
-                </a>
-                <a class="dropdown-item" href="#">
-                  <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                  Settings
-                </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                  <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                  Logout
-                </a>
-              </div>
-            </li>
-          </ul>
+          <partial name="_LoginPartial" />
         </nav>
 
         <!-- 內容 -->
@@ -212,24 +187,29 @@
   </a>
 
   <!-- Logout Modal-->
-  <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-       aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">×</span>
-          </button>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">確定要登出嗎?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">若您準備好結束目前的連線，請點選下方的「登出」。</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+
+                    @* 修改這裡：改成 Form 表單提交 *@
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="btn btn-primary">登出</button>
+                    </form>
+
+                </div>
+            </div>
         </div>
-        <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-primary" href="#">Logout</a>
-        </div>
-      </div>
     </div>
-  </div>
 
   <!-- Bootstrap core JavaScript-->
   <script src="~/vendor/jquery/jquery.min.js"></script>

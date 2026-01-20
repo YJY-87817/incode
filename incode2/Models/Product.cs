@@ -2,7 +2,6 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace incode2.Models;
 
@@ -31,4 +30,8 @@ public partial class Product
     public bool OnSale { get; set; }
 
     public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
+
+    public virtual ICollection<Pointchange> Pointchange { get; set; } = new List<Pointchange>();
+
+    public virtual ICollection<Productimage> Productimage { get; set; } = new List<Productimage>();
 }
