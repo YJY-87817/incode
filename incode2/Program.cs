@@ -1,9 +1,12 @@
 using incode2.Models;
 using incode2.Services;
-using incode2.Services.user;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using incode2.Hubs;
+using incode2.Services.Point;
+using incode2.Services.Users;
+using incode2.Services.Contents;
+using incode2.Services.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 
