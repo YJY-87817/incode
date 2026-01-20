@@ -1,4 +1,6 @@
 ﻿using incode2.Dtos;
+using incode2.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using incode2.Services.Contents;
 
@@ -72,31 +74,38 @@ namespace incode2.ApiControllers.Content
     /// Request Body:
     /// {
     ///   "interactionCategoryId": 1,  // like
-    ///   "contentId": 5,
-    ///   "userId": 10
+    ///   "contentId": 5
     /// }
     /// 
     /// 範例:
     /// POST https://localhost:7190/api/contentinteractionapi
     /// </summary>
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> AddOrUpdateInteraction([FromBody] CreateContentInteractionDto dto)
-    //[FromBody]是ASP.NET Core 的參數綁定屬性，告訴框架「要從 HTTP 請求的哪個部分取值」，dto 會從 Request Body 的 JSON 反序列化而來5
     {
-      //確認[FromBody]是否符合dto
-      if (!ModelState.IsValid) { return BadRequest(ModelState); }
-      //確認dto內​各​項value​是否​符合自訂規​則(​都​大於0)
-      if (dto.ContentId <= 0 || dto.UserId <= 0 || dto.InteractionCategoryId <= 0)
-      { return BadRequest(new { message = "ContentId、UserId 和 InteractionCategoryId 必須大於 0" }); }
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      // 從 Token/Claims 中取得當前使用者 ID
+      var userId = User.GetId();
+      if (userId == 0)
+        return Unauthorized(new { message = "無法取得使用者ID" });
+
+      // 驗證 ContentId 和 InteractionCategoryId
+      if (dto.ContentId <= 0 || dto.InteractionCategoryId <= 0)
+        return BadRequest(new { message = "ContentId 和 InteractionCategoryId 必須大於 0" });
 
       try
       {
-        var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
+        // 設定 userId，確保使用者只能互動自己的操作
+        dto.UserId = userId;
         
-        //回傳新增互動或是移除互動
+        var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
+
+        // 回傳新增互動或是移除互動
         if (result == null)
         {
-          // 互動已被移除
           return Ok(new
           {
             message = "互動已移除",
@@ -106,7 +115,6 @@ namespace incode2.ApiControllers.Content
         }
         else
         {
-          // 互動已被新增或更新
           return Ok(new
           {
             message = "互動已新增或更新",
@@ -117,7 +125,7 @@ namespace incode2.ApiControllers.Content
       }
       catch (Exception ex)
       {
-        return BadRequest(new { message = ex.Message });
+        return StatusCode(500, new { message = ex.Message });
       }
     }
 
