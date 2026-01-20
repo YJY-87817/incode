@@ -157,7 +157,7 @@ onUnmounted(() => {
               class="btn bg-white text-dark"
               @click="
                 authStore.login();
-                goToBasic;
+                goToBasic();
               "
             >
               <span class="text-success text-gradient font-weight-bold">
