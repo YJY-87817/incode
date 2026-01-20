@@ -15,9 +15,20 @@ const props = defineProps({
     color: String,
     label: String,
     default: () => ({
-      route: "/signin",
+      route: "/login",
       color: "bg-gradient-success",
       label: "登入會員",
+    }),
+  },
+  action1: {
+    type: Object,
+    route: String,
+    color: String,
+    label: String,
+    default: () => ({
+      route: "/",
+      color: "bg-gradient-success",
+      label: "登出會員",
     }),
   },
   transparent: {
@@ -86,7 +97,7 @@ watch(
     } else {
       textDark.value = false;
     }
-  },
+  }
 );
 </script>
 
@@ -889,6 +900,14 @@ watch(
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
           <li class="nav-item">
+            <!-- <button>
+              <RouterLink
+                class="dropdown-item ps-3 border-radius-md mb-1"
+                :to="{ name: 'login' }"
+              >
+              </RouterLink>
+              登入會員
+            </button> -->
             <a
               :href="action.route"
               class="btn btn-sm mb-0"
@@ -896,7 +915,16 @@ watch(
               onclick="smoothToPricing('pricing-soft-ui')"
               >{{ action.label }}</a
             >
+            <!-- owen_實際還沒有功能 -->
+            <!-- <a
+              :href="action1.route"
+              class="btn btn-sm mb-0"
+              :class="action.color"
+              onclick="smoothToPricing('pricing-soft-ui')"
+              >{{ action1.label }}</a
+            > -->
           </li>
+
           <!-- 登入按鈕 -->
         </ul>
       </div>
