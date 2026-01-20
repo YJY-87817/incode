@@ -145,7 +145,7 @@
               <h1>~~~</h1>
             </div>
             <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button type="submit" class="btn bg-white text-dark" @click="authStore.login();goToBasic">
+            <button type="submit" class="btn bg-white text-dark" @click="authStore.login(); goToBasic()">
               <span class="text-success text-gradient font-weight-bold">
                 登入
               </span>
