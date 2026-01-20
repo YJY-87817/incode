@@ -13,6 +13,12 @@ public partial class InteractionCategory
 
     public string Description { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public int IsActive { get; set; }
+
     public virtual ICollection<ContentInteraction> ContentInteraction { get; set; } = new List<ContentInteraction>();
 
     public virtual ICollection<ContentNotification> ContentNotification { get; set; } = new List<ContentNotification>();

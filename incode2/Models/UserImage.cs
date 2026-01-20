@@ -13,15 +13,13 @@ public partial class UserImage
 
     public string ImageUrl { get; set; }
 
-    public int UsageLocation { get; set; }
-
     public string Caption { get; set; }
 
     public int? DisplayOrder { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual ImageUsageLocation UsageLocationNavigation { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual User User { get; set; }
 }

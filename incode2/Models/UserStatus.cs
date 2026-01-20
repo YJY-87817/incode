@@ -7,15 +7,13 @@ namespace incode2.Models;
 
 public partial class UserStatus
 {
-    public int? UserId { get; set; }
+    public int UserId { get; set; }
 
     public int? Experience { get; set; }
 
     public int? Rank { get; set; }
 
-    public int? ItemId { get; set; }
-
-    public int? Quantity { get; set; }
+    public int? Points { get; set; }
 
     public virtual User User { get; set; }
 }

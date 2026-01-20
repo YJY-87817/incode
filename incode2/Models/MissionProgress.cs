@@ -15,6 +15,8 @@ public partial class MissionProgress
 
     public int CurrentCount { get; set; }
 
+    public string Status { get; set; }
+
     public DateTime? AcceptedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }

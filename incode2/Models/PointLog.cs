@@ -13,13 +13,13 @@ public partial class PointLog
 
     public string SourceType { get; set; }
 
-    public int SourceId { get; set; }
+    public int? SourceId { get; set; }
 
     public int PointTypeDefinitionId { get; set; }
 
     public int ChangeAmount { get; set; }
 
-    public int BalanceAfter { get; set; }
+    public string Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

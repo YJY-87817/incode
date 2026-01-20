@@ -17,6 +17,8 @@ public partial class ContentInteraction
 
     public DateTime? CreatedAt { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual InteractionCategory Category { get; set; }
 
     public virtual Content Content { get; set; }

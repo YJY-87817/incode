@@ -7,6 +7,7 @@ namespace incode2.Models
     public incodedatabaseContext() { }
 
     //以下提供新增物件New方法(不在controller, view時)
+    //OnConfiguring是DbContext的虛擬方法，用來設定資料庫連線與提供者
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
       if (!optionsBuilder.IsConfigured)

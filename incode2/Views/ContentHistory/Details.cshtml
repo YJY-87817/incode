@@ -23,16 +23,10 @@
       @Html.DisplayFor(model => model.OldBody)
     </dd>
     <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Ishidden)
+      @Html.DisplayNameFor(model => model.CreatedAt)
     </dt>
     <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Ishidden)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.EditedAt)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.EditedAt)
+      @Html.DisplayFor(model => model.CreatedAt)
     </dd>
     <dt class="col-sm-2">
       @Html.DisplayNameFor(model => model.Content)
@@ -44,7 +38,7 @@
       @Html.DisplayNameFor(model => model.User)
     </dt>
     <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.User.Account)
+            @Html.DisplayFor(model => model.User.Email)
     </dd>
   </dl>
 </div>

@@ -23,6 +23,8 @@ public partial class Mission
 
     public string ResetType { get; set; }
 
+    public bool IsActive { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public virtual ICollection<MissionProgress> MissionProgress { get; set; } = new List<MissionProgress>();

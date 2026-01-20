@@ -4,81 +4,127 @@
     ViewData["Title"] = "商品管理";
 }
 
-<h2>商品修改</h2>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Index")">商品列表</a></li>
+                    <li class="breadcrumb-item active">修改商品</li>
+                </ol>
+            </nav>
 
-<div class="col-6">
-    <form asp-action="Edit" method="post" enctype="multipart/form-data">
-        <input type="hidden" asp-for="ProductId" />
-        <input type="hidden" asp-for="ImageName" />
-        <div class="mb-3">
-            <label label asp-for="Name" class="form-label fw-bold">商品名稱:</label>
-            <input asp-for="Name" class="form-control" required>
-        </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning py-3">
+                    <h4 class="mb-0 fs-5 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>商品修改</h4>
+                </div>
 
-        <div class="mb-3">
-            <label asp-for="Description" class="form-label fw-bold">商品描述:</label>
-            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-        </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="ProductId" />
+                        <input type="hidden" asp-for="ImageName" />
+                        <input type="hidden" asp-for="CreatedAt" />
 
-        <div class="mb-3">
-            <<label class="form-label fw-bold">目前圖片</label><br />
-            @if (!string.IsNullOrEmpty(Model.ImageName))
-            {
-                <img src="~/img/product/@Model.ImageName" id="imagePreview" style="max-width: 200px;" class="mb-2 img-thumbnail" />
-            }
-            <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
-            <small class="text-muted">若不更換圖片請留空</small>
-        </div>
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="mb-3">
+                                    <label asp-for="Name" class="form-label fw-bold">商品名稱</label>
+                                    <input asp-for="Name" class="form-control" required>
+                                </div>
 
-        <div class="mb-3">
-            <label asp-for="Type" class="form-label fw-bold">類別</label>
-            <select asp-for="Type" class="form-select">
-                <option value="兌換票券">兌換票券</option>
-                <option value="電影周邊">電影周邊</option>
-                <option value="造型">造型</option>
-                <option value="其他">其他</option>
-            </select>
-        </div>
+                                <div class="mb-3">
+                                    <label asp-for="Description" class="form-label fw-bold">商品描述</label>
+                                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                                </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label asp-for="Point" class="form-label fw-bold">所需點數</label>
-                <input asp-for="Point" type="number" class="form-control" min="0">
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Type" class="form-label fw-bold">商品類別</label>
+                                        <select asp-for="Type" class="form-select border-warning-subtle">
+                                            <option value="兌換票券">兌換票券</option>
+                                            <option value="電影周邊">電影周邊</option>
+                                            <option value="造型">造型</option>
+                                            <option value="其他">其他</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold text-primary">更換圖片</label>
+                                        <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
+                                        <small class="text-muted">若不更換請留空</small>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="Point" class="form-label fw-bold text-danger">所需點數</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-coin text-warning"></i></span>
+                                            <input asp-for="Point" type="number" class="form-control" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="Stock" class="form-label fw-bold text-success">庫存數量</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                                            <input asp-for="Stock" type="number" class="form-control" min="0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-light rounded mb-4">
+                                    <div class="row small text-muted">
+                                        <div class="col-6">
+                                            <label class="fw-bold mb-1">新增時間</label>
+                                            <div>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="fw-bold mb-1">最後修改</label>
+                                            <div>@Model.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5 border-start text-center">
+                                <label class="form-label fw-bold text-muted mb-3">圖片預覽</label>
+                                <div class="preview-wrapper p-2 border rounded bg-white shadow-sm mx-auto" style="width: 250px; height: 250px;">
+                                    @if (!string.IsNullOrEmpty(Model.ImageName))
+                                    {
+                                        <img src="~/img/product/@Model.ImageName" id="imagePreview" class="img-fluid rounded" style="max-height: 230px; object-fit: contain;" />
+                                    }
+                                    else
+                                    {
+                                        <img id="imagePreview" class="img-fluid rounded d-none" style="max-height: 230px; object-fit: contain;" />
+                                        <div id="noImageText" class="py-5 text-muted"><i class="bi bi-image display-4"></i><p>暫無圖片</p></div>
+                                    }
+                                </div>
+
+                                <div class="mt-4 px-4 text-start">
+                                    <div class="form-check form-switch mb-2">
+                                        <input asp-for="IsPhysical" class="form-check-input" type="checkbox">
+                                        <label class="form-check-label fw-bold" asp-for="IsPhysical">實體商品</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input asp-for="OnSale" class="form-check-input" type="checkbox">
+                                        <label asp-for="OnSale" class="form-check-label fw-bold">販售中</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-dark">
+                                <i class="bi bi-check-circle me-1"></i> 儲存修改
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">取消</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="col-md-6 mb-3">
-                <label asp-for="Stock" class="form-label fw-bold">庫存數量</label>
-                <input asp-for="Stock" type="number" class="form-control" min="0">
-            </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label asp-for="CreatedAt" class="form-label fw-bold">新增時間</label>
-                <input asp-for="CreatedAt" class="form-control bg-light" readonly type="text"
-                       value="@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")" />
-                <input type="hidden" asp-for="CreatedAt" />
-            </div>
-            <div class="col-md-6 mb-3">
-                <label asp-for="UpdatedAt" class="form-label fw-bold">最後修改時間</label>
-                <input asp-for="UpdatedAt" class="form-control bg-light" readonly type="text"
-                       value="@Model.UpdatedAt.ToString("yyyy/MM/dd HH:mm:ss")" />
-            </div>
-        </div>
-
-        <div class="mb-3 d-flex gap-4">
-            <div class="form-check">
-                <input asp-for="IsPhysical" class="form-check-input" type="checkbox">
-                <label class="form-check-label" asp-for="IsPhysical">實體商品</label>
-            </div>
-            <div class="form-check">
-                <input asp-for="OnSale" class="form-check-input" type="checkbox">
-                <label asp-for="OnSale" class="form-check-label">販售中</label>
-            </div>
-        </div>
-        <div class="d-grid gap-2 mt-4">
-            <button type="submit" class="btn btn-primary">修改商品</button>
-        </div>
-    </form>
+    </div>
 </div>
 
 @section Scripts {
@@ -88,18 +134,12 @@
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
                 reader.onload = function (e) {
-                    // 假設您要在表單上方或下方加一個 <img> 標籤來預覽
-                    // 如果沒有，可以動態插入一個
-                    let preview = document.getElementById('imagePreview');
-                    if(!preview){
-                        const img = document.createElement('img');
-                        img.id = 'imagePreview';
-                        img.style.maxWidth = '200px';
-                        img.className = 'mt-2 img-thumbnail';
-                        input.parentNode.appendChild(img);
-                        preview = img;
-                    }
+                    const preview = document.getElementById('imagePreview');
+                    const noImageText = document.getElementById('noImageText');
+
                     preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                    if (noImageText) noImageText.classList.add('d-none');
                 };
                 reader.readAsDataURL(input.files[0]);
             }
