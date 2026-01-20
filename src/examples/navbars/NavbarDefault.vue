@@ -86,7 +86,7 @@ watch(
     } else {
       textDark.value = false;
     }
-  }
+  },
 );
 </script>
 
@@ -163,14 +163,102 @@ watch(
         id="navigation"
       >
         <ul class="navbar-nav navbar-nav-hover ms-auto">
+          <!-- 任務區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
-            <RouterLink
-              :to="{ name: 'PointShop' }"
-              class="dropdown-item border-radius-md"
+            <a
+              role="button"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+              id="dropdownMenuPages"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
             >
-              <span>點數商城</span>
-            </RouterLink>
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                dashboard</i
+              >
+              任務大廳
+              <img
+                :src="getArrowColor()"
+                alt="down-arrow"
+                class="arrow ms-2 d-lg-block d-none"
+              />
+              <img
+                :src="getArrowColor()"
+                alt="down-arrow"
+                class="arrow ms-1 d-lg-none d-block ms-auto"
+              />
+            </a>
+            <div
+              class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
+              style="overflow: hidden"
+              aria-labelledby="dropdownMenuPages"
+            >
+              <div class="row d-none d-lg-block">
+                <!-- 任務 -->
+                <div class="col-12 px-4 py-2">
+                  <div class="row">
+                    <div class="position-relative">
+                      <RouterLink
+                        :to="{ name: 'point-log' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>我的點數明細</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'mytask' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>我的任務進度</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'mission' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>任務大廳</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'recharge' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>點數儲值</span>
+                      </RouterLink>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 響應式任務 -->
+              <div class="d-lg-none">
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>我的點數明細</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'mytask' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>我的任務進度</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'mission' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>任務大廳</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'recharge' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>點數儲值</span>
+                </RouterLink>
+              </div>
+            </div>
           </li>
+          <!-- 點數商城區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
               role="button"
@@ -200,17 +288,19 @@ watch(
             </a>
             <div
               class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
+              style="overflow: hidden"
               aria-labelledby="dropdownMenuPages"
             >
               <div class="row d-none d-lg-block">
+                <!-- 點數商城 -->
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <div
+                      <!-- <div
                         class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
                       >
                         點數商城
-                      </div>
+                      </div> -->
                       <RouterLink
                         :to="{ name: 'PointShop' }"
                         class="dropdown-item border-radius-md"
@@ -233,73 +323,30 @@ watch(
                   </div>
                 </div>
               </div>
+              <!-- 響應式點數商城 -->
               <div class="d-lg-none">
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0"
-                >
-                  Landing Pages
-                </div>
                 <RouterLink
-                  :to="{ name: 'about' }"
+                  :to="{ name: 'PointShop' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>About Us</span>
+                  <span>點數商城</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'contactus' }"
+                  :to="{ name: 'Order' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>Contact Us</span>
+                  <span>我的訂單</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'author' }"
+                  :to="{ name: 'Checkout' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>Author</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  Account
-                </div>
-
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  點數
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  任務
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  儲值
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
+                  <span>購物車</span>
                 </RouterLink>
               </div>
             </div>
           </li>
-
+          <!-- 討論區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
               role="button"
@@ -329,17 +376,13 @@ watch(
             </a>
             <div
               class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
+              style="overflow: hidden"
               aria-labelledby="dropdownMenuPages"
             >
               <div class="row d-none d-lg-block">
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
-                      >
-                        Landing Pages
-                      </div>
                       <RouterLink
                         :to="{ name: 'forum' }"
                         class="dropdown-item border-radius-md"
@@ -353,13 +396,6 @@ watch(
                         <span>test</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'recharge' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>點數儲值</span>
-                      </RouterLink>
-
-                      <RouterLink
                         :to="{ name: 'contactus' }"
                         class="dropdown-item border-radius-md"
                       >
@@ -371,59 +407,23 @@ watch(
                       >
                         <span>Author</span>
                       </RouterLink>
-                      <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                      >
-                        Account
-                      </div>
-                      <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                      >
-                        點數
-                      </div>
-                      <RouterLink
-                        :to="{ name: 'point-log' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>1</span>
-                      </RouterLink>
-                      <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                      >
-                        任務
-                      </div>
-                      <RouterLink
-                        :to="{ name: 'point-log' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>1</span>
-                      </RouterLink>
-                      <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                      >
-                        儲值
-                      </div>
-                      <RouterLink
-                        :to="{ name: 'point-log' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>1</span>
-                      </RouterLink>
                     </div>
                   </div>
                 </div>
               </div>
+              <!-- 響應式討論區 -->
               <div class="d-lg-none">
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0"
-                >
-                  Landing Pages
-                </div>
                 <RouterLink
-                  :to="{ name: 'about' }"
+                  :to="{ name: 'forum' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>About Us</span>
+                  <span>討論區</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'test' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>test</span>
                 </RouterLink>
                 <RouterLink
                   :to="{ name: 'contactus' }"
@@ -436,44 +436,6 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>Author</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  Account
-                </div>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  點數
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  任務
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
-                </RouterLink>
-                <div
-                  class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-0 mt-3"
-                >
-                  儲值
-                </div>
-                <RouterLink
-                  :to="{ name: 'point-log' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>1</span>
                 </RouterLink>
               </div>
             </div>
