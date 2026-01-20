@@ -1,4 +1,4 @@
-﻿using incode2.DTO;
+﻿using incode2.Dtos.PointShop;
 using incode2.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;

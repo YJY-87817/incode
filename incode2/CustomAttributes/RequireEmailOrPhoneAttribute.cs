@@ -1,4 +1,4 @@
-﻿using CoreMVCValidation.ViewModels;
+﻿using incode2.ViewModels;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
 

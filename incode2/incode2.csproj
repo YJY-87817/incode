@@ -9,9 +9,13 @@
 
   <ItemGroup>
     <Compile Remove="Data\**" />
+    <Compile Remove="Migrations\**" />
     <Content Remove="Data\**" />
+    <Content Remove="Migrations\**" />
     <EmbeddedResource Remove="Data\**" />
+    <EmbeddedResource Remove="Migrations\**" />
     <None Remove="Data\**" />
+    <None Remove="Migrations\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,10 +45,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="9.0.11" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.12" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>

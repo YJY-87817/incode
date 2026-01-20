@@ -1,5 +1,5 @@
-﻿using incode2.DTO;
-using incode2.DTO.PointShop;
+﻿using incode2.Dtos;
+using incode2.Dtos.PointShop;
 using incode2.Models;
 using incode2.Partials;
 using Microsoft.AspNetCore.Cors;
