@@ -73,6 +73,7 @@ namespace incode2.Services.Contents
       .FirstOrDefaultAsync();
     }
 
+    //發文
     public async Task<Content> CreateContent(CreateContentDto dto)
     {
       var content = new Content
