@@ -6,7 +6,8 @@ import { useForumStore } from "@/stores/forumStore";
 const apiBaseUrl = "https://localhost:7190/api";
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
-  timeout: 10000,
+  // 在這裡改timeout時間
+  timeout: 50000,
   headers: {
     "Content-Type": "application/json",
   },
