@@ -10,11 +10,11 @@ namespace incode2.ApiControllers.user
     [ApiController]
     [Authorize]  //登入後才能使用
 
-    public class SocialController : ControllerBase
+    public class SocialApiController : ControllerBase
     {
         private readonly ISocialService _socialService;
 
-        public SocialController(ISocialService SocialService)
+        public SocialApiController(ISocialService SocialService)
         {
             _socialService = SocialService;
         }
