@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
+import { useCartStore } from "@/views/PointShop/services/cartStore";
 import productService from "@/views/PointShop/services/productService";
 import FilterPanel from "@/views/PointShop/componets/FilterPanel.vue";
 import ProductGrid from "@/views/PointShop/componets/ProductGrid.vue";
@@ -9,7 +10,7 @@ import Cart from "@/views/PointShop/componets/Cart.vue";
 
 const products = ref([]);
 const loading = ref(true);
-const showFilterPanel = ref(false);
+const CartNow = useCartStore();
 
 // 篩選狀態
 const filters = ref({
@@ -94,6 +95,12 @@ const handleFilterUpdate = (newFilters) => {
   filters.value = newFilters;
 };
 
+function btnclick() {
+  CartNow.cartItems.forEach((element) => {
+    console.log(element);
+  });
+}
+
 onMounted(() => {
   fetchProducts();
 });
@@ -138,9 +145,11 @@ onMounted(() => {
     class="btn position-fixed start-0 top-50 translate-middle-y me-3"
     data-bs-toggle="offcanvas"
     data-bs-target="#cartOffcanvas"
+    @click="btnclick"
   >
     <i class="bi bi-cart-dash-fill h1"></i>
   </button>
+
   <Cart />
   <DefaultFooter />
 </template>
