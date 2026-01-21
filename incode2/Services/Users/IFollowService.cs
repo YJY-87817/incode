@@ -2,7 +2,7 @@
 
 namespace incode2.Services.Users
 {
-    public interface ISocialService
+    public interface IFollowService
     {
         // 搜尋使用者 (排除自己，並標記是否已追蹤)
         Task<List<FollowingUserDto>> SearchUsersAsync(string keyword, int currentUserId);
