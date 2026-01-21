@@ -1,5 +1,6 @@
 ﻿using incode2.Dtos;
 using incode2.Models;
+using incode2.Partials;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Contents
@@ -73,7 +74,7 @@ namespace incode2.Services.Contents
       .FirstOrDefaultAsync();
     }
 
-    //發文
+    //創立貼文
     public async Task<Content> CreateContent(CreateContentDto dto)
     {
       var content = new Content
