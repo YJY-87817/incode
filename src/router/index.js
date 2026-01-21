@@ -155,12 +155,12 @@ const router = createRouter({
     {
       path: "/forum",
       name: "forum",
-      component: () => import("@/views/forum/forum.vue"),
+      component: () => import("@/views/Contents/forum.vue"),
     },
     {
       path: "/test",
       name: "test",
-      component: () => import("@/views/forum/test.vue"),
+      component: () => import("@/views/Contents/test.vue"),
     },
     // 以上是tim的路由
 
@@ -229,7 +229,7 @@ const router = createRouter({
     {
       path: "/thread/:id",
       name: "thread-detail",
-      component: () => import("@/views/forum/ThreadDetail.vue"),
+      component: () => import("@/views/Contents/ThreadDetail.vue"),
     },
     // yjy 以上
   ],

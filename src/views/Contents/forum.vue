@@ -5,8 +5,8 @@ import { useForumStore } from "@/stores/forumStore";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import NewTopicModal from "@/components/forum/NewTopicModal.vue";
-import InteractionButtons from "@/components/forum/InteractionButtons.vue";
+import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
+import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 
 const forumStore = useForumStore();
 

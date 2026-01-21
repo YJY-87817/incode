@@ -58,7 +58,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import ForumSearchBar from "@/components/forum/ForumSearchBar.vue";
+import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 import apiClient from "@/api/request.js";
 
 const topics = ref([]);
