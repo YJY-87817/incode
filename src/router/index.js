@@ -224,7 +224,7 @@ const router = createRouter({
     {
       path: "/forum/list",
       name: "forum-list",
-      component: () => import("@/views/forum/ForumList.vue"),
+      component: () => import("@/views/Contents/ForumList.vue"),
     },
     {
       path: "/thread/:id",
