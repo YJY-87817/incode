@@ -17,6 +17,15 @@
 /*ertrtre*/
 import { RouterView } from "vue-router";
 import ChatWidget from "@/components/ChatWidget.vue";
+// 網頁重新整理時，執行一次身分恢復
+import { onMounted } from "vue";
+import { useAuthStore } from "@/stores/user/auth";
+
+const authStore = useAuthStore();
+
+onMounted(() => {
+  authStore.checkLoginStatus();
+});
 </script>
 
 <template>

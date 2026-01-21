@@ -1,36 +1,17 @@
 <script setup>
 import { RouterLink } from "vue-router";
 import { ref, watch } from "vue";
-import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 
-// images
+import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
+import UserIndex from "@/views/user/UserIndex.vue";
+
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
 import downArrow from "@/assets/img/down-arrow.svg";
 import DownArrWhite from "@/assets/img/down-arrow-white.svg";
+import { useAuthStore } from "@/stores/user/auth";
+const authStore = useAuthStore();
 
 const props = defineProps({
-  action: {
-    type: Object,
-    route: String,
-    color: String,
-    label: String,
-    default: () => ({
-      route: "/login",
-      color: "bg-gradient-success",
-      label: "登入會員",
-    }),
-  },
-  action1: {
-    type: Object,
-    route: String,
-    color: String,
-    label: String,
-    default: () => ({
-      route: "/",
-      color: "bg-gradient-success",
-      label: "登出會員",
-    }),
-  },
   transparent: {
     type: Boolean,
     default: false,
@@ -149,26 +130,12 @@ watch(
       >
         Material Design
       </RouterLink>
-      <a
-        href="https://www.creative-tim.com/product/vue-material-kit-pro"
+      <RouterLink
+        to="/login"
         class="btn btn-sm bg-gradient-success mb-0 ms-auto d-lg-none d-block"
-        >登入</a
       >
-      <button
-        class="navbar-toggler shadow-none ms-2"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navigation"
-        aria-controls="navigation"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon mt-2">
-          <span class="navbar-toggler-bar bar1"></span>
-          <span class="navbar-toggler-bar bar2"></span>
-          <span class="navbar-toggler-bar bar3"></span>
-        </span>
-      </button>
+        登入
+      </RouterLink>
       <div
         class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0"
         id="navigation"
@@ -454,7 +421,7 @@ watch(
           <!-- owen -->
           <li class="nav-link ps-2 d-flex cursor-pointer align-items-center">
             <RouterLink
-              :to="{ name: 'user' }"
+              :to="{ name: 'UserIndex' }"
               class="dropdown-item border-radius-md"
             >
               <i
@@ -899,33 +866,24 @@ watch(
           </li>
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
+          <!--手機版登入 -->
           <li class="nav-item">
-            <!-- <button>
-              <RouterLink
-                class="dropdown-item ps-3 border-radius-md mb-1"
-                :to="{ name: 'login' }"
-              >
-              </RouterLink>
-              登入會員
-            </button> -->
-            <a
-              :href="action.route"
-              class="btn btn-sm mb-0"
-              :class="action.color"
-              onclick="smoothToPricing('pricing-soft-ui')"
-              >{{ action.label }}</a
+            <RouterLink
+              v-if="!authStore.isLoggedIn"
+              to="/login"
+              class="btn btn-sm bg-gradient-success mb-0"
             >
-            <!-- owen_實際還沒有功能 -->
-            <!-- <a
-              :href="action1.route"
-              class="btn btn-sm mb-0"
-              :class="action.color"
-              onclick="smoothToPricing('pricing-soft-ui')"
-              >{{ action1.label }}</a
-            > -->
-          </li>
+              登入會員
+            </RouterLink>
 
-          <!-- 登入按鈕 -->
+            <button
+              v-else
+              class="btn btn-sm bg-gradient-danger mb-0"
+              @click="authStore.logout()"
+            >
+              登出
+            </button>
+          </li>
         </ul>
       </div>
     </div>

@@ -1,0 +1,9 @@
+<template>
+  <h1>我的收藏</h1>
+  <h2>收藏的文章與作品</h2>
+  <ul>
+    <li>文章A</li>
+    <li>作品B</li>
+    <li>文章C</li>
+  </ul>
+</template>

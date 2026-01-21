@@ -3,7 +3,14 @@ import PresentationView from "../views/Presentation/PresentationView.vue";
 import AboutView from "../views/LandingPages/AboutUs/AboutView.vue";
 import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
-import Login from "@/views/user/login.vue";
+// owen
+import Register from "@/views/user/Register.vue";
+import Login from "@/views/user/Login.vue";
+import UserIndex from "@/views/user/UserIndex.vue";
+import UserProfile from"@/views/user/UserProfile.vue"
+import UserSettings from"@/views/user/UserSettings.vue"
+import UserCollections from"@/views/user/UserCollections.vue"
+// owen
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
 import NavigationNavbars from "../layouts/sections/navigation/navbars/NavbarsView.vue";
@@ -164,21 +171,43 @@ const router = createRouter({
     },
     // 以上是tim的路由
 
-    // owen
-    {
-      path: "/user",
-      name: "user",
-      component: () => import("@/views/user/userindex.vue"),
-    },
+    // owen    
     {
       path: "/register",
-      name: "register",
-      component: () => import("@/views/user/register.vue"),
+      name: "Register",
+       component: Register,
     },
     {
       path: "/login",
-      name: "login",
+      name: "Login",
       component: Login,
+    },
+    {
+      path: "/userindex",
+      name: "UserIndex",
+      component: UserIndex,
+      children: [
+        { 
+          path: "test", 
+          name: "usertest",
+          component:  () => import("@/views/user/usertest.vue"),
+        }, 
+        { 
+          path: "userprofile", 
+          name: "UserProfile",
+          component: UserProfile,
+        }, 
+        {
+          path: "usersettings",
+          name: "UserSettings",
+          component: UserSettings,
+        },
+        {
+          path: "usercollections",
+          name: "UserCollections",
+          component: UserCollections,
+        }
+      ]
     },
     // owen
 
