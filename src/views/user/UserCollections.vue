@@ -15,8 +15,19 @@
             <v-card-subtitle> 類型 </v-card-subtitle>
           </v-card-item>
           <v-card-text> 介紹 </v-card-text>
+          <!-- 跳轉到該文章 <v-card-actions>
+            <v-btn text color="primary">查看文章</v-btn>-->
         </v-card>
       </v-col>
     </v-row>
   </v-container>
+  <!-- 如果文章被刪除
+   <v-card
+  class="mx-auto"
+  max-width="344"
+  subtitle="The card stays disabled"
+  title="Disabled card"
+  disabled
+  link
+></v-card> -->
 </template>
