@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using incode2.Extensions;
 
 namespace incode2.ApiControllers.user
 {
@@ -18,17 +19,7 @@ namespace incode2.ApiControllers.user
         {
             _socialService = SocialService;
         }
-
-        // 取得當前登入者 ID 的輔助方法
-        private int GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (idClaim != null && int.TryParse(idClaim.Value, out int userId))
-            {
-                return userId;
-            }
-            return 0;
-        }
+               
 
         // GET: api/Social/search?keyword=小明
         [HttpGet("search")]
@@ -36,7 +27,7 @@ namespace incode2.ApiControllers.user
         {
             try
             {
-                int userId = GetCurrentUserId();
+                int userId = User.GetId();
                 if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
                                
                 var result = await _socialService.SearchUsersAsync(keyword, userId);
@@ -48,11 +39,11 @@ namespace incode2.ApiControllers.user
             }
         }
 
-        // GET: api/Social/following 看我自己的關注名單
+        // GET: SocialApi/following 看我自己的關注名單
         [HttpGet("following")]
         public async Task<IActionResult> GetFollowing()
         {
-            int userId = GetCurrentUserId();
+            int userId = User.GetId();
             if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
 
             var result = await _socialService.GetMyFollowingListAsync(userId);
@@ -75,7 +66,7 @@ namespace incode2.ApiControllers.user
         {
             try
             {
-                int userId = GetCurrentUserId();
+                int userId = User.GetId();
                 if (userId == 0) return Unauthorized(new { message = "無法識別使用者身分" });
 
                 await _socialService.UnfollowUserAsync(userId, targetId);
