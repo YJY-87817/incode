@@ -41,9 +41,11 @@ namespace incode2.ApiControllers.Content
     //[Authorize]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
-      var userId = User.Claims.FirstOrDefault().Value;
+      //這行可以取得當下登入的user所有資料
+      var userId = int.Parse(User.Claims.FirstOrDefault().Value);
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
+      dto.UserId = userId;
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
     }
