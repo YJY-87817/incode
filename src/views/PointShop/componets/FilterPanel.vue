@@ -35,102 +35,140 @@ const handleToggleCategory = (categoryName) => {
 const handleResetFilters = () => {
   emit("reset-filters");
 };
+
+import { onMounted, ref } from "vue";
+// 如果您有引入 bootstrap JS
+// import { Collapse } from 'bootstrap';
+
+const filterCollapseRef = ref(null);
+const filterHeaderRef = ref(null);
+
+onMounted(() => {
+  // 設定斷點，768px 對應 Bootstrap 的 md
+  const mdBreakpoint = 768;
+
+  // 檢查目前視窗寬度是否大於等於 md
+  if (window.innerWidth >= mdBreakpoint) {
+    // 情境 A：單純操作 Class (最簡單，不需引入 Bootstrap JS 物件)
+    if (filterCollapseRef.value && filterHeaderRef.value) {
+      // 1. 內容區塊加上 'show' 讓它顯示
+      filterCollapseRef.value.classList.add("show");
+
+      // 2. Header 去除 'collapsed' (這是 Bootstrap 控制箭頭旋轉的 class)
+      filterHeaderRef.value.classList.remove("collapsed");
+
+      // 3. 更新無障礙屬性
+      filterHeaderRef.value.setAttribute("aria-expanded", "true");
+    }
+
+    // 情境 B：如果您專案中有完整的 Bootstrap JS 實例 (更標準的做法)
+    /*
+    const bsCollapse = new Collapse(filterCollapseRef.value, {
+      toggle: false // 初始化但不切換狀態
+    });
+    bsCollapse.show(); // 強制展開
+    */
+  }
+});
 </script>
 
 <template>
   <div class="card shadow-sm border-0 sticky-top mb-5" style="top: 80px">
-    <div class="card-header bg-success text-white">
+    <div
+      ref="filterHeaderRef"
+      class="card-header bg-success text-white d-flex justify-content-between align-items-center collapsed"
+      data-bs-toggle="collapse"
+      data-bs-target="#filterCollapse"
+      aria-expanded="false"
+      aria-controls="filterCollapse"
+      style="cursor: pointer"
+    >
       <h6 class="mb-0"><i class="bi bi-funnel"></i> 篩選商品</h6>
+      <i class="bi bi-chevron-down transition-icon"></i>
     </div>
 
-    <div class="card-body">
-      <!-- 價格篩選 -->
-      <div class="mb-4">
-        <label class="form-label fw-bold">
-          <i class="bi bi-tag"></i> 價格範圍
-        </label>
-        <div class="row g-2 mb-3">
-          <div class="col-6">
-            <input
-              :value="filters.minPrice"
-              @input="updateMinPrice($event.target.value)"
-              type="number"
-              class="form-control form-control-sm"
-              placeholder="最低點數"
-            />
+    <div class="collapse" id="filterCollapse" ref="filterCollapseRef">
+      <div class="card-body">
+        <div class="mb-4 border-bottom pb-3">
+          <label class="form-label fw-bold">
+            <i class="bi bi-tag"></i> 價格範圍
+          </label>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <input
+                :value="filters.minPrice"
+                @input="updateMinPrice($event.target.value)"
+                type="number"
+                class="form-control form-control-sm border"
+                placeholder="最低點數"
+              />
+            </div>
+            <div class="col-6">
+              <input
+                :value="filters.maxPrice"
+                @input="updateMaxPrice($event.target.value)"
+                type="number"
+                class="form-control form-control-sm border"
+                placeholder="最高點數"
+              />
+            </div>
           </div>
-          <div class="col-6">
-            <input
-              :value="filters.maxPrice"
-              @input="updateMaxPrice($event.target.value)"
-              type="number"
-              class="form-control form-control-sm"
-              placeholder="最高點數"
-            />
+          <div class="text-center small">
+            {{ filters.minPrice }} ~ {{ filters.maxPrice }} 點
           </div>
         </div>
-        <div class="text-muted small">
-          {{ filters.minPrice }} ~ {{ filters.maxPrice }} 點
+
+        <div class="mb-4 border-bottom pb-3">
+          <label class="form-label fw-bold">
+            <i class="bi bi-list"></i> 商品類別
+          </label>
+          <div class="form-check-list">
+            <div
+              v-for="category in categories"
+              :key="category.id"
+              class="form-check form-check-custom mb-2"
+            >
+              <input
+                :id="`category-${category.id}`"
+                type="checkbox"
+                class="form-check-input"
+                :checked="filters.categories.includes(category.name)"
+                @change="handleToggleCategory(category.name)"
+              />
+              <label :for="`category-${category.id}`" class="form-check-label">
+                {{ category.name }}
+              </label>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <hr />
-
-      <!-- 類別篩選 -->
-      <div class="mb-4">
-        <label class="form-label fw-bold">
-          <i class="bi bi-list"></i> 商品類別
-        </label>
-        <div class="form-check-list">
-          <div
-            v-for="category in categories"
-            :key="category.id"
-            class="form-check form-check-custom mb-2"
-          >
+        <div class="mb-4">
+          <label class="form-label fw-bold">
+            <i class="bi bi-box-seam"></i> 庫存狀態
+          </label>
+          <div class="form-check">
             <input
-              :id="`category-${category.id}`"
+              id="inStock"
+              :checked="filters.inStock"
+              @change="updateInStock($event.target.checked)"
               type="checkbox"
               class="form-check-input"
-              :checked="filters.categories.includes(category.name)"
-              @change="handleToggleCategory(category.name)"
             />
-            <label :for="`category-${category.id}`" class="form-check-label">
-              {{ category.name }}
+            <label for="inStock" class="form-check-label">
+              只顯示有庫存的商品
             </label>
           </div>
         </div>
+
+        <hr />
+
+        <button
+          @click="handleResetFilters"
+          class="btn btn-outline-secondary w-100"
+        >
+          <i class="bi bi-arrow-counterclockwise"></i> 重設篩選
+        </button>
       </div>
-
-      <hr />
-
-      <!-- 庫存篩選 -->
-      <div class="mb-4">
-        <label class="form-label fw-bold">
-          <i class="bi bi-box-seam"></i> 庫存狀態
-        </label>
-        <div class="form-check">
-          <input
-            id="inStock"
-            :checked="filters.inStock"
-            @change="updateInStock($event.target.checked)"
-            type="checkbox"
-            class="form-check-input"
-          />
-          <label for="inStock" class="form-check-label">
-            只顯示有庫存的商品
-          </label>
-        </div>
-      </div>
-
-      <hr />
-
-      <!-- 重置按鈕 -->
-      <button
-        @click="handleResetFilters"
-        class="btn btn-outline-secondary w-100"
-      >
-        <i class="bi bi-arrow-counterclockwise"></i> 重設篩選
-      </button>
     </div>
   </div>
 </template>
@@ -153,5 +191,15 @@ const handleResetFilters = () => {
 .form-check-custom .form-check-input:checked {
   background-color: #0d6efd;
   border-color: #0d6efd;
+}
+
+/* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */
+.card-header:not(.collapsed) .bi-chevron-down {
+  transform: rotate(180deg);
+}
+
+/* 加上過渡動畫效果 */
+.bi-chevron-down {
+  transition: transform 0.3s ease;
 }
 </style>
