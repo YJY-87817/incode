@@ -2,28 +2,42 @@
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import { getOrdersByUser } from "@/Views/PointShop/services/orderapi";
-import orderlist from "@/views/PointShop/componets/OrderList.vue";
+import OrderList from "@/views/PointShop/componets/OrderList.vue";
 
-const userId = 1; // 通常從登入資訊或 Pinia / Vuex 取得
+const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
 </script>
 
 <template>
   <DefaultNavbar darkText />
+
   <div class="min-vh-100 pb-5">
-    <div class="container mt-5 mb-5">
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card border-0 bg-light shadow-sm">
-            <div class="card-body p-4">
-              <h2 class="fw-bold mb-1">點數商城</h2>
-            </div>
+    <div class="container py-5">
+      <div class="col-12 mb-4">
+        <div class="card border-0 bg-light shadow-sm">
+          <div class="card-body p-4">
+            <h2 class="fw-bold mb-1">點數商城</h2>
           </div>
         </div>
       </div>
-      <orderlist :userId="userId"></orderlist>
+
+      <OrderList :userId="userId"></OrderList>
     </div>
   </div>
+
   <DefaultFooter />
 </template>
 
-<style scoped></style>
+<style scoped>
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.bg-light) {
+  background-color: #f8f9fa !important;
+}
+
+:deep(.text-primary) {
+  color: #0d6efd !important;
+}
+
+:deep(.text-muted) {
+  color: #6c757d !important;
+}
+</style>

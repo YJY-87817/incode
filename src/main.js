@@ -11,6 +11,8 @@ import router from "./router";
 // Nucleo Icons
 import "./assets/css/nucleo-icons.css";
 import "./assets/css/nucleo-svg.css";
+// Bootstrap Icons
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 import materialKit from "./material-kit";
 import axios from "axios";

@@ -5,6 +5,7 @@ import FilterPanel from "@/views/PointShop/componets/FilterPanel.vue";
 import ProductGrid from "@/views/PointShop/componets/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import Cart from "@/views/PointShop/componets/Cart.vue";
 
 const products = ref([]);
 const loading = ref(true);
@@ -103,12 +104,10 @@ onMounted(() => {
 
   <div class="min-vh-100 pb-5">
     <div class="container mt-5 mb-5">
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card border-0 bg-light shadow-sm">
-            <div class="card-body p-4">
-              <h2 class="fw-bold mb-1">點數商城</h2>
-            </div>
+      <div class="col-12 mb-4">
+        <div class="card border-0 bg-light shadow-sm">
+          <div class="card-body p-4">
+            <h2 class="fw-bold mb-1">點數商城</h2>
           </div>
         </div>
       </div>
@@ -135,6 +134,24 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
+  <button
+    class="btn position-fixed start-0 top-50 translate-middle-y me-3"
+    data-bs-toggle="offcanvas"
+    data-bs-target="#cartOffcanvas"
+  >
+    <i class="bi bi-cart-dash-fill h1"></i>
+  </button>
+  <Cart />
   <DefaultFooter />
 </template>
+
+<style scoped>
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.bg-light) {
+  background-color: #f8f9fa !important;
+}
+
+:deep(.btn-primary) {
+  color: #0b5ed7 !important;
+}
+</style>

@@ -76,7 +76,9 @@ const handleAddToCart = () => {
 <style scoped>
 /* 讓卡片滑過時有微小的浮起效果 */
 .product-hover-effect {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
   overflow: hidden;
 }
 .product-hover-effect:hover {
@@ -129,5 +131,29 @@ const handleAddToCart = () => {
   .card-body {
     padding: 1rem !important;
   }
+}
+
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.badge.bg-primary) {
+  background-color: #0d6efd !important;
+}
+
+:deep(.text-primary) {
+  color: #0d6efd !important;
+}
+
+:deep(.btn.btn-outline-primary) {
+  color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+:deep(.btn.btn-outline-primary:hover) {
+  background-color: #0d6efd !important;
+  color: white !important;
+}
+
+:deep(.btn.btn-secondary) {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
 }
 </style>

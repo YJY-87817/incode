@@ -60,14 +60,6 @@ onMounted(() => {
       // 3. 更新無障礙屬性
       filterHeaderRef.value.setAttribute("aria-expanded", "true");
     }
-
-    // 情境 B：如果您專案中有完整的 Bootstrap JS 實例 (更標準的做法)
-    /*
-    const bsCollapse = new Collapse(filterCollapseRef.value, {
-      toggle: false // 初始化但不切換狀態
-    });
-    bsCollapse.show(); // 強制展開
-    */
   }
 });
 </script>
@@ -76,12 +68,12 @@ onMounted(() => {
   <div class="card shadow-sm border-0 sticky-top mb-5" style="top: 80px">
     <div
       ref="filterHeaderRef"
-      class="card-header bg-success text-white d-flex justify-content-between align-items-center collapsed"
+      class="card-header text-white d-flex justify-content-between align-items-center collapsed"
       data-bs-toggle="collapse"
       data-bs-target="#filterCollapse"
       aria-expanded="false"
       aria-controls="filterCollapse"
-      style="cursor: pointer"
+      style="cursor: pointer; background-color: #f0f2f5"
     >
       <h6 class="mb-0"><i class="bi bi-funnel"></i> 篩選商品</h6>
       <i class="bi bi-chevron-down transition-icon"></i>
@@ -201,5 +193,16 @@ onMounted(() => {
 /* 加上過渡動畫效果 */
 .bi-chevron-down {
   transition: transform 0.3s ease;
+}
+
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.btn.btn-outline-secondary) {
+  color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+:deep(.btn.btn-outline-secondary:hover) {
+  background-color: #6c757d !important;
+  color: white !important;
 }
 </style>

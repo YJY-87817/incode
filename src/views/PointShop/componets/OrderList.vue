@@ -21,42 +21,73 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="order-list-container p-4">
-    <div class="mb-4">
-      <h1 class="display-6 text-primary">
-        <i class="bi bi-bag-check"></i> 我的訂單
-      </h1>
-      <p class="text-muted">查看和管理您的所有訂單</p>
+  <div class="col-12">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <h3 class="fw-bold text-dark mb-1">
+          <i class="bi bi-receipt me-2 text-primary"></i>我的訂單
+        </h3>
+        <p class="text-muted mb-0 small">查看和管理您的所有兌換紀錄</p>
+      </div>
+    </div>
+
+    <div v-if="loading" class="text-center py-5 my-3">
+      <div
+        class="spinner-border text-primary mb-3"
+        role="status"
+        style="width: 3rem; height: 3rem"
+      >
+        <span class="visually-hidden">載入中...</span>
+      </div>
+      <h5 class="text-muted fw-normal">正在取得您的訂單資訊...</h5>
     </div>
 
     <div
-      v-if="loading"
-      class="alert alert-info alert-dismissible fade show"
-      role="alert"
+      v-else-if="orders.length === 0"
+      class="card border-0 shadow-sm py-5 text-center bg-white"
     >
-      <div class="spinner-border spinner-border-sm me-2" role="status">
-        <span class="visually-hidden">載入中...</span>
+      <div class="card-body">
+        <div class="mb-3">
+          <i class="bi bi-clipboard-x display-1 text-muted opacity-25"></i>
+        </div>
+        <h4 class="text-muted">您目前沒有任何訂單</h4>
+        <p class="text-muted mb-0">去逛逛商城，兌換您喜歡的商品吧！</p>
       </div>
-      <strong>載入中...</strong> 正在取得您的訂單資訊
-    </div>
-
-    <div v-else-if="orders.length === 0" class="alert alert-warning">
-      <i class="bi bi-info-circle"></i> 您目前沒有任何訂單
     </div>
 
     <div v-else>
-      <p class="text-muted mb-3">
-        共 <strong>{{ orders.length }}</strong> 筆訂單
-      </p>
-      <OrderItem v-for="order in orders" :key="order.orderId" :order="order" />
+      <div class="d-flex justify-content-end mb-3">
+        <span class="badge bg-light text-secondary border rounded-pill px-3">
+          共 {{ orders.length }} 筆訂單
+        </span>
+      </div>
+      <div class="d-flex flex-column gap-3">
+        <OrderItem
+          v-for="order in orders"
+          :key="order.orderId"
+          :order="order"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.order-list-container {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 8px;
-  min-height: 500px;
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.text-primary) {
+  color: #0d6efd !important;
+}
+
+:deep(.spinner-border.text-primary) {
+  border-color: #0d6efd !important;
+  border-right-color: transparent !important;
+}
+
+:deep(.badge.bg-light) {
+  background-color: #f8f9fa !important;
+}
+
+:deep(.badge.text-secondary) {
+  color: #6c757d !important;
 }
 </style>

@@ -66,4 +66,26 @@ const emit = defineEmits(["reset-filters"]);
     transform: rotate(360deg);
   }
 }
+
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.spinner-border.text-primary) {
+  border-color: #0d6efd !important;
+  border-right-color: transparent !important;
+}
+
+:deep(.text-muted) {
+  color: #6c757d !important;
+}
+
+:deep(.btn.btn-link) {
+  color: #0d6efd !important;
+}
+
+:deep(.btn.btn-link:hover) {
+  color: #0b5ed7 !important;
+}
+
+:deep(.bi-search) {
+  color: #6c757d !important;
+}
 </style>

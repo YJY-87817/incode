@@ -24,37 +24,6 @@ const toggle = async () => {
 };
 </script>
 
-<style scoped>
-.shipped-box {
-  padding: 0;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.card {
-  border-left: 4px solid #0d6efd;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-
-.badge {
-  font-size: 0.85rem;
-  padding: 0.5rem 0.75rem;
-}
-</style>
-
 <template>
   <div class="shipped-box mt-3">
     <button
@@ -121,3 +90,78 @@ const toggle = async () => {
     </transition>
   </div>
 </template>
+
+<style scoped>
+.shipped-box {
+  padding: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.card {
+  border-left: 4px solid #0d6efd;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.badge {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.btn.btn-primary) {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: white !important;
+}
+
+:deep(.btn.btn-primary:hover) {
+  background-color: #0b5ed7 !important;
+  border-color: #0a58ca !important;
+}
+
+:deep(.btn.btn-danger) {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+:deep(.btn.btn-danger:hover) {
+  background-color: #bb2d3b !important;
+  border-color: #b02a37 !important;
+}
+
+:deep(.badge.bg-success) {
+  background-color: #198754 !important;
+}
+
+:deep(.badge.bg-danger) {
+  background-color: #dc3545 !important;
+}
+
+:deep(.badge.bg-warning) {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+:deep(.alert.alert-info) {
+  background-color: #cfe2ff !important;
+  border-color: #b6d4fe !important;
+  color: #084298 !important;
+}
+</style>

@@ -74,7 +74,9 @@ onMounted(async () => {
 
 <style scoped>
 .detail-item {
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .detail-item:hover {
@@ -84,5 +86,21 @@ onMounted(async () => {
 
 .object-fit-cover {
   object-fit: cover;
+}
+
+/* Bootstrap 預設顏色覆蓋 */
+:deep(.badge.bg-info) {
+  background-color: #0dcaf0 !important;
+}
+
+:deep(.badge.bg-warning) {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+:deep(.alert.alert-info) {
+  background-color: #cfe2ff !important;
+  border-color: #b6d4fe !important;
+  color: #084298 !important;
 }
 </style>
