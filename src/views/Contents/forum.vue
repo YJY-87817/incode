@@ -538,7 +538,8 @@ watch(
 
 /* 選中狀態 */
 .category-card.border-primary {
-  box-shadow: 0 0 0 3px rgba(145, 189, 255, 0.25);
+  background: #edf18d;
+  box-shadow: 0 0 0 3px #edf18d;
 }
 
 .list-group-item {
