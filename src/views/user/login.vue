@@ -1,187 +1,67 @@
 <script setup>
-import { onMounted } from "vue";
-import axios from "axios";
-import { useRouter } from "vue-router"; // 引入路由以便登入後跳轉
-const router = useRouter();
+  import { ref, onMounted } from "vue";
+  import axios from "axios";
+  import { useRouter } from "vue-router"; // 引入路由以便登入後跳轉
+  const router = useRouter();
+  const visible = ref(false);
+  import { useAuthStore } from "@/stores/user/auth";
+  const authStore = useAuthStore();
 
-import { useAuthStore } from "@/stores/user/auth";
-const authStore = useAuthStore();
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import Header from "@/examples/Header.vue";
+  import Register from "@/views/user/Register.vue";
+  import UserInput from "@/views/user/components/UserInput.vue";
+  import UserSwitch from "@/views/user/components/UserSwitch.vue";
+  import UserButton from "@/views/user/components/UserButton.vue";
 
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import Header from "@/examples/Header.vue";
-import Register from "@/views/user/Register.vue";
-import UserInput from "@/views/user/components/UserInput.vue";
-import UserSwitch from "@/views/user/components/UserSwitch.vue";
-import UserButton from "@/views/user/components/UserButton.vue";
+  // material-input
+  import setMaterialInput from "@/assets/js/material-input";
+  onMounted(() => {
+    setMaterialInput();
+    authStore.resetForm(); // 進入登入頁面時，最好重置一下 Store 裡的殘留資料
+  });
 
-// material-input
-import setMaterialInput from "@/assets/js/material-input";
-onMounted(() => {
-  setMaterialInput();
-  authStore.resetForm(); // 進入登入頁面時，最好重置一下 Store 裡的殘留資料
-});
-
-// 定義登入按鈕的動作
-const handleLogin = async () => {
-  const success = await authStore.login(); // 呼叫 Store 的 login 方法
-  if (success) {
-    router.push({ path: "/userindex" }); // 登入成功後跳轉
-  }
-};
+  // 定義登入按鈕的動作
+  const handleLogin = async () => {
+    const success = await authStore.login(); // 呼叫 Store 的 login 方法
+    if (success) {
+      router.push({ path: "/userindex" }); // 登入成功後跳轉
+    }
+  };
 </script>
 <template>
-  <DefaultNavbar transparent />
-  <Header>
-    <div
-      class="page-header align-items-start min-vh-100"
-      :style="{
-        backgroundImage:
-          'url(https://images.unsplash.com/photo-1497294815431-9365093b7331?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1950&q=80)',
-      }"
-      loading="lazy"
-    >
-      <span class="mask bg-gradient-dark opacity-6"></span>
-      <div class="container my-auto">
-        <div class="row">
-          <div class="col-lg-4 col-md-8 col-12 mx-auto">
-            <div class="card z-index-0 fadeIn3 fadeInBottom">
-              <div
-                class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
-              >
-                <div
-                  class="bg-gradient-success shadow-success border-radius-lg py-3 pe-1"
-                >
-                  <h4
-                    class="text-white font-weight-bolder text-center mt-2 mb-0"
-                  >
-                    登入會員
-                  </h4>
-                </div>
-              </div>
-              <div class="card-body">
-                <form class="text-start" @submit.prevent="handleLogin">
-                  <UserInput
-                    id="email"
-                    class="input-group-outline my-3"
-                    :label="{ text: '帳號', class: 'form-label' }"
-                    type="email"
-                    required
-                    v-model="authStore.form.email"
-                  />
-                  <small
-                    v-if="authStore.errors.email"
-                    class="text-danger d-block mt-n3 mb-2 text-xs"
-                  >
-                    {{ authStore.errors.email }}
-                  </small>
+  <div>
+    <v-img class="mx-auto my-6" max-width="228" src="" alt="網站logo">網站logo</v-img>
+    <v-card title="會員登入" class="mx-auto pa-12 pb-8" elevation="8" max-width="448" rounded="lg">
 
-                  <UserInput
-                    id="password"
-                    class="input-group-outline mb-3"
-                    :label="{ text: '密碼', class: 'form-label' }"
-                    type="password"
-                    required
-                    v-model="authStore.form.password"
-                  />
-                  <small
-                    v-if="authStore.errors.password"
-                    class="text-danger d-block mt-n3 mb-2 text-xs"
-                  >
-                    {{ authStore.errors.password }}
-                  </small>
+      <div class="text-subtitle-1 text-medium-emphasis mt-3">帳號</div>
 
-                  <UserSwitch
-                    class="d-flex align-items-center mb-3"
-                    id="rememberMe"
-                    labelClass="mb-0 ms-3"
-                    checked
-                  >
-                    記住帳號
-                  </UserSwitch>
+      <v-text-field density="compact" placeholder="Email" prepend-inner-icon="mdi-email-outline"
+        variant="outlined"></v-text-field>
 
-                  <div class="text-center">
-                    <UserButton
-                      class="my-4 mb-2"
-                      variant="gradient"
-                      color="success"
-                      fullWidth
-                      >登入
-                    </UserButton>
-                  </div>
-                  <p class="mt-4 text-sm text-center">
-                    還不是會員?
-                    <router-link
-                      :to="{ name: 'Register' }"
-                      class="text-success text-gradient font-weight-bold"
-                    >
-                      註冊會員
-                    </router-link>
-                  </p>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="text-subtitle-1 text-medium-emphasis d-flex align-center justify-space-between">
+        密碼
       </div>
-      <footer class="footer position-absolute bottom-2 py-2 w-100">
-        <div class="container">
-          <div class="row align-items-center justify-content-lg-between">
-            <div class="col-12 col-md-6 my-auto">
-              <div
-                class="copyright text-center text-sm text-white text-lg-start"
-              >
-                © {{ new Date().getFullYear() }}, made with
-                <i class="fa fa-heart" aria-hidden="true"></i> by
-                <a
-                  href="https://www.creative-tim.com"
-                  class="font-weight-bold text-white"
-                  target="_blank"
-                  >Creative Tim</a
-                >
-                for a better web.
-              </div>
-            </div>
-            <div class="col-12 col-md-6">
-              <ul
-                class="nav nav-footer justify-content-center justify-content-lg-end"
-              >
-                <li class="nav-item">
-                  <a
-                    href="https://www.creative-tim.com"
-                    class="nav-link text-white"
-                    target="_blank"
-                    >Creative Tim</a
-                  >
-                </li>
-                <li class="nav-item">
-                  <a
-                    href="https://www.creative-tim.com/presentation"
-                    class="nav-link text-white"
-                    target="_blank"
-                    >About Us</a
-                  >
-                </li>
-                <li class="nav-item">
-                  <a
-                    href="https://www.creative-tim.com/blog"
-                    class="nav-link text-white"
-                    target="_blank"
-                    >Blog</a
-                  >
-                </li>
-                <li class="nav-item">
-                  <a
-                    href="https://www.creative-tim.com/license"
-                    class="nav-link pe-0 text-white"
-                    target="_blank"
-                    >License</a
-                  >
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
-  </Header>
+      <v-text-field :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'" :type="visible ? 'text' : 'password'"
+        density="compact" placeholder="password" prepend-inner-icon="mdi-lock-outline" variant="outlined"
+        @click:append-inner="visible = !visible">
+      </v-text-field>
+      <v-checkbox v-model="terms" color="secondary" label="記住我"></v-checkbox>
+      <v-btn class="mb-2" color="blue" size="large" variant="tonal" block>
+        登入
+      </v-btn>
+      <v-card-text class="text-center">
+        <router-link :to="{ name: 'Register' }">註冊</router-link>
+        <!-- <a class="text-blue text-decoration-none" href="#" rel="noopener noreferrer" target="_blank">
+           <v-icon icon="mdi-chevron-right"></v-icon>
+        </a> -->
+      </v-card-text>
+      <v-card class="mb-3" color="surface-variant" variant="tonal">
+        <v-card-text class="text-medium-emphasis text-caption">
+          備註:之後做忘記密碼
+        </v-card-text>
+      </v-card>
+    </v-card>
+
+  </div>
 </template>

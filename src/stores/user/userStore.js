@@ -4,7 +4,7 @@ import axios from "axios";
 import { useAuthStore } from "@/stores/user/auth"; // 引用另一個 store 拿 token
 import defaultprofilePic from "@/assets/img/bruce-mars.jpg"; // 預設大頭貼
 
-export const useUserStore = defineStore("user", () => {  
+export const useUserStore = defineStore("user", () => {
   const userProfile = ref({
     name: "載入中...",
     posts: 0,
@@ -18,11 +18,11 @@ export const useUserStore = defineStore("user", () => {
   const displayAvatar = computed(() => {
     return userProfile.value.imageUrl || defaultprofilePic;
   });
-//會員資料
-const authStore = useAuthStore();
-    const API_BASE_URL = "https://localhost:7190/api";
-  const fetchUserProfile = async () => {   
-    
+  //會員資料
+  const authStore = useAuthStore();
+  const API_BASE_URL = "https://localhost:7190/api";
+  const fetchUserProfile = async () => {
+
     isLoading.value = true;
     try {
       const response = await axios.get(
@@ -31,17 +31,17 @@ const authStore = useAuthStore();
           headers: { Authorization: `Bearer ${authStore.token}` }
         }
       );
-      
+
       const data = response.data;
       userProfile.value = {
-        name: data.username || data.UserName  || "未命名",
+        name: data.username || data.UserName || "未命名",
         // posts: data.PostCount || 0,
         // followers: data.FollowerCount || 0,
         // following: data.FollowingCount || 0,
         // description: data.SelfIntro || "",
         imageUrl: data.ImageUrl || ""
       };
-      
+
     } catch (error) {
       console.error("取得資料失敗", error);
     } finally {
@@ -50,6 +50,8 @@ const authStore = useAuthStore();
   };
 
   return { userProfile, isLoading, displayAvatar, fetchUserProfile };
+
+  // persist: true 資料就會自動存到 localStorage
 });
 
 // 關注清單
