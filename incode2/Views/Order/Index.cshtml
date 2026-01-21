@@ -47,7 +47,7 @@
                                 <td class="text-center">
                                     @if (!string.IsNullOrEmpty(item.Status))
                                     {
-                                        <span class="badge @(item.Status == "完成" ? "bg-success" : item.Status == "取消" ? "bg-danger" : "bg-secondary")">
+                                        <span class="badge @(item.Status == "已完成" ? "bg-success" : item.Status == "已取消" ? "bg-danger" : "bg-secondary")">
                                             @item.Status
                                         </span>
                                     }
