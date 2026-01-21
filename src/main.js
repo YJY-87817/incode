@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import piniaPluginPersist from 'pinia-plugin-persist';
+import piniaPluginPersist from 'pinia-plugin-persistedstate';
 import App from "./App.vue";
 
 import '@fortawesome/fontawesome-free/css/all.css'
