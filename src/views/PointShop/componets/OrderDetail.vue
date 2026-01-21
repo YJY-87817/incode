@@ -22,25 +22,67 @@ onMounted(async () => {
 
 <template>
   <div class="order-detail">
-    <div v-if="loading">載入訂單明細中...</div>
-
-    <div
-      v-for="detail in details"
-      :key="detail.orderdetailId"
-      class="detail-item"
-    >
-      <img
-        :src="`https://localhost:7190/img/product/${detail.imageName}`"
-        width="80"
-      />
-
-      <div>
-        <p>{{ detail.productName }}</p>
-        <p>數量：{{ detail.quantity }}</p>
-        <p>點數：{{ detail.unitPointAtPurchase }}</p>
+    <div v-if="loading" class="alert alert-info">
+      <div class="spinner-border spinner-border-sm me-2" role="status">
+        <span class="visually-hidden">載入中...</span>
       </div>
+      載入訂單明細中...
+    </div>
 
-      <ShippedDetail :orderDetailId="detail.orderdetailId" />
+    <div v-else class="row g-3">
+      <div v-for="detail in details" :key="detail.orderdetailId" class="col-12">
+        <div class="detail-item card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-auto">
+                <img
+                  :src="`https://localhost:7190/img/product/${detail.imageName}`"
+                  width="100"
+                  height="100"
+                  class="rounded object-fit-cover"
+                  :alt="detail.productName"
+                />
+              </div>
+
+              <div class="col">
+                <h5 class="card-title mb-2">{{ detail.productName }}</h5>
+                <div class="row g-2">
+                  <div class="col-auto">
+                    <span class="badge bg-info">
+                      <i class="bi bi-box"></i> 數量：{{ detail.quantity }}
+                    </span>
+                  </div>
+                  <div class="col-auto">
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-star-fill"></i>
+                      {{ detail.unitPointAtPurchase }} 點
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 border-top pt-3">
+              <ShippedDetail :orderDetailId="detail.orderdetailId" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.detail-item {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.detail-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.object-fit-cover {
+  object-fit: cover;
+}
+</style>
