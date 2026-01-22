@@ -1,19 +1,3 @@
-<template>
-  <div class="interaction-buttons d-flex align-items-center gap-2 mt-2">
-    <button
-      v-for="cat in categories"
-      :key="cat.id"
-      class="btn btn-sm"
-      :class="buttonClass(cat.name)"
-      @click="handleClick(cat.id, cat.name)"
-      :title="cat.name"
-    >
-      <i :class="iconClass(cat.name)"></i>
-      <span class="ms-1">{{ cat.name }}</span>
-    </button>
-  </div>
-</template>
-
 <script setup>
 import { ref } from "vue";
 import apiClient from "@/api/request";
@@ -48,14 +32,13 @@ const categories = ref([
 function buttonClass(name) {
   switch (name) {
     case "like":
-      return "btn-outline-primary";
-
+      return "btn-outline-success";
     case "bookmark":
       return "btn-outline-success";
     case "block":
-      return "btn-outline-warning";
+      return "btn-outline-success";
     case "hide":
-      return "btn-outline-secondary";
+      return "btn-outline-success";
     default:
       return "btn-outline-light";
   }
@@ -68,7 +51,6 @@ function iconClass(name) {
   switch (name) {
     case "like":
       return "fas fa-thumbs-up";
-
     case "bookmark":
       return "fas fa-bookmark";
     case "block":
@@ -100,6 +82,22 @@ async function handleClick(categoryId, categoryName) {
   }
 }
 </script>
+
+<template>
+  <div class="interaction-buttons d-flex align-items-center gap-2 mt-2">
+    <button
+      v-for="cat in categories"
+      :key="cat.id"
+      class="btn btn-sm"
+      :class="buttonClass(cat.name)"
+      @click="handleClick(cat.id, cat.name)"
+      :title="cat.name"
+    >
+      <i :class="iconClass(cat.name)"></i>
+      <span class="ms-1">{{ cat.name }}</span>
+    </button>
+  </div>
+</template>
 
 <style scoped>
 .interaction-buttons .btn {
