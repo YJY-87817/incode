@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { getShippedDetails } from "@/Views/PointShop/services/orderapi";
+import { getShippedDetails } from "@/Views/PointShop/services/PointShopApi";
 
 const props = defineProps({
   orderDetailId: Number,

@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useCartStore } from "@/views/PointShop/services/cartStore";
-import productService from "@/views/PointShop/services/productService";
+import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/componets/FilterPanel.vue";
 import ProductGrid from "@/views/PointShop/componets/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -10,7 +9,6 @@ import Cart from "@/views/PointShop/componets/Cart.vue";
 
 const products = ref([]);
 const loading = ref(true);
-const CartNow = useCartStore();
 
 // 篩選狀態
 const filters = ref({
@@ -23,33 +21,41 @@ const filters = ref({
 // 可用的類別列表（從產品資料動態生成）
 const categories = ref([]);
 
-const fetchProducts = async () => {
-  try {
-    const response = await productService.getProducts();
-    products.value = response.data;
+const fetchProducts = () => {
+  // 開始抓取前，通常會手動開啟 loading (原本 async 函式通常也會在開頭設定)
+  loading.value = true;
 
-    // 從產品資料動態提取類別
-    const uniqueCategories = new Set();
-    response.data.forEach((product) => {
-      if (product.type) {
-        uniqueCategories.add(product.type);
-      }
+  getProducts()
+    .then((response) => {
+      // 成功處理邏輯
+      products.value = response.data;
+
+      // 從產品資料動態提取類別
+      const uniqueCategories = new Set();
+      response.data.forEach((product) => {
+        if (product.type) {
+          uniqueCategories.add(product.type);
+        }
+      });
+
+      // 轉換為陣列格式
+      categories.value = Array.from(uniqueCategories).map((name, index) => ({
+        id: index + 1,
+        name: name,
+      }));
+
+      // 設定最大價格
+      const maxPrice = Math.max(...response.data.map((p) => p.point || 0));
+      filters.value.maxPrice = maxPrice;
+    })
+    .catch((error) => {
+      // 錯誤處理邏輯
+      console.error("抓取商品失敗:", error);
+    })
+    .finally(() => {
+      // 不論成功或失敗都會執行的邏輯
+      loading.value = false;
     });
-
-    // 轉換為陣列格式
-    categories.value = Array.from(uniqueCategories).map((name, index) => ({
-      id: index + 1,
-      name: name,
-    }));
-
-    // 設定最大價格
-    const maxPrice = Math.max(...response.data.map((p) => p.point || 0));
-    filters.value.maxPrice = maxPrice;
-  } catch (error) {
-    console.error("抓取商品失敗:", error);
-  } finally {
-    loading.value = false;
-  }
 };
 
 // 篩選後的商品
