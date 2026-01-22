@@ -25,7 +25,7 @@ const toggle = async () => {
 </script>
 
 <template>
-  <div class="shipped-box mt-3">
+  <div class="shipped-box p-2">
     <button
       @click="toggle"
       :class="['btn', open ? 'btn-success' : 'btn-secondary']"
@@ -39,7 +39,11 @@ const toggle = async () => {
           <i class="bi bi-hourglass-split"></i> 載入出貨資料...
         </div>
 
-        <div v-for="ship in shipped" :key="ship.shippedDate" class="card">
+        <div
+          v-for="ship in shipped"
+          :key="ship.shippedDate"
+          class="card border mb-3"
+        >
           <div class="card-body">
             <div class="row mb-2">
               <div class="col-12">

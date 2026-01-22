@@ -3,7 +3,6 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import { getOrdersByUser } from "@/Views/PointShop/services/orderapi";
 import OrderList from "@/views/PointShop/componets/OrderList.vue";
-import NewOrderList from "@/views/PointShop/componets/NewOrderList.vue";
 
 const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
 </script>
@@ -20,9 +19,7 @@ const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
           </div>
         </div>
       </div>
-
       <OrderList :userId="userId"></OrderList>
-      <NewOrderList></NewOrderList>
     </div>
   </div>
 

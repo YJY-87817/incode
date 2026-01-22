@@ -39,6 +39,7 @@ const getStatusBadgeClass = (status) => {
               {{ order.orderDate }}
             </div>
             <div class="col-6 col-md-3 text-primary fw-bold">
+              <i class="bi bi-coin"></i>
               {{ order.totalPoint }} 點
             </div>
             <div class="col-6 col-md-3">
@@ -57,7 +58,7 @@ const getStatusBadgeClass = (status) => {
       data-bs-parent="#orderAccordion"
     >
       <div class="accordion-body bg-white">
-        <OrderDetail :orderId="order.orderId" />
+        <OrderDetail :orderId="order.orderId" :remark="order.remark" />
       </div>
     </div>
   </div>

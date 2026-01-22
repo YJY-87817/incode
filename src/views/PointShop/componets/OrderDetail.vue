@@ -5,6 +5,7 @@ import ShippedDetail from "./ShippedDetail.vue";
 
 const props = defineProps({
   orderId: Number,
+  remark: String,
 });
 
 const details = ref([]);
@@ -50,13 +51,14 @@ onMounted(async () => {
                   <i class="bi bi-box"></i> 數量：{{ detail.quantity }}
                 </small>
                 <small class="text-muted">
-                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-coin"></i>
                   {{ detail.unitPointAtPurchase }} 點
                 </small>
               </div>
             </div>
           </div>
         </div>
+        <div class="text-muted px-4">備註: {{ props.remark }}</div>
       </div>
       <div class="col-5">
         <h6 class="fw-bold border-bottom pb-2">配送資訊</h6>
