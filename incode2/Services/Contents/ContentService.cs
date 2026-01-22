@@ -94,10 +94,17 @@ namespace incode2.Services.Contents
       return content;
     }
 
-    public async Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto)
+    //修改content
+    public async Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId)
     {
       var content = await _context.Content.FindAsync(id);
       if (content == null) return null;
+
+      // 驗證擁有者
+      if (content.UserId != currentUserId)
+      {
+        return null; // 或拋出 Unauthorized
+      }
 
       var history = new ContentHistory
       {

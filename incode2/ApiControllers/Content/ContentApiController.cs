@@ -43,9 +43,9 @@ namespace incode2.ApiControllers.Content
     {
       //這行可以取得當下登入的user所有資料
       var userId = int.Parse(User.Claims.FirstOrDefault().Value);
+      dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
-      dto.UserId = userId;
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
     }
@@ -53,7 +53,10 @@ namespace incode2.ApiControllers.Content
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateContent(int id, [FromBody] UpdateContentDto dto)
     {
-      var updated = await _contentService.UpdateContent(id, dto);
+      //這行可以取得當下登入的user所有資料
+      var currentUserId = int.Parse(User.Claims.FirstOrDefault().Value);
+
+      var updated = await _contentService.UpdateContent(id, dto, currentUserId);
       if (updated == null) return NotFound(new { message = "找不到此內容" });
       return Ok(updated);
     }

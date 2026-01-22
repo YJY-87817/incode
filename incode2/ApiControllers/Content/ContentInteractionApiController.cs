@@ -155,12 +155,12 @@ namespace incode2.ApiControllers.Content
     /// URI: GET /api/contentinteractionapi/categories
     /// 
     /// 範例:
-    /// GET https://localhost:7190/api/contentinteractionapi/categories
+    /// GET https://localhost:7190/api/contentinteractionapi/category
     /// </summary>
-    [HttpGet("categories")]
-    public async Task<IActionResult> GetInteractionCategories()
+    [HttpGet("category")]
+    public async Task<IActionResult> GetInteractionCategory()
     {
-      var categories = await _contentInteractionService.GetInteractionCategories();
+      var categories = await _contentInteractionService.GetInteractionCategory();
       return Ok(categories);
     }
 

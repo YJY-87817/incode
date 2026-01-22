@@ -31,7 +31,7 @@ namespace incode2.Services.Contents
     /// <summary>
     /// 取得互動分類列表
     /// </summary>
-    Task<List<InteractionCategory>> GetInteractionCategories();
+    Task<List<InteractionCategory>> GetInteractionCategory();
 
     /// <summary>
     /// 統計內容的互動數（按分類）
