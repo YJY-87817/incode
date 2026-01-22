@@ -411,7 +411,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage - 1)
                     "
-                    >上一頁</a
+                    ><</a
                   >
                 </li>
 
@@ -480,7 +480,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage + 1)
                     "
-                    >下一頁</a
+                    >></a
                   >
                 </li>
               </ul>
