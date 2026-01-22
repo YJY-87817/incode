@@ -137,18 +137,27 @@ onMounted(() => {
             :loading="loading"
             @reset-filters="resetFilters"
           />
+          <div class="d-flex justify-content-center mt-5">
+            <nav aria-label="Page navigation pointshop">
+              <ul class="pagination">
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+                <li class="page-item"><a class="page-link" href="#">1</a></li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <button
-    class="btn position-fixed start-0 top-50 translate-middle-y me-3"
-    data-bs-toggle="offcanvas"
-    data-bs-target="#cartOffcanvas"
-    @click="btnclick"
-  >
-    <i class="bi bi-cart-dash-fill h1"></i>
-  </button>
 
   <Cart />
   <DefaultFooter />

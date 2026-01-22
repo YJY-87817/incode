@@ -16,7 +16,6 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
           </div>
         </div>
       </div>
-      <orderlist :userId="userId"></orderlist>
     </div>
   </div>
   <DefaultFooter />
