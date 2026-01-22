@@ -57,7 +57,7 @@
 import { ref, computed, onMounted } from "vue";
 import apiClient from "@/api/request.js";
 import { useRoute } from "vue-router";
-import ThreadPost from "@/components/forum/ThreadPost.vue";
+import ThreadPost from "@/components/Contents/ThreadPost.vue";
 
 // Mock thread data – replace with real API call later
 const route = useRoute();
