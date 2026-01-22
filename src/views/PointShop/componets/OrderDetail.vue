@@ -29,62 +29,58 @@ onMounted(async () => {
       載入訂單明細中...
     </div>
 
-    <div v-else class="row g-3">
-      <div v-for="detail in details" :key="detail.orderdetailId" class="col-12">
-        <div class="detail-item card border-0 shadow-sm">
-          <div class="card-body">
-            <div class="row align-items-center">
-              <div class="col-auto">
-                <img
-                  :src="`https://localhost:7190/img/product/${detail.imageName}`"
-                  width="100"
-                  height="100"
-                  class="rounded object-fit-cover"
-                  :alt="detail.productName"
-                />
+    <div v-else class="row g-4">
+      <div class="col-7 px-4">
+        <h6 class="fw-bold border-bottom pb-2">商品明細</h6>
+        <div
+          v-for="detail in details"
+          :key="detail.orderdetailId"
+          class="col-12"
+        >
+          <div class="d-flex align-items-start gap-3">
+            <img
+              :src="`https://localhost:7190/img/product/${detail.imageName}`"
+              class="rounded flex-shrink-0 product-img"
+              :alt="detail.productName"
+            />
+            <div class="flex-grow-1">
+              <h6 class="fw-bold mb-2">{{ detail.productName }}</h6>
+              <div class="d-flex flex-wrap gap-2 mb-3 text-dark">
+                <small class="text-muted">
+                  <i class="bi bi-box"></i> 數量：{{ detail.quantity }}
+                </small>
+                <small class="text-muted">
+                  <i class="bi bi-star-fill"></i>
+                  {{ detail.unitPointAtPurchase }} 點
+                </small>
               </div>
-
-              <div class="col">
-                <h5 class="card-title mb-2">{{ detail.productName }}</h5>
-                <div class="row g-2">
-                  <div class="col-auto">
-                    <span class="badge bg-info">
-                      <i class="bi bi-box"></i> 數量：{{ detail.quantity }}
-                    </span>
-                  </div>
-                  <div class="col-auto">
-                    <span class="badge bg-warning text-dark">
-                      <i class="bi bi-star-fill"></i>
-                      {{ detail.unitPointAtPurchase }} 點
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-3 border-top pt-3">
-              <ShippedDetail :orderDetailId="detail.orderdetailId" />
             </div>
           </div>
         </div>
       </div>
+      <div class="col-5">
+        <h6 class="fw-bold border-bottom pb-2">配送資訊</h6>
+        <div
+          v-for="detail in details"
+          :key="detail.orderdetailId"
+          class="col-12"
+        >
+          <ShippedDetail :orderDetailId="detail.orderdetailId" />
+        </div>
+      </div>
+    </div>
+    <div class="mt-3 text-end">
+      <button class="btn btn-outline-danger btn-sm me-2">取消訂單</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.detail-item {
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.detail-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-
-.object-fit-cover {
+.product-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
   object-fit: cover;
 }
 </style>

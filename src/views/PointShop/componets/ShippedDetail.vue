@@ -28,9 +28,8 @@ const toggle = async () => {
   <div class="shipped-box mt-3">
     <button
       @click="toggle"
-      :class="['btn', open ? 'btn-danger' : 'btn-primary', 'w-100']"
+      :class="['btn', open ? 'btn-success' : 'btn-secondary']"
     >
-      <i :class="['bi', open ? 'bi-eye-slash' : 'bi-eye']"></i>
       {{ open ? "隱藏" : "查看" }} 出貨資訊
     </button>
 
@@ -40,30 +39,26 @@ const toggle = async () => {
           <i class="bi bi-hourglass-split"></i> 載入出貨資料...
         </div>
 
-        <div
-          v-for="ship in shipped"
-          :key="ship.shippedDate"
-          class="card mb-3 shadow-sm"
-        >
+        <div v-for="ship in shipped" :key="ship.shippedDate" class="card">
           <div class="card-body">
             <div class="row mb-2">
               <div class="col-12">
                 <h6 class="card-subtitle text-muted">
-                  <i class="bi bi-box"></i> {{ ship.productName }}
+                  商品:{{ ship.productName }}
                 </h6>
               </div>
             </div>
 
             <div class="row">
-              <div class="col-md-6 mb-2">
+              <div class="col-md-6 mb-1">
                 <small class="text-muted">出貨日期</small>
-                <p class="mb-0">
+                <p class="mb-0 text-muted">
                   <i class="bi bi-calendar-event"></i> {{ ship.shippedDate }}
                 </p>
               </div>
               <div class="col-md-6 mb-2">
                 <small class="text-muted">預計到貨</small>
-                <p class="mb-0">
+                <p class="mb-0 text-muted">
                   <i class="bi bi-calendar-check"></i>
                   {{ ship.arrivalDate || "尚未到貨" }}
                 </p>
@@ -92,10 +87,6 @@ const toggle = async () => {
 </template>
 
 <style scoped>
-.shipped-box {
-  padding: 0;
-}
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -107,7 +98,6 @@ const toggle = async () => {
 }
 
 .card {
-  border-left: 4px solid #0d6efd;
   transition:
     transform 0.2s,
     box-shadow 0.2s;
