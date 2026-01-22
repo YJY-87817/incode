@@ -5,7 +5,6 @@ import apiClient from "@/api/request.js";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 
 const forumStore = useForumStore();
@@ -164,11 +163,6 @@ const displayPages = computed(() => {
   return pages;
 });
 
-// 開啟新主題 Modal
-const openNewTopic = () => {
-  forumStore.toggleNewTopicModal(true);
-};
-
 // 初始化
 onMounted(() => {
   fetchCategories();
@@ -196,15 +190,12 @@ watch(
             <h2 class="mb-2">💬 技術論壇</h2>
             <p class="text-muted mb-0">分享知識、交流技術、共同成長</p>
           </div>
-          <button class="btn btn-primary" @click="openNewTopic">
+          <router-link :to="{ name: 'new-topic' }" class="btn btn-primary">
             <i class="fas fa-plus"></i> 發表新主題
-          </button>
+          </router-link>
         </div>
       </div>
     </div>
-
-    <!-- 新主題發表 Modal 組件 -->
-    <NewTopicModal />
 
     <div class="row">
       <!-- 主要內容區 -->

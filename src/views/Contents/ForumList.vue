@@ -1,4 +1,18 @@
+<script>
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+
+export default {
+  components: {
+    DefaultNavbar,
+    DefaultFooter,
+  },
+};
+</script>
+
 <template>
+  <DefaultNavbar light />
+
   <section class="forum-list container py-5">
     <ForumSearchBar @search="onSearch" />
     <div class="row mt-4">
@@ -54,6 +68,8 @@
       </ul>
     </nav>
   </section>
+
+  <DefaultFooter />
 </template>
 
 <script setup>

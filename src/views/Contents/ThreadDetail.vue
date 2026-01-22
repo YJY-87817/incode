@@ -1,4 +1,18 @@
+<script>
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+
+export default {
+  components: {
+    DefaultNavbar,
+    DefaultFooter,
+  },
+};
+</script>
+
 <template>
+  <DefaultNavbar light />
+
   <section class="thread-detail container py-5">
     <div class="card mb-4 shadow-sm">
       <div class="card-body">
@@ -51,6 +65,8 @@
       <button class="btn btn-primary" @click="submitReply">Post Reply</button>
     </div>
   </section>
+
+  <DefaultFooter />
 </template>
 
 <script setup>

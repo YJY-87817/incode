@@ -158,6 +158,11 @@ const router = createRouter({
       component: () => import("@/views/Contents/forum.vue"),
     },
     {
+      path: "/forum/new-topic",
+      name: "new-topic",
+      component: () => import("@/views/Contents/NewTopicPage.vue"),
+    },
+    {
       path: "/test",
       name: "test",
       component: () => import("@/views/Contents/test.vue"),
