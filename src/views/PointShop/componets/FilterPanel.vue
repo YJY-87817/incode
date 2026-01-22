@@ -194,15 +194,4 @@ onMounted(() => {
 .bi-chevron-down {
   transition: transform 0.3s ease;
 }
-
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.btn.btn-outline-secondary) {
-  color: #6c757d !important;
-  border-color: #6c757d !important;
-}
-
-:deep(.btn.btn-outline-secondary:hover) {
-  background-color: #6c757d !important;
-  color: white !important;
-}
 </style>

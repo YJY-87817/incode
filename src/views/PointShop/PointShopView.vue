@@ -154,13 +154,4 @@ onMounted(() => {
   <DefaultFooter />
 </template>
 
-<style scoped>
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.bg-light) {
-  background-color: #f8f9fa !important;
-}
-
-:deep(.btn-primary) {
-  color: #0b5ed7 !important;
-}
-</style>
+<style scoped></style>

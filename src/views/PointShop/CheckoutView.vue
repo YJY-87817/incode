@@ -22,9 +22,4 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
   <DefaultFooter />
 </template>
 
-<style scoped>
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.bg-light) {
-  background-color: #f8f9fa !important;
-}
-</style>
+<style scoped></style>

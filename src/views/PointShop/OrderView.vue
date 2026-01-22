@@ -27,17 +27,4 @@ const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
   <DefaultFooter />
 </template>
 
-<style scoped>
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.bg-light) {
-  background-color: #f8f9fa !important;
-}
-
-:deep(.text-primary) {
-  color: #0d6efd !important;
-}
-
-:deep(.text-muted) {
-  color: #6c757d !important;
-}
-</style>
+<style scoped></style>

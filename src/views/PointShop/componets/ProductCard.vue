@@ -132,28 +132,4 @@ const handleAddToCart = () => {
     padding: 1rem !important;
   }
 }
-
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.badge.bg-primary) {
-  background-color: #0d6efd !important;
-}
-
-:deep(.text-primary) {
-  color: #0d6efd !important;
-}
-
-:deep(.btn.btn-outline-primary) {
-  color: #0d6efd !important;
-  border-color: #0d6efd !important;
-}
-
-:deep(.btn.btn-outline-primary:hover) {
-  background-color: #0d6efd !important;
-  color: white !important;
-}
-
-:deep(.btn.btn-secondary) {
-  background-color: #6c757d !important;
-  border-color: #6c757d !important;
-}
 </style>

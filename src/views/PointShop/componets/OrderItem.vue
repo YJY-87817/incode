@@ -127,41 +127,4 @@ const getStatusBadgeClass = (status) => {
   opacity: 1;
   max-height: 1000px;
 }
-
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.bg-success) {
-  background-color: #198754 !important;
-}
-
-:deep(.bg-warning) {
-  background-color: #ffc107 !important;
-}
-
-:deep(.bg-warning.text-dark) {
-  color: #212529 !important;
-}
-
-:deep(.bg-info) {
-  background-color: #0dcaf0 !important;
-}
-
-:deep(.bg-info.text-dark) {
-  color: #212529 !important;
-}
-
-:deep(.bg-danger) {
-  background-color: #dc3545 !important;
-}
-
-:deep(.bg-primary) {
-  background-color: #0d6efd !important;
-}
-
-:deep(.text-primary) {
-  color: #0d6efd !important;
-}
-
-:deep(.bg-secondary) {
-  background-color: #6c757d !important;
-}
 </style>

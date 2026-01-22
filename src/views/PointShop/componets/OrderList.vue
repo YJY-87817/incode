@@ -72,22 +72,4 @@ onMounted(async () => {
   </div>
 </template>
 
-<style scoped>
-/* Bootstrap 預設顏色覆蓋 */
-:deep(.text-primary) {
-  color: #0d6efd !important;
-}
-
-:deep(.spinner-border.text-primary) {
-  border-color: #0d6efd !important;
-  border-right-color: transparent !important;
-}
-
-:deep(.badge.bg-light) {
-  background-color: #f8f9fa !important;
-}
-
-:deep(.badge.text-secondary) {
-  color: #6c757d !important;
-}
-</style>
+<style scoped></style>
