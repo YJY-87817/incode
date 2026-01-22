@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 export const useForumStore = defineStore('forum', {
   state: () => ({
     showNewTopicModal: false,
-    // 其他論壇相關狀態
+    lastRefreshTime: 0  // 新增刷新時間戳記狀態
   }),
   actions: {
     toggleNewTopicModal(value) {
@@ -14,9 +14,5 @@ export const useForumStore = defineStore('forum', {
       this.lastRefreshTime = Date.now()
     }
   },
-  state: () => ({
-    showNewTopicModal: false,
-    lastRefreshTime: 0  // 新增刷新時間戳記狀態
-  }),
   persist: true
 })

@@ -1,17 +1,7 @@
 <script setup>
 import { reactive, onMounted, watch } from "vue";
-import axios from "axios";
 import { useForumStore } from "@/stores/forumStore";
-
-const apiBaseUrl = "https://localhost:7190/api";
-const apiClient = axios.create({
-  baseURL: apiBaseUrl,
-  // 在這裡改timeout時間
-  timeout: 50000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import apiClient from "@/api/request.js";
 
 const forumStore = useForumStore();
 
@@ -27,8 +17,8 @@ const newTopicState = reactive({
 const fetchCategories = () => {
   apiClient
     .get("/CategoryApi")
-    .then((response) => {
-      newTopicState.categories = response.data;
+    .then((data) => {
+      newTopicState.categories = data;
     })
     .catch((error) => {
       console.error("載入分類失敗:", error);
@@ -40,8 +30,8 @@ const fetchTopics = (categoryId = null) => {
   if (categoryId) params.categoryId = categoryId;
   apiClient
     .get("/ContentApi", { params })
-    .then((response) => {
-      newTopicState.topics = response.data.items.map((item) => ({
+    .then((data) => {
+      newTopicState.topics = data.items.map((item) => ({
         id: item.contentId,
         title: item.title,
       }));

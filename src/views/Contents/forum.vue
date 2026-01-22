@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, onMounted, computed, watch } from "vue";
-import axios from "axios";
 import { useForumStore } from "@/stores/forumStore";
+import apiClient from "@/api/request.js";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
@@ -9,18 +9,6 @@ import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 
 const forumStore = useForumStore();
-
-// 後端 API 基底網址
-const apiBaseUrl = "https://localhost:7190/api"; // 改成你的後端
-
-// 建立 axios 實例（.then().catch() 你熟悉的格式）
-const apiClient = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
 
 // 論壇狀態
 const forumState = reactive({
@@ -42,9 +30,9 @@ const fetchCategories = () => {
 
   apiClient
     .get("/CategoryApi")
-    .then((response) => {
-      console.log("分類資料:", response.data);
-      forumState.categories = response.data;
+    .then((data) => {
+      console.log("分類資料:", data);
+      forumState.categories = data;
     })
     .catch((error) => {
       console.error("載入分類失敗:", error);
@@ -67,8 +55,8 @@ const fetchTopics = (categoryId = null, page = 1) => {
 
   apiClient
     .get("/ContentApi", { params })
-    .then((response) => {
-      console.log("主題資料:", response.data);
+    .then((data) => {
+      console.log("主題資料:", data);
 
       const {
         items,
@@ -76,7 +64,7 @@ const fetchTopics = (categoryId = null, page = 1) => {
         totalPages,
         page: currentPage,
         pageSize,
-      } = response.data;
+      } = data;
 
       forumState.pagination = {
         currentPage,
@@ -357,7 +345,15 @@ watch(
                             class="badge bg-warning text-dark me-2"
                             >熱門</span
                           >
-                          {{ topic.title }}
+                          <router-link
+                            :to="{
+                              name: 'thread-detail',
+                              params: { id: topic.id },
+                            }"
+                            class="topic-title-link"
+                          >
+                            {{ topic.title }}
+                          </router-link>
                         </h6>
 
                         <div class="small text-muted mb-1">
@@ -552,6 +548,19 @@ watch(
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+/* 主題標題連結樣式 */
+.topic-title-link {
+  color: #344767;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.topic-title-link:hover {
+  color: #cb0c9f;
+  text-decoration: underline;
 }
 
 /* 貼文內容只顯示前 2 行（避免太長） */
