@@ -252,11 +252,11 @@ watch(
                 :key="category.id"
                 class="m-1"
               >
-                <!-- 這裡有問題 -->
+                <!-- 已修正：改用 border-primary 來應用自訂選中顏色 -->
                 <div
                   class="category-card p-0 border rounded cursor-pointer"
                   :class="{
-                    'bg-info text-white':
+                    'border-primary':
                       forumState.selectedCategory === category.id,
                     'border-light': forumState.selectedCategory !== category.id,
                   }"

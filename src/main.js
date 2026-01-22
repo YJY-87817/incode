@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import piniaPluginPersist from 'pinia-plugin-persistedstate';
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import App from "./App.vue";
 
 import '@fortawesome/fontawesome-free/css/all.css'
@@ -20,7 +20,7 @@ const app = createApp(App);
 
 
 const pinia = createPinia();
-pinia.use(piniaPluginPersist);
+pinia.use(piniaPluginPersistedstate);
 app.use(pinia);
 app.use(router);
 app.use(materialKit);
