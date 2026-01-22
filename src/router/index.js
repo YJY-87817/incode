@@ -10,6 +10,9 @@ import UserIndex from "@/views/user/UserIndex.vue";
 import UserProfile from"@/views/user/UserProfile.vue"
 import UserSettings from"@/views/user/UserSettings.vue"
 import UserCollections from"@/views/user/UserCollections.vue"
+import UserPost from"@/views/user/UserPost.vue"
+import UserLike from"@/views/user/UserLike.vue"
+import UserSave from"@/views/user/UserSave.vue"
 // owen
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
@@ -186,12 +189,7 @@ const router = createRouter({
       path: "/userindex",
       name: "UserIndex",
       component: UserIndex,
-      children: [
-        { 
-          path: "test", 
-          name: "usertest",
-          component:  () => import("@/views/user/usertest.vue"),
-        }, 
+      children: [        
         { 
           path: "userprofile", 
           name: "UserProfile",
@@ -206,7 +204,22 @@ const router = createRouter({
           path: "usercollections",
           name: "UserCollections",
           component: UserCollections,
-        }
+           children: [
+        { 
+          path: "userpost", 
+          name: "UserPost",
+          component: UserPost,
+        }, 
+        { 
+          path: "usersave", 
+          name: "UserSave",
+          component: UserSave,
+        }, 
+        { 
+          path: "UserLike", 
+          name: "UserLike",
+          component: UserLike,}
+        ,] }        
       ]
     },
     // owen
