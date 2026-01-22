@@ -1,14 +1,4 @@
 <template>
   <h1>我的討論區</h1>
 
-  <nav class="mt-5 text-center">
-    <router-link :to="{ name: 'UserPost' }">發文</router-link> |
-    <router-link :to="{ name: 'UserSave' }">收藏</router-link> |
-    <router-link :to="{ name: 'UserLike' }">點讚</router-link>
-  </nav>
-  <hr class="horizontal dark my-4" />
-
-  <div class="nested-content">
-    <router-view></router-view>
-  </div>
 </template>

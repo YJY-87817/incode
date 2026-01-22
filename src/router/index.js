@@ -7,12 +7,12 @@ import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
 import Register from "@/views/user/Register.vue";
 import Login from "@/views/user/Login.vue";
 import UserIndex from "@/views/user/UserIndex.vue";
-import UserProfile from"@/views/user/UserProfile.vue"
-import UserSettings from"@/views/user/UserSettings.vue"
-import UserCollections from"@/views/user/UserCollections.vue"
-import UserPost from"@/views/user/UserPost.vue"
-import UserLike from"@/views/user/UserLike.vue"
-import UserSave from"@/views/user/UserSave.vue"
+import UserProfile from "@/views/user/UserProfile.vue"
+import UserSettings from "@/views/user/UserSettings.vue"
+import UserCollections from "@/views/user/UserCollections.vue"
+import UserPost from "@/views/user/UserPost.vue"
+import UserLike from "@/views/user/UserLike.vue"
+import UserSave from "@/views/user/UserSave.vue"
 // owen
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
@@ -178,7 +178,7 @@ const router = createRouter({
     {
       path: "/register",
       name: "Register",
-       component: Register,
+      component: Register,
     },
     {
       path: "/login",
@@ -186,42 +186,44 @@ const router = createRouter({
       component: Login,
     },
     {
+      path: "/usersettings",
+      name: "UserSettings",
+      component: UserSettings,
+    },
+    {
+      path: "/userprofile",
+      name: "UserProfile",
+      component: UserProfile,
+    },
+    {
+      path: "/usercollections",
+      name: "UserCollections",
+      component: UserCollections,
+    },
+
+    {
       path: "/userindex",
       name: "UserIndex",
       component: UserIndex,
-      children: [        
-        { 
-          path: "userprofile", 
-          name: "UserProfile",
-          component: UserProfile,
-        }, 
+      children: [
         {
-          path: "usersettings",
-          name: "UserSettings",
-          component: UserSettings,
-        },
-        {
-          path: "usercollections",
-          name: "UserCollections",
-          component: UserCollections,
-           children: [
-        { 
-          path: "userpost", 
+          path: "userpost",
           name: "UserPost",
           component: UserPost,
-        }, 
-        { 
-          path: "usersave", 
+        },
+        {
+          path: "usersave",
           name: "UserSave",
           component: UserSave,
-        }, 
-        { 
-          path: "UserLike", 
+        },
+        {
+          path: "UserLike",
           name: "UserLike",
-          component: UserLike,}
-        ,] }        
+          component: UserLike,
+        }
       ]
     },
+
     // owen
 
     // qiu以下

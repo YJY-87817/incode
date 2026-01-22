@@ -25,6 +25,11 @@
       </v-col>
     </v-row>
   </v-container>
+  <v-container class="d-flex flex-column gr-4">
+    <v-divider color="primary" content-offset="-16" opacity="1" style="color: inherit" thickness="1">
+      <v-avatar class="border border-primary border-opacity-100" icon="mdi-chevron-down" size="36"></v-avatar>
+    </v-divider>
+  </v-container>
   <!-- 如果文章被刪除
    <v-card
   class="mx-auto"
@@ -37,37 +42,37 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+  import { ref } from "vue";
 
-// 內容掛api
-const items = ref([
-  {
-    title: "電影 1",
-    type: "風景",
-    date: "2024-06-01",
-    content: "這是第一張卡片的介紹...",
-    img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
-  },
-  {
-    title: "電影 2",
-    type: "人像",
-    date: "2024-06-01",
-    content: "這是第二張卡片的介紹...",
-    img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
-  },
-  {
-    title: "電影 3",
-    type: "靜物",
-    date: "2024-06-01",
-    content: "這是第三張卡片的介紹...",
-    img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
-  },
-  {
-    title: "電影 4",
-    type: "建築",
-    date: "2024-06-01",
-    content: "這是第四張卡片的介紹...",
-    img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
-  },
-]);
+  // 內容掛api
+  const items = ref([
+    {
+      title: "電影 1",
+      type: "風景",
+      date: "2024-06-01",
+      content: "這是第一張卡片的介紹...",
+      img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
+    },
+    {
+      title: "電影 2",
+      type: "人像",
+      date: "2024-06-01",
+      content: "這是第二張卡片的介紹...",
+      img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
+    },
+    {
+      title: "電影 3",
+      type: "靜物",
+      date: "2024-06-01",
+      content: "這是第三張卡片的介紹...",
+      img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
+    },
+    {
+      title: "電影 4",
+      type: "建築",
+      date: "2024-06-01",
+      content: "這是第四張卡片的介紹...",
+      img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
+    },
+  ]);
 </script>
