@@ -136,7 +136,7 @@ namespace incode2.Services.Contents
     /// <summary>
     /// 取得互動分類列表
     /// </summary>
-    public async Task<List<InteractionCategory>> GetInteractionCategories()
+    public async Task<List<InteractionCategory>> GetInteractionCategory()
     {
       return await _context.InteractionCategory.ToListAsync();
     }

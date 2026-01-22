@@ -8,7 +8,7 @@ namespace incode2.Services.Contents
     Task<object> GetContents(int? categoryId, int page, int pageSize);
     Task<ContentDto?> GetContent(int id);
     Task<Content> CreateContent(CreateContentDto dto);
-    Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto);
+    Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
     Task<bool> DeleteContent(int id);
   }
 }
