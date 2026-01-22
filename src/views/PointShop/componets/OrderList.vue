@@ -13,7 +13,7 @@ const loading = ref(true);
 onMounted(async () => {
   try {
     const res = await getOrdersByUser(props.userId);
-    orders.value = res.data;
+    orders.value = res.data.data;
   } finally {
     loading.value = false;
   }

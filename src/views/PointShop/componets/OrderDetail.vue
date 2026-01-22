@@ -14,7 +14,7 @@ const loading = ref(true);
 onMounted(async () => {
   try {
     const res = await getOrderDetails(props.orderId);
-    details.value = res.data;
+    details.value = res.data.data;
   } finally {
     loading.value = false;
   }

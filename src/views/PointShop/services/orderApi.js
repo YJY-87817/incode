@@ -10,3 +10,5 @@ export const getOrderDetails = (orderId) => api.get(`/orderdetail/${orderId}`);
 
 export const getShippedDetails = (orderDetailId) =>
   api.get(`/shippeddetail/${orderDetailId}`);
+
+export const putCancelOrder = (orderId) => api.put(`/CancelOrder/${orderId}`);

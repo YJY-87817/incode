@@ -9,14 +9,24 @@ const props = defineProps({
 const open = ref(false);
 const loading = ref(false);
 const shipped = ref([]);
+const error = ref(null);
 
 const toggle = async () => {
   open.value = !open.value;
   if (open.value && shipped.value.length === 0) {
     loading.value = true;
+    error.value = null;
     try {
       const res = await getShippedDetails(props.orderDetailId);
-      shipped.value = res.data;
+      if (res.data.ok) {
+        shipped.value = res.data.data || [];
+      } else {
+        error.value = res.data.message || "找不到出貨資料目前還沒寄送";
+        shipped.value = [];
+      }
+    } catch (err) {
+      error.value = "載入出貨資料失敗，請稍後重試";
+      shipped.value = [];
     } finally {
       loading.value = false;
     }
@@ -39,6 +49,10 @@ const toggle = async () => {
           <i class="bi bi-hourglass-split"></i> 載入出貨資料...
         </div>
 
+        <div v-if="error" class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        </div>
+
         <div
           v-for="ship in shipped"
           :key="ship.shippedDate"
@@ -57,14 +71,19 @@ const toggle = async () => {
               <div class="col-md-6 mb-1">
                 <small class="text-muted">出貨日期</small>
                 <p class="mb-0 text-muted">
-                  <i class="bi bi-calendar-event"></i> {{ ship.shippedDate }}
+                  <i class="bi bi-calendar-event"></i>
+                  {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
                 </p>
               </div>
               <div class="col-md-6 mb-2">
                 <small class="text-muted">預計到貨</small>
                 <p class="mb-0 text-muted">
                   <i class="bi bi-calendar-check"></i>
-                  {{ ship.arrivalDate || "尚未到貨" }}
+                  {{
+                    ship.arrivalDate
+                      ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
+                      : "尚未到貨"
+                  }}
                 </p>
               </div>
             </div>
@@ -82,6 +101,9 @@ const toggle = async () => {
                   <i class="bi bi-truck"></i> 運送中
                 </span>
               </p>
+              <small v-if="ship.remark" class="text-muted d-block">
+                <i class="bi bi-info-circle"></i> {{ ship.remark }}
+              </small>
             </div>
           </div>
         </div>

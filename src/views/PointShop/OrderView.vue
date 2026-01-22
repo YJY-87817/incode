@@ -1,8 +1,8 @@
 <script setup>
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import { getOrdersByUser } from "@/Views/PointShop/services/orderapi";
 import OrderList from "@/views/PointShop/componets/OrderList.vue";
+import Cart from "@/views/PointShop/componets/Cart.vue";
 
 const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
 </script>
@@ -22,7 +22,7 @@ const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
       <OrderList :userId="userId"></OrderList>
     </div>
   </div>
-
+  <Cart />
   <DefaultFooter />
 </template>
 

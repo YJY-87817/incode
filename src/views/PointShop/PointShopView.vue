@@ -95,12 +95,6 @@ const handleFilterUpdate = (newFilters) => {
   filters.value = newFilters;
 };
 
-function btnclick() {
-  CartNow.cartItems.forEach((element) => {
-    console.log(element);
-  });
-}
-
 onMounted(() => {
   fetchProducts();
 });
@@ -158,7 +152,6 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
   <Cart />
   <DefaultFooter />
 </template>

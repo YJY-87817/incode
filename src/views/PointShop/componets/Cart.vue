@@ -47,7 +47,7 @@ const decrease = (item) => {
 
     <div class="offcanvas-body d-flex flex-column">
       <!-- 購物車清單 -->
-      <div v-if="CartNow.cartItems > 0">
+      <div v-if="CartNow.cartItems.length > 0">
         <div
           class="d-flex justify-content-between align-items-center border-bottom py-2"
           v-for="item in CartNow.cartItems"
@@ -101,7 +101,12 @@ const decrease = (item) => {
           :to="{ name: 'Checkout' }"
           class="dropdown-item border-radius-md"
         >
-          <button class="btn btn-primary w-100 mt-3">前往結帳</button>
+          <button
+            class="btn btn-primary w-100 mt-3"
+            data-bs-dismiss="offcanvas"
+          >
+            前往結帳
+          </button>
         </RouterLink>
       </div>
     </div>
