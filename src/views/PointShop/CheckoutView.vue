@@ -1,8 +1,11 @@
 <script setup>
 import { ref, computed } from "vue";
 import axios from "axios";
+import { useCartStore } from "@/views/PointShop/services/cartStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+
+const CartNow = useCartStore();
 </script>
 
 <template>
@@ -18,6 +21,8 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
       </div>
     </div>
   </div>
+  <div v-if="CartNow.cartItems.length > 0"></div>
+  <div v-else class="text-center text-muted mt-5">目前沒有任何商品在購物車</div>
   <DefaultFooter />
 </template>
 
