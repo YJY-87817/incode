@@ -87,6 +87,17 @@ export default {
 
     <div class="mt-3 mt-md-5">
       <h5 class="fs-5 fs-md-4 mb-3">💬 回覆 / 留言</h5>
+      <!-- Display comments separately -->
+      <div v-if="comments.length > 0" class="mb-4">
+        <h6 class="fs-6 mb-2">📝 所有留言</h6>
+        <ThreadPost
+          v-for="comment in comments"
+          :key="'comment-' + comment.id"
+          :post="comment"
+          :category-id="thread.categoryId"
+          @reply-added="handleReplyAdded"
+        />
+      </div>
 
       <div class="btn-group mb-2" role="group" aria-label="reply type">
         <input
@@ -162,42 +173,47 @@ const thread = ref({
 });
 
 const allPosts = ref([]);
+const comments = ref([]);
 
 const fetchThread = async () => {
   try {
-    const data = await apiClient.get("/ContentApi");
-    const items = Array.isArray(data.items) ? data.items : [];
+    const [detailRes, childrenRes] = await Promise.all([
+      apiClient.get(`/ContentApi/${threadId}`),
+      apiClient.get("/ContentApi", { params: { parentContentId: threadId } }),
+    ]);
 
-    const item = items.find((i) => i.contentId === threadId);
-    if (item) {
+    const detail = detailRes?.contentId ? detailRes : detailRes?.data;
+    if (detail && detail.contentId) {
       thread.value = {
-        id: item.contentId,
-        title: item.title,
-        author: item.username,
-        createdAt: item.createdAt,
-        content: item.body,
-        categoryId: item.categoryId,
-        type: item.type,
+        id: detail.contentId,
+        title: detail.title,
+        author: detail.username,
+        createdAt: detail.createdAt,
+        content: detail.body,
+        categoryId: detail.categoryId,
+        type: detail.type,
       };
     }
 
-    const contentItems = items.filter((i) =>
-      [
-        CONTENT_TYPES.REPLY,
-        CONTENT_TYPES.COMMENT,
-        CONTENT_TYPES.COMMENT_REPLY,
-      ].includes(i.type)
-    );
+    const items = Array.isArray(childrenRes?.items) ? childrenRes.items : [];
 
-    const normalized = contentItems.map((i) => ({
-      id: i.contentId,
-      author: i.username,
-      createdAt: i.createdAt,
-      content: i.body,
-      type: i.type,
-      parentContentId: i.parentContentId,
-      replies: [],
-    }));
+    const normalized = items
+      .filter((i) =>
+        [
+          CONTENT_TYPES.REPLY,
+          CONTENT_TYPES.COMMENT,
+          CONTENT_TYPES.COMMENT_REPLY,
+        ].includes(i.type)
+      )
+      .map((i) => ({
+        id: i.contentId,
+        author: i.username,
+        createdAt: i.createdAt,
+        content: i.body,
+        type: i.type,
+        parentContentId: i.parentContentId,
+        replies: [],
+      }));
 
     const nodeMap = new Map();
     normalized.forEach((node) => {
@@ -205,9 +221,14 @@ const fetchThread = async () => {
     });
 
     const roots = [];
+    const commentItems = [];
     nodeMap.forEach((node) => {
       if (node.parentContentId === threadId) {
-        roots.push(node);
+        if (node.type === CONTENT_TYPES.COMMENT) {
+          commentItems.push(node);
+        } else {
+          roots.push(node);
+        }
       } else if (nodeMap.has(node.parentContentId)) {
         const parent = nodeMap.get(node.parentContentId);
         parent.replies.push(node);
@@ -223,7 +244,9 @@ const fetchThread = async () => {
     };
 
     sortReplies(roots);
+    sortReplies(commentItems);
     allPosts.value = roots;
+    comments.value = commentItems;
   } catch (error) {
     console.error("Failed to fetch thread:", error);
   }

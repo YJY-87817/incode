@@ -40,6 +40,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      // 首頁改成這個
       path: "/",
       name: "firstview",
       component: FirstView,

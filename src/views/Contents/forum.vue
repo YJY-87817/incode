@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, onMounted, computed, watch, ref, onUnmounted } from "vue";
-import { useForumStore } from "@/stores/forumStore";
+import { useForumStore, CONTENT_TYPES } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -39,6 +39,12 @@ const fetchCategories = () => {
     .then((data) => {
       console.log("分類資料:", data);
       forumState.categories = data;
+      // 預設選擇目前選取的分類或第一筆，便於立即發文
+      if (!newTopic.categoryId) {
+        const preferred =
+          forumState.selectedCategory || (data.length > 0 ? data[0].id : null);
+        newTopic.categoryId = preferred;
+      }
     })
     .catch((error) => {
       console.error("載入分類失敗:", error);
@@ -194,6 +200,13 @@ watch(
 // 留言功能
 const replyInputs = reactive({});
 const submittingReplies = reactive({});
+const showNewTopicBox = ref(false);
+const newTopic = reactive({
+  title: "",
+  body: "",
+  categoryId: null,
+});
+const isSubmittingNewTopic = ref(false);
 
 // 初始化每個主題的留言框狀態
 const initializeReplyInputs = () => {
@@ -212,6 +225,10 @@ const showReplyBox = reactive({});
 const replyTitles = reactive({});
 const toggleReplyBox = (topicId) => {
   showReplyBox[topicId] = !showReplyBox[topicId];
+};
+
+const toggleNewTopic = () => {
+  showNewTopicBox.value = !showNewTopicBox.value;
 };
 
 // 初始化留言標題
@@ -276,6 +293,57 @@ watch(
   },
   { immediate: true }
 );
+
+// 發表新主題（同頁展開，不換頁）
+const submitNewTopic = async () => {
+  if (!newTopic.title.trim()) {
+    alert("請輸入標題");
+    return;
+  }
+  if (!newTopic.body.trim()) {
+    alert("請輸入內容");
+    return;
+  }
+  if (!newTopic.categoryId) {
+    alert("請選擇分類");
+    return;
+  }
+
+  if (isSubmittingNewTopic.value) return;
+  isSubmittingNewTopic.value = true;
+
+  const dto = {
+    UserId: 1, // TODO: 改成實際使用者 ID
+    CategoryId: newTopic.categoryId,
+    Title: newTopic.title.trim(),
+    Body: newTopic.body.trim(),
+    Type: CONTENT_TYPES.POST,
+  };
+
+  try {
+    await apiClient.post("/ContentApi", dto);
+    alert("發表成功！");
+    newTopic.title = "";
+    newTopic.body = "";
+    showNewTopicBox.value = false;
+    // 重新載入主題列表回到第一頁
+    forumState.pagination.currentPage = 1;
+    await fetchTopics(forumState.selectedCategory, 1);
+  } catch (error) {
+    console.error("發表失敗:", error);
+    alert("發表失敗，請稍後再試");
+  } finally {
+    isSubmittingNewTopic.value = false;
+  }
+};
+
+// 依目前分類更新新發文的預設分類
+watch(
+  () => forumState.selectedCategory,
+  (val) => {
+    if (val) newTopic.categoryId = val;
+  }
+);
 </script>
 
 <template>
@@ -292,13 +360,75 @@ watch(
             <h2 class="mb-2 fs-3 fs-md-2">💬 技術論壇</h2>
             <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
           </div>
-          <router-link
-            :to="{ name: 'new-topic' }"
+          <button
             class="btn btn-primary w-100 w-md-auto"
+            @click="toggleNewTopic"
+            type="button"
           >
             <i class="fas fa-plus"></i>
             <span class="d-none d-sm-inline">發表</span>新主題
-          </router-link>
+          </button>
+        </div>
+
+        <!-- 新主題編輯區（同頁展開，不換頁） -->
+        <div v-if="showNewTopicBox" class="mt-3 p-3 border rounded bg-light">
+          <div class="mb-2">
+            <label class="form-label small text-muted">標題</label>
+            <input
+              v-model="newTopic.title"
+              type="text"
+              class="form-control"
+              placeholder="輸入主題標題"
+            />
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-muted">分類</label>
+            <select v-model="newTopic.categoryId" class="form-select">
+              <option :value="null" disabled>選擇分類</option>
+              <option
+                v-for="category in forumState.categories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-muted">內容</label>
+            <textarea
+              v-model="newTopic.body"
+              class="form-control"
+              :rows="windowWidth < 768 ? 4 : 5"
+              placeholder="撰寫主題內容..."
+            ></textarea>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              class="btn btn-primary"
+              @click="submitNewTopic"
+              :disabled="
+                isSubmittingNewTopic ||
+                !newTopic.title.trim() ||
+                !newTopic.body.trim() ||
+                !newTopic.categoryId
+              "
+            >
+              <i class="fas fa-paper-plane me-2"></i>
+              {{ isSubmittingNewTopic ? "發送中..." : "發表" }}
+            </button>
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              @click="
+                showNewTopicBox = false;
+                newTopic.title = '';
+                newTopic.body = '';
+              "
+            >
+              取消
+            </button>
+          </div>
         </div>
       </div>
     </div>
