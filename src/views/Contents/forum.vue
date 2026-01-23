@@ -399,7 +399,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage - 1)
                     "
-                    ><span class="d-none d-sm-inline">上一頁</span><span class="d-inline d-sm-none"><</span></a
+                    ><span class="d-none d-sm-inline"><</span><span class="d-inline d-sm-none"><</span></a
                   >
                 </li>
 
@@ -468,7 +468,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage + 1)
                     "
-                    ><span class="d-none d-sm-inline">下一頁</span><span class="d-inline d-sm-none">></span></a
+                    ><span class="d-none d-sm-inline">></span><span class="d-inline d-sm-none">></span></a
                   >
                 </li>
               </ul>
