@@ -229,7 +229,7 @@ onUnmounted(() => {
         <h2 class="mt-3">通知</h2>
         <v-card
           append-icon="mdi-check"
-          class="mx-auto"
+          class="mx-auto mb-2"
           prepend-icon="mdi-account"
           subtitle="傳送時間"
           title="系統"
@@ -237,7 +237,7 @@ onUnmounted(() => {
           <v-card-text>提醒內容</v-card-text>
         </v-card>
 
-        <v-card class="mx-auto" subtitle="prepend and append" title="任務">
+        <v-card class="mx-auto mb-2" subtitle="prepend and append" title="任務">
           <template v-slot:prepend>
             <v-icon color="primary" icon="mdi-account"></v-icon>
           </template>
