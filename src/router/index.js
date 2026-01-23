@@ -46,6 +46,11 @@ const router = createRouter({
       component: FirstView,
     },
     {
+      path: "/presentation",
+      name: "presentation",
+      component: PresentationView,
+    },
+    {
       path: "/pages/landing-pages/about-us",
       name: "about",
       component: AboutView,

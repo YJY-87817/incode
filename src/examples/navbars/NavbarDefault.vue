@@ -394,18 +394,19 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
+
                       <RouterLink
                         :to="{ name: 'forum' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>討論區</span>
                       </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'test' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>test</span>
-                      </RouterLink>
+                <RouterLink
+                  :to="{ name: 'presentation' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>預設首頁</span>
+                </RouterLink>  
                     </div>
                   </div>
                 </div>
@@ -419,23 +420,11 @@ watch(
                   <span>討論區</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'test' }"
+                  :to="{ name: 'presentation' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>test</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'contactus' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>Contact Us</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'author' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>Author</span>
-                </RouterLink>
+                  <span>預設首頁</span>
+                </RouterLink>              
               </div>
             </div>
           </li>
