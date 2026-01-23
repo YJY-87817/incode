@@ -84,6 +84,7 @@ namespace incode2.Services.Contents
         ParentContentId = dto.ParentContentId,
         Title = dto.Title,
         Body = dto.Body,
+        Type = dto.Type,
         CreatedAt = DateTime.Now,
         UpdatedAt = DateTime.Now,
         IsActive = 1
@@ -138,6 +139,30 @@ namespace incode2.Services.Contents
       content.UpdatedAt = DateTime.Now;
       await _context.SaveChangesAsync();
       return true;
+    }
+
+    public async Task<List<ContentDto>> GetCommentsByContentId(int contentId)
+    {
+      return await _context.Content
+      .Include(c => c.User)
+      .Include(c => c.Category)
+      .Where(c => c.ParentContentId == contentId && c.IsActive != 4)
+      .OrderByDescending(c => c.CreatedAt)
+      .Select(c => new ContentDto
+      {
+        ContentId = c.ContentId,
+        ParentContentId = c.ParentContentId,
+        UserId = c.UserId,
+        Username = c.User.Username,
+        CategoryId = c.CategoryId,
+        CategoryName = c.Category != null ? c.Category.CategoryName : null,
+        Title = c.Title,
+        Body = c.Body,
+        CreatedAt = (DateTime)c.CreatedAt,
+        UpdatedAt = (DateTime)c.UpdatedAt,
+        Ishidden = c.IsActive == 2 ? true : false
+      })
+      .ToListAsync();
     }
   }
 }
