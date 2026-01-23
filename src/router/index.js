@@ -6,7 +6,7 @@ import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
 
 // tim 以下
 import Forum from "@/views/Contents/Forum.vue"
-
+import FirstView from "@/views/FirstView.vue"
 // tim 以上
 import Login from "@/views/user/login.vue";
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
@@ -42,8 +42,8 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      name: "presentation",
-      component: PresentationView,
+      name: "firstview",
+      component: FirstView,
     },
     {
       path: "/pages/landing-pages/about-us",
