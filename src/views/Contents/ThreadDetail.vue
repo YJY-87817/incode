@@ -120,6 +120,7 @@ const fetchThread = async () => {
         author: item.username,
         createdAt: item.createdAt,
         content: item.body,
+        categoryId: item.categoryId,
       };
     }
     // Simple reply handling: treat other items as replies
@@ -180,11 +181,11 @@ async function submitReply() {
   isSubmitting.value = true;
 
   const dto = {
-    categoryId: thread.value.categoryId ? thread.value.categoryId : 1,
-    parentContentId: threadId, // 綁定到當前貼文
-    title: `Re: ${thread.value.title}`, // 回覆標題格式：Re: 原標題
-    body: newReply.value.trim(),
-    type: 2, // 2: 回文（出現在貼文版面）
+    UserId: 1, // TODO: 改成實際使用者 ID
+    CategoryId: thread.value.categoryId ? thread.value.categoryId : 1,
+    ParentContentId: threadId, // 綁定到當前貼文
+    Title: `Re: ${thread.value.title}`, // 回覆標題格式：Re: 原標題
+    Body: newReply.value.trim(),
   };
 
   try {

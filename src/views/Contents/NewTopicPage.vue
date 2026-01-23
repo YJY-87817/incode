@@ -1,18 +1,11 @@
 <script setup>
-import { reactive, onMounted, watch, ref, onUnmounted } from "vue";
+import { reactive, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
 const router = useRouter();
-
-// 視窗寬度響應式變數
-const windowWidth = ref(window.innerWidth);
-
-const updateWindowWidth = () => {
-  windowWidth.value = window.innerWidth;
-};
 
 const newTopicState = reactive({
   title: "",
@@ -51,12 +44,7 @@ const fetchTopics = (categoryId = null) => {
 };
 
 onMounted(() => {
-  window.addEventListener('resize', updateWindowWidth);
   fetchCategories();
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowWidth);
 });
 
 watch(
@@ -109,46 +97,46 @@ const cancelNewTopic = () => {
 <template>
   <DefaultNavbar light />
 
-  <div class="container mt-3 mt-md-5 mb-3 mb-md-5 px-2 px-md-3">
+  <div class="container mt-5 mb-5">
     <div class="row justify-content-center">
-      <div class="col-12 col-lg-10 col-xl-8">
+      <div class="col-lg-8">
         <div class="card shadow-sm">
-          <div class="card-header bg-white py-2 py-md-3">
-            <h4 class="mb-0 fs-5 fs-md-4">📝 發表新主題</h4>
+          <div class="card-header bg-white py-3">
+            <h4 class="mb-0">📝 發表新主題</h4>
           </div>
-          <div class="card-body p-2 p-md-4">
+          <div class="card-body p-4">
             <form @submit.prevent="submitNewTopic">
-              <div class="mb-3 mb-md-4">
-                <label class="form-label fw-bold small"
+              <div class="mb-4">
+                <label class="form-label fw-bold"
                   >標題 <span class="text-danger">*</span></label
                 >
                 <input
                   v-model="newTopicState.title"
-                  class="form-control"
+                  class="form-control form-control-lg"
                   placeholder="請輸入主題標題"
                   autofocus
                 />
               </div>
 
-              <div class="mb-3 mb-md-4">
-                <label class="form-label fw-bold small"
+              <div class="mb-4">
+                <label class="form-label fw-bold"
                   >內容 <span class="text-danger">*</span></label
                 >
                 <textarea
                   v-model="newTopicState.body"
                   class="form-control"
-                  :rows="windowWidth < 768 ? 6 : 8"
+                  rows="8"
                   placeholder="請輸入主題內容..."
                 ></textarea>
               </div>
 
-              <div class="mb-3 mb-md-4">
-                <label class="form-label fw-bold small"
+              <div class="mb-4">
+                <label class="form-label fw-bold"
                   >分類 <span class="text-danger">*</span></label
                 >
                 <select
                   v-model="newTopicState.categoryId"
-                  class="form-select"
+                  class="form-select form-select-lg"
                 >
                   <option :value="null" disabled>請選擇分類</option>
                   <option
@@ -161,8 +149,8 @@ const cancelNewTopic = () => {
                 </select>
               </div>
 
-              <div class="mb-3 mb-md-4">
-                <label class="form-label fw-bold small">回覆至（可選）</label>
+              <div class="mb-4">
+                <label class="form-label fw-bold">回覆至（可選）</label>
                 <select
                   v-model="newTopicState.parentContentId"
                   class="form-select"
@@ -177,20 +165,20 @@ const cancelNewTopic = () => {
                     {{ topic.title }}
                   </option>
                 </select>
-                <div class="form-text small">
+                <div class="form-text">
                   如果您想回覆某個已存在的主題，請先選擇分類後再選擇要回覆的主題
                 </div>
               </div>
 
-              <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
+              <div class="d-flex justify-content-end gap-2">
                 <button
                   type="button"
-                  class="btn btn-secondary w-100 w-sm-auto order-2 order-sm-1"
+                  class="btn btn-secondary btn-lg"
                   @click="cancelNewTopic"
                 >
                   <i class="fas fa-times me-2"></i>取消
                 </button>
-                <button type="submit" class="btn btn-primary w-100 w-sm-auto order-1 order-sm-2">
+                <button type="submit" class="btn btn-primary btn-lg">
                   <i class="fas fa-paper-plane me-2"></i>發表
                 </button>
               </div>
@@ -198,13 +186,13 @@ const cancelNewTopic = () => {
           </div>
         </div>
 
-        <div class="card shadow-sm mt-3 mt-md-4">
-          <div class="card-body p-2 p-md-3">
-            <h6 class="mb-2 mb-md-3 fs-6">📌 發表須知</h6>
-            <ul class="text-muted mb-0 small ps-3">
-              <li class="mb-1">請確保您的內容符合社區規範</li>
-              <li class="mb-1">標題應簡潔明瞭，準確描述主題內容</li>
-              <li class="mb-1">內容應詳細且有建設性</li>
+        <div class="card shadow-sm mt-4">
+          <div class="card-body">
+            <h6 class="mb-3">📌 發表須知</h6>
+            <ul class="text-muted mb-0">
+              <li>請確保您的內容符合社區規範</li>
+              <li>標題應簡潔明瞭，準確描述主題內容</li>
+              <li>內容應詳細且有建設性</li>
               <li>請選擇正確的分類以便其他用戶查找</li>
             </ul>
           </div>
