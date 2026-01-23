@@ -1,4 +1,6 @@
-﻿namespace incode2.Dtos.PointShop
+﻿using System.Globalization;
+
+namespace incode2.Dtos.PointShop
 {
     // 給使用者查看Order用
     public class OrderDTO
@@ -54,6 +56,12 @@
         public int ProductId { get; set; }
 
         public string ProductName { get; set; }
+
+        private string RecName { get; set; }
+
+        private string RecPhone { get; set; }
+
+        private string RecAddress { get; set; }
 
     }
 }
