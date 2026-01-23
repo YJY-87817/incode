@@ -70,11 +70,11 @@ const submitNewTopic = () => {
   }
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
     CategoryId: newTopicState.categoryId,
     ParentContentId: newTopicState.parentContentId,
     Title: newTopicState.title,
     Body: newTopicState.body,
+    Type: 1, // 設定為貼文類型 (CONTENT_TYPES.POST)
   };
 
   apiClient

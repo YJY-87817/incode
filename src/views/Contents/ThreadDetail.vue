@@ -22,22 +22,33 @@ export default {
           <span>·</span>
           <span>{{ thread.createdAt }}</span>
         </p>
-        <p class="card-text" style="white-space: pre-wrap; word-break: break-word;">{{ thread.content }}</p>
+        <p
+          class="card-text"
+          style="white-space: pre-wrap; word-break: break-word"
+        >
+          {{ thread.content }}
+        </p>
       </div>
     </div>
 
     <ThreadPost v-for="post in paginatedPosts" :key="post.id" :post="post" />
 
     <nav v-if="totalPages > 1" class="mt-3 mt-md-4">
-      <ul class="pagination pagination-sm justify-content-center flex-wrap gap-1">
+      <ul
+        class="pagination pagination-sm justify-content-center flex-wrap gap-1"
+      >
         <li
           class="page-item"
           :class="{ disabled: currentPage === 1 }"
           @click="prevPage"
         >
           <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-            <span class="d-none d-sm-inline"><i class="fa-solid fa-caret-left"></i></span>
-            <span class="d-inline d-sm-none"><i class="fa-solid fa-caret-left"></i></span>
+            <span class="d-none d-sm-inline"
+              ><i class="fa-solid fa-caret-left"></i
+            ></span>
+            <span class="d-inline d-sm-none"
+              ><i class="fa-solid fa-caret-left"></i
+            ></span>
           </a>
         </li>
         <li
@@ -47,7 +58,9 @@ export default {
           :class="{ active: currentPage === page }"
           @click="goToPage(page)"
         >
-          <a class="page-link px-2 px-md-3" href="javascript:void(0)">{{ page }}</a>
+          <a class="page-link px-2 px-md-3" href="javascript:void(0)">{{
+            page
+          }}</a>
         </li>
         <li
           class="page-item"
@@ -55,8 +68,12 @@ export default {
           @click="nextPage"
         >
           <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-            <span class="d-none d-sm-inline"><i class="fa-solid fa-caret-right"></i></span>
-            <span class="d-inline d-sm-none"><i class="fa-solid fa-caret-right"></i></span>
+            <span class="d-none d-sm-inline"
+              ><i class="fa-solid fa-caret-right"></i
+            ></span>
+            <span class="d-inline d-sm-none"
+              ><i class="fa-solid fa-caret-right"></i
+            ></span>
           </a>
         </li>
       </ul>
@@ -70,13 +87,13 @@ export default {
         :rows="windowWidth < 768 ? 3 : 4"
         placeholder="撰寫您的回覆..."
       ></textarea>
-      <button 
-        class="btn btn-primary w-100 w-sm-auto" 
+      <button
+        class="btn btn-primary w-100 w-sm-auto"
         @click="submitReply"
         :disabled="isSubmitting || !newReply.trim()"
       >
         <i class="fas fa-paper-plane me-2"></i>
-        {{ isSubmitting ? '發送中...' : '發送回覆' }}
+        {{ isSubmitting ? "發送中..." : "發送回覆" }}
       </button>
     </div>
   </section>
@@ -121,16 +138,22 @@ const fetchThread = async () => {
         createdAt: item.createdAt,
         content: item.body,
         categoryId: item.categoryId,
+        type: item.type,
       };
     }
-    // Simple reply handling: treat other items as replies
+    // 根據 type 和 parent_content_id 區分不同類型的內容
     allPosts.value = data.items
-      .filter((i) => i.contentId !== threadId)
+      .filter((i) => {
+        // 回文 (type 2) 或 留言 (type 3) 且 parent 是當前貼文
+        return (i.type === 2 || i.type === 3) && i.parentContentId === threadId;
+      })
       .map((i) => ({
         id: i.contentId,
         author: i.username,
         createdAt: i.createdAt,
         content: i.body,
+        type: i.type, // 加入 type 資訊
+        parentContentId: i.parentContentId,
       }));
   } catch (error) {
     console.error("Failed to fetch thread:", error);
@@ -138,12 +161,12 @@ const fetchThread = async () => {
 };
 
 onMounted(() => {
-  window.addEventListener('resize', updateWindowWidth);
+  window.addEventListener("resize", updateWindowWidth);
   fetchThread();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowWidth);
+  window.removeEventListener("resize", updateWindowWidth);
 });
 
 const currentPage = ref(1);
@@ -186,6 +209,7 @@ async function submitReply() {
     ParentContentId: threadId, // 綁定到當前貼文
     Title: `Re: ${thread.value.title}`, // 回覆標題格式：Re: 原標題
     Body: newReply.value.trim(),
+    Type: 2, // 設定為回文類型 (CONTENT_TYPES.REPLY)
   };
 
   try {

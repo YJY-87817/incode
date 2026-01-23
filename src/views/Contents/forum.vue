@@ -49,13 +49,14 @@ const fetchCategories = () => {
     });
 };
 
-// 取得主題列表（ContentApi）
+// 取得主題列表（ContentApi）- 只顯示貼文類型
 const fetchTopics = (categoryId = null, page = 1) => {
   forumState.isLoading = true;
 
   const params = {
     page: page,
     pageSize: forumState.pagination.pageSize,
+    type: 1, // 只顯示貼文類型 (CONTENT_TYPES.POST)
   };
   if (categoryId) params.categoryId = categoryId;
 
@@ -90,6 +91,7 @@ const fetchTopics = (categoryId = null, page = 1) => {
         )}&background=random`,
         categoryName: item.categoryName,
         createdAt: item.createdAt,
+        type: item.type, // 加入 type 欄位
 
         // 下面如果後端還沒做，就先用假資料撐住 UI
         replyCount: Math.floor(Math.random() * 100),
@@ -172,13 +174,13 @@ const displayPages = computed(() => {
 
 // 初始化
 onMounted(() => {
-  window.addEventListener('resize', updateWindowWidth);
+  window.addEventListener("resize", updateWindowWidth);
   fetchCategories();
   fetchTopics();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowWidth);
+  window.removeEventListener("resize", updateWindowWidth);
 });
 
 // 監聽主題刷新時間變更
@@ -225,7 +227,7 @@ const initializeReplyTitles = () => {
 const submitReply = async (topicId) => {
   const title = replyTitles[topicId]?.trim();
   const content = replyInputs[topicId]?.trim();
-  
+
   if (!title) {
     alert("請輸入標題");
     return;
@@ -243,6 +245,7 @@ const submitReply = async (topicId) => {
     CategoryId: 2, // TODO: 根據實際情況調整分類 ID
     Title: title, // 留言標題
     Body: content,
+    Type: 3, // 設定為留言類型 (CONTENT_TYPES.COMMENT)
   };
 
   try {
@@ -282,13 +285,19 @@ watch(
     <!-- 論壇標題區 -->
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div
+          class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3"
+        >
           <div>
             <h2 class="mb-2 fs-3 fs-md-2">💬 技術論壇</h2>
             <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
           </div>
-          <router-link :to="{ name: 'new-topic' }" class="btn btn-primary w-100 w-md-auto">
-            <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">發表</span>新主題
+          <router-link
+            :to="{ name: 'new-topic' }"
+            class="btn btn-primary w-100 w-md-auto"
+          >
+            <i class="fas fa-plus"></i>
+            <span class="d-none d-sm-inline">發表</span>新主題
           </router-link>
         </div>
       </div>
@@ -417,14 +426,12 @@ watch(
 
                   <!-- 主題內容 -->
                   <div class="flex-grow-1 min-w-0">
-                    <div
-                      class="d-flex flex-column gap-2 mb-2"
-                    >
+                    <div class="d-flex flex-column gap-2 mb-2">
                       <div class="w-100">
-                        <div class="d-flex flex-wrap gap-1 mb-1 align-items-baseline">
-                          <span
-                            v-if="topic.isPinned"
-                            class="badge bg-danger"
+                        <div
+                          class="d-flex flex-wrap gap-1 mb-1 align-items-baseline"
+                        >
+                          <span v-if="topic.isPinned" class="badge bg-danger"
                             >置頂</span
                           >
                           <span
@@ -447,9 +454,13 @@ watch(
                           </router-link>
                         </h6>
 
-                        <div class="small text-muted mb-2 d-flex flex-wrap gap-2">
+                        <div
+                          class="small text-muted mb-2 d-flex flex-wrap gap-2"
+                        >
                           <span class="text-nowrap">👤 {{ topic.author }}</span>
-                          <span class="text-nowrap">📁 {{ topic.categoryName }}</span>
+                          <span class="text-nowrap"
+                            >📁 {{ topic.categoryName }}</span
+                          >
                           <span class="text-nowrap"
                             >🕒 {{ formatTimeAgo(topic.createdAt) }}</span
                           >
@@ -466,10 +477,17 @@ watch(
                       class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mt-2"
                     >
                       <div class="small text-muted d-flex flex-wrap gap-2">
-                        <span class="text-nowrap">💬 {{ topic.replyCount }} 回覆</span>
-                        <span class="text-nowrap">👁 {{ topic.viewCount }} 瀏覽</span>
+                        <span class="text-nowrap"
+                          >💬 {{ topic.replyCount }} 回覆</span
+                        >
+                        <span class="text-nowrap"
+                          >👁 {{ topic.viewCount }} 瀏覽</span
+                        >
                       </div>
-                      <div class="small text-muted text-truncate" style="max-width: 100%;">
+                      <div
+                        class="small text-muted text-truncate"
+                        style="max-width: 100%"
+                      >
                         最後回覆：{{ topic.lastReplyUser }} ·
                         {{ topic.lastReplyTime }}
                       </div>
@@ -482,7 +500,7 @@ watch(
                         @click="toggleReplyBox(topic.id)"
                       >
                         <i class="fas fa-comment-dots me-1"></i>
-                        {{ showReplyBox[topic.id] ? '收起' : '留言' }}
+                        {{ showReplyBox[topic.id] ? "收起" : "留言" }}
                       </button>
                     </div>
 
@@ -504,14 +522,24 @@ watch(
                         <button
                           class="btn btn-sm btn-primary"
                           @click="submitReply(topic.id)"
-                          :disabled="submittingReplies[topic.id] || !replyInputs[topic.id]?.trim() || !replyTitles[topic.id]?.trim()"
+                          :disabled="
+                            submittingReplies[topic.id] ||
+                            !replyInputs[topic.id]?.trim() ||
+                            !replyTitles[topic.id]?.trim()
+                          "
                         >
                           <i class="fas fa-paper-plane me-1"></i>
-                          {{ submittingReplies[topic.id] ? '發送中...' : '發送' }}
+                          {{
+                            submittingReplies[topic.id] ? "發送中..." : "發送"
+                          }}
                         </button>
                         <button
                           class="btn btn-sm btn-secondary"
-                          @click="showReplyBox[topic.id] = false; replyInputs[topic.id] = ''; replyTitles[topic.id] = ''"
+                          @click="
+                            showReplyBox[topic.id] = false;
+                            replyInputs[topic.id] = '';
+                            replyTitles[topic.id] = '';
+                          "
                         >
                           取消
                         </button>
@@ -529,7 +557,9 @@ watch(
             v-if="forumState.pagination.totalPages > 1"
           >
             <nav>
-              <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1">
+              <ul
+                class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1"
+              >
                 <li
                   class="page-item"
                   :class="{ disabled: forumState.pagination.currentPage === 1 }"
@@ -540,16 +570,28 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage - 1)
                     "
-                    ><span class="d-none d-sm-inline"><i class="fa-solid fa-caret-left"></i></span><span class="d-inline d-sm-none"><i class="fa-solid fa-caret-left"></i></span></a
-                  >
+                    ><span class="d-none d-sm-inline"
+                      ><i class="fa-solid fa-caret-left"></i></span
+                    ><span class="d-inline d-sm-none"
+                      ><i class="fa-solid fa-caret-left"></i></span
+                  ></a>
                 </li>
 
-                <li v-if="displayPages[0] > 1" class="page-item d-none d-md-block">
-                  <a class="page-link px-2 px-md-3" href="#" @click.prevent="onPageChange(1)"
+                <li
+                  v-if="displayPages[0] > 1"
+                  class="page-item d-none d-md-block"
+                >
+                  <a
+                    class="page-link px-2 px-md-3"
+                    href="#"
+                    @click.prevent="onPageChange(1)"
                     >1</a
                   >
                 </li>
-                <li v-if="displayPages[0] > 2" class="page-item disabled d-none d-md-block">
+                <li
+                  v-if="displayPages[0] > 2"
+                  class="page-item disabled d-none d-md-block"
+                >
                   <span class="page-link px-2">...</span>
                 </li>
 
@@ -609,8 +651,11 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage + 1)
                     "
-                    ><span class="d-none d-sm-inline"><i class="fa-solid fa-caret-right"></i></span><span class="d-inline d-sm-none"><i class="fa-solid fa-caret-right"></i></span></a
-                  >
+                    ><span class="d-none d-sm-inline"
+                      ><i class="fa-solid fa-caret-right"></i></span
+                    ><span class="d-inline d-sm-none"
+                      ><i class="fa-solid fa-caret-right"></i></span
+                  ></a>
                 </li>
               </ul>
             </nav>
@@ -635,8 +680,9 @@ watch(
                 }}</strong>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center">
-              </div>
+              <div
+                class="d-flex justify-content-between align-items-center"
+              ></div>
             </div>
           </div>
         </div>
@@ -715,7 +761,7 @@ watch(
   .category-container {
     max-height: 250px;
   }
-  
+
   .topic-body-preview {
     font-size: 0.85rem;
   }
@@ -725,11 +771,11 @@ watch(
   .category-container {
     max-height: 200px;
   }
-  
+
   .topic-title-link {
     font-size: 0.95rem;
   }
-  
+
   .min-w-0 {
     min-width: 0;
   }
