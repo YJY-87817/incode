@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/user/auth";
 const authStore = useAuthStore();
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import bg0 from "@/assets/img/bg9.jpg";
 //修改資料彈出視窗
 import { shallowRef } from "vue";
@@ -58,11 +58,19 @@ onUnmounted(() => {
       label: 'Buy Now',
       color: 'btn-white',
     }"
-    transparent
   />
   <header class="bg-gradient-dark"></header>
+  <v-tabs-window>
+    <v-container fluid>
+      <v-img
+        src="https://picsum.photos/500/300?image=15"
+        height="205"
+        cover
+      ></v-img>
+    </v-container>
+  </v-tabs-window>
 
-  <div class="container user-index-page mt-5" style="min-height: 80vh">
+  <div class="container user-index-page mt-3" style="min-height: 80vh">
     <h1 class="mb-4 display-4 font-weight-bold text-center">會員中心</h1>
 
     <div class="row">

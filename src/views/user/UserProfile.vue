@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/user/userStore";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 const userStore = useUserStore();
 const router = useRouter();
 
