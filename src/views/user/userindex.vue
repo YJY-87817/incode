@@ -276,7 +276,6 @@ onUnmounted(() => {
   <div class="container user-index-page mt-3" style="min-height: 80vh">
     <hr class="horizontal dark my-4" />
     <h2 class="mt-5">我的討論區</h2>
-    <span>草稿們</span>
     <nav class="mt-5 text-center" style="font-size: 24px">
       <router-link :to="{ name: 'UserPost' }">發文</router-link> |
       <router-link :to="{ name: 'UserSave' }">收藏</router-link> |
