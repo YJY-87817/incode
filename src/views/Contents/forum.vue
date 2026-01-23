@@ -422,19 +422,21 @@ watch(
                       class="d-flex flex-column gap-2 mb-2"
                     >
                       <div class="w-100">
+                        <div class="d-flex flex-wrap gap-1 mb-1 align-items-baseline">
+                          <span
+                            v-if="topic.isPinned"
+                            class="badge bg-danger"
+                            >置頂</span
+                          >
+                          <span
+                            v-if="topic.isHot"
+                            class="badge bg-warning text-dark"
+                            >熱門</span
+                          >
+                          <InteractionButtons :contentId="topic.id" />
+                        </div>
+
                         <h6 class="mb-2 fs-6">
-                          <div class="d-flex flex-wrap gap-1 mb-1">
-                            <span
-                              v-if="topic.isPinned"
-                              class="badge bg-danger"
-                              >置頂</span
-                            >
-                            <span
-                              v-if="topic.isHot"
-                              class="badge bg-warning text-dark"
-                              >熱門</span
-                            >
-                          </div>
                           <router-link
                             :to="{
                               name: 'thread-detail',
@@ -458,7 +460,6 @@ watch(
                         <p class="mb-1 text-muted topic-body-preview">
                           {{ topic.content }}
                         </p>
-                        <InteractionButtons :contentId="topic.id" />
                       </div>
                     </div>
 

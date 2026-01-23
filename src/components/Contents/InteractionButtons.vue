@@ -84,20 +84,37 @@ async function handleClick(categoryId, categoryName) {
 </script>
 
 <template>
-  <div class="interaction-buttons d-flex align-items-center gap-2 mt-2">
+  <div class="interaction-buttons d-inline-flex align-items-center gap-1 ms-2">
     <button
       v-for="cat in categories"
       :key="cat.id"
-      class="btn btn-sm"
+      class="btn btn-sm btn-xs"
       :class="buttonClass(cat.name)"
       @click="handleClick(cat.id, cat.name)"
       :title="cat.name"
     >
       <i :class="iconClass(cat.name)"></i>
-      <span class="ms-1">{{ cat.name }}</span>
     </button>
   </div>
 </template>
+
+<style scoped>
+.interaction-buttons {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.btn-xs {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  height: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
 
 <style scoped>
 .interaction-buttons .btn {
