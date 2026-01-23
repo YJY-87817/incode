@@ -5,19 +5,9 @@ export const api = axios.create({
   withCredentials: true
 })
 
-// 自動帶 token（登入後會存到 localStorage）
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('access_token') // 或你的 token key
-  console.log('[Axios] Token from localStorage:', token ? '存在' : '不存在')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  console.log('[Axios] 已加上 Authorization header')
-  } else {
-    console.log('[Axios] 沒有 token，不加 header')
-  }
-  return config
-}, error => Promise.reject(error))
+// 使用 session cookies 認證，不需要 JWT token
+// 移除原本的 JWT interceptor 以避免干擾 session cookie 認證
 
-// 你的 fetchUserProfile 改用 api 實例
-export const fetchUserProfile = () => api.get('/api/PointLogApi/user/my-logs');
+// 取得使用者點數紀錄
+export const fetchPointLogs = () => api.get('/api/PointLogApi/user/my-logs');
 
