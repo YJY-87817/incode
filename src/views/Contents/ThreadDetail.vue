@@ -70,8 +70,13 @@ export default {
         :rows="$window?.innerWidth < 768 ? 3 : 4"
         placeholder="撰寫您的回覆..."
       ></textarea>
-      <button class="btn btn-primary w-100 w-sm-auto" @click="submitReply">
-        <i class="fas fa-paper-plane me-2"></i>發送回覆
+      <button 
+        class="btn btn-primary w-100 w-sm-auto" 
+        @click="submitReply"
+        :disabled="isSubmitting || !newReply.trim()"
+      >
+        <i class="fas fa-paper-plane me-2"></i>
+        {{ isSubmitting ? '發送中...' : '發送回覆' }}
       </button>
     </div>
   </section>
@@ -153,17 +158,38 @@ function nextPage() {
 }
 
 const newReply = ref("");
-function submitReply() {
-  if (!newReply.value.trim()) return;
-  const newPost = {
-    id: Date.now(),
-    author: "CurrentUser",
-    createdAt: new Date().toISOString().split("T")[0],
-    content: newReply.value.trim(),
+const isSubmitting = ref(false);
+
+async function submitReply() {
+  if (!newReply.value.trim()) {
+    alert("請輸入回覆內容");
+    return;
+  }
+
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+
+  const dto = {
+    UserId: 1, // TODO: 改成實際使用者 ID
+    CategoryId: 1, // TODO: 根據實際情況調整分類 ID
+    ParentContentId: threadId, // 綁定到當前貼文
+    Title: "", // 回覆不需要標題
+    Body: newReply.value.trim(),
   };
-  allPosts.value.unshift(newPost);
-  newReply.value = "";
-  currentPage.value = 1;
+
+  try {
+    await apiClient.post("/ContentApi", dto);
+    alert("回覆成功！");
+    newReply.value = "";
+    // 重新載入貼文和回覆
+    await fetchThread();
+    currentPage.value = 1;
+  } catch (error) {
+    console.error("回覆失敗:", error);
+    alert("回覆失敗，請稍後再試");
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 </script>
 

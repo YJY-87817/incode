@@ -176,6 +176,74 @@ watch(
     fetchTopics(forumState.selectedCategory, forumState.pagination.currentPage);
   }
 );
+
+// 留言功能
+const replyInputs = reactive({});
+const submittingReplies = reactive({});
+
+// 初始化每個主題的留言框狀態
+const initializeReplyInputs = () => {
+  forumState.topics.forEach((topic) => {
+    if (!replyInputs[topic.id]) {
+      replyInputs[topic.id] = "";
+    }
+    if (!submittingReplies[topic.id]) {
+      submittingReplies[topic.id] = false;
+    }
+  });
+};
+
+// 切換留言框顯示
+const showReplyBox = reactive({});
+const toggleReplyBox = (topicId) => {
+  showReplyBox[topicId] = !showReplyBox[topicId];
+};
+
+// 提交留言
+const submitReply = async (topicId) => {
+  const content = replyInputs[topicId]?.trim();
+  if (!content) {
+    alert("請輸入留言內容");
+    return;
+  }
+
+  if (submittingReplies[topicId]) return;
+  submittingReplies[topicId] = true;
+
+  const dto = {
+    UserId: 1, // TODO: 改成實際使用者 ID
+    CategoryId: 1, // TODO: 根據實際情況調整分類 ID
+    ParentContentId: topicId, // 綁定到該篇貼文
+    Title: "", // 留言不需要標題
+    Body: content,
+  };
+
+  try {
+    await apiClient.post("/ContentApi", dto);
+    alert("留言成功！");
+    replyInputs[topicId] = "";
+    showReplyBox[topicId] = false;
+    // 重新載入主題列表
+    await fetchTopics(
+      forumState.selectedCategory,
+      forumState.pagination.currentPage
+    );
+  } catch (error) {
+    console.error("留言失敗:", error);
+    alert("留言失敗，請稍後再試");
+  } finally {
+    submittingReplies[topicId] = false;
+  }
+};
+
+// 監聽主題變更時初始化留言框
+watch(
+  () => forumState.topics,
+  () => {
+    initializeReplyInputs();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -374,6 +442,43 @@ watch(
                       <div class="small text-muted text-truncate" style="max-width: 100%;">
                         最後回覆：{{ topic.lastReplyUser }} ·
                         {{ topic.lastReplyTime }}
+                      </div>
+                    </div>
+
+                    <!-- 留言按鈕 -->
+                    <div class="mt-2">
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        @click="toggleReplyBox(topic.id)"
+                      >
+                        <i class="fas fa-comment-dots me-1"></i>
+                        {{ showReplyBox[topic.id] ? '收起' : '留言' }}
+                      </button>
+                    </div>
+
+                    <!-- 留言輸入框 -->
+                    <div v-if="showReplyBox[topic.id]" class="mt-3 reply-box">
+                      <textarea
+                        v-model="replyInputs[topic.id]"
+                        class="form-control mb-2"
+                        rows="3"
+                        placeholder="撰寫您的留言..."
+                      ></textarea>
+                      <div class="d-flex gap-2">
+                        <button
+                          class="btn btn-sm btn-primary"
+                          @click="submitReply(topic.id)"
+                          :disabled="submittingReplies[topic.id] || !replyInputs[topic.id]?.trim()"
+                        >
+                          <i class="fas fa-paper-plane me-1"></i>
+                          {{ submittingReplies[topic.id] ? '發送中...' : '發送' }}
+                        </button>
+                        <button
+                          class="btn btn-sm btn-secondary"
+                          @click="showReplyBox[topic.id] = false; replyInputs[topic.id] = ''"
+                        >
+                          取消
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -592,5 +697,22 @@ watch(
   .min-w-0 {
     min-width: 0;
   }
+}
+
+/* 留言框樣式 */
+.reply-box {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  border-left: 3px solid #cb0c9f;
+}
+
+.reply-box textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.reply-box .btn {
+  font-size: 0.875rem;
 }
 </style>
