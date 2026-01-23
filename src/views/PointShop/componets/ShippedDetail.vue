@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { getShippedDetails } from "@/Views/PointShop/services/PointShopApi";
+import { getShippedDetails } from "@/views/PointShop/services/PointShopApi";
 
 const props = defineProps({
   orderDetailId: Number,
@@ -36,10 +36,7 @@ const toggle = async () => {
 
 <template>
   <div class="shipped-box p-2">
-    <button
-      @click="toggle"
-      :class="['btn', open ? 'btn-success' : 'btn-secondary']"
-    >
+    <button @click="toggle" :class="['btn', open ? 'btn-success' : 'btn-secondary']">
       {{ open ? "隱藏" : "查看" }} 出貨資訊
     </button>
 
@@ -53,11 +50,7 @@ const toggle = async () => {
           <i class="bi bi-exclamation-triangle"></i> {{ error }}
         </div>
 
-        <div
-          v-for="ship in shipped"
-          :key="ship.shippedDate"
-          class="card border mb-3"
-        >
+        <div v-for="ship in shipped" :key="ship.shippedDate" class="card border mb-3">
           <div class="card-body">
             <div class="row mb-2">
               <div class="col-12">

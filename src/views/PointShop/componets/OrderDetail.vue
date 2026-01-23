@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { getOrderDetails } from "@/Views/PointShop/services/PointShopApi";
+import { getOrderDetails } from "@/views/PointShop/services/PointShopApi";
 import ShippedDetail from "./ShippedDetail.vue";
 
 const props = defineProps({
@@ -22,7 +22,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="order-detail">
+  <div class="order-detail rounded">
     <div v-if="loading" class="alert alert-info">
       <div class="spinner-border spinner-border-sm me-2" role="status">
         <span class="visually-hidden">載入中...</span>
@@ -30,20 +30,13 @@ onMounted(async () => {
       載入訂單明細中...
     </div>
 
-    <div v-else class="row g-4">
+    <div v-else class="row g-4 ">
       <div class="col-7 px-4">
         <h6 class="fw-bold border-bottom pb-2">商品明細</h6>
-        <div
-          v-for="detail in details"
-          :key="detail.orderdetailId"
-          class="col-12"
-        >
+        <div v-for="detail in details" :key="detail.orderdetailId" class="col-12">
           <div class="d-flex align-items-start gap-3">
-            <img
-              :src="`https://localhost:7190/img/product/${detail.imageName}`"
-              class="rounded flex-shrink-0 product-img"
-              :alt="detail.productName"
-            />
+            <img :src="`https://localhost:7190/img/product/${detail.imageName}`"
+              class="rounded flex-shrink-0 product-img" :alt="detail.productName" />
             <div class="flex-grow-1">
               <h6 class="fw-bold mb-2">{{ detail.productName }}</h6>
               <div class="d-flex flex-wrap gap-2 mb-3 text-dark">
@@ -62,11 +55,7 @@ onMounted(async () => {
       </div>
       <div class="col-5">
         <h6 class="fw-bold border-bottom pb-2">配送資訊</h6>
-        <div
-          v-for="detail in details"
-          :key="detail.orderdetailId"
-          class="col-12"
-        >
+        <div v-for="detail in details" :key="detail.orderdetailId" class="col-12">
           <ShippedDetail :orderDetailId="detail.orderdetailId" />
         </div>
       </div>

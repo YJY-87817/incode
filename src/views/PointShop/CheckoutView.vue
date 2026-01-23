@@ -2,6 +2,8 @@
 import { ref, computed } from "vue";
 import axios from "axios";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
+import CheckoutItem from "@/views/PointShop/componets/Checkitem.vue";
+import CheckoutPoint from "@/views/PointShop/componets/CheckPoint.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
@@ -10,6 +12,7 @@ const CartNow = useCartStore();
 
 <template>
   <DefaultNavbar darkText />
+
   <div class="min-vh-100 pb-5">
     <div class="container mt-5 mb-5">
       <div class="col-12 mb-4">
@@ -19,10 +22,17 @@ const CartNow = useCartStore();
           </div>
         </div>
       </div>
+
+      <div class="row">
+        <div class="col-md-8">
+          <CheckoutItem></CheckoutItem>
+        </div>
+        <div class="col-md-4">
+          <CheckoutPoint></CheckoutPoint>
+        </div>
+      </div>
     </div>
   </div>
-  <div v-if="CartNow.cartItems.length > 0"></div>
-  <div v-else class="text-center text-muted mt-5">目前沒有任何商品在購物車</div>
   <DefaultFooter />
 </template>
 

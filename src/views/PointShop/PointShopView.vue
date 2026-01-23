@@ -121,22 +121,13 @@ onMounted(() => {
 
       <div class="row">
         <div class="col-lg-3">
-          <FilterPanel
-            :filters="filters"
-            :categories="categories"
-            @update:filters="handleFilterUpdate"
-            @toggle-category="toggleCategory"
-            @reset-filters="resetFilters"
-          />
+          <FilterPanel :filters="filters" :categories="categories" @update:filters="handleFilterUpdate"
+            @toggle-category="toggleCategory" @reset-filters="resetFilters" />
         </div>
 
         <div class="col-lg-9">
-          <ProductGrid
-            :products="products"
-            :filtered-products="filteredProducts"
-            :loading="loading"
-            @reset-filters="resetFilters"
-          />
+          <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
+            @reset-filters="resetFilters" />
           <div class="d-flex justify-content-center mt-5">
             <nav aria-label="Page navigation pointshop">
               <ul class="pagination">

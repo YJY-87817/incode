@@ -22,14 +22,10 @@ const getStatusBadgeClass = (status) => {
 </script>
 
 <template>
-  <div class="accordion-item mb-3 border shadow-sm">
+  <div class="accordion-item mb-3 border shadow-sm rounded">
     <h2 class="accordion-header">
-      <button
-        class="accordion-button collapsed"
-        type="button"
-        data-bs-toggle="collapse"
-        :data-bs-target="'#order-' + order.orderId"
-      >
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+        :data-bs-target="'#order-' + order.orderId">
         <div class="container-fluid">
           <div class="row w-100 align-items-center">
             <div class="col-6 col-md-3">
@@ -52,11 +48,7 @@ const getStatusBadgeClass = (status) => {
       </button>
     </h2>
 
-    <div
-      :id="'order-' + order.orderId"
-      class="accordion-collapse collapse"
-      data-bs-parent="#orderAccordion"
-    >
+    <div :id="'order-' + order.orderId" class="accordion-collapse collapse rounded" data-bs-parent="#orderAccordion">
       <div class="accordion-body bg-white">
         <OrderDetail :orderId="order.orderId" :remark="order.remark" />
       </div>
