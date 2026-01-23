@@ -56,8 +56,12 @@ export default {
           @click="prevPage"
         >
           <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-            <span class="d-none d-sm-inline">上一頁</span>
-            <span class="d-inline d-sm-none"><</span>
+            <span class="d-none d-sm-inline"
+              ><i class="fa-solid fa-caret-left"></i
+            ></span>
+            <span class="d-inline d-sm-none"
+              ><i class="fa-solid fa-caret-left"></i
+            ></span>
           </a>
         </li>
         <li
@@ -77,8 +81,12 @@ export default {
           @click="nextPage"
         >
           <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-            <span class="d-none d-sm-inline">下一頁</span>
-            <span class="d-inline d-sm-none">></span>
+            <span class="d-none d-sm-inline"
+              ><i class="fa-solid fa-caret-right"></i
+            ></span>
+            <span class="d-inline d-sm-none"
+              ><i class="fa-solid fa-caret-right"></i
+            ></span>
           </a>
         </li>
       </ul>

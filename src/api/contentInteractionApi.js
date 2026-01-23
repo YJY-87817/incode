@@ -72,6 +72,23 @@ const contentInteractionApi = {
   hide(contentId) {
     return this.postInteraction({ category_id: 5, content_id: contentId });
   },
+
+  /**
+   * Fetch comments for a specific content item.
+   *
+   * GET /ContentApi/{contentId}/comments
+   *
+   * @param {number} contentId - The ID of the content to fetch comments for
+   * @returns {Promise<Object>} Object containing:
+   *   {
+   *     contentId: number,
+   *     comments: Array,
+   *     count: number
+   *   }
+   */
+  getComments(contentId) {
+    return apiClient.get(`/ContentApi/${contentId}/comments`);
+  },
 };
 
 export default contentInteractionApi;

@@ -151,6 +151,7 @@ export default {
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import apiClient from "@/api/request.js";
+import contentInteractionApi from "@/api/contentInteractionApi.js";
 import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
@@ -177,9 +178,9 @@ const comments = ref([]);
 
 const fetchThread = async () => {
   try {
-    const [detailRes, childrenRes] = await Promise.all([
+    const [detailRes, commentsRes] = await Promise.all([
       apiClient.get(`/ContentApi/${threadId}`),
-      apiClient.get("/ContentApi", { params: { parentContentId: threadId } }),
+      contentInteractionApi.getComments(threadId),
     ]);
 
     const detail = detailRes?.contentId ? detailRes : detailRes?.data;
@@ -195,16 +196,27 @@ const fetchThread = async () => {
       };
     }
 
-    const items = Array.isArray(childrenRes?.items) ? childrenRes.items : [];
+    // Process comments from the new API endpoint
+    const commentsData = commentsRes?.comments || [];
+    const commentItems = commentsData.map((comment) => ({
+      id: comment.contentId,
+      author: comment.username,
+      createdAt: comment.createdAt,
+      content: comment.body,
+      type: CONTENT_TYPES.COMMENT,
+      parentContentId: comment.parentContentId,
+      replies: [],
+    }));
 
-    const normalized = items
-      .filter((i) =>
-        [
-          CONTENT_TYPES.REPLY,
-          CONTENT_TYPES.COMMENT,
-          CONTENT_TYPES.COMMENT_REPLY,
-        ].includes(i.type)
-      )
+    // For now, keep the existing logic for replies (replies to the main thread)
+    // This fetches replies separately since the new comments API might not include them
+    const repliesRes = await apiClient.get("/ContentApi", {
+      params: { parentContentId: threadId },
+    });
+    const replyItems = Array.isArray(repliesRes?.items) ? repliesRes.items : [];
+
+    const normalizedReplies = replyItems
+      .filter((i) => i.type === CONTENT_TYPES.REPLY)
       .map((i) => ({
         id: i.contentId,
         author: i.username,
@@ -215,37 +227,16 @@ const fetchThread = async () => {
         replies: [],
       }));
 
-    const nodeMap = new Map();
-    normalized.forEach((node) => {
-      nodeMap.set(node.id, node);
-    });
-
-    const roots = [];
-    const commentItems = [];
-    nodeMap.forEach((node) => {
-      if (node.parentContentId === threadId) {
-        if (node.type === CONTENT_TYPES.COMMENT) {
-          commentItems.push(node);
-        } else {
-          roots.push(node);
-        }
-      } else if (nodeMap.has(node.parentContentId)) {
-        const parent = nodeMap.get(node.parentContentId);
-        parent.replies.push(node);
-      }
-    });
-
-    const sortReplies = (list) => {
+    const sortByDate = (list) => {
       list.sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
-      list.forEach((child) => sortReplies(child.replies));
     };
 
-    sortReplies(roots);
-    sortReplies(commentItems);
-    allPosts.value = roots;
+    sortByDate(commentItems);
+    sortByDate(normalizedReplies);
+    allPosts.value = normalizedReplies;
     comments.value = commentItems;
   } catch (error) {
     console.error("Failed to fetch thread:", error);
