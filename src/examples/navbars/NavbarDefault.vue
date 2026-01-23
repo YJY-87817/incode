@@ -132,6 +132,18 @@ watch(
         title="Designed and Coded by Creative Tim"
         data-placement="bottom"
       >
+      <!-- <RouterLink
+        class="navbar-brand d-none d-md-block"
+        :class="[
+          (props.transparent && textDark.value) || !props.transparent
+            ? 'text-dark font-weight-bolder ms-sm-3'
+            : 'text-white font-weight-bolder ms-sm-3',
+        ]"
+        :to="{ name: 'presentation' }"
+        rel="tooltip"
+        title="Designed and Coded by Creative Tim"
+        data-placement="bottom"
+      > -->
         <i class="fas fa-hat-cowboy-side"></i>
         incode影庫
       </RouterLink>

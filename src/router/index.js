@@ -3,6 +3,11 @@ import PresentationView from "../views/Presentation/PresentationView.vue";
 import AboutView from "../views/LandingPages/AboutUs/AboutView.vue";
 import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
+
+// tim 以下
+import Forum from "@/views/Contents/Forum.vue"
+
+// tim 以上
 import Login from "@/views/user/login.vue";
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
@@ -30,6 +35,7 @@ import PointLog from "../views/point/PointLog.vue";
 import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -155,7 +161,7 @@ const router = createRouter({
     {
       path: "/forum",
       name: "forum",
-      component: () => import("@/views/Contents/forum.vue"),
+      component: Forum,
     },
     {
       path: "/forum/new-topic",
@@ -166,6 +172,16 @@ const router = createRouter({
       path: "/test",
       name: "test",
       component: () => import("@/views/Contents/test.vue"),
+    },
+    {
+      path: "/forum/list",
+      name: "forum-list",
+      component: () => import("@/views/Contents/ForumList.vue"),
+    },
+    {
+      path: "/thread/:id",
+      name: "thread-detail",
+      component: () => import("@/views/Contents/ThreadDetail.vue"),
     },
     // 以上是tim的路由
 
@@ -225,16 +241,6 @@ const router = createRouter({
       path: "/PointShop/Checkout",
       name: "Checkout",
       component: Checkout,
-    },
-    {
-      path: "/forum/list",
-      name: "forum-list",
-      component: () => import("@/views/Contents/ForumList.vue"),
-    },
-    {
-      path: "/thread/:id",
-      name: "thread-detail",
-      component: () => import("@/views/Contents/ThreadDetail.vue"),
     },
     // yjy 以上
   ],
