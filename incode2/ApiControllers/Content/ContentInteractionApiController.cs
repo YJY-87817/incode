@@ -6,13 +6,10 @@ using incode2.Services.Contents;
 
 namespace incode2.ApiControllers.Content
 {
-  /// <summary>
-  /// ContentInteraction API
-  /// 
-  /// 基礎 URI: https://localhost:7190/api/contentinteractionapi
-  /// 
-  /// 所有端點都以此基礎 URI 開頭
-  /// </summary>
+  // ContentInteraction API
+
+  // 基礎 URI: https://localhost:7190/api/contentinteractionapi
+  // 所有端點都以此基礎 URI 開頭
   [ApiController]
   [Route("api/[controller]")]
   public class ContentInteractionApiController : ControllerBase
@@ -24,14 +21,12 @@ namespace incode2.ApiControllers.Content
       _contentInteractionService = contentInteractionService;
     }
 
-    /// <summary>
-    /// 取得特定內容的所有互動
-    /// 
-    /// URI: GET /api/contentinteractionapi/content/{contentId}
-    /// 
-    /// 範例:
-    /// GET https://localhost:7190/api/contentinteractionapi/content/1
-    /// </summary>
+
+    // 取得特定內容的所有互動
+
+    // URI: GET /api/contentinteractionapi/content/{contentId}
+    // 範例:
+    // GET https://localhost:7190/api/contentinteractionapi/content/1
     [HttpGet("content/{contentId}")]
     public async Task<IActionResult> GetContentInteractions(int contentId)
     {
@@ -44,14 +39,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    /// <summary>
-    /// 取得使用者對特定內容的互動
-    /// 
-    /// URI: GET /api/contentinteractionapi/user/{contentId}?userId={userId}
-    /// 
-    /// 範例:
-    /// GET https://localhost:7190/api/contentinteractionapi/user/1?userId=10
-    /// </summary>
+    // 取得使用者對特定內容的互動
+    // URI: GET /api/contentinteractionapi/user/{contentId}?userId={userId}
+    // 範例:
+    // GET https://localhost:7190/api/contentinteractionapi/user/1?userId=10
+    // </summary>
     [HttpGet("user/{contentId}")]
     public async Task<IActionResult> GetUserInteraction(int contentId, [FromQuery] int userId)
     {
@@ -64,22 +56,20 @@ namespace incode2.ApiControllers.Content
       return Ok(interaction);
     }
 
-    /// <summary>
-    /// 新增或移除互動（Toggle）
-    /// 同一個 content + user + category 按一次新增，再按一次移除
-    /// 如果互動類型不同，則更新為新類型
-    /// 
-    /// URI: POST /api/contentinteractionapi
-    /// 
-    /// Request Body:
-    /// {
-    ///   "interactionCategoryId": 1,  // like
-    ///   "contentId": 5
-    /// }
-    /// 
-    /// 範例:
-    /// POST https://localhost:7190/api/contentinteractionapi
-    /// </summary>
+
+    // 新增或移除互動（Toggle）
+    // 同一個 content + user + category 按一次新增，再按一次移除
+    // 如果互動類型不同，則更新為新類型
+    // URI: POST /api/contentinteractionapi
+
+    // Request Body:
+    // {
+    //   "interactionCategoryId": 1,  // like
+    //   "contentId": 5
+    // }
+
+    // 範例:
+    // POST https://localhost:7190/api/contentinteractionapi
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> AddOrUpdateInteraction([FromBody] CreateContentInteractionDto dto)
@@ -87,7 +77,7 @@ namespace incode2.ApiControllers.Content
       if (!ModelState.IsValid)
         return BadRequest(ModelState);
 
-      // 從 Token/Claims 中取得當前使用者 ID
+      // 從Claims 中取得當前使用者 ID
       var userId = User.GetId();
       if (userId == 0)
         return Unauthorized(new { message = "無法取得使用者ID" });
@@ -100,7 +90,7 @@ namespace incode2.ApiControllers.Content
       {
         // 設定 userId，確保使用者只能互動自己的操作
         dto.UserId = userId;
-        
+
         var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
 
         // 回傳新增互動或是移除互動
@@ -129,14 +119,12 @@ namespace incode2.ApiControllers.Content
       }
     }
 
-    /// <summary>
-    /// 移除互動
-    /// 
-    /// URI: DELETE /api/contentinteractionapi/{contentId}/{userId}/{interactionCategoryId}
-    /// 
-    /// 範例:
-    /// DELETE https://localhost:7190/api/contentinteractionapi/5/10/1
-    /// </summary>
+
+    // 移除互動
+    // URI: DELETE /api/contentinteractionapi/{contentId}/{userId}/{interactionCategoryId}
+    // 範例:
+    // DELETE https://localhost:7190/api/contentinteractionapi/5/10/1
+
     [HttpDelete("{contentId}/{userId}/{interactionCategoryId}")]
     public async Task<IActionResult> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
@@ -149,14 +137,11 @@ namespace incode2.ApiControllers.Content
       return Ok(new { message = "互動已移除" });
     }
 
-    /// <summary>
-    /// 取得互動分類列表
-    /// 
-    /// URI: GET /api/contentinteractionapi/categories
-    /// 
-    /// 範例:
-    /// GET https://localhost:7190/api/contentinteractionapi/category
-    /// </summary>
+    // 取得互動分類列表
+    // URI: GET /api/contentinteractionapi/categories
+    // 範例:
+    // GET https://localhost:7190/api/contentinteractionapi/category
+
     [HttpGet("category")]
     public async Task<IActionResult> GetInteractionCategory()
     {
@@ -164,14 +149,11 @@ namespace incode2.ApiControllers.Content
       return Ok(categories);
     }
 
-    /// <summary>
-    /// 統計內容的互動數（按分類）
-    /// 
-    /// URI: GET /api/contentinteractionapi/stats/{contentId}
-    /// 
-    /// 範例:
-    /// GET https://localhost:7190/api/contentinteractionapi/stats/1
-    /// </summary>
+
+    // 統計內容的互動數（按分類）
+    // URI: GET /api/contentinteractionapi/stats/{contentId}
+    // 範例:
+    // GET https://localhost:7190/api/contentinteractionapi/stats/1
     [HttpGet("stats/{contentId}")]
     public async Task<IActionResult> GetInteractionStats(int contentId)
     {

@@ -10,5 +10,6 @@ namespace incode2.Services.Contents
     Task<Content> CreateContent(CreateContentDto dto);
     Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
     Task<bool> DeleteContent(int id);
+    Task<List<ContentDto>> GetCommentsByContentId(int contentId);
   }
 }

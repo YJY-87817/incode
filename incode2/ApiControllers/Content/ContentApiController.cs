@@ -71,5 +71,17 @@ namespace incode2.ApiControllers.Content
       if (!success) return NotFound(new { message = "找不到此內容" });
       return Ok(new { message = "刪除成功" });
     }
+
+    [HttpGet("{id}/comments")]
+    public async Task<IActionResult> GetCommentsByContentId(int id)
+    {
+      var comments = await _contentService.GetCommentsByContentId(id);
+      return Ok(new
+      {
+        contentId = id,
+        comments = comments,
+        count = comments.Count
+      });
+    }
   }
 }
