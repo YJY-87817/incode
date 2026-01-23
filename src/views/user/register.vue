@@ -1,152 +1,198 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import axios from "axios";
-const router = useRouter();
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
+  import axios from "axios";
+  import { useAuthStore } from "@/stores/user/auth";
 
-import setMaterialInput from "@/assets/js/material-input";
+  const router = useRouter();
+  const authStore = useAuthStore();
 
-import { useAuthStore } from "@/stores/user/auth";
-const authStore = useAuthStore();
+  // 表單資料
+  const formData = ref({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    birth: "",
+    intro: ""
+  });
 
-const formData = ref({
-  email: "",
-  password: "",
-  confirmPassword: "",
-  name: "",
-});
+  // 檔案上傳相關
+  const selectedFile = ref(null);
+  const previewUrl = ref(null);
+  const isUploading = ref(false);
+  const errorMessage = ref("");
+  const showWelcomeDialog = ref(false);
 
-const showWelcomeDialog = ref(false);
-const handleRegister = async () => {
-  try {
-    const res = await axios.post("/api/AuthApi/Register", formData.value);
-
-    if (res.status === 200) {
-      console.log("註冊成功！"); //跳出下面視窗;
-      showWelcomeDialog.value = true;
+  // 處理檔案選擇與預覽
+  const handleFileChange = (files) => {
+    if (files && files.length > 0) {
+      const file = files[0]; // Vuetify 3 的 file-input 回傳的是陣列
+      selectedFile.value = file;
+      // 建立預覽網址
+      previewUrl.value = URL.createObjectURL(file);
+      errorMessage.value = "";
+    } else {
+      selectedFile.value = null;
+      previewUrl.value = null;
     }
-  } catch (error) {
-    console.error("註冊失敗", error);
-    alert("註冊發生錯誤");
-  }
-};
+  };
 
-onMounted(() => {
-  setMaterialInput();
-});
+  // 模擬上傳圖片 (或是您的實際邏輯)
+  const uploadImage = async () => {
+    if (!selectedFile.value) return;
+    isUploading.value = true;
+    // 這裡放入您的上傳 API 邏輯
+    setTimeout(() => {
+      isUploading.value = false;
+      alert("圖片已選擇 (需串接API)");
+    }, 1000);
+  };
+
+  const handleRegister = async () => {
+    try {
+      // 這裡建議先做簡單的驗證 (例如密碼是否相同)
+      if (formData.value.password !== formData.value.confirmPassword) {
+        alert("兩次密碼輸入不一致");
+        return;
+      }
+
+      const res = await axios.post("/api/AuthApi/Register", formData.value);
+
+      if (res.status === 200) {
+        console.log("註冊成功！");
+        showWelcomeDialog.value = true;
+      }
+    } catch (error) {
+      console.error("註冊失敗", error);
+      alert("註冊發生錯誤");
+    }
+  };
 </script>
 
 <template>
-  <v-img class="mx-auto my-6" max-width="228" src="" alt="網站logo"
-    >網站logo</v-img
-  >
-  <v-card
-    title="註冊成為會員"
-    class="mx-auto pa-12 pb-8"
-    elevation="8"
-    max-width="800"
-    rounded="lg"
-  >
-    <v-row>
-      <v-col cols="6" class="mt-2">
-        <v-form>
-          <!--響應式 md="4" sm="6" -->
-          <v-text-field label="帳號" placeholder="Email"></v-text-field>
-          <v-text-field
-            label="暱稱"
-            placeholder="Name"
-            variant="solo"
-          ></v-text-field>
-          <v-text-field
-            label="生日"
-            placeholder="Birthday"
-            variant="solo"
-          ></v-text-field>
-          <v-text-field
-            label="密碼"
-            placeholder="Password"
-            variant="filled"
-          ></v-text-field>
-          <v-text-field
-            label="確認密碼"
-            placeholder="ComparePassword"
-            variant="filled"
-          ></v-text-field>
-          <v-text-field
-            label="自我介紹"
-            placeholder="Introduce"
-            variant="underlined"
-          ></v-text-field>
-        </v-form>
-      </v-col>
-      <v-col cols="6">
-        <v-card class="mx-auto pa-4" max-width="500" elevation="4">
-          <v-card-title>上傳大頭貼</v-card-title>
-          <v-card-text>
-            <div class="d-flex justify-center mb-4">
-              <v-avatar size="150" color="grey-lighten-2">
-                <v-img v-if="previewUrl" :src="previewUrl" cover></v-img>
-                <v-icon v-else size="50" color="grey">mdi-account</v-icon>
-              </v-avatar>
-            </div>
-            <v-file-input
-              v-model="selectedFile"
-              label="選擇圖片"
-              accept="image/png, image/jpeg, image/bmp"
-              prepend-icon="mdi-check"
-              variant="outlined"
-              show-size
-              @update:model-value="handleFileChange"
-              :error-messages="errorMessage"
-            ></v-file-input>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              variant="elevated"
-              :loading="isUploading"
-              :disabled="!selectedFile"
-              @click="uploadImage"
-            >
-              確認上傳
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-btn class="mb-2" color="blue" size="large" variant="tonal" block>
-      註冊
-      <RouterLink
-        v-if="authStore.isLoggedIn"
-        to="/UserIndex"
-        class="btn btn-sm bg-gradient-success mb-0"
-      >
-      </RouterLink>
-    </v-btn>
-  </v-card>
+  <v-container fluid class="fill-height bg-grey-lighten-5">
 
-  <!-- 註冊成功跳出視窗 -->
-  <v-dialog v-model="showWelcomeDialog" max-width="800">
-    <v-sheet
-      class="d-flex align-center justify-center flex-wrap text-center mx-auto px-4"
-      elevation="4"
-      height="250"
-      max-width="800"
-      width="100%"
-      rounded
-    >
-      <div>
-        <h2 class="text-h4 font-weight-black text-orange">
-          歡迎成為incode會員!
-        </h2>
-        <p class="text-body-2 mb-4">
-          趕快加入討論的行列吧 <br />
-          也可以開始做任務累積點數哦
-        </p>
-        <v-btn color="orange" variant="text">討論區</v-btn>
-        <v-btn color="orange" variant="text">任務區</v-btn>
+    <div class="text-center mb-6">
+      <v-avatar color="primary" size="60" class="mb-2">
+        <span class="text-h5 text-white font-weight-bold">In</span>
+      </v-avatar>
+      <h1 class="text-h5 font-weight-bold text-grey-darken-2">加入我們</h1>
+    </div>
+
+    <v-card class="mx-auto pa-8 pa-md-10" max-width="900" rounded="xl" elevation="0" border>
+      <v-row>
+        <v-col cols="12" md="7">
+          <h2 class="text-h5 font-weight-bold mb-6 text-primary">註冊帳號</h2>
+
+          <v-form @submit.prevent="handleRegister">
+            <v-row dense>
+              <v-col cols="12">
+                <v-text-field v-model="formData.email" label="帳號 (Email)" placeholder="name@example.com"
+                  variant="outlined" density="comfortable" color="primary"
+                  prepend-inner-icon="mdi-email-outline"></v-text-field>
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="formData.name" label="暱稱" placeholder="怎麼稱呼您?" variant="outlined"
+                  density="comfortable" color="primary" prepend-inner-icon="mdi-account-outline"></v-text-field>
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="formData.birth" label="生日" placeholder="YYYY-MM-DD" variant="outlined"
+                  density="comfortable" color="primary" prepend-inner-icon="mdi-cake-variant-outline"></v-text-field>
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="formData.password" label="密碼" type="password" variant="outlined"
+                  density="comfortable" color="primary" prepend-inner-icon="mdi-lock-outline"></v-text-field>
+              </v-col>
+
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="formData.confirmPassword" label="確認密碼" type="password" variant="outlined"
+                  density="comfortable" color="primary" prepend-inner-icon="mdi-lock-check-outline"></v-text-field>
+              </v-col>
+
+              <v-col cols="12">
+                <v-textarea v-model="formData.intro" label="自我介紹" placeholder="簡單介紹一下自己..." variant="outlined"
+                  density="comfortable" color="primary" rows="3" prepend-inner-icon="mdi-text"></v-textarea>
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-col>
+
+        <v-col cols="12" md="5" class="d-flex flex-column align-center justify-center ps-md-8 border-start-md">
+
+          <div class="text-center w-100">
+            <h3 class="text-subtitle-1 font-weight-bold mb-4 text-grey-darken-1">設定個人頭像</h3>
+
+            <v-card class="mx-auto mb-6 d-flex align-center justify-center rounded-circle" width="180" height="180"
+              elevation="0" color="grey-lighten-4" style="border: 2px dashed #ccc; overflow: hidden;">
+              <v-img v-if="previewUrl" :src="previewUrl" cover class="w-100 h-100"></v-img>
+              <v-icon v-else size="60" color="grey-lighten-1">mdi-camera-plus</v-icon>
+            </v-card>
+
+            <v-file-input v-model="selectedFile" accept="image/*" label="點擊選擇圖片" variant="outlined" density="compact"
+              prepend-icon="" prepend-inner-icon="mdi-image" hide-details class="mb-3"
+              @update:model-value="handleFileChange"></v-file-input>
+
+            <v-btn v-if="selectedFile" variant="tonal" color="primary" size="small" block :loading="isUploading"
+              @click="uploadImage" class="mb-6">
+              <v-icon start>mdi-cloud-upload</v-icon>
+              確認上傳頭像
+            </v-btn>
+
+            <p class="text-caption text-grey">
+              建議尺寸: 500x500px <br>
+              支援格式: JPG, PNG
+            </p>
+          </div>
+
+        </v-col>
+      </v-row>
+
+      <v-divider class="my-6"></v-divider>
+
+      <div class="d-flex flex-column gap-2">
+        <v-btn color="primary" size="large" variant="flat" block rounded="lg" class="text-body-1 font-weight-bold"
+          elevation="2" @click="handleRegister">
+          立即註冊
+        </v-btn>
+
+        <div class="text-center mt-4">
+          <span class="text-caption text-grey">已經有帳號了嗎？</span>
+          <router-link to="/login" class="text-caption font-weight-bold text-primary text-decoration-none ms-1">
+            登入
+          </router-link>
+        </div>
       </div>
-    </v-sheet>
-  </v-dialog>
+    </v-card>
+
+    <v-dialog v-model="showWelcomeDialog" max-width="500">
+      <v-card rounded="xl" class="text-center pa-6">
+        <v-icon size="60" color="success" class="mb-4">mdi-check-circle</v-icon>
+        <h2 class="text-h5 font-weight-bold mb-2">歡迎加入 Incode!</h2>
+        <p class="text-body-2 text-grey mb-6">
+          您的帳號已建立成功，現在您可以開始探索論壇或執行任務了。
+        </p>
+
+        <div class="d-flex justify-center gap-4">
+          <v-btn color="primary" variant="flat" rounded="lg" to="/forum">前往討論區</v-btn>
+          <v-btn color="secondary" variant="tonal" rounded="lg" to="/mytask">前往任務區</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+  </v-container>
 </template>
+
+<style scoped>
+  /* 如果有需要微調的地方可以寫在這裡，但目前主要依賴 Vuetify class */
+  .gap-2 {
+    gap: 8px;
+  }
+
+  .gap-4 {
+    gap: 16px;
+  }
+</style>

@@ -1,91 +1,126 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
-import { useRouter } from "vue-router"; // 引入路由以便登入後跳轉
-const router = useRouter();
-const visible = ref(false);
-import { useAuthStore } from "@/stores/user/auth";
-const authStore = useAuthStore();
-import setMaterialInput from "@/assets/js/material-input";
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import Register from "@/views/user/Register.vue";
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
+  import { useAuthStore } from "@/stores/user/auth";
 
-const rules = {
-  required: (value) => !!value || "此欄位必填",
+  const router = useRouter();
+  const authStore = useAuthStore();
 
-  // Email 格式規則 (簡易版 regex)
-  email: (value) => {
-    const pattern = /^[^@]+@[^@]+\.[^@]+$/;
-    return pattern.test(value) || "Email 格式不正確";
-  },
-};
+  // 定義響應式變數 (原本的程式碼漏定義了這些 ref，這裡補上)
+  const formValid = ref(false);
+  const email = ref("");
+  const password = ref("");
+  const rememberMe = ref(false);
+  const visible = ref(false);
+  const isLoading = ref(false);
 
-const handleLogin = () => {
-  if (!formValid.value) return;
-  console.log("登入資料:", email.value, password.value);
-  // 這裡呼叫你的 API
-};
+  const rules = {
+    required: (value) => !!value || "此欄位必填",
+    email: (value) => {
+      const pattern = /^[^@]+@[^@]+\.[^@]+$/;
+      return pattern.test(value) || "Email 格式不正確";
+    },
+  };
 
-onMounted(() => {
-  setMaterialInput();
-  authStore.resetForm(); // 進入登入頁面時重置清掉 Store 裡的殘留資料
-});
+  const handleLogin = async () => {
+    // 觸發表單驗證
+    if (!formValid.value) return;
+
+    isLoading.value = true;
+
+    try {
+      console.log("登入資料:", email.value, password.value);
+
+      // 模擬 API 請求延遲
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 這裡呼叫您的實際 API
+      // await authStore.login({ email: email.value, password: password.value });
+
+      // 成功後跳轉 (假設)
+      alert("登入成功 (前端模擬)");
+      // router.push({ name: 'UserIndex' });
+
+    } catch (error) {
+      console.error("登入失敗", error);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  onMounted(() => {
+    // 如果有引入 material-input js 可保留，但在 Vuetify 3 通常不需要
+    // setMaterialInput(); 
+    authStore.resetForm();
+  });
 </script>
+
 <template>
-  <v-form v-model="formValid" @submit.prevent="handleLogin">
-    <v-img class="mx-auto my-6" max-width="228" src="" alt="網站logo"
-      >網站logo</v-img
-    >
-    <v-card
-      title="會員登入"
-      class="mx-auto pa-12 pb-8"
-      elevation="8"
-      max-width="448"
-      rounded="lg"
-    >
-      <div class="text-subtitle-1 text-medium-emphasis mt-3">帳號</div>
+  <v-container fluid class="fill-height bg-grey-lighten-5">
 
-      <v-text-field
-        v-model="email"
-        density="compact"
-        placeholder="Email"
-        prepend-inner-icon="mdi-email-outline"
-        variant="outlined"
-        :rules="[rules.required, rules.email]"
-      ></v-text-field>
+    <div class="d-flex flex-column align-center w-100">
 
-      <div
-        class="text-subtitle-1 text-medium-emphasis d-flex align-center justify-space-between"
-      >
-        密碼
+      <div class="text-center mb-6">
+        <v-avatar color="primary" size="60" class="mb-2">
+          <span class="text-h5 text-white font-weight-bold">In</span>
+        </v-avatar>
+        <h1 class="text-h5 font-weight-bold text-grey-darken-2">歡迎回來</h1>
       </div>
-      <v-text-field
-        v-model="password"
-        :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
-        :type="visible ? 'text' : 'password'"
-        density="compact"
-        placeholder="password"
-        prepend-inner-icon="mdi-lock-outline"
-        variant="outlined"
-        @click:append-inner="visible = !visible"
-        :rules="[rules.required]"
-      >
-      </v-text-field>
-      <v-checkbox v-model="terms" color="secondary" label="記住我"></v-checkbox>
-      <v-btn class="mb-2" color="blue" size="large" variant="tonal" block>
-        登入
-      </v-btn>
-      <v-card-text class="text-center">
-        <router-link :to="{ name: 'Register' }">註冊</router-link>
-        <!-- <a class="text-blue text-decoration-none" href="#" rel="noopener noreferrer" target="_blank">
-           <v-icon icon="mdi-chevron-right"></v-icon>
-        </a> -->
-      </v-card-text>
-      <v-card class="mb-3" color="surface-variant" variant="tonal">
-        <v-card-text class="text-medium-emphasis text-caption">
-          備註:之後做忘記密碼
-        </v-card-text>
+
+      <v-card class="mx-auto pa-8 pa-md-10" elevation="0" max-width="450" width="100%" rounded="xl" border>
+        <h2 class="text-h5 font-weight-bold mb-6 text-primary text-center">會員登入</h2>
+
+        <v-form v-model="formValid" @submit.prevent="handleLogin">
+
+          <div class="mb-4">
+            <v-text-field v-model="email" label="帳號 (Email)" placeholder="請輸入您的 Email"
+              prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" color="primary"
+              :rules="[rules.required, rules.email]"></v-text-field>
+          </div>
+
+          <div class="mb-2">
+            <v-text-field v-model="password" label="密碼" placeholder="請輸入密碼" :type="visible ? 'text' : 'password'"
+              :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'" prepend-inner-icon="mdi-lock-outline"
+              variant="outlined" density="comfortable" color="primary" :rules="[rules.required]"
+              @click:append-inner="visible = !visible"></v-text-field>
+          </div>
+
+          <div class="d-flex align-center justify-space-between mb-6">
+            <v-checkbox v-model="rememberMe" label="記住我" color="primary" hide-details density="compact"
+              class="ma-0 pa-0"></v-checkbox>
+
+            <a href="#" class="text-caption text-primary text-decoration-none font-weight-bold">
+              忘記密碼?
+            </a>
+          </div>
+
+          <v-btn type="submit" color="primary" size="large" variant="flat" block rounded="lg"
+            class="text-body-1 font-weight-bold mb-4" :loading="isLoading">
+            登入
+          </v-btn>
+
+          <div class="text-center">
+            <span class="text-caption text-grey">還沒有帳號嗎？</span>
+            <router-link :to="{ name: 'Register' }"
+              class="text-caption font-weight-bold text-primary text-decoration-none ms-1">
+              立即註冊
+            </router-link>
+          </div>
+        </v-form>
       </v-card>
-    </v-card>
-  </v-form>
+
+      <div class="mt-4 text-caption text-grey-lighten-1">
+        &copy; 2024 Incode Inc.
+      </div>
+
+    </div>
+  </v-container>
 </template>
+
+<style scoped>
+  /* 讓 checkbox 的 label 文字稍微小一點，更精緻 */
+  :deep(.v-label) {
+    font-size: 0.875rem;
+    color: #666;
+  }
+</style>

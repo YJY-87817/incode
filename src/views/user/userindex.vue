@@ -1,298 +1,214 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import axios from "axios";
-import Typed from "typed.js";
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterCentered.vue";
-import bg0 from "@/assets/img/bg9.jpg";
+  import { onMounted, onUnmounted, ref, shallowRef } from "vue";
+  import { useRouter } from "vue-router";
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+  import { useAuthStore } from "@/stores/user/auth";
 
-// 引入 Store 以便取得 Token
-import { useAuthStore } from "@/stores/user/auth";
-const authStore = useAuthStore();
+  // 引入 Store
+  const authStore = useAuthStore();
+  const router = useRouter();
 
-const email = ref("");
-const password = ref("");
-const visible = ref(false); // 控制密碼顯示/隱藏
-const formValid = ref(false);
-const rules = {
-  // 必填規則: 如果 value 存在回傳 true，否則回傳錯誤訊息
-  required: (value) => !!value || "此欄位必填",
-  password: (value) => {
-    min: (value) => (value && value.length >= 6) || "密碼至少需要 6 個字元";
-  },
-  name: (value) => {
-    max: (value) => (value && value.length <= 10) || "暱稱不能超過 10 個字元";
-  },
-  // Email 格式規則 (簡易版 regex)
-  email: (value) => {
-    const pattern = /^[^@]+@[^@]+\.[^@]+$/;
-    return pattern.test(value) || "Email 格式不正確";
-  },
-};
+  // 狀態控制
+  const dialog = shallowRef(false);
+  const activeTab = ref(null); // 控制下方 Tab
 
-//修改資料彈出視窗
-import { shallowRef } from "vue";
-const dialog = shallowRef(false);
+  // 表單資料
+  const name = ref("暱稱name");
+  const email = ref("email@example.com");
+  const formValid = ref(false);
 
-const router = useRouter();
-const API_BASE_URL = "https://localhost:7190/api";
+  // 驗證規則
+  const rules = {
+    required: (value) => !!value || "此欄位必填",
+    email: (value) => {
+      const pattern = /^[^@]+@[^@]+\.[^@]+$/;
+      return pattern.test(value) || "Email 格式不正確";
+    },
+  };
 
-// const goToBasic = () => {
-//   router.push("/login");
-// };
-// const goToindex = () => {
-//   router.push("/");
-// };
+  // 模擬通知資料
+  const notifications = ref([
+    { id: 1, title: "系統", subtitle: "您的密碼已成功修改", time: "剛剛", icon: "mdi-cog", color: "grey-darken-1" },
+    { id: 2, title: "任務", subtitle: "恭喜完成新手任務！點數已發放。", time: "1小時前", icon: "mdi-check-circle", color: "success" },
+    { id: 3, title: "好友", subtitle: "小明 回覆了您的文章", time: "昨天", icon: "mdi-account-multiple", color: "primary" },
+  ]);
 
-const isLoading = ref(false);
+  // Hooks
+  onMounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.add("bg-grey-lighten-5"); // 全局背景色
+  });
 
-//hooks
-onMounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.add("about-us");
-  body.classList.add("bg-gray-200");
-
-  if (document.getElementById("typed")) {
-    new Typed("#typed", {
-      stringsElement: "#typed-strings",
-      typeSpeed: 90,
-      backSpeed: 90,
-      backDelay: 200,
-      startDelay: 500,
-      loop: true,
-    });
-  }
-});
-
-onUnmounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.remove("about-us");
-  body.classList.remove("bg-gray-200");
-});
+  onUnmounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.remove("bg-grey-lighten-5");
+  });
 </script>
 
 <template>
-  <DefaultNavbar
-    :action="{
-      route: 'javascript:;',
-      label: 'Buy Now',
-      color: 'btn-white',
-    }"
-  />
-  <header class="bg-gradient-dark"></header>
-  <div class="container user-index-page mt-3" style="min-height: 80vh">
-    <h1 class="mb-4 display-4 font-weight-bold text-center">會員中心</h1>
+  <DefaultNavbar transparent />
 
-    <div class="row">
-      <div class="col-md-8">
-        <!-- :class="hasNotifications ? 'col-md-8' : 'col-12'" -->
-        <h2 class="mt-3">我的資料</h2>
-        <v-card class="mx-auto" max-width="500">
-          <v-card-item class="bg-cyan-darken-1">
-            <v-card-title>
-              <div class="d-flex align-center">
-                <div style="position: relative" class="mr-4">
-                  <v-avatar size="100">
-                    <v-img
-                      alt="John"
-                      src="https://cdn.vuetifyjs.com/images/john.jpg"
-                    ></v-img>
-                  </v-avatar>
-                  <v-btn
-                    icon="mdi-pencil"
-                    size="small"
-                    style="position: absolute; bottom: 0; right: 0"
-                    variant="text"
-                  ></v-btn
-                  ><!-- 換大頭貼 -->
+  <div
+    style="height: 200px; background: linear-gradient(to right, #344767, #4b5d7e); position: absolute; top: 0; width: 100%; z-index: 0;">
+  </div>
+
+  <v-container class="mt-10 position-relative" style="min-height: 85vh; z-index: 1;">
+
+    <div class="text-center mb-5 pt-16">
+      <h1 class="text-h3 font-weight-bold text-grey-darken-4">會員中心</h1>
+      <p class="text-subtitle-1 text-grey-darken-1">Welcome back, User</p>
+    </div>
+
+    <v-row>
+      <v-col cols="12" md="8">
+        <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">我的資料</h3>
+
+        <v-card class="rounded-xl overflow-visible pa-6" elevation="0" border>
+          <div class="d-flex flex-column align-center mb-5">
+            <div style="position: relative;" class="mb-4">
+              <v-avatar size="120" class="border border-4 border-white elevation-2">
+                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="User Avatar" cover></v-img>
+                <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
+                  style="position: absolute; bottom: 0; right: 0;"></v-btn>
+              </v-avatar>
+            </div>
+
+            <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">暱稱 Name</h2>
+
+            <v-dialog v-model="dialog" max-width="600">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" prepend-icon="mdi-pencil-outline" variant="tonal" color="primary" rounded="pill"
+                  size="small">
+                  編輯資料
+                </v-btn>
+              </template>
+
+              <v-card rounded="xl" class="pa-6">
+                <div class="d-flex justify-space-between align-center mb-6">
+                  <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
+                  <v-btn icon="mdi-close" variant="text" @click="dialog = false"></v-btn>
                 </div>
-                <span class="text-h5 font-weight-bold">暱稱name</span>
+
+                <v-form v-model="formValid">
+                  <v-row dense>
+                    <v-col cols="12" sm="6">
+                      <v-text-field v-model="name" label="暱稱" variant="outlined" density="comfortable"
+                        :rules="[rules.required]"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-text-field v-model="email" label="Email" variant="outlined" density="comfortable"
+                        :rules="[rules.required, rules.email]"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-text-field label="手機" variant="outlined" density="comfortable"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-select label="年齡" :items="['0-17', '18-29', '30-54', '54+']" variant="outlined"
+                        density="comfortable"></v-select>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field label="地址" variant="outlined" density="comfortable"></v-text-field>
+                    </v-col>
+                  </v-row>
+                </v-form>
+
+                <v-card-actions class="pa-0 mt-4">
+                  <v-spacer></v-spacer>
+                  <v-btn variant="text" color="grey" @click="dialog = false">取消</v-btn>
+                  <v-btn color="primary" variant="flat" :disabled="!formValid" @click="dialog = false">保存變更</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </div>
+
+          <v-divider class="mb-6"></v-divider>
+
+          <v-row class="text-body-2">
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
+              <span class="text-grey-darken-1">Email：</span>
+              <span class="font-weight-medium ml-1">email@example.com</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
+              <span class="text-grey-darken-1">手機：</span>
+              <span class="font-weight-medium ml-1">0912-345-678</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
+              <span class="text-grey-darken-1">地址：</span>
+              <span class="font-weight-medium ml-1">台北市信義區</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
+              <span class="text-grey-darken-1">生日：</span>
+              <span class="font-weight-medium ml-1">1995-01-01</span>
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="4">
+        <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">最新通知</h3>
+
+        <div class="d-flex flex-column gap-3">
+          <v-card v-for="item in notifications" :key="item.id" class="rounded-lg mb-3" border flat hover>
+            <div class="d-flex align-start pa-4">
+              <v-avatar :color="item.color" variant="tonal" class="mr-3" rounded>
+                <v-icon :icon="item.icon"></v-icon>
+              </v-avatar>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-space-between align-center mb-1">
+                  <span class="text-subtitle-2 font-weight-bold">{{ item.title }}</span>
+                  <span class="text-caption text-grey">{{ item.time }}</span>
+                </div>
+                <div class="text-body-2 text-grey-darken-1">{{ item.subtitle }}</div>
               </div>
-            </v-card-title>
-            <template v-slot:append>
-              <v-defaults-provider
-                :defaults="{
-                  VBtn: {
-                    variant: 'text',
-                    density: 'comfortable',
-                  },
-                }"
-              >
-                <!--改資料 -->
-                <div class="pa-4 text-center">
-                  <v-dialog v-model="dialog" max-width="850">
-                    <template v-slot:activator="{ props: activatorProps }">
-                      <v-btn
-                        class="text-none font-weight-regular"
-                        prepend-icon="mdi-pencil"
-                        text="編輯"
-                        variant="tonal"
-                        v-bind="activatorProps"
-                      ></v-btn>
-                    </template>
-                    <!-- 再多一個進設定 -->
-                    <v-form>
-                      <v-card prepend-icon="mdi-account" title="我的資料">
-                        <v-card-text>
-                          <v-row dense>
-                            <v-col cols="12" md="4" sm="6">
-                              <v-text-field
-                                v-model="name"
-                                :rules="[rules.required]"
-                                label="暱稱*"
-                                hint="此欄位必填"
-                                persistent-hint
-                              ></v-text-field>
-                            </v-col>
-                            <v-col cols="12" md="4" sm="6">
-                              <v-text-field
-                                v-model="email"
-                                :rules="[rules.required, rules.email]"
-                                hint="此欄位必填"
-                                label="Email*"
-                                persistent-hint
-                              ></v-text-field>
-                            </v-col>
-                            <v-col cols="12" md="4" sm="6">
-                              <v-text-field label="手機"></v-text-field>
-                            </v-col>
-                            <v-col cols="12" md="4" sm="6">
-                              <v-text-field label="地址"></v-text-field>
-                            </v-col>
-                            <v-col cols="12" md="4" sm="6">
-                              <v-text-field
-                                v-model="password"
-                                :rules="[rules.required]"
-                                label="密碼*"
-                                type="password"
-                                hint="此欄位必填"
-                                persistent-hint
-                                required
-                              ></v-text-field>
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                              <v-select
-                                :items="['0-17', '18-29', '30-54', '54+']"
-                                label="年齡"
-                              ></v-select>
-                            </v-col>
-                          </v-row>
-                        </v-card-text>
-                        <v-divider></v-divider>
-                        <v-card-actions>
-                          <v-spacer></v-spacer>
-                          <v-btn
-                            text="關閉"
-                            variant="plain"
-                            @click="dialog = false"
-                          ></v-btn>
-                          <v-btn
-                            color="primary"
-                            text="保存"
-                            variant="tonal"
-                            type="submit"
-                            :disabled="!formValid"
-                            @click="dialog = false"
-                          ></v-btn>
-                        </v-card-actions>
-                      </v-card>
-                    </v-form>
-                  </v-dialog>
-                </div>
-              </v-defaults-provider>
-            </template>
-          </v-card-item>
-          <v-list
-            ><!--掛api資料 -->
-            <v-list-item
-              append-icon="mdi-message-text"
-              prepend-icon="mdi-email"
-              title="Email帳號"
-            ></v-list-item>
-            <v-divider inset></v-divider>
-            <v-list-item prepend-icon="mdi-phone" title="手機"></v-list-item>
-            <v-divider inset></v-divider>
-            <v-list-item
-              prepend-icon="mdi-map-marker"
-              title="地址"
-            ></v-list-item>
-            <v-divider inset></v-divider>
-            <v-list-item prepend-icon="mdi-account" title="生日"></v-list-item>
-            <v-divider inset></v-divider>
-          </v-list>
-        </v-card>
-      </div>
+            </div>
+          </v-card>
+        </div>
+      </v-col>
+    </v-row>
+    <v-row class="mt-10">
+      <v-col cols="12">
+        <v-card class="rounded-xl overflow-hidden" border flat>
 
-      <!-- 通知格式 可以篩選-->
-      <div class="col-md-4">
-        <!--v-if="hasNotifications" -->
-        <h2 class="mt-3">通知</h2>
-        <v-card
-          append-icon="mdi-check"
-          class="mx-auto mb-2"
-          prepend-icon="mdi-account"
-          subtitle="傳送時間"
-          title="系統"
-        >
-          <v-card-text>提醒內容</v-card-text>
-        </v-card>
+          <v-tabs v-model="activeTab" align-tabs="center" color="primary" bg-color="white" class="px-4 py-4 mt-2"
+            show-arrows hide-slider height="auto">
+            <v-tab :to="{ name: 'UserMission' }" value="mission" class="mx-2 rounded-pill border transition-swing"
+              :class="activeTab === 'mission' ? 'border-primary bg-primary-lighten-5 text-primary' : 'border-grey-lighten-2 text-grey-darken-1'"
+              min-width="90" variant="flat">
+              <v-icon size="26">mdi-flag-variant-outline</v-icon>
+            </v-tab>
 
-        <v-card class="mx-auto mb-2" subtitle="prepend and append" title="任務">
-          <template v-slot:prepend>
-            <v-icon color="primary" icon="mdi-account"></v-icon>
-          </template>
-          <template v-slot:append>
-            <v-icon color="success" icon="mdi-check"></v-icon>
-          </template>
-          <v-card-text
-            >Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod.</v-card-text
-          >
+            <v-tab :to="{ name: 'UserCollections' }" value="forum" class="mx-2 rounded-pill border transition-swing"
+              :class="activeTab === 'forum' ? 'border-primary bg-primary-lighten-5 text-primary' : 'border-grey-lighten-2 text-grey-darken-1'"
+              min-width="90" variant="flat">
+              <v-icon size="26">mdi-forum-outline</v-icon>
+            </v-tab>
+          </v-tabs>
+          <div class="px-4 py-6 px-md-6 bg-grey-lighten-5" style="min-height: 400px;">
+            <router-view v-slot="{ Component }">
+              <v-fade-transition mode="out-in">
+                <component :is="Component" />
+              </v-fade-transition>
+            </router-view>
+          </div>
         </v-card>
-        <v-card
-          append-avatar="https://cdn.vuetifyjs.com/images/john.jpg"
-          class="mx-auto"
-          prepend-avatar="https://cdn.vuetifyjs.com/images/logos/v-alt.svg"
-          subtitle="prepend-avatar and append-avatar"
-          title="好友"
-        >
-          <v-card-text
-            >Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod.</v-card-text
-          >
-        </v-card>
-      </div>
-    </div>
-  </div>
+      </v-col>
+    </v-row>
 
-  <div class="container user-index-page mt-3" style="min-height: 80vh">
-    <hr class="horizontal dark my-4" />
-    <nav class="mt-5 text-center" style="font-size: 24px">
-      <router-link :to="{ name: 'UserMission' }">任務</router-link> |
-      <router-link :to="{ name: 'UserCollections' }">討論區</router-link>
-    </nav>
-    <div class="nested-content">
-      <router-view></router-view>
-    </div>
-  </div>
+
+
+  </v-container>
+
   <DefaultFooter />
 </template>
-<style scoped>
-/* 讓被選中的路由連結變色 (Bootstrap 預設 router-link-active 可能需要微調) */
-.router-link-active {
-  background-color: #fff;
-  /* 或您想要的主題色 */
-  color: #000;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-}
 
-.nav-link {
-  color: #344767;
-  font-weight: 600;
-  margin-right: 1rem;
-  /* 按鈕之間的間距 */
-}
+<style scoped>
+  /* 增加頁籤切換時的過渡效果 */
+  .transition-swing {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+  }
 </style>
