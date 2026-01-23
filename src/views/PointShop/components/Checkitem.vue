@@ -1,4 +1,5 @@
 <script setup>
+import { useCartStore } from "@/views/PointShop/services/cartStore";
 
 </script>
 
@@ -36,8 +37,8 @@
 
             <div class="ms-3 border-start ps-3 py-1">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
                 <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
                 <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
                   <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
                 </button>
@@ -69,8 +70,8 @@
 
             <div class="ms-3 border-start ps-3 py-1">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
                 <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
+                <button class="btn btn-sm btn-outline-primary" style="font-size: 0.875rem;">−</button>
                 <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
                   <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
                 </button>
