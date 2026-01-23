@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, computed, watch } from "vue";
+import { reactive, onMounted, computed, watch, ref, onUnmounted } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 
@@ -8,6 +8,13 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 
 const forumStore = useForumStore();
+
+// 視窗寬度響應式變數
+const windowWidth = ref(window.innerWidth);
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth;
+};
 
 // 論壇狀態
 const forumState = reactive({
@@ -165,8 +172,13 @@ const displayPages = computed(() => {
 
 // 初始化
 onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth);
   fetchCategories();
   fetchTopics();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth);
 });
 
 // 監聽主題刷新時間變更
@@ -381,8 +393,8 @@ watch(
                       :src="topic.authorAvatar"
                       :alt="topic.author"
                       class="rounded-circle me-2 me-sm-3"
-                      :width="$window?.innerWidth < 576 ? 36 : 48"
-                      :height="$window?.innerWidth < 576 ? 36 : 48"
+                      :width="windowWidth < 576 ? 36 : 48"
+                      :height="windowWidth < 576 ? 36 : 48"
                     />
                   </div>
 

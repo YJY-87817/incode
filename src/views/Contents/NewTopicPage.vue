@@ -1,11 +1,18 @@
 <script setup>
-import { reactive, onMounted, watch } from "vue";
+import { reactive, onMounted, watch, ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
 const router = useRouter();
+
+// 視窗寬度響應式變數
+const windowWidth = ref(window.innerWidth);
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth;
+};
 
 const newTopicState = reactive({
   title: "",
@@ -44,7 +51,12 @@ const fetchTopics = (categoryId = null) => {
 };
 
 onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth);
   fetchCategories();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth);
 });
 
 watch(
@@ -125,7 +137,7 @@ const cancelNewTopic = () => {
                 <textarea
                   v-model="newTopicState.body"
                   class="form-control"
-                  :rows="$window?.innerWidth < 768 ? 6 : 8"
+                  :rows="windowWidth < 768 ? 6 : 8"
                   placeholder="請輸入主題內容..."
                 ></textarea>
               </div>

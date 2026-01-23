@@ -67,7 +67,7 @@ export default {
       <textarea
         v-model="newReply"
         class="form-control mb-2"
-        :rows="$window?.innerWidth < 768 ? 3 : 4"
+        :rows="windowWidth < 768 ? 3 : 4"
         placeholder="撰寫您的回覆..."
       ></textarea>
       <button 
@@ -85,11 +85,16 @@ export default {
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import apiClient from "@/api/request.js";
 import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
+// 視窗寬度響應式變數
+const windowWidth = ref(window.innerWidth);
 
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth;
+};
 // Mock thread data – replace with real API call later
 const route = useRoute();
 const threadId = Number(route.params.id);
@@ -132,7 +137,12 @@ const fetchThread = async () => {
 };
 
 onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth);
   fetchThread();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth);
 });
 
 const currentPage = ref(1);
