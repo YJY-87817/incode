@@ -1,11 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
-import FilterPanel from "@/views/PointShop/componets/FilterPanel.vue";
-import ProductGrid from "@/views/PointShop/componets/ProductGrid.vue";
+import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
+import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import Cart from "@/views/PointShop/componets/Cart.vue";
+import Cart from "@/views/PointShop/components/Cart.vue";
 
 const products = ref([]);
 const loading = ref(true);

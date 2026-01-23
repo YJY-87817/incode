@@ -2,8 +2,8 @@
 import { ref, computed } from "vue";
 import axios from "axios";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
-import CheckoutItem from "@/views/PointShop/componets/Checkitem.vue";
-import CheckoutPoint from "@/views/PointShop/componets/CheckPoint.vue";
+import CheckoutItem from "@/views/PointShop/components/Checkitem.vue";
+import CheckoutPoint from "@/views/PointShop/components/CheckPoint.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
