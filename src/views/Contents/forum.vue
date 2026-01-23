@@ -399,7 +399,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage - 1)
                     "
-                    ><span class="d-none d-sm-inline"><</span><span class="d-inline d-sm-none"><</span></a
+                    ><span class="d-none d-sm-inline"><i class="fa-solid fa-caret-left"></i></span><span class="d-inline d-sm-none"><i class="fa-solid fa-caret-left"></i></span></a
                   >
                 </li>
 
@@ -468,7 +468,7 @@ watch(
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage + 1)
                     "
-                    ><span class="d-none d-sm-inline">></span><span class="d-inline d-sm-none">></span></a
+                    ><span class="d-none d-sm-inline"><i class="fa-solid fa-caret-right"></i></span><span class="d-inline d-sm-none"><i class="fa-solid fa-caret-right"></i></span></a
                   >
                 </li>
               </ul>
