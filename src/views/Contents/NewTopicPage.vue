@@ -82,10 +82,10 @@ const submitNewTopic = () => {
   }
 
   const dto = {
-    categoryId: newTopicState.categoryId,
-    parentContentId: newTopicState.parentContentId,
-    title: newTopicState.title,
-    body: newTopicState.body,
+    CategoryId: newTopicState.categoryId,
+    ParentContentId: newTopicState.parentContentId,
+    Title: newTopicState.title,
+    Body: newTopicState.body,
   };
 
   apiClient
