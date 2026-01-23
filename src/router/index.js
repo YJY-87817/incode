@@ -5,7 +5,6 @@ import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
 
 // tim 以下
-import Forum from "@/views/Contents/Forum.vue"
 import FirstView from "@/views/FirstView.vue"
 // tim 以上
 import Login from "@/views/user/login.vue";
@@ -166,7 +165,7 @@ const router = createRouter({
     {
       path: "/forum",
       name: "forum",
-      component: Forum,
+      component: () => import("@/views/Contents/forum.vue"),
     },
     {
       path: "/forum/new-topic",
