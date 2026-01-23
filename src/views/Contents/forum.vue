@@ -239,11 +239,10 @@ const submitReply = async (topicId) => {
   submittingReplies[topicId] = true;
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: 1, // TODO: 根據實際情況調整分類 ID
-    ParentContentId: topicId, // 綁定到該篇貼文
-    Title: title, // 留言標題
-    Body: content,
+    parentContentId: topicId, // 綁定到該篇貼文
+    categoryId: 2, // TODO: 根據實際情況調整分類 ID
+    title: title, // 留言標題
+    body: content,
   };
 
   try {
