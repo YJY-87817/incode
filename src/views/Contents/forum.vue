@@ -207,13 +207,29 @@ const initializeReplyInputs = () => {
 
 // 切換留言框顯示
 const showReplyBox = reactive({});
+const replyTitles = reactive({});
 const toggleReplyBox = (topicId) => {
   showReplyBox[topicId] = !showReplyBox[topicId];
 };
 
+// 初始化留言標題
+const initializeReplyTitles = () => {
+  forumState.topics.forEach((topic) => {
+    if (!replyTitles[topic.id]) {
+      replyTitles[topic.id] = "";
+    }
+  });
+};
+
 // 提交留言
 const submitReply = async (topicId) => {
+  const title = replyTitles[topicId]?.trim();
   const content = replyInputs[topicId]?.trim();
+  
+  if (!title) {
+    alert("請輸入標題");
+    return;
+  }
   if (!content) {
     alert("請輸入留言內容");
     return;
@@ -226,7 +242,7 @@ const submitReply = async (topicId) => {
     UserId: 1, // TODO: 改成實際使用者 ID
     CategoryId: 1, // TODO: 根據實際情況調整分類 ID
     ParentContentId: topicId, // 綁定到該篇貼文
-    Title: "", // 留言不需要標題
+    Title: title, // 留言標題
     Body: content,
   };
 
@@ -234,6 +250,7 @@ const submitReply = async (topicId) => {
     await apiClient.post("/ContentApi", dto);
     alert("留言成功！");
     replyInputs[topicId] = "";
+    replyTitles[topicId] = "";
     showReplyBox[topicId] = false;
     // 重新載入主題列表
     await fetchTopics(
@@ -253,6 +270,7 @@ watch(
   () => forumState.topics,
   () => {
     initializeReplyInputs();
+    initializeReplyTitles();
   },
   { immediate: true }
 );
@@ -470,6 +488,12 @@ watch(
 
                     <!-- 留言輸入框 -->
                     <div v-if="showReplyBox[topic.id]" class="mt-3 reply-box">
+                      <input
+                        v-model="replyTitles[topic.id]"
+                        class="form-control mb-2"
+                        type="text"
+                        placeholder="留言標題..."
+                      />
                       <textarea
                         v-model="replyInputs[topic.id]"
                         class="form-control mb-2"
@@ -480,14 +504,14 @@ watch(
                         <button
                           class="btn btn-sm btn-primary"
                           @click="submitReply(topic.id)"
-                          :disabled="submittingReplies[topic.id] || !replyInputs[topic.id]?.trim()"
+                          :disabled="submittingReplies[topic.id] || !replyInputs[topic.id]?.trim() || !replyTitles[topic.id]?.trim()"
                         >
                           <i class="fas fa-paper-plane me-1"></i>
                           {{ submittingReplies[topic.id] ? '發送中...' : '發送' }}
                         </button>
                         <button
                           class="btn btn-sm btn-secondary"
-                          @click="showReplyBox[topic.id] = false; replyInputs[topic.id] = ''"
+                          @click="showReplyBox[topic.id] = false; replyInputs[topic.id] = ''; replyTitles[topic.id] = ''"
                         >
                           取消
                         </button>

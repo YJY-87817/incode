@@ -181,10 +181,11 @@ async function submitReply() {
 
   const dto = {
     UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: 1, // TODO: 根據實際情況調整分類 ID
+    CategoryId: thread.value.id ? 1 : 1, // TODO: 根據實際情況調整分類 ID
     ParentContentId: threadId, // 綁定到當前貼文
-    Title: "", // 回覆不需要標題
+    Title: `Re: ${thread.value.title}`, // 回覆標題格式：Re: 原標題
     Body: newReply.value.trim(),
+    Type: 2, // 2: 回文（出現在貼文版面）
   };
 
   try {
