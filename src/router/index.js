@@ -13,6 +13,7 @@ import UserCollections from "@/views/user/UserCollections.vue"
 import UserPost from "@/views/user/UserPost.vue"
 import UserLike from "@/views/user/UserLike.vue"
 import UserSave from "@/views/user/UserSave.vue"
+import UserMission from "@/views/user/UserMission.vue"
 // owen
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
@@ -191,21 +192,27 @@ const router = createRouter({
       component: UserSettings,
     },
     {
-      path: "/userprofile",
+      path: "/userprofile",//每個使用者不同
       name: "UserProfile",
       component: UserProfile,
     },
-    {
-      path: "/usercollections",
-      name: "UserCollections",
-      component: UserCollections,
-    },
+    
 
     {
       path: "/userindex",
       name: "UserIndex",
       component: UserIndex,
       children: [
+      {
+      path: "/usermission",
+      name: "UserMission",
+      component: UserMission,
+      },
+      {
+      path: "/usercollections",
+      name: "UserCollections",
+      component: UserCollections,
+       children: [    
         {
           path: "userpost",
           name: "UserPost",
@@ -222,8 +229,7 @@ const router = createRouter({
           component: UserLike,
         }
       ]
-    },
-
+    }]},
     // owen
 
     // qiu以下

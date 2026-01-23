@@ -21,7 +21,9 @@ const rules = {
   password: (value) => {
     min: (value) => (value && value.length >= 6) || "密碼至少需要 6 個字元";
   },
-  name:(value) =>{max: value => (value && value.length <= 10) || '暱稱不能超過 10 個字元',},
+  name: (value) => {
+    max: (value) => (value && value.length <= 10) || "暱稱不能超過 10 個字元";
+  },
   // Email 格式規則 (簡易版 regex)
   email: (value) => {
     const pattern = /^[^@]+@[^@]+\.[^@]+$/;
@@ -79,16 +81,6 @@ onUnmounted(() => {
     }"
   />
   <header class="bg-gradient-dark"></header>
-  <v-tabs-window>
-    <v-container fluid>
-      <v-img
-        src="https://picsum.photos/500/300?image=15"
-        height="205"
-        cover
-      ></v-img>
-    </v-container>
-  </v-tabs-window>
-
   <div class="container user-index-page mt-3" style="min-height: 80vh">
     <h1 class="mb-4 display-4 font-weight-bold text-center">會員中心</h1>
 
@@ -276,13 +268,10 @@ onUnmounted(() => {
 
   <div class="container user-index-page mt-3" style="min-height: 80vh">
     <hr class="horizontal dark my-4" />
-    <h2 class="mt-5">我的討論區</h2>
     <nav class="mt-5 text-center" style="font-size: 24px">
-      <router-link :to="{ name: 'UserPost' }">發文</router-link> |
-      <router-link :to="{ name: 'UserSave' }">收藏</router-link> |
-      <router-link :to="{ name: 'UserLike' }">點讚</router-link>
+      <router-link :to="{ name: 'UserMission' }">任務</router-link> |
+      <router-link :to="{ name: 'UserCollections' }">討論區</router-link>
     </nav>
-
     <div class="nested-content">
       <router-view></router-view>
     </div>
