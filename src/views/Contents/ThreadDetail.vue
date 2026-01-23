@@ -13,27 +13,32 @@ export default {
 <template>
   <DefaultNavbar light />
 
-  <section class="thread-detail container py-5">
-    <div class="card mb-4 shadow-sm">
-      <div class="card-body">
-        <h3 class="card-title">{{ thread.title }}</h3>
-        <p class="text-muted mb-2">
-          by {{ thread.author }} · {{ thread.createdAt }}
+  <section class="thread-detail container py-3 py-md-5 px-2 px-md-3">
+    <div class="card mb-3 mb-md-4 shadow-sm">
+      <div class="card-body p-2 p-md-3">
+        <h3 class="card-title fs-4 fs-md-3 text-break">{{ thread.title }}</h3>
+        <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
+          <span>by {{ thread.author }}</span>
+          <span>·</span>
+          <span>{{ thread.createdAt }}</span>
         </p>
-        <p class="card-text">{{ thread.content }}</p>
+        <p class="card-text" style="white-space: pre-wrap; word-break: break-word;">{{ thread.content }}</p>
       </div>
     </div>
 
     <ThreadPost v-for="post in paginatedPosts" :key="post.id" :post="post" />
 
-    <nav v-if="totalPages > 1" class="mt-4">
-      <ul class="pagination justify-content-center">
+    <nav v-if="totalPages > 1" class="mt-3 mt-md-4">
+      <ul class="pagination pagination-sm justify-content-center flex-wrap gap-1">
         <li
           class="page-item"
           :class="{ disabled: currentPage === 1 }"
           @click="prevPage"
         >
-          <a class="page-link" href="javascript:void(0)">Previous</a>
+          <a class="page-link px-2 px-md-3" href="javascript:void(0)">
+            <span class="d-none d-sm-inline">上一頁</span>
+            <span class="d-inline d-sm-none"><</span>
+          </a>
         </li>
         <li
           class="page-item"
@@ -42,27 +47,32 @@ export default {
           :class="{ active: currentPage === page }"
           @click="goToPage(page)"
         >
-          <a class="page-link" href="javascript:void(0)">{{ page }}</a>
+          <a class="page-link px-2 px-md-3" href="javascript:void(0)">{{ page }}</a>
         </li>
         <li
           class="page-item"
           :class="{ disabled: currentPage === totalPages }"
           @click="nextPage"
         >
-          <a class="page-link" href="javascript:void(0)">Next</a>
+          <a class="page-link px-2 px-md-3" href="javascript:void(0)">
+            <span class="d-none d-sm-inline">下一頁</span>
+            <span class="d-inline d-sm-none">></span>
+          </a>
         </li>
       </ul>
     </nav>
 
-    <div class="mt-5">
-      <h5>Reply</h5>
+    <div class="mt-3 mt-md-5">
+      <h5 class="fs-5 fs-md-4 mb-3">💬 回覆</h5>
       <textarea
         v-model="newReply"
         class="form-control mb-2"
-        rows="3"
-        placeholder="Write your reply..."
+        :rows="$window?.innerWidth < 768 ? 3 : 4"
+        placeholder="撰寫您的回覆..."
       ></textarea>
-      <button class="btn btn-primary" @click="submitReply">Post Reply</button>
+      <button class="btn btn-primary w-100 w-sm-auto" @click="submitReply">
+        <i class="fas fa-paper-plane me-2"></i>發送回覆
+      </button>
     </div>
   </section>
 
@@ -160,8 +170,15 @@ function submitReply() {
 <style scoped>
 .thread-detail .card-title {
   margin-bottom: 0.5rem;
+  line-height: 1.3;
 }
 .thread-detail textarea {
   resize: vertical;
+}
+
+@media (max-width: 576px) {
+  .thread-detail .card-title {
+    font-size: 1.25rem;
+  }
 }
 </style>

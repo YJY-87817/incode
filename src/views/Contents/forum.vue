@@ -185,30 +185,30 @@ watch(
     <!-- 論壇標題區 -->
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
           <div>
-            <h2 class="mb-2">💬 技術論壇</h2>
-            <p class="text-muted mb-0">分享知識、交流技術、共同成長</p>
+            <h2 class="mb-2 fs-3 fs-md-2">💬 技術論壇</h2>
+            <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
           </div>
-          <router-link :to="{ name: 'new-topic' }" class="btn btn-primary">
-            <i class="fas fa-plus"></i> 發表新主題
+          <router-link :to="{ name: 'new-topic' }" class="btn btn-primary w-100 w-md-auto">
+            <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">發表</span>新主題
           </router-link>
         </div>
       </div>
     </div>
 
-    <div class="row">
+    <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
-      <div class="col-lg-9">
+      <div class="col-lg-9 order-2 order-lg-1">
         <!-- 分類列表（已縮小按鈕） -->
         <div class="card shadow-sm mb-4">
           <div
-            class="card-header bg-white d-flex justify-content-between align-items-center py-3"
+            class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center py-3 gap-2"
           >
-            <h5 class="mb-0">📁 討論分類</h5>
+            <h5 class="mb-0 fs-6 fs-md-5">📁 討論分類</h5>
             <small class="text-muted">點擊分類篩選主題</small>
           </div>
-          <div class="p-3">
+          <div class="p-2 p-md-3">
             <div
               v-if="forumState.isLoading && forumState.categories.length === 0"
               class="text-center py-3"
@@ -223,8 +223,7 @@ watch(
 
             <div
               v-else
-              class="d-flex flex-wrap align-content-start p-0"
-              style="max-height: 400px"
+              class="d-flex flex-wrap align-content-start p-0 category-container"
             >
               <div
                 v-for="category in forumState.categories"
@@ -264,12 +263,12 @@ watch(
         <!-- 主題列表 -->
         <div class="card shadow-sm">
           <div
-            class="card-header bg-white d-flex justify-content-between align-items-center"
+            class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
           >
-            <h5 class="mb-0">📋 討論主題</h5>
-            <div>
+            <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
+            <div class="d-flex flex-wrap gap-2">
               <span
-                class="badge bg-secondary me-2"
+                class="badge bg-secondary"
                 v-if="forumState.selectedCategory"
               >
                 {{
@@ -305,52 +304,54 @@ watch(
               <div
                 v-for="topic in forumState.topics"
                 :key="topic.id"
-                class="list-group-item list-group-item-action"
+                class="list-group-item list-group-item-action p-2 p-md-3"
               >
-                <div class="d-flex w-100">
+                <div class="d-flex flex-column flex-sm-row w-100 gap-2">
                   <!-- 作者頭像 -->
-                  <div class="me-3">
+                  <div class="d-flex align-items-start">
                     <img
                       :src="topic.authorAvatar"
                       :alt="topic.author"
-                      class="rounded-circle"
-                      width="48"
-                      height="48"
+                      class="rounded-circle me-2 me-sm-3"
+                      :width="$window?.innerWidth < 576 ? 36 : 48"
+                      :height="$window?.innerWidth < 576 ? 36 : 48"
                     />
                   </div>
 
                   <!-- 主題內容 -->
-                  <div class="flex-grow-1">
+                  <div class="flex-grow-1 min-w-0">
                     <div
-                      class="d-flex justify-content-between align-items-start mb-2"
+                      class="d-flex flex-column gap-2 mb-2"
                     >
-                      <div>
-                        <h6 class="mb-1">
-                          <span
-                            v-if="topic.isPinned"
-                            class="badge bg-danger me-2"
-                            >置頂</span
-                          >
-                          <span
-                            v-if="topic.isHot"
-                            class="badge bg-warning text-dark me-2"
-                            >熱門</span
-                          >
+                      <div class="w-100">
+                        <h6 class="mb-2 fs-6">
+                          <div class="d-flex flex-wrap gap-1 mb-1">
+                            <span
+                              v-if="topic.isPinned"
+                              class="badge bg-danger"
+                              >置頂</span
+                            >
+                            <span
+                              v-if="topic.isHot"
+                              class="badge bg-warning text-dark"
+                              >熱門</span
+                            >
+                          </div>
                           <router-link
                             :to="{
                               name: 'thread-detail',
                               params: { id: topic.id },
                             }"
-                            class="topic-title-link"
+                            class="topic-title-link text-break"
                           >
                             {{ topic.title }}
                           </router-link>
                         </h6>
 
-                        <div class="small text-muted mb-1">
-                          <span class="me-3">👤 {{ topic.author }}</span>
-                          <span class="me-3">📁 {{ topic.categoryName }}</span>
-                          <span class="me-3"
+                        <div class="small text-muted mb-2 d-flex flex-wrap gap-2">
+                          <span class="text-nowrap">👤 {{ topic.author }}</span>
+                          <span class="text-nowrap">📁 {{ topic.categoryName }}</span>
+                          <span class="text-nowrap"
                             >🕒 {{ formatTimeAgo(topic.createdAt) }}</span
                           >
                         </div>
@@ -364,13 +365,13 @@ watch(
                     </div>
 
                     <div
-                      class="d-flex justify-content-between align-items-center"
+                      class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mt-2"
                     >
-                      <div class="small text-muted">
-                        <span class="me-3">💬 {{ topic.replyCount }} 回覆</span>
-                        <span class="me-3">👁 {{ topic.viewCount }} 瀏覽</span>
+                      <div class="small text-muted d-flex flex-wrap gap-2">
+                        <span class="text-nowrap">💬 {{ topic.replyCount }} 回覆</span>
+                        <span class="text-nowrap">👁 {{ topic.viewCount }} 瀏覽</span>
                       </div>
-                      <div class="small text-muted">
+                      <div class="small text-muted text-truncate" style="max-width: 100%;">
                         最後回覆：{{ topic.lastReplyUser }} ·
                         {{ topic.lastReplyTime }}
                       </div>
@@ -383,32 +384,32 @@ watch(
 
           <!-- 分頁 -->
           <div
-            class="card-footer bg-white"
+            class="card-footer bg-white py-2 py-md-3"
             v-if="forumState.pagination.totalPages > 1"
           >
             <nav>
-              <ul class="pagination pagination-sm mb-0 justify-content-center">
+              <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1">
                 <li
                   class="page-item"
                   :class="{ disabled: forumState.pagination.currentPage === 1 }"
                 >
                   <a
-                    class="page-link"
+                    class="page-link px-2 px-md-3"
                     href="#"
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage - 1)
                     "
-                    ><</a
+                    ><span class="d-none d-sm-inline">上一頁</span><span class="d-inline d-sm-none"><</span></a
                   >
                 </li>
 
-                <li v-if="displayPages[0] > 1" class="page-item">
-                  <a class="page-link" href="#" @click.prevent="onPageChange(1)"
+                <li v-if="displayPages[0] > 1" class="page-item d-none d-md-block">
+                  <a class="page-link px-2 px-md-3" href="#" @click.prevent="onPageChange(1)"
                     >1</a
                   >
                 </li>
-                <li v-if="displayPages[0] > 2" class="page-item disabled">
-                  <span class="page-link">...</span>
+                <li v-if="displayPages[0] > 2" class="page-item disabled d-none d-md-block">
+                  <span class="page-link px-2">...</span>
                 </li>
 
                 <li
@@ -420,7 +421,7 @@ watch(
                   }"
                 >
                   <a
-                    class="page-link"
+                    class="page-link px-2 px-md-3"
                     href="#"
                     @click.prevent="onPageChange(pageNum)"
                     >{{ pageNum }}</a
@@ -432,19 +433,19 @@ watch(
                     displayPages[displayPages.length - 1] <
                     forumState.pagination.totalPages - 1
                   "
-                  class="page-item disabled"
+                  class="page-item disabled d-none d-md-block"
                 >
-                  <span class="page-link">...</span>
+                  <span class="page-link px-2">...</span>
                 </li>
                 <li
                   v-if="
                     displayPages[displayPages.length - 1] <
                     forumState.pagination.totalPages
                   "
-                  class="page-item"
+                  class="page-item d-none d-md-block"
                 >
                   <a
-                    class="page-link"
+                    class="page-link px-2 px-md-3"
                     href="#"
                     @click.prevent="
                       onPageChange(forumState.pagination.totalPages)
@@ -462,12 +463,12 @@ watch(
                   }"
                 >
                   <a
-                    class="page-link"
+                    class="page-link px-2 px-md-3"
                     href="#"
                     @click.prevent="
                       onPageChange(forumState.pagination.currentPage + 1)
                     "
-                    >></a
+                    ><span class="d-none d-sm-inline">下一頁</span><span class="d-inline d-sm-none">></span></a
                   >
                 </li>
               </ul>
@@ -494,8 +495,6 @@ watch(
               </div>
 
               <div class="d-flex justify-content-between align-items-center">
-                <span class="small text-muted">在線用戶</span>
-                <strong class="text-danger">45 👥</strong>
               </div>
             </div>
           </div>
@@ -558,24 +557,40 @@ watch(
 .topic-body-preview {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 0.9rem;
   white-space: pre-wrap; /* 讓換行比較自然 */
 }
 
-/* 響應式調整 */
+/* 分類容器響應式高度 */
+.category-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 @media (max-width: 768px) {
-  .row-cols-2 > .col {
-    flex: 0 0 50%;
-    max-width: 50%;
+  .category-container {
+    max-height: 250px;
+  }
+  
+  .topic-body-preview {
+    font-size: 0.85rem;
   }
 }
 
 @media (max-width: 576px) {
-  .row-cols-2 > .col {
-    flex: 0 0 100%;
-    max-width: 100%;
+  .category-container {
+    max-height: 200px;
+  }
+  
+  .topic-title-link {
+    font-size: 0.95rem;
+  }
+  
+  .min-w-0 {
+    min-width: 0;
   }
 }
 </style>
