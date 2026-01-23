@@ -21,7 +21,7 @@ const toggle = async () => {
       if (res.data.ok) {
         shipped.value = res.data.data || [];
       } else {
-        error.value = res.data.message || "找不到出貨資料目前還沒寄送";
+        error.value = res.data.message || "還沒有寄送資料會盡快安排處裡";
         shipped.value = [];
       }
     } catch (err) {

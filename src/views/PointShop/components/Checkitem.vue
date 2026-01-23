@@ -13,45 +13,71 @@
 
       <div class="card-body px-4">
         <div class="d-flex flex-column gap-3">
-
           <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
-            <img :src="`https://localhost:7190/img/product/NoImage.png`"
-              class="rounded flex-shrink-0 object-fit-cover border" style="width: 80px; height: 80px;" />
 
-            <div class="flex-grow-1 ms-3">
-              <h6 class="fw-bold mb-1 text-dark">測試商品名稱</h6>
-              <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center flex-grow-1">
+              <img :src="`https://localhost:7190/img/product/NoImage.png`"
+                class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
+              <div class="ms-3">
+                <h6 class="fw-bold mb-0 text-dark">另一個測試商品</h6>
               </div>
             </div>
-            <div>
-              <button class="btn btn-outline-success">+</button>
-              1
-              <button class="btn btn-outline-success">-</button>
+
+            <div class="d-flex align-items-center gap-4 px-3">
+              <div class="text-center">
+                <small class="text-secondary d-block">數量</small>
+                <span class="fw-medium">2</span>
+              </div>
+              <div class="text-end" style="min-width: 80px;">
+                <small class="text-secondary d-block">小計</small>
+                <span class="text-primary fw-bold">800 點</span>
+              </div>
             </div>
-            <div class="text-end">
-              <button class="btn btn-outline-danger btn-sm border-0 hover-bg-danger">
-                <i class="bi bi-trash3 me-1"></i>刪除
-              </button>
+
+            <div class="ms-3 border-start ps-3 py-1">
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
+                <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
+                  <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+                </button>
+              </div>
             </div>
+
           </div>
 
           <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
-            <img :src="`https://localhost:7190/img/product/NoImage.png`"
-              class="rounded flex-shrink-0 object-fit-cover border" style="width: 80px; height: 80px;" />
-            <div class="flex-grow-1 ms-3">
-              <h6 class="fw-bold mb-1 text-dark">另一個測試商品</h6>
-              <div class="d-flex align-items-center gap-3">
-                <small class="text-secondary"><i class="bi bi-box-seam me-1"></i>數量：2</small>
-                <small class="text-primary fw-medium"><i class="bi bi-coin me-1"></i>800 點</small>
+
+            <div class="d-flex align-items-center flex-grow-1">
+              <img :src="`https://localhost:7190/img/product/NoImage.png`"
+                class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
+              <div class="ms-3">
+                <h6 class="fw-bold mb-0 text-dark">另一個測試商品</h6>
               </div>
             </div>
-            <div class="text-end">
-              <button class="btn btn-outline-danger btn-sm border-0">
-                <i class="bi bi-trash3 me-1"></i>刪除
-              </button>
-            </div>
-          </div>
 
+            <div class="d-flex align-items-center gap-4 px-3">
+              <div class="text-center">
+                <small class="text-secondary d-block">數量</small>
+                <span class="fw-medium">2</span>
+              </div>
+              <div class="text-end" style="min-width: 80px;">
+                <small class="text-secondary d-block">小計</small>
+                <span class="text-primary fw-bold">800 點</span>
+              </div>
+            </div>
+
+            <div class="ms-3 border-start ps-3 py-1">
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
+                <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
+                  <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
