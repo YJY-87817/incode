@@ -3,13 +3,32 @@ import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import Typed from "typed.js";
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+import bg0 from "@/assets/img/bg9.jpg";
+
 // 引入 Store 以便取得 Token
 import { useAuthStore } from "@/stores/user/auth";
 const authStore = useAuthStore();
 
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterCentered.vue";
-import bg0 from "@/assets/img/bg9.jpg";
+const email = ref("");
+const password = ref("");
+const visible = ref(false); // 控制密碼顯示/隱藏
+const formValid = ref(false);
+const rules = {
+  // 必填規則: 如果 value 存在回傳 true，否則回傳錯誤訊息
+  required: (value) => !!value || "此欄位必填",
+  password: (value) => {
+    min: (value) => (value && value.length >= 6) || "密碼至少需要 6 個字元";
+  },
+  name:(value) =>{max: value => (value && value.length <= 10) || '暱稱不能超過 10 個字元',},
+  // Email 格式規則 (簡易版 regex)
+  email: (value) => {
+    const pattern = /^[^@]+@[^@]+\.[^@]+$/;
+    return pattern.test(value) || "Email 格式不正確";
+  },
+};
+
 //修改資料彈出視窗
 import { shallowRef } from "vue";
 const dialog = shallowRef(false);
@@ -121,85 +140,72 @@ onUnmounted(() => {
                       ></v-btn>
                     </template>
                     <!-- 再多一個進設定 -->
-                    <v-card prepend-icon="mdi-account" title="我的資料">
-                      <v-card-text>
-                        <v-row dense>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field label="暱稱*" required></v-text-field>
-                          </v-col>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field
-                              hint="example of helper text only on focus"
-                              label="Email*"
-                              required
-                            ></v-text-field>
-                          </v-col>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field
-                              hint="example of persistent helper text"
-                              label="手機"
-                              persistent-hint
-                            ></v-text-field>
-                          </v-col>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field label="地址"></v-text-field>
-                          </v-col>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field
-                              label="密碼*"
-                              type="password"
-                              required
-                            ></v-text-field>
-                          </v-col>
-                          <v-col cols="12" md="4" sm="6">
-                            <v-text-field
-                              label="確認密碼*"
-                              type="password"
-                              required
-                            ></v-text-field>
-                          </v-col>
-                          <v-col cols="12" sm="6">
-                            <v-select
-                              :items="['0-17', '18-29', '30-54', '54+']"
-                              label="Age"
-                            ></v-select>
-                          </v-col>
-                          <v-col cols="12" sm="6">
-                            <v-autocomplete
-                              :items="[
-                                'Skiing',
-                                'Ice hockey',
-                                'Soccer',
-                                'Basketball',
-                                'Hockey',
-                                'Reading',
-                                'Writing',
-                                'Coding',
-                                'Basejump',
-                              ]"
-                              label="Interests"
-                              auto-select-first
-                              multiple
-                            ></v-autocomplete>
-                          </v-col>
-                        </v-row>
-                      </v-card-text>
-                      <v-divider></v-divider>
-                      <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          text="關閉"
-                          variant="plain"
-                          @click="dialog = false"
-                        ></v-btn>
-                        <v-btn
-                          color="primary"
-                          text="保存"
-                          variant="tonal"
-                          @click="dialog = false"
-                        ></v-btn>
-                      </v-card-actions>
-                    </v-card>
+                    <v-form>
+                      <v-card prepend-icon="mdi-account" title="我的資料">
+                        <v-card-text>
+                          <v-row dense>
+                            <v-col cols="12" md="4" sm="6">
+                              <v-text-field
+                                v-model="name"
+                                :rules="[rules.required]"
+                                label="暱稱*"
+                                hint="此欄位必填"
+                                persistent-hint
+                              ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4" sm="6">
+                              <v-text-field
+                                v-model="email"
+                                :rules="[rules.required, rules.email]"
+                                hint="此欄位必填"
+                                label="Email*"
+                                persistent-hint
+                              ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4" sm="6">
+                              <v-text-field label="手機"></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4" sm="6">
+                              <v-text-field label="地址"></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4" sm="6">
+                              <v-text-field
+                                v-model="password"
+                                :rules="[rules.required]"
+                                label="密碼*"
+                                type="password"
+                                hint="此欄位必填"
+                                persistent-hint
+                                required
+                              ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                              <v-select
+                                :items="['0-17', '18-29', '30-54', '54+']"
+                                label="年齡"
+                              ></v-select>
+                            </v-col>
+                          </v-row>
+                        </v-card-text>
+                        <v-divider></v-divider>
+                        <v-card-actions>
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            text="關閉"
+                            variant="plain"
+                            @click="dialog = false"
+                          ></v-btn>
+                          <v-btn
+                            color="primary"
+                            text="保存"
+                            variant="tonal"
+                            type="submit"
+                            :disabled="!formValid"
+                            @click="dialog = false"
+                          ></v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-form>
                   </v-dialog>
                 </div>
               </v-defaults-provider>
@@ -221,11 +227,6 @@ onUnmounted(() => {
             ></v-list-item>
             <v-divider inset></v-divider>
             <v-list-item prepend-icon="mdi-account" title="生日"></v-list-item>
-            <v-divider inset></v-divider>
-            <v-list-item
-              prepend-icon="mdi-account"
-              title="自我介紹"
-            ></v-list-item>
             <v-divider inset></v-divider>
           </v-list>
         </v-card>
