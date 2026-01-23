@@ -31,7 +31,13 @@ export default {
       </div>
     </div>
 
-    <ThreadPost v-for="post in paginatedPosts" :key="post.id" :post="post" />
+    <ThreadPost
+      v-for="post in paginatedPosts"
+      :key="post.id"
+      :post="post"
+      :category-id="thread.categoryId"
+      @reply-added="handleReplyAdded"
+    />
 
     <nav v-if="totalPages > 1" class="mt-3 mt-md-4">
       <ul
@@ -80,21 +86,51 @@ export default {
     </nav>
 
     <div class="mt-3 mt-md-5">
-      <h5 class="fs-5 fs-md-4 mb-3">💬 回覆</h5>
+      <h5 class="fs-5 fs-md-4 mb-3">💬 回覆 / 留言</h5>
+
+      <div class="btn-group mb-2" role="group" aria-label="reply type">
+        <input
+          type="radio"
+          class="btn-check"
+          name="compose-mode"
+          id="compose-reply"
+          value="reply"
+          v-model="activeComposer"
+        />
+        <label class="btn btn-outline-primary" for="compose-reply">
+          回文
+        </label>
+
+        <input
+          type="radio"
+          class="btn-check"
+          name="compose-mode"
+          id="compose-comment"
+          value="comment"
+          v-model="activeComposer"
+        />
+        <label class="btn btn-outline-primary" for="compose-comment">
+          留言
+        </label>
+      </div>
+
       <textarea
-        v-model="newReply"
+        v-model="drafts[activeComposer]"
         class="form-control mb-2"
         :rows="windowWidth < 768 ? 3 : 4"
-        placeholder="撰寫您的回覆..."
+        :placeholder="composerPlaceholder"
       ></textarea>
       <button
         class="btn btn-primary w-100 w-sm-auto"
-        @click="submitReply"
-        :disabled="isSubmitting || !newReply.trim()"
+        @click="submitContent"
+        :disabled="isSubmitting || !composerHasContent"
       >
         <i class="fas fa-paper-plane me-2"></i>
-        {{ isSubmitting ? "發送中..." : "發送回覆" }}
+        {{ isSubmitting ? "發送中..." : composerButtonText }}
       </button>
+      <p class="text-muted small mt-2 mb-0">
+        回文會出現在貼文下方，留言則可作為單獨討論，兩者都可再被回覆。
+      </p>
     </div>
   </section>
 
@@ -102,10 +138,11 @@ export default {
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import apiClient from "@/api/request.js";
 import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
+import { CONTENT_TYPES } from "@/stores/forumStore.js";
 // 視窗寬度響應式變數
 const windowWidth = ref(window.innerWidth);
 
@@ -129,7 +166,9 @@ const allPosts = ref([]);
 const fetchThread = async () => {
   try {
     const data = await apiClient.get("/ContentApi");
-    const item = data.items.find((i) => i.contentId === threadId);
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    const item = items.find((i) => i.contentId === threadId);
     if (item) {
       thread.value = {
         id: item.contentId,
@@ -141,20 +180,50 @@ const fetchThread = async () => {
         type: item.type,
       };
     }
-    // 根據 type 和 parent_content_id 區分不同類型的內容
-    allPosts.value = data.items
-      .filter((i) => {
-        // 回文 (type 2) 或 留言 (type 3) 且 parent 是當前貼文
-        return (i.type === 2 || i.type === 3) && i.parentContentId === threadId;
-      })
-      .map((i) => ({
-        id: i.contentId,
-        author: i.username,
-        createdAt: i.createdAt,
-        content: i.body,
-        type: i.type, // 加入 type 資訊
-        parentContentId: i.parentContentId,
-      }));
+
+    const contentItems = items.filter((i) =>
+      [
+        CONTENT_TYPES.REPLY,
+        CONTENT_TYPES.COMMENT,
+        CONTENT_TYPES.COMMENT_REPLY,
+      ].includes(i.type)
+    );
+
+    const normalized = contentItems.map((i) => ({
+      id: i.contentId,
+      author: i.username,
+      createdAt: i.createdAt,
+      content: i.body,
+      type: i.type,
+      parentContentId: i.parentContentId,
+      replies: [],
+    }));
+
+    const nodeMap = new Map();
+    normalized.forEach((node) => {
+      nodeMap.set(node.id, node);
+    });
+
+    const roots = [];
+    nodeMap.forEach((node) => {
+      if (node.parentContentId === threadId) {
+        roots.push(node);
+      } else if (nodeMap.has(node.parentContentId)) {
+        const parent = nodeMap.get(node.parentContentId);
+        parent.replies.push(node);
+      }
+    });
+
+    const sortReplies = (list) => {
+      list.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      list.forEach((child) => sortReplies(child.replies));
+    };
+
+    sortReplies(roots);
+    allPosts.value = roots;
   } catch (error) {
     console.error("Failed to fetch thread:", error);
   }
@@ -191,12 +260,48 @@ function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value++;
 }
 
-const newReply = ref("");
+async function handleReplyAdded() {
+  await fetchThread();
+  currentPage.value = 1;
+}
+
+const activeComposer = ref("reply");
+const drafts = reactive({
+  reply: "",
+  comment: "",
+});
 const isSubmitting = ref(false);
 
-async function submitReply() {
-  if (!newReply.value.trim()) {
-    alert("請輸入回覆內容");
+const composerConfig = {
+  reply: {
+    type: CONTENT_TYPES.REPLY,
+    button: "發送回文",
+    placeholder: "撰寫您的回文...",
+  },
+  comment: {
+    type: CONTENT_TYPES.COMMENT,
+    button: "發送留言",
+    placeholder: "撰寫您的留言...",
+  },
+};
+
+const composerPlaceholder = computed(
+  () => composerConfig[activeComposer.value]?.placeholder || "撰寫內容..."
+);
+const composerButtonText = computed(
+  () => composerConfig[activeComposer.value]?.button || "發送"
+);
+const composerHasContent = computed(
+  () => drafts[activeComposer.value].trim().length > 0
+);
+
+async function submitContent() {
+  const config = composerConfig[activeComposer.value];
+  if (!config) return;
+
+  const body = drafts[activeComposer.value].trim();
+  if (!body) {
+    alert("請輸入內容");
     return;
   }
 
@@ -206,22 +311,20 @@ async function submitReply() {
   const dto = {
     UserId: 1, // TODO: 改成實際使用者 ID
     CategoryId: thread.value.categoryId ? thread.value.categoryId : 1,
-    ParentContentId: threadId, // 綁定到當前貼文
-    Title: `Re: ${thread.value.title}`, // 回覆標題格式：Re: 原標題
-    Body: newReply.value.trim(),
-    Type: 2, // 設定為回文類型 (CONTENT_TYPES.REPLY)
+    ParentContentId: threadId,
+    Title: `Re: ${thread.value.title}`,
+    Body: body,
+    Type: config.type,
   };
 
   try {
     await apiClient.post("/ContentApi", dto);
-    alert("回覆成功！");
-    newReply.value = "";
-    // 重新載入貼文和回覆
+    drafts[activeComposer.value] = "";
     await fetchThread();
     currentPage.value = 1;
   } catch (error) {
-    console.error("回覆失敗:", error);
-    alert("回覆失敗，請稍後再試");
+    console.error("發送失敗:", error);
+    alert("發送失敗，請稍後再試");
   } finally {
     isSubmitting.value = false;
   }

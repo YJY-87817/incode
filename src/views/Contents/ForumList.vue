@@ -23,12 +23,18 @@ export default {
       >
         <div class="card h-100 shadow-sm">
           <div class="card-body d-flex flex-column p-3">
-            <h5 class="card-title fs-6 fs-md-5 text-break">{{ topic.title }}</h5>
+            <h5 class="card-title fs-6 fs-md-5 text-break">
+              {{ topic.title }}
+            </h5>
             <p class="card-text text-truncate flex-grow-1 small">
               {{ topic.excerpt }}
             </p>
-            <div class="mt-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-              <small class="text-muted text-truncate" style="max-width: 100%;">by {{ topic.author }}</small>
+            <div
+              class="mt-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
+            >
+              <small class="text-muted text-truncate" style="max-width: 100%"
+                >by {{ topic.author }}</small
+              >
               <router-link
                 :to="{ name: 'thread-detail', params: { id: topic.id } }"
                 class="btn btn-sm btn-primary w-100 w-sm-auto"
@@ -41,7 +47,9 @@ export default {
     </div>
 
     <nav v-if="totalPages > 1" class="mt-3 mt-md-4">
-      <ul class="pagination pagination-sm justify-content-center flex-wrap gap-1">
+      <ul
+        class="pagination pagination-sm justify-content-center flex-wrap gap-1"
+      >
         <li
           class="page-item"
           :class="{ disabled: currentPage === 1 }"
@@ -59,7 +67,9 @@ export default {
           :class="{ active: currentPage === page }"
           @click="goToPage(page)"
         >
-          <a class="page-link px-2 px-md-3" href="javascript:void(0)">{{ page }}</a>
+          <a class="page-link px-2 px-md-3" href="javascript:void(0)">{{
+            page
+          }}</a>
         </li>
         <li
           class="page-item"
