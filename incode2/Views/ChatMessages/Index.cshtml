@@ -1,248 +1,505 @@
-﻿@using incode2.ViewModels
-@model ChatIndexViewModel  
-@section Styles { <style>
-        /* 1. 滿版容器 */
-        .history-container-fluid {
-            width: 100%; /* 設定寬度為100%，讓容器佔滿父元素寬度 */
-            padding: 0 20px; /* 設定左右內距20px，上下0，避免內容貼邊 */
-        }
+﻿@model incode2.ViewModels.ChatIndexViewModel
 
-        /* 2. 覆寫 Bootstrap Accordion 樣式 */
-        .accordion-item {
-            border: 1px solid #e3e6f0; /* 設定1px淺灰色實線邊框 */
-            border-radius: 0.5rem !important; /* 強制設定0.5rem圓角，覆寫Bootstrap預設 */
-            margin-bottom: 1rem; /* 設定下方外距1rem，分開每個手風琴項 */
-            overflow: hidden; /* 隱藏溢出內容，確保圓角效果 */
-            box-shadow: 0 0.15rem 0.5rem 0 rgba(58, 59, 69, 0.10); /* 設定輕微陰影增加立體感 */
-            background-color: #fff; /* 設定背景色為白色 */
-        }
+@{
+    ViewData["Title"] = "聊天室";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 
-        .accordion-item + .accordion-item {
-            border-top: 1px solid #e3e6f0; /* 設定連續項目的上邊框，保持視覺一致 */
-        }
+    var currentSessionId = Model.CurrentChatSessionId ?? 0;
+    var targetUserName = Model.TargetUser?.Username ?? "使用者";
+    // 讀取 Controller 傳來的模式狀態 (預設 false = AI)
+    bool isHumanMode = ViewBag.IsHumanMode ?? false;
 
-        /* 按鈕樣式 (Header) */
-        .accordion-button {
-            background-color: #fff; /* 設定按鈕背景為白色 */
-            color: #5a5c69; /* 設定文字顏色為深灰色 */
-            box-shadow: none !important; /* 移除Bootstrap預設的點擊陰影 */
-            padding: 15px 20px; /* 設定按鈕內距上下15px、左右20px */
-        }
-
-        .accordion-button:not(.collapsed) {
-            background-color: #f8f9fc; /* 展開狀態時的背景色為淺灰藍 */
-            color: #4e73df; /* 展開狀態時的文字顏色為藍色 */
-            box-shadow: inset 0 -1px 0 rgba(0,0,0,.125); /* 底部加入內陰影作分隔線 */
-        }
-
-        .accordion-button::after {
-            background-size: 1rem; /* 設定箭頭圖示大小為1rem */
-        }
-
-        /* 3. 頭像與文字排版 */
-        .header-info-group {
-            display: flex; /* 使用Flexbox彈性排版 */
-            align-items: center; /* 垂直置中對齊 */
-            width: 100%; /* 寬度100%佔滿按鈕 */
-        }
-
-        .header-avatar {
-            width: 45px; /* 頭像寬度45px */
-            height: 45px; /* 頭像高度45px */
-            border-radius: 50%; /* 設定50%圓角，使頭像為圓形 */
-            object-fit: cover; /* 圖片裁切模式為cover，保持比例填滿容器 */
-            margin-right: 15px; /* 右側外距15px，與文字分開 */
-            border: 2px solid #fff; /* 2px白色邊框 */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 輕微陰影增加立體感 */
-        }
-
-        .header-text {
-            display: flex; /* 使用Flexbox排版 */
-            flex-direction: column; /* 垂直方向排列子元素 */
-            text-align: left; /* 文字靠左對齊 */
-        }
-
-        .header-title {
-            font-weight: 700; /* 字體粗細700（粗體） */
-            font-size: 1.05rem; /* 字體大小略大於標準 */
-            margin-bottom: 2px; /* 下方外距2px */
-        }
-
-        .header-meta {
-            font-size: 0.85rem; /* 小字體0.85rem */
-            color: #858796; /* 淺灰色文字 */
-        }
-
-        /* 4. 內容區域 */
-        .accordion-body {
-            background-color: #f8f9fc; /* 內容區背景色 */
-            padding: 0; /* 內距0，讓捲動區域貼邊 */
-        }
-
-        .chat-scroll-area {
-            padding: 25px 20px; /* 內距上下25px、左右20px */
-            height: 400px; /* 固定高度400px */
-            overflow-y: auto; /* 垂直方向溢出時顯示捲軸 */
-        }
-
-        /* --- 氣泡樣式 --- */
-        .message-row {
-            display: flex; /* Flexbox排版 */
-            margin-bottom: 15px; /* 下方外距15px，分開每條訊息 */
-        }
-
-        .message-bubble {
-            padding: 10px 16px; /* 氣泡內距 */
-            border-radius: 1rem; /* 1rem圓角 */
-            font-size: 0.95rem; /* 字體大小0.95rem */
-            line-height: 1.5; /* 行高1.5倍 */
-            max-width: 90%; /* 最大寬度90%，避免氣泡過寬 */
-            word-wrap: break-word; /* 長單字自動換行 */
-            overflow: hidden; /* 隱藏溢出內容，確保圓角 */
-        }
-
-        .message-bubble img {
-            max-width: 100% !important; /* 圖片最大寬度與氣泡一致 */
-            height: 20% !important; /* 高度自動維持比例 */
-            display: block; /* 區塊顯示，避免圖片下方空白 */
-            margin-top: 5px; /* 上方外距5px，與文字分開 */
-            border-radius: 8px; /* 圖片圓角8px */
-        }
-
-        /* 左側 (User) */
-        .message-row.left {
-            justify-content: flex-start; /* 內容靠左對齊 */
-        }
-
-        .message-row.left .message-bubble {
-            background-color: #fff; /* 使用者訊息氣泡背景白色 */
-            color: #444; /* 文字深灰色 */
-            border: 1px solid #e3e6f0; /* 淺灰色邊框 */
-            border-bottom-left-radius: 0; /* 左下角無圓角，模擬氣泡尾巴 */
-        }
-
-        /* 右側 (AI/Admin) */
-        .message-row.right {
-            justify-content: flex-end; /* 內容靠右對齊 */
-        }
-
-        .message-row.right .message-bubble {
-            background-color: #eaecf4; /* AI訊息氣泡背景淺藍灰 */
-            color: #333; /* 文字深灰色 */
-            border: 1px solid #d1d3e2; /* 稍深的邊框色 */
-            border-bottom-right-radius: 0; /* 右下角無圓角，模擬氣泡尾巴 */
-        }
-
-        .message-time {
-            font-size: 0.7rem; /* 極小字體0.7rem */
-            color: #aaa; /* 淺灰色 */
-            margin-top: 4px; /* 上方外距4px */
-            min-width: 45px; /* 最小寬度45px */
-        }
-
-        .message-row.right .message-time {
-            text-align: right; /* 靠右訊息的時間文字靠右對齊 */
-        }
-
-        /* Loading 動畫 */
-        .loading-spinner {
-            display: flex; /* Flexbox排版 */
-            justify-content: center; /* 水平置中 */
-            align-items: center; /* 垂直置中 */
-            height: 100%; /* 高度100%佔滿父容器 */
-            color: #4e73df; /* 顏色為藍色 */
-        }
-    </style>
+    var targetUserAvatar = !string.IsNullOrEmpty(Model.TargetUser?.ImageUrl)
+        ? Model.TargetUser.ImageUrl
+        : "https://bootdey.com/img/Content/avatar/avatar1.png";
 }
 
-<div class="container-fluid mt-4 history-container-fluid"> <!-- 滿版流體容器，margin-top:4，套用自訂樣式 -->
-    <div class="d-flex align-items-center justify-content-between mb-4 px-2"> <!-- 彈性排版：垂直置中+左右對齊，下方外距4 -->
-        <h2>訊息管理</h2> <!-- 頁面標題 -->
-        <span class="badge badge-primary py-2">共 @(Model.Sessions?.Count ?? 0) 筆對話</span> <!-- 顯示對話總筆數，null合併避免空值錯誤 -->
+@section Styles {
+    <style>
+        .chat-container {
+            height: 75vh;
+            overflow: hidden;
+        }
+
+        .chat-col {
+            height: 100%;
+        }
+
+        .chat-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e3e6f0;
+            overflow: hidden;
+        }
+
+        /* 列表樣式 */
+        .user-list-area {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            color: inherit;
+            text-decoration: none !important;
+        }
+
+            .session-item:hover {
+                background-color: #f8f9fc;
+            }
+
+            .session-item.active {
+                background-color: #e6f0ff;
+                border-left: 4px solid #4e73df;
+            }
+
+        .avatar-list-img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .chat-item-content {
+            flex: 1;
+            margin-left: 10px;
+            overflow: hidden;
+        }
+
+        .chat-item-name {
+            font-weight: bold;
+            color: #5a5c69;
+        }
+
+        .chat-item-preview {
+            font-size: 0.85rem;
+            color: #858796;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 聊天區樣式 */
+        .chat-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fc;
+        }
+
+        .answer {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+        }
+
+            .answer .text {
+                padding: 12px 16px;
+                border-radius: 1rem;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                position: relative;
+                word-wrap: break-word;
+                box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            }
+
+            /* 左側 (對方/AI) */
+            .answer.left {
+                align-self: flex-start;
+            }
+
+                .answer.left .text {
+                    background: #fff;
+                    color: #5a5c69;
+                    border-bottom-left-radius: 0;
+                }
+
+            /* 右側 (我) */
+            .answer.right {
+                align-self: flex-end;
+                margin-left: auto;
+            }
+
+                .answer.right .text {
+                    background: #4e73df;
+                    color: #fff;
+                    border-bottom-right-radius: 0;
+                }
+
+        .avatar-chat-img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .answer .text img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        /* 輸入區 */
+        .chat-input-area {
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #e3e6f0;
+        }
+
+        /* Markdown 樣式修正 */
+        .answer.left .text ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+
+        .answer.left .text p {
+            margin-bottom: 0.5rem;
+        }
+
+            .answer.left .text p:last-child {
+                margin-bottom: 0;
+            }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+<div class="row chat-container mt-4">
+    <div class="col-md-3 col-lg-3 d-none d-md-block pr-1 chat-col">
+        <div class="card shadow mb-4 chat-card">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">歷史對話</h6>
+            </div>
+            <div class="user-list-area">
+                @if (Model.Sessions != null)
+                {
+                    foreach (var session in Model.Sessions)
+                    {
+                        var isActive = session.ChatSessionId == Model.CurrentChatSessionId ? "active" : "";
+                        var listName = session.Title ?? "新對話";
+                        <a href="@Url.Action("Index", new { id = session.ChatSessionId })" class="session-item @isActive">
+                            <img src="@targetUserAvatar" class="avatar-list-img">
+                            <div class="chat-item-content">
+                                <div class="chat-item-name">@listName</div>
+                                <div class="chat-item-preview">
+                                    @(session.Ishumanmode ? "[真人對話中]" : "[AI 助理]")
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
+        </div>
     </div>
 
-    <div class="accordion" id="chatHistoryAccordion"> <!-- Bootstrap手風琴容器，ID為chatHistoryAccordion -->
-        @if (Model.Sessions != null && Model.Sessions.Any()) // 判斷Sessions是否不為null且有資料
-        {
-            foreach (var session in Model.Sessions) // 遍歷每一筆Session資料
-            {
-                bool isActive = session.ChatSessionId == Model.CurrentChatSessionId; // 判斷當前Session是否為要展開的項目
-                var sessionAvatar = !string.IsNullOrEmpty(session.User?.ImageUrl) ? session.User.ImageUrl : "https://bootdey.com/img/Content/avatar/avatar1.png"; // 決定頭像URL，優先使用使用者自訂頭像，否則用預設
+    <div class="col-md-9 col-lg-9 col-12 pl-1 chat-col">
+        <div class="card shadow mb-4 chat-card">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary mr-2">
+                        @if (currentSessionId > 0)
+                        {
+                            <span>@Model.Sessions?.FirstOrDefault(s => s.ChatSessionId == currentSessionId)?.Title</span>
+                        }
+                        else
+                        {
 
-                <div class="accordion-item"> <!-- 手風琴單個項目 -->
-                    <h2 class="accordion-header" id="heading-@session.ChatSessionId"> <!-- 手風琴標題列，ID唯一 -->
-                        <button class="accordion-button @(isActive ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@(session.ChatSessionId)" aria-expanded="@(isActive ? "true" : "false")" aria-controls="collapse-@(session.ChatSessionId)" onclick="loadHistory(@session.ChatSessionId)"> <!-- 手風琴按鈕，根據isActive決定收合狀態，點擊呼叫loadHistory函式 -->
-                            <div class="header-info-group"> <img src="@sessionAvatar" class="header-avatar" alt="User"> <div class="header-text"> <div class="header-title"> @(session.User?.Username ?? "未命名使用者") </div> <div class="header-meta"> @(session.CreatedAt.HasValue? session.CreatedAt.Value.ToString("yyyy/MM/dd HH:mm") : "") </div> </div> </div> <!-- 標題列內容：頭像+使用者名稱+建立時間 -->
+                            <span>請選擇對話</span>
+                        }
+                    </h6>
+                    <span id="modeBadge" class="badge @(isHumanMode ? "badge-warning" : "badge-info")">
+                        @(isHumanMode ? "真人客服" : "AI 助理")
+                    </span>
+                </div>
+                <div>
+                    @if (currentSessionId > 0)
+                    {
+                        <button id="btnSwitchMode" class="btn btn-sm @(isHumanMode ? "btn-danger" : "btn-warning")" onclick="toggleHumanMode()">
+                            @(isHumanMode ? "結束對話 (轉回 AI)" : "呼叫真人客服")
                         </button>
-                    </h2>
+                    }
+                    <span id="connectionStatus" class="badge badge-secondary ml-2">連線中...</span>
+                </div>
+            </div>
 
-                    <div id="collapse-@session.ChatSessionId" class="accordion-collapse collapse @(isActive ? "show" : "")" aria-labelledby="heading-@session.ChatSessionId" data-bs-parent="#chatHistoryAccordion"> <div class="accordion-body"> <div class="chat-scroll-area" id="scroll-area-@session.ChatSessionId"> @if (isActive && Model.CurrentMessages != null) // 手風琴折疊內容區，根據isActive決定是否顯示，內含訊息捲動區域，判斷是否預渲染訊息
+            <div class="chat-scroll-area" id="chat-content">
+                @if (Model.CurrentMessages != null)
+                {
+                    foreach (var item in Model.CurrentMessages)
+                    {
+                        var isUser = item.Role == "user";
+                        // 判斷是否為系統/管理員/AI (顯示在左側，使用者自己在右側)
+                        // 注意：這裡假設這是「使用者端」介面。如果是「後台管理端」，邏輯要反過來。
+                        // 根據你的需求 "使用者觸發真人按鈕"，這應該是使用者介面。
+                        // 使用者發的 (User) -> 右邊
+                        // 別人發的 (Assistant, Admin) -> 左邊
+                        var isRightSide = isUser;
+
+                        <div class="answer @(isRightSide ? "right" : "left")">
+                            <div class="small text-gray-500 mb-1 @(isRightSide ? "text-right" : "")">
+                                @(isUser ? "我" : (item.Role == "assistant" ? "AI 助手" : "客服人員"))
+                            </div>
+                            <div class="d-flex @(isRightSide ? "flex-row-reverse" : "flex-row")">
+                                @if (!isRightSide)
                                 {
-                                    foreach (var msg in Model.CurrentMessages) // 遍歷預載的訊息列表
-                                    {
-                                        var isAssistant = msg.Role != "user"; // 判斷是否為AI訊息
-                                        <div class="message-row @(isAssistant ? "right" : "left")"> <div> <div class="small text-gray-500 mb-1 @(isAssistant ? "text-right" : "")"> @(isAssistant ? "AI / 系統" : (session.User?.Username ?? "會員")) </div> <div class="message-bubble">@Html.Raw(msg.Body)</div> <div class="message-time"> @(msg.CreatedAt.HasValue? msg.CreatedAt.Value.ToString("MM/dd HH:mm") : "") </div> </div> </div> <!-- 單條訊息列：根據角色決定左右對齊，顯示發送者、內容、時間 -->
-                                    }
-                                    <div class="text-center mt-4 mb-2"><span class="badge badge-light text-gray-500 border">--- 對話紀錄結束 ---</span></div> <!-- 對話結束提示 -->
+                                    <img src="@targetUserAvatar" class="avatar-chat-img mr-2">
                                 }
-                                else
-                                {
-                                }
+                                <div class="text">
+                                    @Html.Raw(item.Body)
+                                </div>
                             </div>
                         </div>
+                    }
+                }
+            </div>
+
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('imageInput').click()">
+                            <i class="fas fa-image"></i>
+                        </button>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="uploadImage(this)">
+
+                    <input type="text" id="msgInput" class="form-control bg-light border-0 small" placeholder="輸入訊息..." aria-label="Type message">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="button" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="alert alert-secondary text-center">尚無紀錄</div> <!-- 無Session資料時顯示提示 -->
-        }
-
+            </div>
+        </div>
     </div>
 </div>
 
-@section Scripts { <script>
-        var loadedSessions = []; // 全域陣列，紀錄已載入的Session ID，避免重複呼叫API
-        $(document).ready(function() { // 頁面DOM載入完成後執行
-            var currentId = '@Model.CurrentChatSessionId'; // 取得後端傳來的當前Session ID
-            if(currentId && currentId > 0) { loadedSessions.push(parseInt(currentId)); scrollToBottom(currentId); } // 若ID有效，加入已載入陣列並捲動到底部
+@section Scripts {
+    <script>
+        // 初始化變數
+        var currentSessionId = @currentSessionId;
+        var isHumanMode = @(isHumanMode.ToString().ToLower()); // C# bool 轉 JS boolean
+        var connectionId = ""; // SignalR ID
+
+        // 1. 初始化 SignalR
+        const initSignalR = async () => {
+             var connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chatHub")
+                .withAutomaticReconnect({
+                    nextRetryDelayInMilliseconds: retryContext => 5000 // 失敗等待 5 秒重試
+                })
+                .build();
+
+            // 設置逾時參數
+            connection.serverTimeoutInMilliseconds = 30 * 60 * 1000;
+            connection.keepAliveIntervalInMilliseconds = 15 * 1000;
+
+            // 綁定接收事件
+            connection.on("ReceiveMessage", function (type, message) {
+                // type: "AI", "AI_Image", "User_Image", "System", "Live"
+                console.log("收到訊息:", type, message);
+
+                var isRightSide = false; // 接收到的訊息都在左邊
+                var senderName = "AI 助手";
+
+                if (type === "User_Image") {
+                    // 這是使用者剛剛上傳的圖片回顯，顯示在右邊
+                    isRightSide = true;
+                    senderName = "我";
+                    message = `<img src="${message}" style="max-width:200px; border-radius:8px;" />`;
+                } else if (type === "System") {
+                    // 系統通知 (例如切換模式)
+                    // 可以用 Toast 或中間的小灰字顯示，這裡簡單處理
+                    senderName = "系統通知";
+                    message = `<i>${message}</i>`;
+                } else if (type === "AI_Image") {
+                    // AI 生成的圖片
+                    // message 本身就是 <img> 標籤 (後端處理過了) 或者 URL
+                    // 如果後端傳的是純 URL:
+                    if(!message.startsWith("<")) {
+                         message = `<img src="${message}" style="max-width:100%; border-radius:8px;" />`;
+                    }
+                } else {
+                    // AI 純文字 -> 解析 Markdown
+                    message = marked.parse(message);
+                }
+
+                if (isHumanMode && type !== "System" && !isRightSide) {
+                    senderName = "客服人員";
+                }
+
+                appendMessage(senderName, message, isRightSide);
+            });
+
+            try {
+                await connection.start();
+                console.log("SignalR Connected. ID:", connection.connectionId);
+                connectionId = connection.connectionId;
+                $("#connectionStatus").removeClass("badge-secondary").addClass("badge-success").text("連線正常");
+            } catch (err) {
+                console.error("SignalR Connection Error: ", err);
+                $("#connectionStatus").text("連線失敗");
+                setTimeout(initSignalR, 5000); // 失敗重連
+            }
+        };
+
+        $(document).ready(function() {
+            scrollToBottom();
+            initSignalR();
+
+            // 綁定 Enter 鍵
+            $('#msgInput').keypress(function (e) {
+                if (e.which == 13) {
+                    sendMessage();
+                    return false;
+                }
+            });
         });
 
-        function loadHistory(sessionId) { // 載入指定Session的歷史訊息函式
-            var containerId = `#scroll-area-${sessionId}`; var $container = $(containerId); // 組合捲動區域ID並選取元素
-            setTimeout(() => { scrollToBottom(sessionId); }, 300); // 延遲300ms捲動，等待折疊動畫完成
-            if (loadedSessions.includes(sessionId)) return; // 若已載入，直接返回避免重複請求
-            $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i></div>'); // 顯示Loading動畫
+        // 2. 發送文字訊息 API
+        async function sendMessage() {
+            var msg = $("#msgInput").val();
+            if (!msg.trim()) return;
+            if (currentSessionId === 0) { alert("請先建立或選擇對話"); return; }
 
-            $.ajax({ url: '/api/ChatMessages/GetHistory/' + sessionId, type: 'GET', // 發送GET請求到歷史訊息API
-                success: function(data) { // 請求成功的回調函式
-                    $container.empty(); // 清空Loading動畫
-                    if (!data || data.length === 0) { $container.html('<div class="text-center text-muted mt-5">無對話內容</div>'); return; } // 無資料時顯示提示
+            // 立即顯示自己的訊息在右側
+            appendMessage("我", escapeHtml(msg), true);
+            $("#msgInput").val("");
 
-                    var html = ''; // 初始化HTML字串
-                    data.forEach(function(msg) { // 遍歷API回傳的訊息
-                        var isAssistant = (msg.role !== 'user'); var alignClass = isAssistant ? 'right' : 'left'; var name = isAssistant ? 'AI / 系統' : '會員'; var timeStr = msg.createdAt ? msg.createdAt.substring(5, 16).replace('-', '/') : ''; // 判斷角色、排版類別、顯示名稱、格式化時間
-                        html += `
-                            <div class="message-row ${alignClass}">
-                                <div>
-                                    <div class="small text-gray-500 mb-1 ${isAssistant ? 'text-right' : ''}">
-                                        ${name}
-                                    </div>
-                                    <div class="message-bubble">${msg.body}</div> 
-                                    <div class="message-time">${timeStr}</div>
-                                </div>
-                            </div>
-                        `; // 組合單條訊息HTML
-                    });
+            try {
+                const response = await fetch('/api/ChatMessages/SendMessage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: currentSessionId,
+                        userContent: msg,
+                        connectionId: connectionId
+                    })
+                });
 
-                    html += '<div class="text-center mt-4 mb-2"><span class="badge badge-light text-gray-500 border">--- 對話紀錄結束 ---</span></div>'; // 加入對話結束提示
-                    $container.html(html); loadedSessions.push(sessionId); scrollToBottom(sessionId); // 插入HTML、加入已載入陣列、捲動到底部
-                },
-                error: function(err) { $container.html('<div class="text-danger text-center mt-5">載入失敗，請稍後再試</div>'); console.error(err); } // 請求失敗時顯示錯誤提示並列印錯誤
-            });
+                if (!response.ok) throw new Error("API Error");
+                // 後端會透過 SignalR 回傳 AI 的回應，所以這裡不用處理 response.json() 的內容
+
+            } catch (error) {
+                console.error("發送失敗:", error);
+                appendMessage("系統", "<span class='text-danger'>發送失敗，請稍後再試。</span>", false);
+            }
         }
 
-        function scrollToBottom(sessionId) { var $area = $(`#scroll-area-${sessionId}`); if ($area.length) { $area.scrollTop($area.prop("scrollHeight")); } } // 將指定Session的捲動區域捲動到底部的輔助函式
+        // 3. 上傳圖片 API
+        async function uploadImage(input) {
+            if (input.files && input.files[0]) {
+                var file = input.files[0];
+                var formData = new FormData();
+                formData.append("SessionId", currentSessionId);
+                formData.append("Image", file);
+                formData.append("ConnectionId", connectionId);
+
+                // 顯示「上傳中...」
+                appendMessage("系統", "<i>圖片上傳分析中...</i>", false);
+
+                try {
+                    const response = await fetch('/api/ChatMessages/UploadImage', {
+                        method: 'POST',
+                        body: formData // FormData 不需要設定 Content-Type，瀏覽器會自動處理
+                    });
+
+                    if (!response.ok) throw new Error("Upload Failed");
+                    // 成功後，SignalR 會推播 User_Image (顯示圖片) 和 AI (顯示分析結果)
+                } catch (error) {
+                    console.error("上傳失敗:", error);
+                    appendMessage("系統", "<span class='text-danger'>圖片上傳失敗。</span>", false);
+                }
+
+                // 清空 input 讓同一張圖可以再次上傳
+                input.value = '';
+            }
+        }
+
+        // 4. 切換 真人/AI 模式 API
+        async function toggleHumanMode() {
+            if (currentSessionId === 0) return;
+
+            // 切換狀態：如果是真人(true) -> 改為 AI(false)，反之亦然
+            var newMode = !isHumanMode;
+
+            try {
+                const response = await fetch('/api/ChatMessages/SwitchMode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: currentSessionId,
+                        ishumanmode: newMode,
+                        connectionId: connectionId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 更新全域變數與 UI
+                    isHumanMode = newMode;
+                    updateModeUI();
+                } else {
+                    alert("切換模式失敗");
+                }
+            } catch (error) {
+                console.error("Switch Mode Error:", error);
+            }
+        }
+
+        function updateModeUI() {
+            var badge = $("#modeBadge");
+            var btn = $("#btnSwitchMode");
+
+            if (isHumanMode) {
+                badge.removeClass("badge-info").addClass("badge-warning").text("真人客服");
+                btn.removeClass("btn-warning").addClass("btn-danger").text("結束對話 (轉回 AI)");
+            } else {
+                badge.removeClass("badge-warning").addClass("badge-info").text("AI 助理");
+                btn.removeClass("btn-danger").addClass("btn-warning").text("呼叫真人客服");
+            }
+        }
+
+        // 輔助功能
+        function appendMessage(senderName, messageHtml, isRightSide) {
+            var timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            var alignClass = isRightSide ? "right" : "left";
+            var textRightClass = isRightSide ? "text-right" : "";
+            var flexDirClass = isRightSide ? "flex-row-reverse" : "flex-row";
+            var avatarUrl = "@targetUserAvatar"; // 這裡可以根據 senderName 換不同頭像
+
+            var avatarHtml = !isRightSide ? `<img src="${avatarUrl}" class="avatar-chat-img mr-2">` : "";
+
+            var html = `
+                <div class="answer ${alignClass}">
+                    <div class="small text-gray-500 mb-1 ${textRightClass}">${senderName}</div>
+                    <div class="d-flex ${flexDirClass}">
+                        ${avatarHtml}
+                        <div class="text">${messageHtml}</div>
+                    </div>
+                    <div class="time ${textRightClass}">${timeNow}</div>
+                </div>`;
+
+            $("#chat-content").append(html);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            var chatContent = $("#chat-content");
+            chatContent.scrollTop(chatContent.prop("scrollHeight"));
+        }
+
+        function escapeHtml(text) {
+            var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
     </script>
 }
