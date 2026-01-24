@@ -411,6 +411,12 @@ watch(
                       >
                         <span>下載TMDB海報</span>
                       </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'imagetest' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>上傳圖測試</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>
@@ -434,6 +440,12 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>下載TMDB海報</span>
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'imagetest' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>上傳圖測試</span>
                 </RouterLink>
               </div>
             </div>

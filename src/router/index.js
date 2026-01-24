@@ -193,7 +193,11 @@ const router = createRouter({
       name: "tmdb",
       component: () => import("@/views/Contents/tmdb.vue"),
     },
-    // 以上是tim的路由
+    {
+      path: "/imagetest",
+      name: "imagetest",
+      component: () => import("@/components/Contents/ImageTest.vue"),
+    },    // 以上是tim的路由
 
     // owen
     {
