@@ -131,7 +131,6 @@ watch(
         title="Designed and Coded by Creative Tim"
         data-placement="bottom"
       >
-
         <i class="fas fa-hat-cowboy-side"></i>
         incode影庫
       </RouterLink>
@@ -394,19 +393,24 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-
                       <RouterLink
                         :to="{ name: 'forum' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>討論區</span>
                       </RouterLink>
-                <RouterLink
-                  :to="{ name: 'presentation' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>預設首頁</span>
-                </RouterLink>  
+                      <RouterLink
+                        :to="{ name: 'presentation' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>預設首頁</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'tmdb' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>下載TMDB海報</span>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>
@@ -424,7 +428,13 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>預設首頁</span>
-                </RouterLink>              
+                </RouterLink>
+                <RouterLink
+                  :to="{ name: 'tmdb' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>下載TMDB海報</span>
+                </RouterLink>
               </div>
             </div>
           </li>

@@ -40,7 +40,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      // 首頁改成這個
+      // 首頁改成這個_tim
       path: "/",
       name: "firstview",
       component: FirstView,
@@ -187,6 +187,11 @@ const router = createRouter({
       path: "/thread/:id",
       name: "thread-detail",
       component: () => import("@/views/Contents/ThreadDetail.vue"),
+    },
+    {
+      path: "/tmdb",
+      name: "tmdb",
+      component: () => import("@/views/Contents/tmdb.vue"),
     },
     // 以上是tim的路由
 
