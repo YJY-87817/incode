@@ -17,6 +17,8 @@ public partial class ChatSession
 
     public DateTime? UpdatedAt { get; set; }
 
+    public bool Ishumanmode { get; set; }
+
     public virtual ICollection<ChatMessage> ChatMessage { get; set; } = new List<ChatMessage>();
 
     public virtual User User { get; set; }
