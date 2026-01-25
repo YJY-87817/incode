@@ -91,80 +91,121 @@ const fetchCategories = () => {
     });
 };
 
+// 計算貼文的回應統計（從所有 content 中計算）
+const calculateReplyStats = (postId, allContents) => {
+  // 找出該貼文的所有回文（parent_content_id === postId 且 type === 2）
+  const replies = allContents.filter(
+    (c) => c.parentContentId === postId && c.type === 2
+  );
+
+  if (replies.length === 0) {
+    return {
+      replyCount: 0,
+      lastReplyTime: null,
+      lastReplyUser: null,
+    };
+  }
+
+  // 按時間排序，取得最新的回文
+  const sortedReplies = replies.sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  const lastReply = sortedReplies[0];
+
+  return {
+    replyCount: replies.length,
+    lastReplyTime: lastReply.createdAt,
+    lastReplyUser: lastReply.username,
+  };
+};
+
 // 取得主題列表（ContentApi）- 只顯示貼文類型
-const fetchTopics = (categoryId = null, page = 1) => {
+const fetchTopics = async (categoryId = null, page = 1) => {
   forumState.isLoading = true;
 
-  const params = {
-    page: page,
-    pageSize: forumState.pagination.pageSize,
-    type: 1, // 只顯示貼文類型 (CONTENT_TYPES.POST)
-  };
-  if (categoryId) params.categoryId = categoryId;
+  try {
+    // 1. 先獲取貼文列表（分頁）
+    const postParams = {
+      page: page,
+      pageSize: forumState.pagination.pageSize,
+      type: 1, // 只顯示貼文類型 (CONTENT_TYPES.POST)
+    };
+    if (categoryId) postParams.categoryId = categoryId;
 
-  apiClient
-    .get("/ContentApi", { params })
-    .then((data) => {
-      console.log("主題資料:", data);
+    const postData = await apiClient.get("/ContentApi", { params: postParams });
+    console.log("主題資料:", postData);
 
-      const {
-        items,
-        totalCount,
-        totalPages,
-        page: currentPage,
-        pageSize,
-      } = data;
+    const {
+      items: posts,
+      totalCount,
+      totalPages,
+      page: currentPage,
+      pageSize,
+    } = postData;
 
-      forumState.pagination = {
-        currentPage,
-        pageSize,
-        totalCount,
-        totalPages,
-      };
+    forumState.pagination = {
+      currentPage,
+      pageSize,
+      totalCount,
+      totalPages,
+    };
 
-      // ✅ 重要：這裡改用 camelCase（contentId/title/body/username/categoryName/createdAt）
-      forumState.topics = items.map((item) => {
-        const { textContent, imageUrls } = parseBodyContent(item.body);
-
-        return {
-          id: item.contentId,
-          title: item.title,
-          content: textContent, // 這就是你要顯示的「實際內容」
-          imageUrls,
-          author: item.username,
-          authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            item.username
-          )}&background=random`,
-          categoryName: item.categoryName,
-          createdAt: item.createdAt,
-          type: item.type, // 加入 type 欄位
-
-          // 下面如果後端還沒做，就先用假資料撐住 UI
-          replyCount: Math.floor(Math.random() * 100),
-          viewCount: Math.floor(Math.random() * 500),
-          lastReplyTime: formatTimeAgo(item.createdAt),
-          lastReplyUser: item.username,
-          isPinned: false,
-          isHot: Math.random() > 0.7,
-        };
-      });
-    })
-    .catch((error) => {
-      console.error("載入主題失敗:", error);
-
-      if (error.response) {
-        alert(error.response.data.message || "載入主題失敗");
-      } else if (error.request) {
-        alert("無法連接到伺服器，請檢查網路連線");
-      } else {
-        alert("發生未知錯誤");
-      }
-
-      forumState.topics = [];
-    })
-    .finally(() => {
-      forumState.isLoading = false;
+    // 2. 獲取所有回文（type=2）以計算統計資料
+    const replyParams = {
+      type: 2, // 只獲取回文
+      pageSize: 9999, // 獲取所有回文（或根據實際需求調整）
+    };
+    const replyData = await apiClient.get("/ContentApi", {
+      params: replyParams,
     });
+    const allReplies = replyData.items || [];
+
+    console.log("回文資料:", allReplies);
+
+    // 3. 組合資料並計算統計
+    forumState.topics = posts.map((item) => {
+      const { textContent, imageUrls } = parseBodyContent(item.body);
+      const replyStats = calculateReplyStats(item.contentId, allReplies);
+
+      return {
+        id: item.contentId,
+        title: item.title,
+        content: textContent,
+        imageUrls,
+        author: item.username,
+        authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          item.username
+        )}&background=random`,
+        categoryName: item.categoryName,
+        createdAt: item.createdAt,
+        type: item.type,
+
+        // 從前端計算的回應統計
+        replyCount: replyStats.replyCount,
+        lastReplyTime: replyStats.lastReplyTime,
+        lastReplyUser: replyStats.lastReplyUser,
+
+        // 其他欄位
+        viewCount: item.viewCount ?? 0,
+        isPinned: item.isPinned ?? false,
+        isHot: replyStats.replyCount > 10, // 回應超過 10 則視為熱門
+      };
+    });
+  } catch (error) {
+    console.error("載入主題失敗:", error);
+
+    if (error.response) {
+      alert(error.response.data.message || "載入主題失敗");
+    } else if (error.request) {
+      alert("無法連接到伺服器，請檢查網路連線");
+    } else {
+      alert("發生未知錯誤");
+    }
+
+    forumState.topics = [];
+  } finally {
+    forumState.isLoading = false;
+  }
 };
 
 // 時間格式化（顯示「X 小時前」）
@@ -738,10 +779,13 @@ watch(
                     <td
                       class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
                     >
-                      <div class="text-nowrap">
+                      <div v-if="topic.lastReplyTime" class="text-nowrap">
                         {{ formatDate(topic.lastReplyTime) }}
                       </div>
-                      <div class="text-muted">{{ topic.lastReplyUser }}</div>
+                      <div v-else class="text-muted">尚無回應</div>
+                      <div v-if="topic.lastReplyUser" class="text-muted">
+                        {{ topic.lastReplyUser }}
+                      </div>
                     </td>
 
                     <!-- 回應數欄 -->
