@@ -2,11 +2,13 @@
 import { reactive, onMounted, computed, watch, ref, onUnmounted } from "vue";
 import { useForumStore, CONTENT_TYPES } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
+import contentInteractionApi from "@/api/contentInteractionApi.js";
 import { uploadImage } from "@/api/imageapi.js";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import ThreadPost from "@/components/Contents/ThreadPost.vue";
 
 // 取得不含 /api 的基底網址，方便把後端回傳的相對路徑轉為完整網址
 const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
@@ -64,6 +66,23 @@ const forumState = reactive({
     totalPages: 0,
   },
 });
+
+// 帖文詳情狀態
+const selectedThread = ref(null);
+const threadDetail = reactive({
+  id: null,
+  title: "",
+  author: "",
+  createdAt: "",
+  content: "",
+  imageUrls: [],
+  categoryId: null,
+  type: null,
+});
+const threadPosts = ref([]);
+const threadComments = ref([]);
+const threadCurrentPage = ref(1);
+const threadItemsPerPage = 5;
 
 // 取得分類列表
 const fetchCategories = () => {
@@ -484,6 +503,129 @@ watch(
     if (val) newTopic.categoryId = val;
   }
 );
+
+// 獲取帖文詳情
+const fetchThreadDetail = async (threadId) => {
+  try {
+    const [detailRes, commentsRes] = await Promise.all([
+      apiClient.get(`/ContentApi/${threadId}`),
+      contentInteractionApi.getComments(threadId),
+    ]);
+
+    const detail = detailRes?.contentId ? detailRes : detailRes?.data;
+    if (detail && detail.contentId) {
+      const { textContent, imageUrls } = parseBodyContent(detail.body);
+      threadDetail.id = detail.contentId;
+      threadDetail.title = detail.title;
+      threadDetail.author = detail.username;
+      threadDetail.createdAt = detail.createdAt;
+      threadDetail.content = textContent;
+      threadDetail.imageUrls = imageUrls;
+      threadDetail.categoryId = detail.categoryId;
+      threadDetail.type = detail.type;
+    }
+
+    // 處理留言
+    const commentsData = commentsRes?.comments || [];
+    const commentItems = commentsData.map((comment) => {
+      const { textContent, imageUrls } = parseBodyContent(comment.body);
+      return {
+        id: comment.contentId,
+        author: comment.username,
+        createdAt: comment.createdAt,
+        content: textContent,
+        imageUrls,
+        type: CONTENT_TYPES.COMMENT,
+        parentContentId: comment.parentContentId,
+        replies: [],
+      };
+    });
+
+    // 獲取回文
+    const repliesRes = await apiClient.get("/ContentApi", {
+      params: { parentContentId: threadId },
+    });
+    const replyItems = Array.isArray(repliesRes?.items) ? repliesRes.items : [];
+
+    const normalizedReplies = replyItems
+      .filter((i) => i.type === CONTENT_TYPES.REPLY)
+      .map((i) => {
+        const { textContent, imageUrls } = parseBodyContent(i.body);
+        return {
+          id: i.contentId,
+          author: i.username,
+          createdAt: i.createdAt,
+          content: textContent,
+          imageUrls,
+          type: i.type,
+          parentContentId: i.parentContentId,
+          replies: [],
+        };
+      });
+
+    const sortByDate = (list) => {
+      list.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    };
+
+    sortByDate(commentItems);
+    sortByDate(normalizedReplies);
+    threadPosts.value = normalizedReplies;
+    threadComments.value = commentItems;
+    threadCurrentPage.value = 1;
+  } catch (error) {
+    console.error("獲取帖文詳情失敗:", error);
+  }
+};
+
+// 計算線程的分頁資料
+const threadTotalPages = computed(() =>
+  Math.ceil(threadPosts.value.length / threadItemsPerPage)
+);
+const paginatedThreadPosts = computed(() => {
+  const start = (threadCurrentPage.value - 1) * threadItemsPerPage;
+  return threadPosts.value.slice(start, start + threadItemsPerPage);
+});
+
+const goToThreadPage = (page) => {
+  if (page >= 1 && page <= threadTotalPages.value) {
+    threadCurrentPage.value = page;
+  }
+};
+
+const prevThreadPage = () => {
+  if (threadCurrentPage.value > 1) threadCurrentPage.value--;
+};
+
+const nextThreadPage = () => {
+  if (threadCurrentPage.value < threadTotalPages.value)
+    threadCurrentPage.value++;
+};
+
+const openThread = (topicId) => {
+  selectedThread.value = topicId;
+  fetchThreadDetail(topicId);
+};
+
+const closeThread = () => {
+  selectedThread.value = null;
+  threadDetail.id = null;
+  threadDetail.title = "";
+  threadDetail.author = "";
+  threadDetail.createdAt = "";
+  threadDetail.content = "";
+  threadDetail.imageUrls = [];
+  threadPosts.value = [];
+  threadComments.value = [];
+};
+
+const handleThreadReplyAdded = async () => {
+  if (selectedThread.value) {
+    await fetchThreadDetail(selectedThread.value);
+  }
+};
 </script>
 
 <template>
@@ -656,6 +798,7 @@ watch(
 
         <!-- 主題列表 -->
         <div class="card shadow-sm">
+          <!-- 標題列 -->
           <div
             class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
           >
@@ -678,163 +821,288 @@ watch(
           </div>
 
           <div class="card-body p-0">
-            <div
-              v-if="forumState.isLoading && forumState.topics.length === 0"
-              class="text-center py-5"
-            >
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">載入中...</span>
+            <!-- 帖文詳情視圖 -->
+            <div v-if="selectedThread">
+              <!-- 返回按鈕 -->
+              <div class="p-3 border-bottom">
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="closeThread"
+                >
+                  <i class="fas fa-arrow-left me-2"></i>
+                  返回列表
+                </button>
+              </div>
+
+              <!-- 帖文主題 -->
+              <div class="card-body border-bottom">
+                <h3 class="card-title fs-4 fs-md-3 text-break">
+                  {{ threadDetail.title }}
+                </h3>
+                <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
+                  <span>by {{ threadDetail.author }}</span>
+                  <span>·</span>
+                  <span>{{ formatDate(threadDetail.createdAt) }}</span>
+                </p>
+                <p
+                  class="card-text"
+                  style="white-space: pre-wrap; word-break: break-word"
+                >
+                  {{ threadDetail.content }}
+                </p>
+                <div
+                  v-if="threadDetail.imageUrls && threadDetail.imageUrls.length"
+                  class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
+                >
+                  <img
+                    v-for="(url, idx) in threadDetail.imageUrls"
+                    :key="url + idx"
+                    :src="url"
+                    alt="貼文圖片"
+                    class="topic-image-thumb"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+
+              <!-- 回覆 / 留言區域 -->
+              <div class="p-3">
+                <div class="mt-3 mt-md-5">
+                  <h5 class="fs-5 fs-md-4 mb-3">💬 回覆 / 留言</h5>
+                  <!-- 所有留言 -->
+                  <div v-if="threadComments.length > 0" class="mb-4">
+                    <h6 class="fs-6 mb-2">📝 所有留言</h6>
+                    <ThreadPost
+                      v-for="comment in threadComments"
+                      :key="'comment-' + comment.id"
+                      :post="comment"
+                      :category-id="threadDetail.categoryId"
+                      @reply-added="handleThreadReplyAdded"
+                    />
+                  </div>
+
+                  <!-- 回文/留言分頁 -->
+                  <div v-if="paginatedThreadPosts.length > 0" class="mb-4">
+                    <h6 class="fs-6 mb-2">💭 回文</h6>
+                    <ThreadPost
+                      v-for="post in paginatedThreadPosts"
+                      :key="post.id"
+                      :post="post"
+                      :category-id="threadDetail.categoryId"
+                      @reply-added="handleThreadReplyAdded"
+                    />
+                  </div>
+
+                  <!-- 分頁導航 -->
+                  <nav v-if="threadTotalPages > 1" class="mt-3 mt-md-4">
+                    <ul
+                      class="pagination pagination-sm justify-content-center flex-wrap gap-1"
+                    >
+                      <li
+                        class="page-item"
+                        :class="{ disabled: threadCurrentPage === 1 }"
+                        @click="prevThreadPage"
+                      >
+                        <a
+                          class="page-link px-2 px-md-3"
+                          href="javascript:void(0)"
+                        >
+                          <i class="fa-solid fa-caret-left"></i>
+                        </a>
+                      </li>
+                      <li
+                        class="page-item"
+                        v-for="page in threadTotalPages"
+                        :key="page"
+                        :class="{ active: threadCurrentPage === page }"
+                        @click="goToThreadPage(page)"
+                      >
+                        <a
+                          class="page-link px-2 px-md-3"
+                          href="javascript:void(0)"
+                          >{{ page }}</a
+                        >
+                      </li>
+                      <li
+                        class="page-item"
+                        :class="{
+                          disabled: threadCurrentPage === threadTotalPages,
+                        }"
+                        @click="nextThreadPage"
+                      >
+                        <a
+                          class="page-link px-2 px-md-3"
+                          href="javascript:void(0)"
+                        >
+                          <i class="fa-solid fa-caret-right"></i>
+                        </a>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
               </div>
             </div>
 
-            <div
-              v-else-if="forumState.topics.length === 0"
-              class="text-center py-5 text-muted"
-            >
-              <p>此分類目前沒有主題</p>
-            </div>
+            <!-- 主題列表視圖 -->
+            <div v-else>
+              <div
+                v-if="forumState.isLoading && forumState.topics.length === 0"
+                class="text-center py-5"
+              >
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">載入中...</span>
+                </div>
+              </div>
 
-            <!-- 表格式列表 -->
-            <div v-else class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th class="py-2 py-md-3" style="width: 50%">主題</th>
-                    <th
-                      class="py-2 py-md-3 d-none d-md-table-cell"
-                      style="width: 15%"
+              <div
+                v-else-if="forumState.topics.length === 0"
+                class="text-center py-5 text-muted"
+              >
+                <p>此分類目前沒有主題</p>
+              </div>
+
+              <!-- 表格式列表 -->
+              <div v-else class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="py-2 py-md-3" style="width: 50%">主題</th>
+                      <th
+                        class="py-2 py-md-3 d-none d-md-table-cell"
+                        style="width: 15%"
+                      >
+                        發佈時間
+                      </th>
+                      <th
+                        class="py-2 py-md-3 d-none d-md-table-cell"
+                        style="width: 15%"
+                      >
+                        最後回應時間
+                      </th>
+                      <th class="py-2 py-md-3 text-center" style="width: 10%">
+                        回應
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="topic in forumState.topics"
+                      :key="topic.id"
+                      class="forum-row"
+                      @click="openThread(topic.id)"
                     >
-                      發佈時間
-                    </th>
-                    <th
-                      class="py-2 py-md-3 d-none d-md-table-cell"
-                      style="width: 15%"
-                    >
-                      最後回應時間
-                    </th>
-                    <th class="py-2 py-md-3 text-center" style="width: 10%">
-                      回應
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="topic in forumState.topics"
-                    :key="topic.id"
-                    class="forum-row"
-                    @click="
-                      $router.push({
-                        name: 'thread-detail',
-                        params: { id: topic.id },
-                      })
-                    "
-                  >
-                    <!-- 主題欄 -->
-                    <td class="p-3 py-md-3">
-                      <div class="d-flex align-items-start gap-2">
-                        <div class="flex-grow-1">
-                          <div class="d-flex flex-wrap gap-1 mb-1">
-                            <span v-if="topic.isPinned" class="badge bg-danger"
-                              >置頂</span
-                            >
-                            <span
-                              v-if="topic.isHot"
-                              class="badge bg-warning text-dark"
-                              >熱門</span
-                            >
-                          </div>
-                          <h6 class="mb-2 fs-6 fw-bold">
-                            <router-link
-                              :to="{
-                                name: 'thread-detail',
-                                params: { id: topic.id },
-                              }"
-                              class="topic-title-link text-break"
-                              @click.stop
-                            >
-                              {{ topic.title }}
-                            </router-link>
-                          </h6>
-                          <div
-                            v-if="topic.imageUrls && topic.imageUrls.length"
-                            class="d-flex flex-wrap gap-2 mt-2 mb-2 topic-image-list"
-                          >
-                            <img
-                              v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
-                              :key="url + idx"
-                              :src="url"
-                              alt="貼文圖片"
-                              class="topic-image-thumb"
-                              loading="lazy"
-                              style="
-                                max-width: 80px;
-                                max-height: 80px;
-                                object-fit: cover;
-                                border-radius: 4px;
-                              "
-                            />
+                      <!-- 主題欄 -->
+                      <td class="p-3 py-md-3">
+                        <div class="d-flex align-items-start gap-2">
+                          <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap gap-1 mb-1">
+                              <span
+                                v-if="topic.isPinned"
+                                class="badge bg-danger"
+                                >置頂</span
+                              >
+                              <span
+                                v-if="topic.isHot"
+                                class="badge bg-warning text-dark"
+                                >熱門</span
+                              >
+                            </div>
+                            <h6 class="mb-2 fs-6 fw-bold">
+                              <a
+                                href="javascript:void(0)"
+                                class="topic-title-link text-break"
+                              >
+                                {{ topic.title }}
+                              </a>
+                            </h6>
                             <div
-                              v-if="topic.imageUrls.length > 3"
-                              class="d-flex align-items-center justify-content-center text-muted small"
-                              style="
-                                width: 80px;
-                                height: 80px;
-                                background-color: #f0f0f0;
-                                border-radius: 4px;
-                              "
+                              v-if="topic.imageUrls && topic.imageUrls.length"
+                              class="d-flex flex-wrap gap-2 mt-2 mb-2 topic-image-list"
                             >
-                              +{{ topic.imageUrls.length - 3 }} 張
+                              <img
+                                v-for="(url, idx) in topic.imageUrls.slice(
+                                  0,
+                                  3
+                                )"
+                                :key="url + idx"
+                                :src="url"
+                                alt="貼文圖片"
+                                class="topic-image-thumb"
+                                loading="lazy"
+                                style="
+                                  max-width: 80px;
+                                  max-height: 80px;
+                                  object-fit: cover;
+                                  border-radius: 4px;
+                                "
+                              />
+                              <div
+                                v-if="topic.imageUrls.length > 3"
+                                class="d-flex align-items-center justify-content-center text-muted small"
+                                style="
+                                  width: 80px;
+                                  height: 80px;
+                                  background-color: #f0f0f0;
+                                  border-radius: 4px;
+                                "
+                              >
+                                +{{ topic.imageUrls.length - 3 }} 張
+                              </div>
+                            </div>
+                            <div
+                              class="small text-muted d-flex flex-wrap gap-2"
+                            >
+                              <span class="text-nowrap"
+                                >👤 {{ topic.author }}</span
+                              >
+                              <span class="d-md-none text-nowrap"
+                                >🕒 {{ formatTimeAgo(topic.createdAt) }}</span
+                              >
                             </div>
                           </div>
-                          <div class="small text-muted d-flex flex-wrap gap-2">
-                            <span class="text-nowrap"
-                              >👤 {{ topic.author }}</span
-                            >
-                            <span class="d-md-none text-nowrap"
-                              >🕒 {{ formatTimeAgo(topic.createdAt) }}</span
-                            >
-                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <!-- 發佈時間欄 -->
-                    <td
-                      class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
-                    >
-                      <div class="text-nowrap">
-                        {{ formatDate(topic.createdAt) }}
-                      </div>
-                      <div class="text-muted">{{ topic.author }}</div>
-                    </td>
+                      <!-- 發佈時間欄 -->
+                      <td
+                        class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
+                      >
+                        <div class="text-nowrap">
+                          {{ formatDate(topic.createdAt) }}
+                        </div>
+                        <div class="text-muted">{{ topic.author }}</div>
+                      </td>
 
-                    <!-- 最後回應時間欄 -->
-                    <td
-                      class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
-                    >
-                      <div v-if="topic.lastReplyTime" class="text-nowrap">
-                        {{ formatDate(topic.lastReplyTime) }}
-                      </div>
-                      <div v-else class="text-muted">尚無回應</div>
-                      <div v-if="topic.lastReplyUser" class="text-muted">
-                        {{ topic.lastReplyUser }}
-                      </div>
-                    </td>
+                      <!-- 最後回應時間欄 -->
+                      <td
+                        class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
+                      >
+                        <div v-if="topic.lastReplyTime" class="text-nowrap">
+                          {{ formatDate(topic.lastReplyTime) }}
+                        </div>
+                        <div v-else class="text-muted">尚無回應</div>
+                        <div v-if="topic.lastReplyUser" class="text-muted">
+                          {{ topic.lastReplyUser }}
+                        </div>
+                      </td>
 
-                    <!-- 回應數欄 -->
-                    <td class="py-3 py-md-3 text-center">
-                      <div class="badge bg-primary">{{ topic.replyCount }}</div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      <!-- 回應數欄 -->
+                      <td class="py-3 py-md-3 text-center">
+                        <div class="badge bg-primary">
+                          {{ topic.replyCount }}
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- 分頁 -->
+          <!-- 分頁（只在列表視圖時顯示） -->
           <div
             class="card-footer bg-white py-2 py-md-3"
-            v-if="forumState.pagination.totalPages > 1"
+            v-if="!selectedThread && forumState.pagination.totalPages > 1"
           >
             <nav class="d-flex justify-content-center">
               <ul
