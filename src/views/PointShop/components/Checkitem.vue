@@ -44,7 +44,7 @@ const decrease = (item) => {
               </div>
               <div class="text-end" style="min-width: 80px;">
                 <small class="text-secondary d-block">小計</small>
-                <span class="text-primary fw-bold">{{ item.point }} p</span>
+                <span class="text-primary fw-bold">{{ item.point * item.quantity }} p</span>
               </div>
             </div>
 
@@ -57,41 +57,7 @@ const decrease = (item) => {
                 </button>
               </div>
             </div>
-
           </div>
-          <!-- 購物車清單範例 -->
-          <!-- <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
-
-            <div class="d-flex align-items-center flex-grow-1">
-              <img :src="`https://localhost:7190/img/product/NoImage.png`"
-                class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
-              <div class="ms-3">
-                <h6 class="fw-bold mb-0 text-dark">另一個測試商品</h6>
-              </div>
-            </div>
-
-            <div class="d-flex align-items-center gap-4 px-3">
-              <div class="text-center">
-                <small class="text-secondary d-block">數量</small>
-                <span class="fw-medium">2</span>
-              </div>
-              <div class="text-end" style="min-width: 80px;">
-                <small class="text-secondary d-block">小計</small>
-                <span class="text-primary fw-bold">800 點</span>
-              </div>
-            </div>
-
-            <div class="ms-3 border-start ps-3 py-1">
-              <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
-                <button class="btn btn-sm btn-outline-primary" style="font-size: 0.875rem;">−</button>
-                <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
-                  <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
-                </button>
-              </div>
-            </div>
-
-          </div> -->
         </div>
 
         <div v-else class="text-center text-muted my-5">

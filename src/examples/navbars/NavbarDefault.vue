@@ -312,17 +312,6 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <!-- <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
-                      >
-                        點數商城
-                      </div> -->
-                      <RouterLink
-                        :to="{ name: 'PointShop' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>點數商城</span>
-                      </RouterLink>
                       <button
                         class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
                         data-bs-toggle="offcanvas"
@@ -341,6 +330,12 @@ watch(
                         </span>
                       </button>
                       <RouterLink
+                        :to="{ name: 'PointShop' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>點數商城</span>
+                      </RouterLink>
+                      <RouterLink
                         :to="{ name: 'Order' }"
                         class="dropdown-item border-radius-md"
                       >
@@ -358,6 +353,23 @@ watch(
               </div>
               <!-- 響應式點數商城 -->
               <div class="d-lg-none">
+                <button
+                  class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#cartOffcanvas"
+                  style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
+                >
+                  <span>
+                  購物車
+                  </span>
+                  <span
+                    v-if="CartNow.totalItems > 0"
+                    class="badge rounded-pill bg-danger"
+                    style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
+                  >
+                    {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                  </span>
+                </button>
                 <RouterLink
                   :to="{ name: 'PointShop' }"
                   class="dropdown-item border-radius-md"
@@ -376,23 +388,7 @@ watch(
                 >
                   <span>前往結帳</span>
                 </RouterLink>
-                <button
-                  class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
-                  data-bs-toggle="offcanvas"
-                  data-bs-target="#cartOffcanvas"
-                  style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
-                >
-                  <span>
-                    <i class="bi bi-cart me-2"></i>購物車
-                  </span>
-                  <span
-                    v-if="CartNow.totalItems > 0"
-                    class="badge rounded-pill bg-danger"
-                    style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
-                  >
-                    {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
-                  </span>
-                </button>
+
               </div>
             </div>
           </li>

@@ -21,7 +21,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="order-list-container">
+  <div class="order-list-container card shadow-sm border-0 rounded-4">
     <div class="text-center">
       <h2 class="order-title">
         <i class="bi bi-bag-check me-2"></i>訂單查詢
@@ -65,7 +65,6 @@ onMounted(async () => {
 <style scoped>
 .order-list-container {
   padding: 2rem;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
