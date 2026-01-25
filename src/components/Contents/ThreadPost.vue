@@ -37,6 +37,23 @@
             rows="3"
             placeholder="撰寫您的回覆..."
           ></textarea>
+          <div
+            class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              class="form-control form-control-sm"
+              @change="handleReplyImages"
+              :disabled="isUploadingImages"
+            />
+            <small class="text-muted">
+              上傳後會自動把圖片網址加入內容。{{
+                isUploadingImages ? "上傳中..." : ""
+              }}
+            </small>
+          </div>
           <div class="d-flex gap-2 mt-2">
             <button
               class="btn btn-primary btn-sm"
@@ -77,6 +94,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import apiClient from "@/api/request.js";
+import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
 
 const props = defineProps({
@@ -99,6 +117,14 @@ const emit = defineEmits(["reply-added"]);
 const showReply = ref(false);
 const replyContent = ref("");
 const isSubmittingReply = ref(false);
+const isUploadingImages = ref(false);
+
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -130,6 +156,22 @@ function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
     replyContent.value = "";
+  }
+}
+
+async function handleReplyImages(event) {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    replyContent.value = appendUrls(replyContent.value, uploaded);
+  } catch (error) {
+    console.error("回覆圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingImages.value = false;
+    if (event.target) event.target.value = "";
   }
 }
 

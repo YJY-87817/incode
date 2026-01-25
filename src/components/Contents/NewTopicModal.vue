@@ -1,9 +1,12 @@
 <script setup>
-import { reactive, onMounted, watch } from "vue";
+import { reactive, onMounted, watch, ref } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
+import { uploadImage } from "@/api/imageapi.js";
 
 const forumStore = useForumStore();
+
+const isUploadingImages = ref(false);
 
 const newTopicState = reactive({
   title: "",
@@ -13,6 +16,29 @@ const newTopicState = reactive({
   categories: [],
   topics: [],
 });
+
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
+
+const handleImageUpload = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    newTopicState.body = appendUrls(newTopicState.body, uploaded);
+  } catch (error) {
+    console.error("圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
 
 const fetchCategories = () => {
   apiClient
@@ -132,6 +158,23 @@ const closeNewTopic = () => {
                 class="form-control"
                 rows="4"
               ></textarea>
+              <div
+                class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="form-control form-control-sm"
+                  @change="handleImageUpload"
+                  :disabled="isUploadingImages"
+                />
+                <small class="text-muted">
+                  上傳後會自動把圖片網址加入內容。{{
+                    isUploadingImages ? "上傳中..." : ""
+                  }}
+                </small>
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label">分類</label>

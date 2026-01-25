@@ -2,10 +2,46 @@
 import { reactive, onMounted, computed, watch, ref, onUnmounted } from "vue";
 import { useForumStore, CONTENT_TYPES } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
+import { uploadImage } from "@/api/imageapi.js";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+
+// 取得不含 /api 的基底網址，方便把後端回傳的相對路徑轉為完整網址
+const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
+  return `${apiBaseUrl}/${url}`;
+};
+
+const parseBodyContent = (body) => {
+  const raw = body || "";
+  const imagePattern =
+    /(https?:\/\/[\S]+|\/?img\/[\S)]+?\.(?:png|jpe?g|gif|webp|bmp))/gi;
+  const matches = raw.match(imagePattern) || [];
+  const uniqueImages = Array.from(new Set(matches));
+
+  const imageUrls = uniqueImages
+    .map((url) => url.replace(/[)\]]+$/, ""))
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map(toAbsoluteUrl);
+
+  const textContent = raw
+    .replace(imagePattern, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
+
+  return {
+    textContent: displayText,
+    imageUrls,
+  };
+};
 
 const forumStore = useForumStore();
 
@@ -87,26 +123,31 @@ const fetchTopics = (categoryId = null, page = 1) => {
       };
 
       // ✅ 重要：這裡改用 camelCase（contentId/title/body/username/categoryName/createdAt）
-      forumState.topics = items.map((item) => ({
-        id: item.contentId,
-        title: item.title,
-        content: item.body, // 這就是你要顯示的「實際內容」
-        author: item.username,
-        authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          item.username
-        )}&background=random`,
-        categoryName: item.categoryName,
-        createdAt: item.createdAt,
-        type: item.type, // 加入 type 欄位
+      forumState.topics = items.map((item) => {
+        const { textContent, imageUrls } = parseBodyContent(item.body);
 
-        // 下面如果後端還沒做，就先用假資料撐住 UI
-        replyCount: Math.floor(Math.random() * 100),
-        viewCount: Math.floor(Math.random() * 500),
-        lastReplyTime: formatTimeAgo(item.createdAt),
-        lastReplyUser: item.username,
-        isPinned: false,
-        isHot: Math.random() > 0.7,
-      }));
+        return {
+          id: item.contentId,
+          title: item.title,
+          content: textContent, // 這就是你要顯示的「實際內容」
+          imageUrls,
+          author: item.username,
+          authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            item.username
+          )}&background=random`,
+          categoryName: item.categoryName,
+          createdAt: item.createdAt,
+          type: item.type, // 加入 type 欄位
+
+          // 下面如果後端還沒做，就先用假資料撐住 UI
+          replyCount: Math.floor(Math.random() * 100),
+          viewCount: Math.floor(Math.random() * 500),
+          lastReplyTime: formatTimeAgo(item.createdAt),
+          lastReplyUser: item.username,
+          isPinned: false,
+          isHot: Math.random() > 0.7,
+        };
+      });
     })
     .catch((error) => {
       console.error("載入主題失敗:", error);
@@ -200,6 +241,7 @@ watch(
 // 留言功能
 const replyInputs = reactive({});
 const submittingReplies = reactive({});
+const uploadingReplyImages = reactive({});
 const showNewTopicBox = ref(false);
 const newTopic = reactive({
   title: "",
@@ -207,6 +249,30 @@ const newTopic = reactive({
   categoryId: null,
 });
 const isSubmittingNewTopic = ref(false);
+const isUploadingNewTopicImages = ref(false);
+
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
+
+const handleNewTopicImages = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingNewTopicImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    newTopic.body = appendUrls(newTopic.body, uploaded);
+  } catch (error) {
+    console.error("圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingNewTopicImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
 
 // 初始化每個主題的留言框狀態
 const initializeReplyInputs = () => {
@@ -216,6 +282,9 @@ const initializeReplyInputs = () => {
     }
     if (!submittingReplies[topic.id]) {
       submittingReplies[topic.id] = false;
+    }
+    if (!uploadingReplyImages[topic.id]) {
+      uploadingReplyImages[topic.id] = false;
     }
   });
 };
@@ -284,6 +353,22 @@ const submitReply = async (topicId) => {
   }
 };
 
+const handleReplyImages = async (topicId, event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  uploadingReplyImages[topicId] = true;
+  try {
+    const uploaded = await uploadImage(files);
+    replyInputs[topicId] = appendUrls(replyInputs[topicId], uploaded);
+  } catch (error) {
+    console.error("留言圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    uploadingReplyImages[topicId] = false;
+    if (event.target) event.target.value = "";
+  }
+};
+
 // 監聽主題變更時初始化留言框
 watch(
   () => forumState.topics,
@@ -313,14 +398,15 @@ const submitNewTopic = async () => {
   isSubmittingNewTopic.value = true;
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: newTopic.categoryId,
-    Title: newTopic.title.trim(),
-    Body: newTopic.body.trim(),
-    Type: CONTENT_TYPES.POST,
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: newTopic.categoryId,
+    title: newTopic.title.trim(),
+    body: newTopic.body.trim(),
+    type: CONTENT_TYPES.POST,
   };
 
   try {
+    console.log("提交DTO:", dto);
     await apiClient.post("/ContentApi", dto);
     alert("發表成功！");
     newTopic.title = "";
@@ -402,6 +488,23 @@ watch(
               :rows="windowWidth < 768 ? 4 : 5"
               placeholder="撰寫主題內容..."
             ></textarea>
+            <div
+              class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                class="form-control form-control-sm"
+                @change="handleNewTopicImages"
+                :disabled="isUploadingNewTopicImages"
+              />
+              <small class="text-muted">
+                上傳後會自動把圖片網址加入內容。{{
+                  isUploadingNewTopicImages ? "上傳中..." : ""
+                }}
+              </small>
+            </div>
           </div>
           <div class="d-flex flex-wrap gap-2">
             <button
@@ -600,6 +703,19 @@ watch(
                         <p class="mb-1 text-muted topic-body-preview">
                           {{ topic.content }}
                         </p>
+                        <div
+                          v-if="topic.imageUrls && topic.imageUrls.length"
+                          class="d-flex flex-wrap gap-2 mt-1"
+                        >
+                          <img
+                            v-for="(url, idx) in topic.imageUrls"
+                            :key="url + idx"
+                            :src="url"
+                            alt="貼文圖片預覽"
+                            class="topic-image-thumb"
+                            loading="lazy"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -648,6 +764,23 @@ watch(
                         rows="3"
                         placeholder="撰寫您的留言..."
                       ></textarea>
+                      <div
+                        class="d-flex flex-column flex-sm-row gap-2 align-items-start mb-2"
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          class="form-control form-control-sm"
+                          @change="(e) => handleReplyImages(topic.id, e)"
+                          :disabled="uploadingReplyImages[topic.id]"
+                        />
+                        <small class="text-muted">
+                          上傳後自動插入網址。{{
+                            uploadingReplyImages[topic.id] ? "上傳中..." : ""
+                          }}
+                        </small>
+                      </div>
                       <div class="d-flex gap-2">
                         <button
                           class="btn btn-sm btn-primary"
@@ -879,6 +1012,15 @@ watch(
   overflow: hidden;
   font-size: 0.9rem;
   white-space: pre-wrap; /* 讓換行比較自然 */
+}
+
+.topic-image-thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #fff;
 }
 
 /* 分類容器響應式高度 */

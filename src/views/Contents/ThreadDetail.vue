@@ -144,6 +144,21 @@ export default {
         :rows="windowWidth < 768 ? 3 : 4"
         :placeholder="composerPlaceholder"
       ></textarea>
+      <div class="d-flex flex-column flex-sm-row gap-2 align-items-start mb-2">
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          class="form-control form-control-sm"
+          @change="handleComposerImages"
+          :disabled="isUploadingImages"
+        />
+        <small class="text-muted">
+          上傳後會自動把圖片網址加入內容。{{
+            isUploadingImages ? "上傳中..." : ""
+          }}
+        </small>
+      </div>
       <button
         class="btn btn-primary w-100 w-sm-auto"
         @click="submitContent"
@@ -168,6 +183,7 @@ import contentInteractionApi from "@/api/contentInteractionApi.js";
 import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
+import { uploadImage } from "@/api/imageapi.js";
 
 const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
 
@@ -343,6 +359,14 @@ const drafts = reactive({
   comment: "",
 });
 const isSubmitting = ref(false);
+const isUploadingImages = ref(false);
+
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
 
 const composerConfig = {
   reply: {
@@ -366,6 +390,25 @@ const composerButtonText = computed(
 const composerHasContent = computed(
   () => drafts[activeComposer.value].trim().length > 0
 );
+
+const handleComposerImages = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    drafts[activeComposer.value] = appendUrls(
+      drafts[activeComposer.value],
+      uploaded
+    );
+  } catch (error) {
+    console.error("圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
 
 async function submitContent() {
   const config = composerConfig[activeComposer.value];
