@@ -1,50 +1,52 @@
+<!-- 
+  forum.vue - 論壇主頁面
+  
+  職責：
+  - 協調各個子組件 (Header, Filter, Form, List)
+  - 管理全局論壇狀態 (分類、主題、分頁、詳情頁)
+  - 處理API調用和資料更新
+  - 監聽Pinia store變化並刷新列表
+  
+  子組件結構：
+  - ForumHeader: 標題和統計
+  - CategoryFilter: 分類篩選區
+  - NewTopicForm: 新主題表單
+  - TopicListView: 主題列表+詳情視圖
+  - ThreadPost: 回覆內容組件
+  
+  功能模組：
+  - forumUtils: 日期格式化、URL處理、內容解析等通用函數
+-->
+
 <script setup>
 import { reactive, onMounted, computed, watch, ref, onUnmounted } from "vue";
 import { useForumStore, CONTENT_TYPES } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
-import { uploadImage } from "@/api/imageapi.js";
 
+// 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import ForumHeader from "@/components/Contents/Forum/ForumHeader.vue";
+import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
+import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
+import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 
-// 取得不含 /api 的基底網址，方便把後端回傳的相對路徑轉為完整網址
-const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
-
-const toAbsoluteUrl = (url) => {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
-  return `${apiBaseUrl}/${url}`;
-};
-
-const parseBodyContent = (body) => {
-  const raw = body || "";
-  // 改進的正則：匹配完整的 http/https 圖片 URL
-  const imagePattern = /https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
-  const matches = raw.match(imagePattern) || [];
-  const uniqueImages = Array.from(new Set(matches));
-
-  const imageUrls = uniqueImages
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map(toAbsoluteUrl);
-
-  const textContent = raw
-    .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
-  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
-
-  return {
-    textContent: displayText,
-    imageUrls,
-  };
-};
+// 工具函數導入
+import {
+  parseBodyContent,
+  formatDate,
+  formatTimeAgo,
+  calculateReplyStats,
+  appendUrls,
+} from "@/components/Contents/Forum/forumUtils";
 
 const forumStore = useForumStore();
+
+// ============================================================================
+// 1. 視窗寬度響應式變數
+// ============================================================================
 
 // 視窗寬度響應式變數
 const windowWidth = ref(window.innerWidth);
@@ -53,7 +55,18 @@ const updateWindowWidth = () => {
   windowWidth.value = window.innerWidth;
 };
 
-// 論壇狀態
+// ============================================================================
+// 2. 論壇全局狀態管理
+// ============================================================================
+
+/**
+ * 論壇頁面狀態
+ * selectedCategory: 目前選擇的分類ID (null = 顯示全部)
+ * categories: 分類列表
+ * topics: 主題列表 (已經過濾和分頁)
+ * isLoading: 是否載入中
+ * pagination: 分頁資訊
+ */
 const forumState = reactive({
   selectedCategory: null,
   categories: [],
@@ -67,7 +80,18 @@ const forumState = reactive({
   },
 });
 
-// 帖文詳情狀態
+// ============================================================================
+// 3. 帖文詳情視圖狀態
+// ============================================================================
+
+/**
+ * 帖文詳情和回覆資訊
+ * selectedThread: 目前打開的主題ID
+ * threadDetail: 主題詳細資訊
+ * threadPosts: 該主題下的回文列表
+ * threadComments: 該主題下的留言列表
+ * threadCurrentPage: 回文分頁號碼
+ */
 const selectedThread = ref(null);
 const threadDetail = reactive({
   id: null,
@@ -84,7 +108,15 @@ const threadComments = ref([]);
 const threadCurrentPage = ref(1);
 const threadItemsPerPage = 5;
 
-// 取得分類列表
+// ============================================================================
+// 4. 分類管理
+// ============================================================================
+
+/**
+ * 獲取分類列表
+ * 調用API取得所有討論分類
+ * 並設定新主題表單的預設分類
+ */
 const fetchCategories = () => {
   forumState.isLoading = true;
 
@@ -93,7 +125,7 @@ const fetchCategories = () => {
     .then((data) => {
       console.log("分類資料:", data);
       forumState.categories = data;
-      // 預設選擇目前選取的分類或第一筆，便於立即發文
+      // 預設選擇目前選取的分類或第一筆
       if (!newTopic.categoryId) {
         const preferred =
           forumState.selectedCategory || (data.length > 0 ? data[0].id : null);
@@ -109,44 +141,41 @@ const fetchCategories = () => {
     });
 };
 
-// 計算貼文的回應統計（從所有 content 中計算）
-const calculateReplyStats = (postId, allContents) => {
-  // 找出該貼文的所有回應
-  // 包括：回文(type=2)、留言(type=3)、留言回覆(type=4)
-  // 條件：parentContentId === postId
-  const replies = allContents.filter(
-    (c) =>
-      c.parentContentId === postId &&
-      (c.type === 2 || c.type === 3 || c.type === 4)
-  );
+/**
+ * 分類選擇事件
+ * 切換分類篩選，重置到第一頁
+ * 若選擇已選分類，則取消篩選
+ */
+const onCategorySelect = (categoryId) => {
+  forumState.selectedCategory =
+    categoryId === forumState.selectedCategory ? null : categoryId;
 
-  if (replies.length === 0) {
-    return {
-      replyCount: 0,
-      lastReplyTime: null,
-      lastReplyUser: null,
-    };
-  }
-
-  // 按時間排序，取得最新的回應
-  const sortedReplies = replies.sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
-  const lastReply = sortedReplies[0];
-
-  return {
-    replyCount: replies.length,
-    lastReplyTime: lastReply.createdAt,
-    lastReplyUser: lastReply.username,
-  };
+  forumState.pagination.currentPage = 1;
+  fetchTopics(forumState.selectedCategory, 1);
 };
 
-// 取得主題列表（ContentApi）- 只顯示 type=1/2（貼文、回文），留言類型 3/4 僅在詳情頁顯示
+// ============================================================================
+// 5. 主題列表管理
+// ============================================================================
+
+/**
+ * 獲取主題列表
+ *
+ * 流程：
+ * 1. 取得所有內容資料 (categoryId可選篩選)
+ * 2. 前端過濾為 type=1(貼文) 或 type=2(回文)
+ * 3. 按時間排序
+ * 4. 前端分頁
+ * 5. 計算每個主題的回應統計
+ *
+ * @param {number} categoryId - 分類ID (可選)
+ * @param {number} page - 頁碼
+ */
 const fetchTopics = async (categoryId = null, page = 1) => {
   forumState.isLoading = true;
 
   try {
-    // 1. 獲取所有內容（可依分類過濾），用於前端過濾與分頁
+    // 1. 獲取所有內容 (可依分類過濾)
     const allContentParams = {
       pageSize: 9999,
     };
@@ -157,7 +186,7 @@ const fetchTopics = async (categoryId = null, page = 1) => {
     });
     const allContents = allContentData.items || [];
 
-    // 2. 僅保留 type=1(貼文)、type=2(回文)
+    // 2. 僅保留 type=1(貼文) 和 type=2(回文)
     const listContents = allContents
       .filter(
         (c) => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY
@@ -182,7 +211,7 @@ const fetchTopics = async (categoryId = null, page = 1) => {
 
     console.log("所有內容資料(已過濾 1/2):", pageItems);
 
-    // 4. 組合列表顯示資料並計算回應統計（replyCount/lastReply）
+    // 4. 組合列表顯示資料並計算回應統計
     forumState.topics = pageItems.map((item) => {
       const { textContent, imageUrls } = parseBodyContent(item.body);
       const replyStats = calculateReplyStats(item.contentId, allContents);
@@ -200,7 +229,7 @@ const fetchTopics = async (categoryId = null, page = 1) => {
         createdAt: item.createdAt,
         type: item.type,
 
-        // 從前端計算的回應統計
+        // 前端計算的回應統計
         replyCount: replyStats.replyCount,
         lastReplyTime: replyStats.lastReplyTime,
         lastReplyUser: replyStats.lastReplyUser,
@@ -228,290 +257,34 @@ const fetchTopics = async (categoryId = null, page = 1) => {
   }
 };
 
-// 時間格式化（顯示「X 小時前」）
-const formatTimeAgo = (date) => {
-  const now = new Date();
-  const d = new Date(date);
-  const diff = now - d;
-
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days} 天前`;
-  if (hours > 0) return `${hours} 小時前`;
-  if (minutes > 0) return `${minutes} 分鐘前`;
-  return "剛剛";
-};
-
-// 日期格式化（顯示 YYYY-MM-DD HH:MM 格式）
-const formatDate = (date) => {
-  if (!date) return "";
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
-
-// 選擇分類
-const onCategorySelect = (categoryId) => {
-  forumState.selectedCategory =
-    categoryId === forumState.selectedCategory ? null : categoryId;
-
-  forumState.pagination.currentPage = 1;
-  fetchTopics(forumState.selectedCategory, 1);
-};
-
-// 換頁
+/**
+ * 換頁事件
+ */
 const onPageChange = (page) => {
   if (page < 1 || page > forumState.pagination.totalPages) return;
   forumState.pagination.currentPage = page;
   fetchTopics(forumState.selectedCategory, page);
 };
 
-// 分頁顯示
-const displayPages = computed(() => {
-  const { currentPage, totalPages } = forumState.pagination;
-  const pages = [];
-  const maxDisplay = 5;
+// ============================================================================
+// 6. 帖文詳情頁管理
+// ============================================================================
 
-  if (totalPages <= 1) return pages;
-
-  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
-  let end = Math.min(totalPages, start + maxDisplay - 1);
-
-  if (end - start < maxDisplay - 1) {
-    start = Math.max(1, end - maxDisplay + 1);
-  }
-
-  for (let i = start; i <= end; i++) pages.push(i);
-  return pages;
-});
-
-// 初始化
-onMounted(() => {
-  window.addEventListener("resize", updateWindowWidth);
-  fetchCategories();
-  fetchTopics();
-});
-
-onUnmounted(() => {
-  window.removeEventListener("resize", updateWindowWidth);
-});
-
-// 監聽主題刷新時間變更
-watch(
-  () => forumStore.lastRefreshTime,
-  () => {
-    fetchTopics(forumState.selectedCategory, forumState.pagination.currentPage);
-  }
-);
-
-// 留言功能
-const replyInputs = reactive({});
-const submittingReplies = reactive({});
-const uploadingReplyImages = reactive({});
-const showNewTopicBox = ref(false);
-const newTopic = reactive({
-  title: "",
-  body: "",
-  categoryId: null,
-});
-const isSubmittingNewTopic = ref(false);
-const isUploadingNewTopicImages = ref(false);
-
-const appendUrls = (original, urls) => {
-  const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join("\n");
-  if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join("\n");
-};
-
-const handleNewTopicImages = async (event) => {
-  const files = event.target?.files;
-  if (!files || !files.length) return;
-  isUploadingNewTopicImages.value = true;
-  try {
-    const uploaded = await uploadImage(files);
-    newTopic.body = appendUrls(newTopic.body, uploaded);
-  } catch (error) {
-    console.error("圖片上傳失敗:", error);
-    alert("圖片上傳失敗，請稍後再試");
-  } finally {
-    isUploadingNewTopicImages.value = false;
-    if (event.target) event.target.value = "";
-  }
-};
-
-// 初始化每個主題的留言框狀態
-const initializeReplyInputs = () => {
-  forumState.topics.forEach((topic) => {
-    if (!replyInputs[topic.id]) {
-      replyInputs[topic.id] = "";
-    }
-    if (!submittingReplies[topic.id]) {
-      submittingReplies[topic.id] = false;
-    }
-    if (!uploadingReplyImages[topic.id]) {
-      uploadingReplyImages[topic.id] = false;
-    }
-  });
-};
-
-// 切換留言框顯示
-const showReplyBox = reactive({});
-const replyTitles = reactive({});
-const toggleReplyBox = (topicId) => {
-  showReplyBox[topicId] = !showReplyBox[topicId];
-};
-
-const toggleNewTopic = () => {
-  showNewTopicBox.value = !showNewTopicBox.value;
-};
-
-// 初始化留言標題
-const initializeReplyTitles = () => {
-  forumState.topics.forEach((topic) => {
-    if (!replyTitles[topic.id]) {
-      replyTitles[topic.id] = "";
-    }
-  });
-};
-
-// 提交留言
-const submitReply = async (topicId) => {
-  const title = replyTitles[topicId]?.trim();
-  const content = replyInputs[topicId]?.trim();
-
-  if (!title) {
-    alert("請輸入標題");
-    return;
-  }
-  if (!content) {
-    alert("請輸入留言內容");
-    return;
-  }
-
-  if (submittingReplies[topicId]) return;
-  submittingReplies[topicId] = true;
-
-  const dto = {
-    ParentContentId: topicId, // 綁定到該篇貼文
-    CategoryId: 2, // TODO: 根據實際情況調整分類 ID
-    Title: title, // 留言標題
-    Body: content,
-    Type: 3, // 設定為留言類型 (CONTENT_TYPES.COMMENT)
-  };
-
-  try {
-    await apiClient.post("/ContentApi", dto);
-    alert("留言成功！");
-    replyInputs[topicId] = "";
-    replyTitles[topicId] = "";
-    showReplyBox[topicId] = false;
-    // 重新載入主題列表
-    await fetchTopics(
-      forumState.selectedCategory,
-      forumState.pagination.currentPage
-    );
-  } catch (error) {
-    console.error("留言失敗:", error);
-    alert("留言失敗，請稍後再試");
-  } finally {
-    submittingReplies[topicId] = false;
-  }
-};
-
-const handleReplyImages = async (topicId, event) => {
-  const files = event.target?.files;
-  if (!files || !files.length) return;
-  uploadingReplyImages[topicId] = true;
-  try {
-    const uploaded = await uploadImage(files);
-    replyInputs[topicId] = appendUrls(replyInputs[topicId], uploaded);
-  } catch (error) {
-    console.error("留言圖片上傳失敗:", error);
-    alert("圖片上傳失敗，請稍後再試");
-  } finally {
-    uploadingReplyImages[topicId] = false;
-    if (event.target) event.target.value = "";
-  }
-};
-
-// 監聽主題變更時初始化留言框
-watch(
-  () => forumState.topics,
-  () => {
-    initializeReplyInputs();
-    initializeReplyTitles();
-  },
-  { immediate: true }
-);
-
-// 發表新主題（同頁展開，不換頁）
-const submitNewTopic = async () => {
-  if (!newTopic.title.trim()) {
-    alert("請輸入標題");
-    return;
-  }
-  if (!newTopic.body.trim()) {
-    alert("請輸入內容");
-    return;
-  }
-  if (!newTopic.categoryId) {
-    alert("請選擇分類");
-    return;
-  }
-
-  if (isSubmittingNewTopic.value) return;
-  isSubmittingNewTopic.value = true;
-
-  const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: newTopic.categoryId,
-    title: newTopic.title.trim(),
-    body: newTopic.body.trim(),
-    type: CONTENT_TYPES.POST,
-  };
-
-  try {
-    console.log("提交DTO:", dto);
-    await apiClient.post("/ContentApi", dto);
-    alert("發表成功！");
-    newTopic.title = "";
-    newTopic.body = "";
-    showNewTopicBox.value = false;
-    // 重新載入主題列表回到第一頁
-    forumState.pagination.currentPage = 1;
-    await fetchTopics(forumState.selectedCategory, 1);
-  } catch (error) {
-    console.error("發表失敗:", error);
-    alert("發表失敗，請稍後再試");
-  } finally {
-    isSubmittingNewTopic.value = false;
-  }
-};
-
-// 依目前分類更新新發文的預設分類
-watch(
-  () => forumState.selectedCategory,
-  (val) => {
-    if (val) newTopic.categoryId = val;
-  }
-);
-
-// 獲取帖文詳情
+/**
+ * 獲取帖文詳情
+ * 包括主題內容、回文和留言
+ *
+ * @param {number} threadId - 主題ID
+ */
 const fetchThreadDetail = async (threadId) => {
   try {
+    // 並行取得詳情和留言
     const [detailRes, commentsRes] = await Promise.all([
       apiClient.get(`/ContentApi/${threadId}`),
       contentInteractionApi.getComments(threadId),
     ]);
 
+    // 處理主題詳情
     const detail = detailRes?.contentId ? detailRes : detailRes?.data;
     if (detail && detail.contentId) {
       const { textContent, imageUrls } = parseBodyContent(detail.body);
@@ -563,6 +336,7 @@ const fetchThreadDetail = async (threadId) => {
         };
       });
 
+    // 排序
     const sortByDate = (list) => {
       list.sort(
         (a, b) =>
@@ -580,15 +354,21 @@ const fetchThreadDetail = async (threadId) => {
   }
 };
 
-// 計算線程的分頁資料
+/**
+ * 計算線程回文分頁資料
+ */
 const threadTotalPages = computed(() =>
   Math.ceil(threadPosts.value.length / threadItemsPerPage)
 );
+
 const paginatedThreadPosts = computed(() => {
   const start = (threadCurrentPage.value - 1) * threadItemsPerPage;
   return threadPosts.value.slice(start, start + threadItemsPerPage);
 });
 
+/**
+ * 線程頁面導航
+ */
 const goToThreadPage = (page) => {
   if (page >= 1 && page <= threadTotalPages.value) {
     threadCurrentPage.value = page;
@@ -604,11 +384,17 @@ const nextThreadPage = () => {
     threadCurrentPage.value++;
 };
 
+/**
+ * 打開主題詳情頁面
+ */
 const openThread = (topicId) => {
   selectedThread.value = topicId;
   fetchThreadDetail(topicId);
 };
 
+/**
+ * 關閉主題詳情頁面，返回列表
+ */
 const closeThread = () => {
   selectedThread.value = null;
   threadDetail.id = null;
@@ -621,11 +407,166 @@ const closeThread = () => {
   threadComments.value = [];
 };
 
+/**
+ * 回覆已提交事件
+ * 刷新詳情頁資料
+ */
 const handleThreadReplyAdded = async () => {
   if (selectedThread.value) {
     await fetchThreadDetail(selectedThread.value);
   }
 };
+
+// ============================================================================
+// 7. 新主題發表管理
+// ============================================================================
+
+// 新主題表單狀態
+const showNewTopicBox = ref(false);
+const newTopic = reactive({
+  title: "",
+  body: "",
+  categoryId: null,
+});
+const isSubmittingNewTopic = ref(false);
+const isUploadingNewTopicImages = ref(false);
+
+/**
+ * 切換新主題表單顯示/隱藏
+ */
+const toggleNewTopic = () => {
+  showNewTopicBox.value = !showNewTopicBox.value;
+};
+
+/**
+ * 提交新主題
+ */
+const submitNewTopic = async () => {
+  if (!newTopic.title.trim()) {
+    alert("請輸入標題");
+    return;
+  }
+  if (!newTopic.body.trim()) {
+    alert("請輸入內容");
+    return;
+  }
+  if (!newTopic.categoryId) {
+    alert("請選擇分類");
+    return;
+  }
+
+  if (isSubmittingNewTopic.value) return;
+  isSubmittingNewTopic.value = true;
+
+  const dto = {
+    userId: 1,
+    categoryId: newTopic.categoryId,
+    title: newTopic.title.trim(),
+    body: newTopic.body.trim(),
+    type: CONTENT_TYPES.POST,
+  };
+
+  try {
+    console.log("提交DTO:", dto);
+    await apiClient.post("/ContentApi", dto);
+    alert("發表成功！");
+    newTopic.title = "";
+    newTopic.body = "";
+    showNewTopicBox.value = false;
+    forumState.pagination.currentPage = 1;
+    await fetchTopics(forumState.selectedCategory, 1);
+  } catch (error) {
+    console.error("發表失敗:", error);
+    alert("發表失敗，請稍後再試");
+  } finally {
+    isSubmittingNewTopic.value = false;
+  }
+};
+
+/**
+ * 新主題圖片上傳完成
+ */
+const handleNewTopicImages = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingNewTopicImages.value = true;
+  try {
+    const { uploadImage } = await import("@/api/imageapi.js");
+    const uploaded = await uploadImage(files);
+    newTopic.body = appendUrls(newTopic.body, uploaded);
+  } catch (error) {
+    console.error("圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingNewTopicImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
+
+/**
+ * 監聽分類選擇變更
+ */
+watch(
+  () => forumState.selectedCategory,
+  (val) => {
+    if (val) newTopic.categoryId = val;
+  }
+);
+
+// ============================================================================
+// 8. 生命周期鉤子
+// ============================================================================
+
+/**
+ * 初始化
+ */
+onMounted(() => {
+  window.addEventListener("resize", updateWindowWidth);
+  fetchCategories();
+  fetchTopics();
+});
+
+/**
+ * 清理
+ */
+onUnmounted(() => {
+  window.removeEventListener("resize", updateWindowWidth);
+});
+
+/**
+ * 監聽 Pinia store 的刷新信號
+ */
+watch(
+  () => forumStore.lastRefreshTime,
+  () => {
+    fetchTopics(forumState.selectedCategory, forumState.pagination.currentPage);
+  }
+);
+
+// ============================================================================
+// 9. 分頁計算
+// ============================================================================
+
+/**
+ * 分頁顯示計算
+ */
+const displayPages = computed(() => {
+  const { currentPage, totalPages } = forumState.pagination;
+  const pages = [];
+  const maxDisplay = 5;
+
+  if (totalPages <= 1) return pages;
+
+  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
+  let end = Math.min(totalPages, start + maxDisplay - 1);
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1);
+  }
+
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+});
 </script>
 
 <template>
