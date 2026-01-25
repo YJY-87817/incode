@@ -859,7 +859,7 @@ const handleThreadReplyAdded = async () => {
                     :key="url + idx"
                     :src="url"
                     alt="貼文圖片"
-                    class="topic-image-thumb"
+                    class="topic-image-thumb thread-detail-image"
                     loading="lazy"
                   />
                 </div>
@@ -1338,15 +1338,38 @@ const handleThreadReplyAdded = async () => {
   overflow-y: auto;
 }
 
+/* 帖文詳情中的圖片樣式 */
+.topic-image-thumb {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #fff;
+}
+
+.thread-detail-image {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: scale-down;
+}
+
 @media (max-width: 768px) {
   .category-container {
     max-height: 250px;
+  }
+
+  .thread-detail-image {
+    max-height: 400px;
   }
 }
 
 @media (max-width: 576px) {
   .category-container {
     max-height: 200px;
+  }
+
+  .thread-detail-image {
+    max-height: 300px;
   }
 }
 </style>
