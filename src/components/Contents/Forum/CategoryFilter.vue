@@ -7,6 +7,7 @@
 
 <script setup>
 import { useForumStore } from "@/stores/forumStore";
+import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 </script>
@@ -14,11 +15,13 @@ const forumStore = useForumStore();
 <template>
   <div class="card shadow-sm mb-4">
     <!-- 卡片標題 -->
-    <div
-      class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center py-3 gap-2"
-    >
-      <h5 class="mb-0 fs-6 fs-md-5">📁 討論分類</h5>
-      <small class="text-muted">點擊分類篩選主題</small>
+    <div class="card-header bg-white py-3 d-flex flex-column gap-2">
+      <div
+        class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
+      >
+        <h5 class="mb-0 fs-6 fs-md-5">📁 討論分類</h5>
+        <small class="text-muted">點擊分類篩選主題</small>
+      </div>
     </div>
 
     <!-- 分類內容 -->
@@ -88,6 +91,10 @@ const forumStore = useForumStore();
         >
           <p>目前沒有分類</p>
         </div>
+      </div>
+
+      <div class="w-100">
+        <ForumSearchBar />
       </div>
     </div>
   </div>

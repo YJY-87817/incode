@@ -8,8 +8,6 @@
 <script setup>
 import { onMounted, onUnmounted, watch } from "vue";
 import { useForumStore } from "@/stores/forumStore";
-import ForumHeader from "@/components/Contents/Forum/ForumHeader.vue";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
 import NewTopicForm from "@/components/Contents/Forum/NewTopicForm_new.vue";
 import TopicListView from "@/components/Contents/Forum/TopicListView_new.vue";
@@ -58,16 +56,10 @@ watch(
 
 <template>
   <div class="forum-page container-fluid px-3 px-md-4 py-4">
-    <!-- 論壇標題 -->
-    <ForumHeader />
-
     <!-- 新主題表單 -->
     <Transition name="slide-fade">
       <NewTopicForm v-if="forumStore.showNewTopicBox" />
     </Transition>
-
-    <!-- 搜尋列 -->
-    <ForumSearchBar />
 
     <!-- 分類篩選 -->
     <CategoryFilter />
