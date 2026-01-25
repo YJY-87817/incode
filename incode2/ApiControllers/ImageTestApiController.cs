@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.ApiControllers
 {
-  //api/Test
   [ApiController]
+  [Route("/api/images")]
   public class MediaController : ControllerBase
   {
     private readonly IImageService _imageService;
@@ -14,34 +14,22 @@ namespace incode2.ApiControllers
       _imageService = imageService;
     }
 
-
     [HttpPost("upload")]
-    [Route("/api/image")]
-    public async Task<IActionResult> Upload(IFormFile file) // [可自訂]：參數名稱 "file" 需與前端 form-data 的 key 一致
+    public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
     {
       try
       {
-        // 作用：呼叫 Service 執行存檔，並拿到圖片網址
-        var imageUrl = await _imageService.UploadImageAsync(file);
+        if (files == null || files.Count == 0)
+        {
+          return BadRequest(new { message = "No files uploaded" });
+        }
 
-        // 作用：回傳成功訊息與圖片網址給前端
-        return Ok(new { url = imageUrl });
-      }
-      catch (Exception ex)
-      {
-        // 作用：發生錯誤（如格式不對或磁碟滿了）時回傳錯誤訊息
-        return BadRequest(new { message = ex.Message });
-      }
-
-    }
-
-    [HttpPost("upload-multiple")]
-    [Route("/api/images")]
-    public async Task<IActionResult> UploadMultiple(List<IFormFile> files)
-    {
-      try
-      {
         var urls = await _imageService.UploadImagesAsync(files);
+        if (urls.Count == 1)
+        {
+          return Ok(new { url = urls[0] });
+        }
+
         return Ok(new { urls });
       }
       catch (Exception ex)
@@ -50,7 +38,7 @@ namespace incode2.ApiControllers
       }
     }
 
-    [HttpDelete("/api/image")]
+    [HttpDelete("delete")]
     public async Task<IActionResult> Delete([FromQuery] string path)
     {
       try
