@@ -6,11 +6,13 @@ import { uploadMultipleImages } from "@/api/imageapi";
 
 // 多圖上傳相關
 const selectedFiles = ref([]); // 儲存選中的多個檔案
-const previewUrls = ref([]); // 本地預覽 URL 陣列
-const uploadedImages = ref([]); // 已上傳的圖片 URL 陣列
-const isUploading = ref(false); // 上傳狀態
+const previewUrls = ref([]); // 本地預覽 URL 陣列（只在前端顯示）
+const previewFileMap = ref({}); // 預覽圖與檔案的對應關係
+const savedImages = ref([]); // 已保存到資料庫的圖片 URL 陣列
+const isSaving = ref(false); // 保存狀態
 const errorMessage = ref(""); // 錯誤訊息
 const uploadProgress = ref(0); // 上傳進度
+const successMessage = ref(""); // 成功訊息
 
 // 當使用者選擇多個檔案時觸發
 const handleFileChange = (event) => {
@@ -19,61 +21,90 @@ const handleFileChange = (event) => {
 
   selectedFiles.value = Array.from(files);
 
-  // 建立本地預覽連結
-  previewUrls.value = selectedFiles.value.map((file) =>
-    URL.createObjectURL(file)
-  );
+  // 建立本地預覽連結（只在前端）
+  previewUrls.value = selectedFiles.value.map((file) => {
+    const objectUrl = URL.createObjectURL(file);
+    previewFileMap.value[objectUrl] = file; // 記錄預覽 URL 與檔案的對應
+    return objectUrl;
+  });
 
   // 清除舊的錯誤訊息
   errorMessage.value = "";
-};
-
-// 執行批量上傳
-const uploadImages = async () => {
-  if (selectedFiles.value.length === 0) return;
-
-  isUploading.value = true;
-  errorMessage.value = "";
-  uploadProgress.value = 0;
-
-  try {
-    // 使用 API 模組上傳多張圖片
-    const urls = await uploadMultipleImages(selectedFiles.value);
-
-    // 將新上傳的圖片加入已上傳列表
-    uploadedImages.value = [...uploadedImages.value, ...urls];
-
-    uploadProgress.value = 100;
-
-    // 清空選擇的檔案和預覽
-    selectedFiles.value = [];
-    previewUrls.value = [];
-
-    // 重置 file input
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) fileInput.value = "";
-  } catch (error) {
-    errorMessage.value = error.message || "上傳失敗，請稍後再試";
-    console.error("Upload Error:", error);
-  } finally {
-    isUploading.value = false;
-  }
+  successMessage.value = "";
 };
 
 // 移除預覽圖片
 const removePreview = (index) => {
+  const urlToRemove = previewUrls.value[index];
+  // 釋放 ObjectURL 資源
+  if (urlToRemove) {
+    URL.revokeObjectURL(urlToRemove);
+    delete previewFileMap.value[urlToRemove];
+  }
   selectedFiles.value.splice(index, 1);
   previewUrls.value.splice(index, 1);
 };
 
-// 移除已上傳的圖片
-const removeUploadedImage = (index) => {
-  uploadedImages.value.splice(index, 1);
+// 保存預覽的圖片到資料庫
+const saveImages = async () => {
+  if (selectedFiles.value.length === 0) {
+    errorMessage.value = "沒有圖片需要保存";
+    return;
+  }
+
+  isSaving.value = true;
+  errorMessage.value = "";
+  successMessage.value = "";
+  uploadProgress.value = 0;
+
+  try {
+    // 使用 API 模組上傳多張圖片到伺服器
+    const urls = await uploadMultipleImages(selectedFiles.value);
+
+    // 將新保存的圖片加入已保存列表
+    savedImages.value = [...savedImages.value, ...urls];
+
+    uploadProgress.value = 100;
+    successMessage.value = `成功保存 ${urls.length} 張圖片到資料庫`;
+
+    // 清理預覽
+    clearPreview();
+
+    // 重置 file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = "";
+
+    // 3 秒後清除成功訊息
+    setTimeout(() => {
+      successMessage.value = "";
+    }, 3000);
+  } catch (error) {
+    errorMessage.value = error.message || "保存失敗，請稍後再試";
+    console.error("Save Error:", error);
+  } finally {
+    isSaving.value = false;
+  }
 };
 
-// 清空所有上傳的圖片
+// 清空預覽區
+const clearPreview = () => {
+  // 釋放所有 ObjectURL 資源
+  previewUrls.value.forEach((url) => {
+    URL.revokeObjectURL(url);
+    delete previewFileMap.value[url];
+  });
+  selectedFiles.value = [];
+  previewUrls.value = [];
+};
+
+// 移除已保存的圖片
+const removeSavedImage = (index) => {
+  savedImages.value.splice(index, 1);
+};
+
+// 清空所有已保存的圖片
 const clearAllImages = () => {
-  uploadedImages.value = [];
+  savedImages.value = [];
 };
 </script>
 
@@ -131,18 +162,32 @@ const clearAllImages = () => {
             </div>
 
             <!-- 上傳按鈕 -->
-            <button
-              class="btn btn-primary w-100"
-              @click="uploadImages"
-              :disabled="selectedFiles.length === 0 || isUploading"
-            >
-              <i class="fas fa-cloud-upload-alt me-2"></i>
-              {{
-                isUploading
-                  ? `上傳中... ${uploadProgress}%`
-                  : `開始上傳 (${selectedFiles.length} 張)`
-              }}
-            </button>
+            <div class="btn-group w-100 gap-2" role="group">
+              <button
+                class="btn btn-primary flex-fill"
+                @click="saveImages"
+                :disabled="selectedFiles.length === 0 || isSaving"
+              >
+                <i class="fas fa-save me-2"></i>
+                {{
+                  isSaving
+                    ? `保存中... ${uploadProgress}%`
+                    : `保存圖片 (${selectedFiles.length} 張)`
+                }}
+              </button>
+              <button
+                class="btn btn-outline-secondary flex-fill"
+                @click="clearPreview"
+                :disabled="selectedFiles.length === 0"
+              >
+                <i class="fas fa-times me-2"></i>取消
+              </button>
+            </div>
+
+            <!-- 成功訊息 -->
+            <div v-if="successMessage" class="alert alert-success mt-3 mb-0">
+              <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
+            </div>
 
             <!-- 錯誤訊息 -->
             <div v-if="errorMessage" class="alert alert-danger mt-3 mb-0">
@@ -151,14 +196,14 @@ const clearAllImages = () => {
           </div>
         </div>
 
-        <!-- 已上傳圖片展示區 -->
-        <div v-if="uploadedImages.length > 0" class="card shadow-sm">
+        <!-- 已保存圖片展示區 -->
+        <div v-if="savedImages.length > 0" class="card shadow-sm">
           <div
             class="card-header bg-gradient-success d-flex justify-content-between align-items-center"
           >
             <h5 class="text-white mb-0">
-              <i class="fas fa-check-circle me-2"></i>已上傳的圖片 ({{
-                uploadedImages.length
+              <i class="fas fa-check-circle me-2"></i>已保存的圖片 ({{
+                savedImages.length
               }}
               張)
             </h5>
@@ -173,7 +218,7 @@ const clearAllImages = () => {
           <div class="card-body">
             <!-- 使用輪播組件顯示圖片 -->
             <ImageCarousel
-              :images="uploadedImages"
+              :images="savedImages"
               :showThumbnails="true"
               :loop="true"
               baseUrl="https://localhost:7190"
@@ -184,19 +229,19 @@ const clearAllImages = () => {
               <h6 class="mb-3">圖片列表：</h6>
               <div class="list-group">
                 <div
-                  v-for="(url, index) in uploadedImages"
+                  v-for="(url, index) in savedImages"
                   :key="index"
                   class="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <div class="d-flex align-items-center">
-                    <span class="badge bg-primary me-2">{{ index + 1 }}</span>
+                    <span class="badge bg-success me-2">{{ index + 1 }}</span>
                     <code class="text-truncate" style="max-width: 400px">{{
                       url
                     }}</code>
                   </div>
                   <button
                     class="btn btn-sm btn-outline-danger"
-                    @click="removeUploadedImage(index)"
+                    @click="removeSavedImage(index)"
                   >
                     <i class="fas fa-trash"></i>
                   </button>
@@ -204,6 +249,10 @@ const clearAllImages = () => {
               </div>
             </div>
           </div>
+        </div>
+        <div class="card shadow-sm mt-4">
+          <div class="card-header bg-gradient-info"></div>
+          <div class="card-body"></div>
         </div>
 
         <!-- 使用說明 -->
@@ -216,10 +265,14 @@ const clearAllImages = () => {
           <div class="card-body">
             <ul class="mb-0">
               <li>點擊「選擇圖片」按鈕可一次選擇多張圖片</li>
-              <li>選擇後會顯示預覽，可以移除不需要的圖片</li>
-              <li>點擊「開始上傳」會將所有圖片上傳到伺服器</li>
-              <li>上傳成功後，圖片會顯示在下方，可以左右滑動查看</li>
+              <li>選擇後會顯示預覽，圖片只在前端暫時顯示</li>
+              <li>點擊預覽圖上的「✕」可移除不需要的圖片</li>
+              <li>
+                確認無誤後，點擊「保存圖片」才會上傳到伺服器並保存到資料庫
+              </li>
+              <li>已保存的圖片會顯示在下方，可以左右滑動查看</li>
               <li>點擊縮圖可快速切換到指定圖片</li>
+              <li>使用「取消」按鈕可清除所有預覽圖片（不影響已保存的圖片）</li>
             </ul>
           </div>
         </div>
