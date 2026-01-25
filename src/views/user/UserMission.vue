@@ -61,7 +61,7 @@
 </script>
 
 <template>
-  <div class="mission-container">
+  <div class="mission-container ma-4">
     <div class="d-flex flex-column flex-sm-row justify-space-between align-center mb-4">
       <h3 class="mb-3 mb-sm-0">我的任務</h3>
 

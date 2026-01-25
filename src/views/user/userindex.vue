@@ -65,17 +65,42 @@
         <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">我的資料</h3>
 
         <v-card class="rounded-xl overflow-visible pa-6" elevation="0" border>
-          <div class="d-flex flex-column align-center mb-5">
-            <div style="position: relative;" class="mb-4">
+          <div class="d-flex align-center mb-2">
+            <div style="position: relative;" class="mb-4 mr-4">
               <v-avatar size="120" class="border border-4 border-white elevation-2">
                 <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="User Avatar" cover></v-img>
                 <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
                   style="position: absolute; bottom: 0; right: 0;"></v-btn>
               </v-avatar>
             </div>
-
             <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">暱稱 Name</h2>
+          </div>
 
+          <v-divider class="mb-5"></v-divider>
+
+          <v-row class="text-body-2">
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
+              <span class="text-grey-darken-1">Email：</span>
+              <span class="font-weight-medium ml-1">email@example.com</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
+              <span class="text-grey-darken-1">手機：</span>
+              <span class="font-weight-medium ml-1">0912-345-678</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
+              <span class="text-grey-darken-1">地址：</span>
+              <span class="font-weight-medium ml-1">台北市信義區</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
+              <span class="text-grey-darken-1">生日：</span>
+              <span class="font-weight-medium ml-1">1995-01-01</span>
+            </v-col>
+          </v-row>
+          <div class="mt-4 d-flex justify-content-end">
             <v-dialog v-model="dialog" max-width="600">
               <template v-slot:activator="{ props }">
                 <v-btn v-bind="props" prepend-icon="mdi-pencil-outline" variant="tonal" color="primary" rounded="pill"
@@ -103,7 +128,7 @@
                     <v-col cols="12" sm="6">
                       <v-text-field label="手機" variant="outlined" density="comfortable"></v-text-field>
                     </v-col>
-                    <v-col cols="12" sm="6">
+                    <v-col cols="12" sm="6"><!--改生日 -->
                       <v-select label="年齡" :items="['0-17', '18-29', '30-54', '54+']" variant="outlined"
                         density="comfortable"></v-select>
                     </v-col>
@@ -118,34 +143,10 @@
                   <v-btn variant="text" color="grey" @click="dialog = false">取消</v-btn>
                   <v-btn color="primary" variant="flat" :disabled="!formValid" @click="dialog = false">保存變更</v-btn>
                 </v-card-actions>
+
               </v-card>
             </v-dialog>
           </div>
-
-          <v-divider class="mb-6"></v-divider>
-
-          <v-row class="text-body-2">
-            <v-col cols="12" sm="6" class="d-flex align-center py-2">
-              <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
-              <span class="text-grey-darken-1">Email：</span>
-              <span class="font-weight-medium ml-1">email@example.com</span>
-            </v-col>
-            <v-col cols="12" sm="6" class="d-flex align-center py-2">
-              <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
-              <span class="text-grey-darken-1">手機：</span>
-              <span class="font-weight-medium ml-1">0912-345-678</span>
-            </v-col>
-            <v-col cols="12" sm="6" class="d-flex align-center py-2">
-              <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
-              <span class="text-grey-darken-1">地址：</span>
-              <span class="font-weight-medium ml-1">台北市信義區</span>
-            </v-col>
-            <v-col cols="12" sm="6" class="d-flex align-center py-2">
-              <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
-              <span class="text-grey-darken-1">生日：</span>
-              <span class="font-weight-medium ml-1">1995-01-01</span>
-            </v-col>
-          </v-row>
         </v-card>
       </v-col>
 
@@ -170,31 +171,19 @@
         </div>
       </v-col>
     </v-row>
-    <v-row class="mt-10">
+    <v-row class="mt-5">
       <v-col cols="12">
         <v-card class="rounded-xl overflow-hidden" border flat>
 
-          <v-tabs v-model="activeTab" align-tabs="center" color="primary" bg-color="white" class="px-4 py-4 mt-2"
-            show-arrows hide-slider height="auto">
-            <v-tab :to="{ name: 'UserMission' }" value="mission" class="mx-2 rounded-pill border transition-swing"
-              :class="activeTab === 'mission' ? 'border-primary bg-primary-lighten-5 text-primary' : 'border-grey-lighten-2 text-grey-darken-1'"
-              min-width="90" variant="flat">
-              <v-icon size="26">mdi-flag-variant-outline</v-icon>
-            </v-tab>
+          <nav class="mt-5 text-center" style="font-size: 24px">
+            <router-link :to="{ name: 'UserMission' }">任務</router-link> |
+            <router-link :to="{ name: 'UserCollections' }">討論區</router-link>
+          </nav>
 
-            <v-tab :to="{ name: 'UserCollections' }" value="forum" class="mx-2 rounded-pill border transition-swing"
-              :class="activeTab === 'forum' ? 'border-primary bg-primary-lighten-5 text-primary' : 'border-grey-lighten-2 text-grey-darken-1'"
-              min-width="90" variant="flat">
-              <v-icon size="26">mdi-forum-outline</v-icon>
-            </v-tab>
-          </v-tabs>
-          <div class="px-4 py-6 px-md-6 bg-grey-lighten-5" style="min-height: 400px;">
-            <router-view v-slot="{ Component }">
-              <v-fade-transition mode="out-in">
-                <component :is="Component" />
-              </v-fade-transition>
-            </router-view>
+          <div class="nested-content">
+            <router-view></router-view>
           </div>
+
         </v-card>
       </v-col>
     </v-row>
@@ -205,10 +194,3 @@
 
   <DefaultFooter />
 </template>
-
-<style scoped>
-  /* 增加頁籤切換時的過渡效果 */
-  .transition-swing {
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
-  }
-</style>
