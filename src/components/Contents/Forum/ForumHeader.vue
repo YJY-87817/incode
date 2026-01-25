@@ -16,7 +16,7 @@ const forumStore = useForumStore();
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div
-        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3"
+        class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-3 mb-3"
       >
         <!-- 論壇標題與說明 -->
         <div>
@@ -25,7 +25,9 @@ const forumStore = useForumStore();
         </div>
 
         <!-- 搜尋欄 -->
-        <ForumSearchBar />
+        <div class="forum-search flex-grow-1 w-100 w-md-auto">
+          <ForumSearchBar />
+        </div>
       </div>
     </div>
   </div>
@@ -60,10 +62,18 @@ const forumStore = useForumStore();
   border-color: #d1d3d4;
 }
 
+.forum-search {
+  min-width: 280px;
+}
+
 /* 響應式調整 */
 @media (max-width: 768px) {
   .fs-md-2 {
     font-size: 1.5rem;
+  }
+
+  .forum-search {
+    width: 100%;
   }
 }
 </style>
