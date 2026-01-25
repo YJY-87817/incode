@@ -1,14 +1,16 @@
 ﻿@model incode2.ViewModels.ChatIndexViewModel
 
 @{
-    ViewData["Title"] = "聊天室";
+    ViewData["Title"] = "客服訊息管理";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
     var currentSessionId = Model.CurrentChatSessionId ?? 0;
     var targetUserName = Model.TargetUser?.Username ?? "使用者";
-    // 讀取 Controller 傳來的模式狀態 (預設 false = AI)
+
+    // 讀取 Controller 傳來的模式狀態
     bool isHumanMode = ViewBag.IsHumanMode ?? false;
 
+    // 使用者頭像
     var targetUserAvatar = !string.IsNullOrEmpty(Model.TargetUser?.ImageUrl)
         ? Model.TargetUser.ImageUrl
         : "https://bootdey.com/img/Content/avatar/avatar1.png";
@@ -16,6 +18,7 @@
 
 @section Styles {
     <style>
+        /* ... (保留原本 CSS 樣式，完全不變) ... */
         .chat-container {
             height: 75vh;
             overflow: hidden;
@@ -33,7 +36,6 @@
             overflow: hidden;
         }
 
-        /* 列表樣式 */
         .user-list-area {
             flex: 1;
             overflow-y: auto;
@@ -85,7 +87,6 @@
             text-overflow: ellipsis;
         }
 
-        /* 聊天區樣式 */
         .chat-scroll-area {
             flex: 1;
             overflow-y: auto;
@@ -110,7 +111,6 @@
                 box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             }
 
-            /* 左側 (對方/AI) */
             .answer.left {
                 align-self: flex-start;
             }
@@ -121,7 +121,6 @@
                     border-bottom-left-radius: 0;
                 }
 
-            /* 右側 (我) */
             .answer.right {
                 align-self: flex-end;
                 margin-left: auto;
@@ -146,14 +145,21 @@
             margin-top: 5px;
         }
 
-        /* 輸入區 */
         .chat-input-area {
             padding: 15px;
             background-color: #fff;
             border-top: 1px solid #e3e6f0;
         }
 
-        /* Markdown 樣式修正 */
+        .answer.right .text ul, .answer.right .text p {
+            color: #fff;
+        }
+
+        .answer.right .text strong {
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+
         .answer.left .text ul {
             padding-left: 20px;
             margin-bottom: 0;
@@ -162,10 +168,6 @@
         .answer.left .text p {
             margin-bottom: 0.5rem;
         }
-
-            .answer.left .text p:last-child {
-                margin-bottom: 0;
-            }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 }
@@ -176,7 +178,7 @@
     <div class="col-md-3 col-lg-3 d-none d-md-block pr-1 chat-col">
         <div class="card shadow mb-4 chat-card">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">歷史對話</h6>
+                <h6 class="m-0 font-weight-bold text-primary">對話列表</h6>
             </div>
             <div class="user-list-area">
                 @if (Model.Sessions != null)
@@ -190,7 +192,7 @@
                             <div class="chat-item-content">
                                 <div class="chat-item-name">@listName</div>
                                 <div class="chat-item-preview">
-                                    @(session.Ishumanmode ? "[真人對話中]" : "[AI 助理]")
+                                    @(session.Ishumanmode ? "🔴 真人請求" : "🤖 AI 託管")
                                 </div>
                             </div>
                         </a>
@@ -211,21 +213,14 @@
                         }
                         else
                         {
-
                             <span>請選擇對話</span>
                         }
                     </h6>
-                    <span id="modeBadge" class="badge @(isHumanMode ? "badge-warning" : "badge-info")">
-                        @(isHumanMode ? "真人客服" : "AI 助理")
+                    <span id="modeBadge" class="badge @(isHumanMode ? "badge-danger" : "badge-success")">
+                        @(isHumanMode ? "真人介入中" : "AI 自動回覆")
                     </span>
                 </div>
                 <div>
-                    @if (currentSessionId > 0)
-                    {
-                        <button id="btnSwitchMode" class="btn btn-sm @(isHumanMode ? "btn-danger" : "btn-warning")" onclick="toggleHumanMode()">
-                            @(isHumanMode ? "結束對話 (轉回 AI)" : "呼叫真人客服")
-                        </button>
-                    }
                     <span id="connectionStatus" class="badge badge-secondary ml-2">連線中...</span>
                 </div>
             </div>
@@ -235,17 +230,21 @@
                 {
                     foreach (var item in Model.CurrentMessages)
                     {
+                        // 邏輯反轉：後台管理員看畫面
+                        // user -> 左邊, assistant/admin -> 右邊
                         var isUser = item.Role == "user";
-                        // 判斷是否為系統/管理員/AI (顯示在左側，使用者自己在右側)
-                        // 注意：這裡假設這是「使用者端」介面。如果是「後台管理端」，邏輯要反過來。
-                        // 根據你的需求 "使用者觸發真人按鈕"，這應該是使用者介面。
-                        // 使用者發的 (User) -> 右邊
-                        // 別人發的 (Assistant, Admin) -> 左邊
-                        var isRightSide = isUser;
+                        var isRightSide = !isUser;
 
                         <div class="answer @(isRightSide ? "right" : "left")">
                             <div class="small text-gray-500 mb-1 @(isRightSide ? "text-right" : "")">
-                                @(isUser ? "我" : (item.Role == "assistant" ? "AI 助手" : "客服人員"))
+                                @if (isUser)
+                                {
+                                    @targetUserName
+                                }
+                                else
+                                {
+                                    @(item.Role == "assistant" ? "AI 助手" : "我 (客服)")
+                                }
                             </div>
                             <div class="d-flex @(isRightSide ? "flex-row-reverse" : "flex-row")">
                                 @if (!isRightSide)
@@ -263,14 +262,7 @@
 
             <div class="chat-input-area">
                 <div class="input-group">
-                    <div class="input-group-prepend">
-                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('imageInput').click()">
-                            <i class="fas fa-image"></i>
-                        </button>
-                    </div>
-                    <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="uploadImage(this)">
-
-                    <input type="text" id="msgInput" class="form-control bg-light border-0 small" placeholder="輸入訊息..." aria-label="Type message">
+                    <input type="text" id="msgInput" class="form-control bg-light border-0 small" placeholder="輸入回覆..." aria-label="Type message">
                     <div class="input-group-append">
                         <button class="btn btn-primary" type="button" onclick="sendMessage()">
                             <i class="fas fa-paper-plane"></i>
@@ -284,70 +276,79 @@
 
 @section Scripts {
     <script>
-        // 初始化變數
         var currentSessionId = @currentSessionId;
-        var isHumanMode = @(isHumanMode.ToString().ToLower()); // C# bool 轉 JS boolean
-        var connectionId = ""; // SignalR ID
+        var isHumanMode = @(isHumanMode.ToString().ToLower());
+        var connectionId = ""; // 儲存 SignalR ID
 
         // 1. 初始化 SignalR
         const initSignalR = async () => {
              var connection = new signalR.HubConnectionBuilder()
                 .withUrl("/chatHub")
-                .withAutomaticReconnect({
-                    nextRetryDelayInMilliseconds: retryContext => 5000 // 失敗等待 5 秒重試
-                })
+                .withAutomaticReconnect()
                 .build();
 
-            // 設置逾時參數
-            connection.serverTimeoutInMilliseconds = 30 * 60 * 1000;
-            connection.keepAliveIntervalInMilliseconds = 15 * 1000;
-
-            // 綁定接收事件
+            // 監聽接收
             connection.on("ReceiveMessage", function (type, message) {
-                // type: "AI", "AI_Image", "User_Image", "System", "Live"
-                console.log("收到訊息:", type, message);
+                console.log("後台收到:", type, message);
 
-                var isRightSide = false; // 接收到的訊息都在左邊
-                var senderName = "AI 助手";
+                var isRightSide = true;
+                var senderName = "我 (客服)";
 
                 if (type === "User_Image") {
-                    // 這是使用者剛剛上傳的圖片回顯，顯示在右邊
-                    isRightSide = true;
-                    senderName = "我";
+                    isRightSide = false;
+                    senderName = "@targetUserName";
                     message = `<img src="${message}" style="max-width:200px; border-radius:8px;" />`;
                 } else if (type === "System") {
-                    // 系統通知 (例如切換模式)
-                    // 可以用 Toast 或中間的小灰字顯示，這裡簡單處理
-                    senderName = "系統通知";
+                    senderName = "系統";
                     message = `<i>${message}</i>`;
+                    // 更新 UI 狀態
+                    if (message.includes("真人")) updateModeUI(true);
+                    if (message.includes("AI")) updateModeUI(false);
                 } else if (type === "AI_Image") {
-                    // AI 生成的圖片
-                    // message 本身就是 <img> 標籤 (後端處理過了) 或者 URL
-                    // 如果後端傳的是純 URL:
+                    senderName = "AI 助手";
                     if(!message.startsWith("<")) {
                          message = `<img src="${message}" style="max-width:100%; border-radius:8px;" />`;
                     }
-                } else {
-                    // AI 純文字 -> 解析 Markdown
+                } else if (type === "AI") {
+                    senderName = "AI 助手";
                     message = marked.parse(message);
-                }
-
-                if (isHumanMode && type !== "System" && !isRightSide) {
-                    senderName = "客服人員";
                 }
 
                 appendMessage(senderName, message, isRightSide);
             });
 
+            // ★ 監聽使用者求助訊息 (來自 Controller 的 ReceiveSupportRequest)
+            connection.on("ReceiveSupportRequest", function (sessionId, userContent) {
+                // 如果是目前打開的對話，直接顯示在左側
+                if (sessionId == currentSessionId) {
+                    // 如果 userContent 是自動問候語，這裡會顯示出來
+                    // 但我們希望這顯示在右邊 (因為是我們/系統發的)
+                    // 不過 ReceiveSupportRequest 通常只傳送使用者的訊息
+                    // 剛才的 API 修改中，greeting 是透過 ReceiveMessage(Live) 傳給前端，
+                    // 並且透過 ReceiveSupportRequest 傳給後端。
+                    // 為了避免混淆，我們這裡簡單處理：如果是自動問候語，視為右邊，否則左邊
+
+                    if (userContent === "您好!請問有什麼問題呢?") {
+                         appendMessage("系統自動回覆", userContent, true); // 右邊
+                    } else {
+                         appendMessage("@targetUserName", escapeHtml(userContent), false); // 左邊
+                    }
+                    console.log("收到使用者/系統新訊息！");
+                }
+            });
+
             try {
                 await connection.start();
-                console.log("SignalR Connected. ID:", connection.connectionId);
+                console.log("SignalR Connected ID:", connection.connectionId);
                 connectionId = connection.connectionId;
+
+                // ★ 加入客服群組
+                await connection.invoke("JoinSupportGroup");
+
                 $("#connectionStatus").removeClass("badge-secondary").addClass("badge-success").text("連線正常");
             } catch (err) {
                 console.error("SignalR Connection Error: ", err);
                 $("#connectionStatus").text("連線失敗");
-                setTimeout(initSignalR, 5000); // 失敗重連
             }
         };
 
@@ -355,27 +356,24 @@
             scrollToBottom();
             initSignalR();
 
-            // 綁定 Enter 鍵
             $('#msgInput').keypress(function (e) {
-                if (e.which == 13) {
-                    sendMessage();
-                    return false;
-                }
+                if (e.which == 13) { sendMessage(); return false; }
             });
         });
 
-        // 2. 發送文字訊息 API
+        // 2. 發送訊息 (客服回覆)
         async function sendMessage() {
             var msg = $("#msgInput").val();
             if (!msg.trim()) return;
-            if (currentSessionId === 0) { alert("請先建立或選擇對話"); return; }
+            if (currentSessionId === 0) { alert("請先選擇對話"); return; }
 
-            // 立即顯示自己的訊息在右側
-            appendMessage("我", escapeHtml(msg), true);
+            // A. 前端立即顯示
+            appendMessage("我 (客服)", escapeHtml(msg), true);
             $("#msgInput").val("");
 
             try {
-                const response = await fetch('/api/ChatMessages/SendMessage', {
+                // B. 呼叫後端專屬 API: AdminReply
+                const response = await fetch('/api/ChatMessages/AdminReply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -385,98 +383,35 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("API Error");
-                // 後端會透過 SignalR 回傳 AI 的回應，所以這裡不用處理 response.json() 的內容
-
+                if (!response.ok) {
+                    throw new Error("API 回傳錯誤: " + response.statusText);
+                }
             } catch (error) {
                 console.error("發送失敗:", error);
-                appendMessage("系統", "<span class='text-danger'>發送失敗，請稍後再試。</span>", false);
+                appendMessage("系統", `<span class="text-danger">發送失敗: ${error.message}</span>`, true);
             }
         }
 
-        // 3. 上傳圖片 API
-        async function uploadImage(input) {
-            if (input.files && input.files[0]) {
-                var file = input.files[0];
-                var formData = new FormData();
-                formData.append("SessionId", currentSessionId);
-                formData.append("Image", file);
-                formData.append("ConnectionId", connectionId);
+        // ★ 已移除 toggleHumanMode 函式，因為按鈕已刪除 ★
 
-                // 顯示「上傳中...」
-                appendMessage("系統", "<i>圖片上傳分析中...</i>", false);
-
-                try {
-                    const response = await fetch('/api/ChatMessages/UploadImage', {
-                        method: 'POST',
-                        body: formData // FormData 不需要設定 Content-Type，瀏覽器會自動處理
-                    });
-
-                    if (!response.ok) throw new Error("Upload Failed");
-                    // 成功後，SignalR 會推播 User_Image (顯示圖片) 和 AI (顯示分析結果)
-                } catch (error) {
-                    console.error("上傳失敗:", error);
-                    appendMessage("系統", "<span class='text-danger'>圖片上傳失敗。</span>", false);
-                }
-
-                // 清空 input 讓同一張圖可以再次上傳
-                input.value = '';
-            }
-        }
-
-        // 4. 切換 真人/AI 模式 API
-        async function toggleHumanMode() {
-            if (currentSessionId === 0) return;
-
-            // 切換狀態：如果是真人(true) -> 改為 AI(false)，反之亦然
-            var newMode = !isHumanMode;
-
-            try {
-                const response = await fetch('/api/ChatMessages/SwitchMode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sessionId: currentSessionId,
-                        ishumanmode: newMode,
-                        connectionId: connectionId
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    // 更新全域變數與 UI
-                    isHumanMode = newMode;
-                    updateModeUI();
-                } else {
-                    alert("切換模式失敗");
-                }
-            } catch (error) {
-                console.error("Switch Mode Error:", error);
-            }
-        }
-
-        function updateModeUI() {
+        function updateModeUI(isHuman) {
             var badge = $("#modeBadge");
-            var btn = $("#btnSwitchMode");
+            // 這裡不再操作 btnSwitchMode，因為它已經被移除了
 
-            if (isHumanMode) {
-                badge.removeClass("badge-info").addClass("badge-warning").text("真人客服");
-                btn.removeClass("btn-warning").addClass("btn-danger").text("結束對話 (轉回 AI)");
+            if (isHuman) {
+                badge.removeClass("badge-success").addClass("badge-danger").text("真人介入中");
             } else {
-                badge.removeClass("badge-warning").addClass("badge-info").text("AI 助理");
-                btn.removeClass("btn-danger").addClass("btn-warning").text("呼叫真人客服");
+                badge.removeClass("badge-danger").addClass("badge-success").text("AI 自動回覆");
             }
         }
 
-        // 輔助功能
         function appendMessage(senderName, messageHtml, isRightSide) {
             var timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             var alignClass = isRightSide ? "right" : "left";
             var textRightClass = isRightSide ? "text-right" : "";
             var flexDirClass = isRightSide ? "flex-row-reverse" : "flex-row";
-            var avatarUrl = "@targetUserAvatar"; // 這裡可以根據 senderName 換不同頭像
 
-            var avatarHtml = !isRightSide ? `<img src="${avatarUrl}" class="avatar-chat-img mr-2">` : "";
+            var avatarHtml = !isRightSide ? `<img src="@targetUserAvatar" class="avatar-chat-img mr-2">` : "";
 
             var html = `
                 <div class="answer ${alignClass}">
@@ -498,6 +433,7 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return "";
             var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }

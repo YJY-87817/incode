@@ -32,6 +32,7 @@ namespace incode2.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, "SupportAgents");
         }
 
+
         // 當使用者離開或切換頁面時，退出群組
         public async Task LeaveSupportGroup()
         {

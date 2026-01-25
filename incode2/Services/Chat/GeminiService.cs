@@ -32,7 +32,7 @@ namespace incode2.Services.Chat
             if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定";
 
             // 使用 gemini-1.5-flash，速度快且穩定
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
 
             // 注意：這裡不再硬編碼 System Instruction，因為 Controller 已經讀取 .md 並傳進來了
 
@@ -55,66 +55,37 @@ namespace incode2.Services.Chat
             return await SendToGemini(url, payload);
         }
 
-        // ==========================================
-        // 2. [新增] AI 生圖功能 (使用 Imagen 3 模型)
-        // ==========================================
+
+        // AI 生圖功能
         public async Task<string> GenerateImageAsync(string prompt)
         {
-            string geminiApiKey = _configuration["GeminiApiKey"];
-            if (string.IsNullOrEmpty(geminiApiKey)) return "API Key Error";
-
-            // 使用 Google Imagen 3 模型 (注意：需確保你的 API Key 專案有啟用此模型權限)
-            // 如果 imagen-3.0-generate-001 無法使用，可嘗試 image-generation-002
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key={geminiApiKey}";
-
-            // Imagen 的 Payload 結構與 Gemini 不同
-            var payload = new
-            {
-                instances = new[]
-                {
-                    new { prompt = $"High quality, cinematic movie scene style. {prompt}" } // 強制加上電影風格 Prompt
-                },
-                parameters = new
-                {
-                    sampleCount = 1, // 產生 1 張
-                    aspectRatio = "16:9" // 電影比例
-                }
-            };
+            // 1. 模擬 AI 思考時間
+            await Task.Delay(1000);
 
             try
             {
-                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
+                // 2. 優化提示詞
+                // 加上 "cinematic" 等詞彙提升品質
+                string enhancedPrompt = $"cinematic lighting, high quality, 8k, detailed, {prompt}";
+                string safePrompt = Uri.EscapeDataString(enhancedPrompt);
 
-                var response = await _httpClient.PostAsync(url, jsonContent);
+                // 3. 組合 Pollinations API 網址 (修正版)
+                // ★ 關鍵修改：
+                // 1. 移除了 'nologo=true' (這通常需要 API Key)
+                // 2. 移除了 'model=flux' (部分時段需要 Key，改用預設或 turbo)
+                // 3. 加入 'seed' 隨機數，避免快取導致圖片不更新
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    string error = await response.Content.ReadAsStringAsync();
-                    // 如果生圖失敗，回傳一個預設錯誤圖片或文字
-                    return "https://placehold.co/600x400?text=Image+Generation+Failed";
-                }
+                int randomSeed = new Random().Next(0, 999999);
+                string imageUrl = $"https://image.pollinations.ai/prompt/{safePrompt}?width=1280&height=720&seed={randomSeed}&model=turbo";
 
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-
-                // 解析 Base64 圖片數據
-                using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                {
-                    // Imagen 回傳結構: predictions[0].bytesBase64Encoded
-                    var predictions = doc.RootElement.GetProperty("predictions");
-                    if (predictions.GetArrayLength() > 0)
-                    {
-                        string base64Image = predictions[0].GetProperty("bytesBase64Encoded").GetString();
-
-                        // === 將 Base64 存為實體檔案 ===
-                        return await SaveBase64ImageAsync(base64Image);
-                    }
-                }
-                return "https://placehold.co/600x400?text=No+Image+Data";
+                // 4. 回傳圖片標籤
+                return $"<img src='{imageUrl}' alt='AI Generated Image' style='border-radius: 12px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);' />";
             }
             catch (Exception ex)
             {
-                return $"https://placehold.co/600x400?text=Error:+{ex.Message}";
+                Console.WriteLine($"[Pollinations Error]: {ex.Message}");
+                // 萬一真的失敗，回傳一張靜態錯誤圖
+                return "https://placehold.co/600x400?text=Service+Busy";
             }
         }
 
@@ -127,7 +98,7 @@ namespace incode2.Services.Chat
             if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] API Key 未設定";
 
             // 使用支援 Vision 的模型
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
 
             var payload = new
             {
