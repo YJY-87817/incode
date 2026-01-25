@@ -192,44 +192,45 @@ const router = createRouter({
       component: UserSettings,
     },
     {
-      path: "/userprofile",//每個使用者不同
+      path: "/userprofile/:username",//每個使用者不同
       name: "UserProfile",
       component: UserProfile,
     },
-    
+
 
     {
       path: "/userindex",
       name: "UserIndex",
       component: UserIndex,
       children: [
-      {
-      path: "/usermission",
-      name: "UserMission",
-      component: UserMission,
-      },
-      {
-      path: "/usercollections",
-      name: "UserCollections",
-      component: UserCollections,
-       children: [    
         {
-          path: "userpost",
-          name: "UserPost",
-          component: UserPost,
+          path: "/usermission",
+          name: "UserMission",
+          component: UserMission,
         },
         {
-          path: "usersave",
-          name: "UserSave",
-          component: UserSave,
-        },
-        {
-          path: "UserLike",
-          name: "UserLike",
-          component: UserLike,
-        }
-      ]
-    }]},
+          path: "/usercollections",
+          name: "UserCollections",
+          component: UserCollections,
+          children: [
+            {
+              path: "userpost",
+              name: "UserPost",
+              component: UserPost,
+            },
+            {
+              path: "usersave",
+              name: "UserSave",
+              component: UserSave,
+            },
+            {
+              path: "UserLike",
+              name: "UserLike",
+              component: UserLike,
+            }
+          ]
+        }]
+    },
     // owen
 
     // qiu以下

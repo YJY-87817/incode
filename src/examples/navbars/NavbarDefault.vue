@@ -4,12 +4,41 @@
 
   import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
   import UserIndex from "@/views/user/UserIndex.vue";
+  import UserMission from "@/views/user/UserMission.vue";
 
   import ArrDark from "@/assets/img/down-arrow-dark.svg";
   import downArrow from "@/assets/img/down-arrow.svg";
   import DownArrWhite from "@/assets/img/down-arrow-white.svg";
   import { useAuthStore } from "@/stores/user/auth";
   const authStore = useAuthStore();
+
+  const menuItems = [
+    {
+      title: '會員中心',
+      icon: 'mdi-account-circle-outline',
+      to: { name: 'UserIndex' }
+    },
+    {
+      title: '我的任務',
+      icon: 'mdi-flag-variant-outline',
+      to: { name: 'UserMission' }
+    },
+    {
+      title: '我的點數',
+      icon: 'mdi-star-outline',
+      to: { name: 'point-log' }
+    },
+    {
+      title: '我的購物車',
+      icon: 'mdi-cart-outline',
+      to: { name: 'Checkout' }
+    },
+  ];
+
+  const handleLogout = async () => {
+    await authStore.logout();
+    router.push("/login");
+  };
 
   const props = defineProps({
     transparent: {
@@ -632,6 +661,38 @@
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
           <!--手機版登入 -->
+          <!-- 下拉選單 <v-menu v-if="authStore.isLoggedIn" min-width="200px" rounded="xl" offset="10"
+            transition="slide-y-transition">
+            <template v-slot:activator="{ props }">
+              <v-btn icon v-bind="props" class="ml-2" size="large">
+                <v-avatar size="45" class="border border-opacity-25">
+                  <v-img :src="authStore.user?.avatar || 'https://cdn.vuetifyjs.com/images/john.jpg'" alt="User"
+                    cover></v-img>
+                </v-avatar>
+              </v-btn>
+            </template>
+
+            <v-card border elevation="4" class="rounded-xl mt-2">
+              <v-list density="compact" nav>
+
+                <v-list-item class="mb-2" prepend-avatar="https://cdn.vuetifyjs.com/images/john.jpg">
+                  <v-list-item-title class="font-weight-bold">Brooke</v-list-item-title>
+                  <v-list-item-subtitle class="text-caption">user@example.com</v-list-item-subtitle>
+                </v-list-item>
+
+                <v-divider class="mb-2"></v-divider>
+
+                <v-list-item v-for="(item, index) in menuItems" :key="index" :to="item.to" :prepend-icon="item.icon"
+                  :title="item.title" active-class="text-primary bg-primary-lighten-5" color="primary" rounded="lg"
+                  class="mb-1"></v-list-item>
+
+                <v-divider class="my-2"></v-divider>
+
+                <v-list-item prepend-icon="mdi-logout" title="登出" rounded="lg" class="text-error"
+                  @click="handleLogout"></v-list-item>
+              </v-list>
+            </v-card>
+          </v-menu> -->
           <li class="nav-item">
             <RouterLink v-if="!authStore.isLoggedIn" to="/login" class="btn btn-sm bg-gradient-success mb-0">
               登入會員
