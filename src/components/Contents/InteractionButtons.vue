@@ -32,13 +32,13 @@ const categories = ref([
 function buttonClass(name) {
   switch (name) {
     case "like":
-      return "btn-outline-success";
+      return "btn-forum-interaction";
     case "bookmark":
-      return "btn-outline-success";
+      return "btn-forum-interaction";
     case "block":
-      return "btn-outline-success";
+      return "btn-forum-interaction";
     case "hide":
-      return "btn-outline-success";
+      return "btn-forum-interaction";
     default:
       return "btn-outline-light";
   }
@@ -99,6 +99,20 @@ async function handleClick(categoryId, categoryName) {
 </template>
 
 <style scoped>
+/* 自定義互動按鈕樣式 */
+.btn-forum-interaction {
+  background-color: transparent;
+  border: 1px solid #86b0bd;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-interaction:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff0dd;
+}
+
 .interaction-buttons {
   display: inline-flex;
   align-items: center;
@@ -114,9 +128,7 @@ async function handleClick(categoryId, categoryName) {
   align-items: center;
   justify-content: center;
 }
-</style>
 
-<style scoped>
 .interaction-buttons .btn {
   display: flex;
   align-items: center;

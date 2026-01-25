@@ -36,5 +36,11 @@ watch(search, (newVal) => {
 <style scoped>
 input.form-control {
   max-width: 400px;
+  border-color: #d1d3d4;
+}
+
+input.form-control:focus {
+  border-color: #86b0bd;
+  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
 }
 </style>

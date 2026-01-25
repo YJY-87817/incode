@@ -10,7 +10,7 @@
             </div>
             <small class="text-muted">{{ post.createdAt }}</small>
           </div>
-          <button class="btn btn-sm btn-outline-secondary" @click="toggleReply">
+          <button class="btn btn-sm btn-forum-secondary" @click="toggleReply">
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
@@ -56,17 +56,14 @@
           </div>
           <div class="d-flex gap-2 mt-2">
             <button
-              class="btn btn-primary btn-sm"
+              class="btn btn-forum-primary btn-sm"
               @click="submitReply"
               :disabled="isSubmittingReply || !replyContent.trim()"
             >
               <i class="fas fa-paper-plane me-1"></i>
               {{ isSubmittingReply ? "發送中..." : "發送回覆" }}
             </button>
-            <button
-              class="btn btn-outline-secondary btn-sm"
-              @click="cancelReply"
-            >
+            <button class="btn btn-forum-secondary btn-sm" @click="cancelReply">
               取消
             </button>
           </div>
@@ -215,21 +212,58 @@ function cancelReply() {
 </script>
 
 <style scoped>
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+.btn-forum-primary:disabled {
+  background-color: #d1d3d4;
+  border-color: #d1d3d4;
+  color: #fff;
+  opacity: 0.6;
+}
+
+.btn-forum-secondary {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-secondary:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
 .card-title {
   font-weight: 600;
+  color: #432f28;
 }
 
 .thread-post .card {
   transition: all 0.2s ease;
+  border-color: #d1d3d4;
 }
 
 .thread-post .card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(134, 176, 189, 0.3);
 }
 
 .content-text {
   white-space: pre-wrap;
   word-break: break-word;
+  color: #432f28;
 }
 
 .reply-image-list {
@@ -241,27 +275,27 @@ function cancelReply() {
   height: 96px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
-  background: #fff;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
 }
 
 /* 巢狀回覆的樣式 */
 .thread-post .replies-container .thread-post .card {
-  border-left: 3px solid #e9ecef;
-  background-color: #f8f9fa;
+  border-left: 3px solid #86b0bd;
+  background-color: rgba(255, 240, 221, 0.3);
 }
 
 .thread-post .replies-container .thread-post .card:hover {
-  background-color: #ffffff;
+  background-color: rgba(255, 240, 221, 0.6);
 }
 
 /* 更深層巢狀的樣式 */
 .thread-post .replies-container .replies-container .thread-post .card {
-  border-left-color: #dee2e6;
-  background-color: #f8f9fa;
+  border-left-color: #d1d3d4;
+  background-color: rgba(255, 240, 221, 0.2);
 }
 
 .thread-post .replies-container .replies-container .thread-post .card:hover {
-  background-color: #ffffff;
+  background-color: rgba(255, 240, 221, 0.5);
 }
 </style>

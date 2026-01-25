@@ -121,9 +121,7 @@ export default {
           value="reply"
           v-model="activeComposer"
         />
-        <label class="btn btn-outline-primary" for="compose-reply">
-          回文
-        </label>
+        <label class="btn btn-forum-outline" for="compose-reply"> 回文 </label>
 
         <input
           type="radio"
@@ -133,7 +131,7 @@ export default {
           value="comment"
           v-model="activeComposer"
         />
-        <label class="btn btn-outline-primary" for="compose-comment">
+        <label class="btn btn-forum-outline" for="compose-comment">
           留言
         </label>
       </div>
@@ -160,7 +158,7 @@ export default {
         </small>
       </div>
       <button
-        class="btn btn-primary w-100 w-sm-auto"
+        class="btn btn-forum-primary w-100 w-sm-auto"
         @click="submitContent"
         :disabled="isSubmitting || !composerHasContent"
       >
@@ -447,12 +445,64 @@ async function submitContent() {
 </script>
 
 <style scoped>
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+.btn-forum-primary:disabled {
+  background-color: #d1d3d4;
+  border-color: #d1d3d4;
+  color: #fff;
+  opacity: 0.6;
+}
+
+.btn-forum-outline {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-outline:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+.btn-check:checked + .btn-forum-outline {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+}
+
+.thread-detail .card {
+  border-color: #d1d3d4;
+}
+
 .thread-detail .card-title {
   margin-bottom: 0.5rem;
   line-height: 1.3;
+  color: #432f28;
 }
+
 .thread-detail textarea {
   resize: vertical;
+  border-color: #d1d3d4;
+}
+
+.thread-detail textarea:focus {
+  border-color: #86b0bd;
+  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
 }
 
 .topic-image-list {
@@ -464,8 +514,26 @@ async function submitContent() {
   height: 120px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
-  background: #fff;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
+/* 分頁樣式 */
+.pagination .page-item.active .page-link {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+}
+
+.pagination .page-link {
+  color: #432f28;
+  border-color: #d1d3d4;
+}
+
+.pagination .page-link:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
 }
 
 @media (max-width: 576px) {

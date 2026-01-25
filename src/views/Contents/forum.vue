@@ -643,7 +643,7 @@ const handleThreadReplyAdded = async () => {
             <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
           </div>
           <button
-            class="btn btn-primary w-100 w-md-auto"
+            class="btn btn-forum-primary w-100 w-md-auto"
             @click="toggleNewTopic"
             type="button"
           >
@@ -705,7 +705,7 @@ const handleThreadReplyAdded = async () => {
           </div>
           <div class="d-flex flex-wrap gap-2">
             <button
-              class="btn btn-primary"
+              class="btn btn-forum-primary"
               @click="submitNewTopic"
               :disabled="
                 isSubmittingNewTopic ||
@@ -718,7 +718,7 @@ const handleThreadReplyAdded = async () => {
               {{ isSubmittingNewTopic ? "發送中..." : "發表" }}
             </button>
             <button
-              class="btn btn-outline-secondary"
+              class="btn btn-forum-secondary"
               type="button"
               @click="
                 showNewTopicBox = false;
@@ -826,7 +826,7 @@ const handleThreadReplyAdded = async () => {
               <!-- 返回按鈕 -->
               <div class="p-3 border-bottom">
                 <button
-                  class="btn btn-sm btn-outline-secondary"
+                  class="btn btn-sm btn-forum-secondary"
                   @click="closeThread"
                 >
                   <i class="fas fa-arrow-left me-2"></i>
@@ -1234,6 +1234,135 @@ const handleThreadReplyAdded = async () => {
 </template>
 
 <style scoped>
+/* 自定義顏色方案 */
+:root {
+  --forum-primary: #432f28;
+  --forum-light: #fff0dd;
+  --forum-gray: #d1d3d4;
+  --forum-accent: #86b0bd;
+}
+
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(67, 47, 40, 0.3);
+}
+
+.btn-forum-primary:disabled {
+  background-color: #d1d3d4;
+  border-color: #d1d3d4;
+  color: #fff;
+  opacity: 0.6;
+}
+
+.btn-forum-secondary {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-secondary:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+/* 徽章樣式 */
+.badge.bg-secondary {
+  background-color: #86b0bd !important;
+  color: #432f28;
+}
+
+.badge.bg-info {
+  background-color: #432f28 !important;
+  color: #fff0dd;
+}
+
+/* 卡片樣式 */
+.card {
+  border-color: #d1d3d4;
+}
+
+.card-header {
+  background-color: #fff0dd !important;
+  border-bottom-color: #d1d3d4;
+}
+
+.card-header h5,
+.card-header h6 {
+  color: #432f28;
+}
+
+/* 表格樣式 */
+.table-light {
+  background-color: #fff0dd !important;
+  color: #432f28;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 240, 221, 0.5) !important;
+}
+
+/* 鏈接顏色 */
+.topic-title-link {
+  color: #432f28;
+}
+
+.topic-title-link:hover {
+  color: #86b0bd;
+}
+
+/* 分頁樣式 */
+.pagination .page-item.active .page-link {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+}
+
+.pagination .page-link {
+  color: #432f28;
+  border-color: #d1d3d4;
+}
+
+.pagination .page-link:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+/* 載入動畫顏色 */
+.spinner-border {
+  color: #432f28 !important;
+}
+
+/* 文字顏色 */
+.text-primary {
+  color: #432f28 !important;
+}
+
+/* 留言框樣式 */
+.reply-box {
+  background-color: rgba(255, 240, 221, 0.5);
+  border-left-color: #432f28;
+}
+
+/* 邊框顏色 */
+.border-forum-selected {
+  border-color: #432f28 !important;
+  border-width: 2px !important;
+}
+
 /* 分類卡片樣式 */
 .category-card {
   transition: all 0.2s ease;
@@ -1249,9 +1378,9 @@ const handleThreadReplyAdded = async () => {
 }
 
 /* 選中狀態 */
-.category-card.border-primary {
-  background: #edf18d;
-  box-shadow: 0 0 0 3px #edf18d;
+.category-card.border-forum-selected {
+  background: rgba(255, 240, 221, 0.8);
+  box-shadow: 0 0 0 3px rgba(134, 176, 189, 0.3);
 }
 
 /* 表格行樣式 */
@@ -1261,7 +1390,7 @@ const handleThreadReplyAdded = async () => {
 }
 
 .forum-row:hover {
-  background-color: #f8f9fa !important;
+  background-color: rgba(255, 240, 221, 0.3) !important;
 }
 
 .table {
@@ -1275,15 +1404,9 @@ const handleThreadReplyAdded = async () => {
 
 /* 主題標題連結樣式 */
 .topic-title-link {
-  color: #344767;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
-}
-
-.topic-title-link:hover {
-  color: #cb0c9f;
-  text-decoration: underline;
 }
 
 /* 響應式調整 */
@@ -1318,9 +1441,7 @@ const handleThreadReplyAdded = async () => {
 /* 留言框樣式 */
 .reply-box {
   padding: 1rem;
-  background-color: #f8f9fa;
   border-radius: 0.5rem;
-  border-left: 3px solid #cb0c9f;
 }
 
 .reply-box textarea {
@@ -1343,8 +1464,8 @@ const handleThreadReplyAdded = async () => {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
-  background: #fff;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
 }
 
 .thread-detail-image {

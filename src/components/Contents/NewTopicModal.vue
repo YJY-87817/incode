@@ -208,10 +208,10 @@ const closeNewTopic = () => {
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
-            <button class="btn btn-secondary me-2" @click="closeNewTopic">
+            <button class="btn btn-forum-secondary me-2" @click="closeNewTopic">
               取消
             </button>
-            <button type="submit" class="btn btn-primary">發表</button>
+            <button type="submit" class="btn btn-forum-primary">發表</button>
           </div>
         </form>
       </div>
@@ -220,10 +220,37 @@ const closeNewTopic = () => {
 </template>
 
 <style scoped>
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+.btn-forum-secondary {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-secondary:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
 .custom-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(67, 47, 40, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,12 +258,32 @@ const closeNewTopic = () => {
 }
 
 .modal-dialog {
-  background: white;
+  background: #fff0dd;
   border-radius: 0.3rem;
   max-width: 500px;
   width: 100%;
   padding: 1rem;
   position: relative;
   z-index: 2100;
+  border: 1px solid #d1d3d4;
+}
+
+.modal-header {
+  border-bottom-color: #d1d3d4;
+}
+
+.modal-footer {
+  border-top-color: #d1d3d4;
+}
+
+.form-control,
+.form-select {
+  border-color: #d1d3d4;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #86b0bd;
+  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
 }
 </style>

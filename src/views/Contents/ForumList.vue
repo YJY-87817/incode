@@ -69,7 +69,7 @@ export default {
               >
               <router-link
                 :to="{ name: 'thread-detail', params: { id: topic.id } }"
-                class="btn btn-sm btn-primary w-100 w-sm-auto"
+                class="btn btn-sm btn-forum-primary w-100 w-sm-auto"
                 >檢視</router-link
               >
             </div>
@@ -235,11 +235,34 @@ function nextPage() {
 </script>
 
 <style scoped>
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+  text-decoration: none;
+}
+
 .forum-list .card {
   transition: transform 0.2s;
+  border-color: #d1d3d4;
 }
+
 .forum-list .card:hover {
   transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(134, 176, 189, 0.3);
+}
+
+.forum-list .card-title {
+  color: #432f28;
 }
 
 .topic-image-list {
@@ -251,9 +274,28 @@ function nextPage() {
 .topic-image-thumb {
   cursor: pointer;
   transition: transform 0.2s ease;
+  border: 1px solid #d1d3d4;
 }
 
 .topic-image-thumb:hover {
   transform: scale(1.05);
+}
+
+/* 分頁樣式 */
+.pagination .page-item.active .page-link {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+}
+
+.pagination .page-link {
+  color: #432f28;
+  border-color: #d1d3d4;
+}
+
+.pagination .page-link:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
 }
 </style>
