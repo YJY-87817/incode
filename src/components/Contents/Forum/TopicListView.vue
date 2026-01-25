@@ -18,6 +18,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
+import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const props = defineProps({
@@ -84,6 +85,22 @@ const emit = defineEmits([
   "reply-submitted",
   "thread-page-change",
 ]);
+
+/**
+ * 處理主題互動成功
+ */
+const handleTopicInteractionSuccess = (data) => {
+  console.log("主題互動成功:", data);
+  // 可以在此顯示 toast 或其他反饋
+};
+
+/**
+ * 處理主題互動錯誤
+ */
+const handleTopicInteractionError = (data) => {
+  console.error("主題互動失敗:", data);
+  alert(`互動失敗: ${data.error}`);
+};
 
 /**
  * 分頁相關計算
@@ -189,6 +206,17 @@ const nextThreadPage = () => {
             <span>·</span>
             <span>{{ formatDate(threadDetail.createdAt) }}</span>
           </p>
+
+          <!-- 主題互動按鈕 -->
+          <div class="mb-3">
+            <InteractionButtons
+              :key="`thread-detail-interactions-${threadDetail.id}`"
+              :contentId="threadDetail.id"
+              @interaction-success="handleTopicInteractionSuccess"
+              @interaction-error="handleTopicInteractionError"
+            />
+          </div>
+
           <p
             class="card-text"
             style="white-space: pre-wrap; word-break: break-word"
@@ -394,6 +422,16 @@ const nextThreadPage = () => {
                         <span class="d-md-none text-nowrap">
                           🕒 {{ formatTimeAgo(topic.createdAt) }}
                         </span>
+                      </div>
+
+                      <!-- 互動按鈕 -->
+                      <div class="mt-2 interaction-container" @click.stop>
+                        <InteractionButtons
+                          :key="`topic-interactions-${topic.id}`"
+                          :contentId="topic.id"
+                          @interaction-success="handleTopicInteractionSuccess"
+                          @interaction-error="handleTopicInteractionError"
+                        />
                       </div>
                     </div>
                   </div>
@@ -620,6 +658,13 @@ const nextThreadPage = () => {
   border-radius: 8px;
   border: 1px solid #d1d3d4;
   background: #fff0dd;
+}
+
+/* 互動按鈕容器樣式 */
+.interaction-container {
+  display: block;
+  position: relative;
+  z-index: 10;
 }
 
 .thread-detail-image {

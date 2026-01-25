@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import contentInteractionApi from "@/api/contentInteractionApi";
 
 /**
@@ -11,6 +11,10 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+});
+
+onMounted(() => {
+  console.log("InteractionButtons mounted for contentId:", props.contentId);
 });
 
 const emit = defineEmits(["interaction-success", "interaction-error"]);
