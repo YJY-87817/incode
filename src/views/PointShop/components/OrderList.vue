@@ -22,7 +22,7 @@ onMounted(async () => {
 
 <template>
   <div class="order-list-container">
-    <div class="order-header">
+    <div class="text-center">
       <h2 class="order-title">
         <i class="bi bi-bag-check me-2"></i>訂單查詢
       </h2>
@@ -69,11 +69,6 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-.order-header {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #e9ecef;
-}
 
 .order-title {
   font-size: 2rem;
