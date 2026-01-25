@@ -1,6 +1,18 @@
 <script setup>
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 
+// 取得購物車狀態
+const CartNow = useCartStore();
+// 增加、減少、移除商品
+const increase = (item) => {
+  item.quantity += 1;
+  CartNow.updateQuantity(item.productId, item.quantity);
+};
+
+const decrease = (item) => {
+  if (item.quantity > 1) item.quantity -= 1;
+  CartNow.updateQuantity(item.productId, item.quantity);
+};
 </script>
 
 <template>
@@ -13,41 +25,42 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
       </div>
 
       <div class="card-body px-4">
-        <div class="d-flex flex-column gap-3">
-          <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
+        <div v-if="CartNow.cartItems.length > 0" class="d-flex flex-column gap-3">
+          <!-- 購物車清單範例 -->
+          <div v-for="item in CartNow.cartItems" :key="item.productId" class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
 
             <div class="d-flex align-items-center flex-grow-1">
-              <img :src="`https://localhost:7190/img/product/NoImage.png`"
+              <img :src="`https://localhost:7190/img/product/${item.imageName|| 'NoImage.png'}`"
                 class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
               <div class="ms-3">
-                <h6 class="fw-bold mb-0 text-dark">另一個測試商品</h6>
+                <h6 class="fw-bold mb-0 text-dark">{{ item.name }}</h6>
               </div>
             </div>
 
             <div class="d-flex align-items-center gap-4 px-3">
               <div class="text-center">
                 <small class="text-secondary d-block">數量</small>
-                <span class="fw-medium">2</span>
+                <span class="fw-medium">{{ item.quantity }}</span>
               </div>
               <div class="text-end" style="min-width: 80px;">
                 <small class="text-secondary d-block">小計</small>
-                <span class="text-primary fw-bold">800 點</span>
+                <span class="text-primary fw-bold">{{ item.point }} p</span>
               </div>
             </div>
 
             <div class="ms-3 border-start ps-3 py-1">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">+</button>
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;">−</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="increase(item)">+</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="decrease(item)">−</button>
                 <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
-                  <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+                  <i class="bi bi-trash" style="font-size: 0.875rem;" @click="CartNow.removeFromCart(item.productId)"></i>
                 </button>
               </div>
             </div>
 
           </div>
-
-          <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
+          <!-- 購物車清單範例 -->
+          <!-- <div class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
 
             <div class="d-flex align-items-center flex-grow-1">
               <img :src="`https://localhost:7190/img/product/NoImage.png`"
@@ -78,17 +91,21 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
               </div>
             </div>
 
-          </div>
+          </div> -->
+        </div>
+
+        <div v-else class="text-center text-muted my-5">
+          目前沒有任何商品在購物車
         </div>
       </div>
-
       <div class="card-footer bg-white border-top-0 pb-4 px-4 text-end">
         <hr class="text-muted opacity-25">
         <div class="d-flex justify-content-end align-items-baseline gap-2">
-          <span class="text-secondary small">共 2 項商品，總計：</span>
-          <span class="fs-4 fw-bold text-primary">1,000 P</span>
+          <span class="text-secondary small">共 {{ CartNow.totalItems }} 項商品，總計：</span>
+          <span class="fs-4 fw-bold text-primary">{{ CartNow.totalPoints }} P</span>
         </div>
       </div>
+
     </div>
   </div>
 </template>
