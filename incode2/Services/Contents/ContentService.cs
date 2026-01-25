@@ -37,6 +37,7 @@ namespace incode2.Services.Contents
         ContentId = c.ContentId,
         Title = c.Title,
         Body = c.Body,
+        Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
         Username = c.User.Username,
         CategoryName = c.Category.CategoryName
@@ -65,6 +66,7 @@ namespace incode2.Services.Contents
         ParentContentId = c.ParentContentId,
         Title = c.Title,
         Body = c.Body,
+        Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
         UpdatedAt = (DateTime)c.UpdatedAt,
         Username = c.User.Username,
@@ -158,6 +160,7 @@ namespace incode2.Services.Contents
         CategoryName = c.Category != null ? c.Category.CategoryName : null,
         Title = c.Title,
         Body = c.Body,
+        Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
         UpdatedAt = (DateTime)c.UpdatedAt,
         Ishidden = c.IsActive == 2 ? true : false
