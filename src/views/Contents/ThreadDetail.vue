@@ -28,6 +28,19 @@ export default {
         >
           {{ thread.content }}
         </p>
+        <div
+          v-if="thread.imageUrls && thread.imageUrls.length"
+          class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
+        >
+          <img
+            v-for="(url, idx) in thread.imageUrls"
+            :key="url + idx"
+            :src="url"
+            alt="貼文圖片"
+            class="topic-image-thumb"
+            loading="lazy"
+          />
+        </div>
       </div>
     </div>
 
@@ -155,6 +168,40 @@ import contentInteractionApi from "@/api/contentInteractionApi.js";
 import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
+
+const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
+  return `${apiBaseUrl}/${url}`;
+};
+
+const parseBodyContent = (body) => {
+  const raw = body || "";
+  const imagePattern =
+    /(https?:\/\/[^\s]+|\/?img\/[^\s)]+?\.(?:png|jpe?g|gif|webp|bmp))/gi;
+  const matches = raw.match(imagePattern) || [];
+  const uniqueImages = Array.from(new Set(matches));
+
+  const imageUrls = uniqueImages
+    .map((url) => url.replace(/[)\]]+$/, ""))
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map(toAbsoluteUrl);
+
+  const textContent = raw
+    .replace(imagePattern, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
+
+  return {
+    textContent: displayText,
+    imageUrls,
+  };
+};
 // 視窗寬度響應式變數
 const windowWidth = ref(window.innerWidth);
 
@@ -171,6 +218,7 @@ const thread = ref({
   author: "",
   createdAt: "",
   content: "",
+  imageUrls: [],
 });
 
 const allPosts = ref([]);
@@ -185,12 +233,14 @@ const fetchThread = async () => {
 
     const detail = detailRes?.contentId ? detailRes : detailRes?.data;
     if (detail && detail.contentId) {
+      const { textContent, imageUrls } = parseBodyContent(detail.body);
       thread.value = {
         id: detail.contentId,
         title: detail.title,
         author: detail.username,
         createdAt: detail.createdAt,
-        content: detail.body,
+        content: textContent,
+        imageUrls,
         categoryId: detail.categoryId,
         type: detail.type,
       };
@@ -198,15 +248,19 @@ const fetchThread = async () => {
 
     // Process comments from the new API endpoint
     const commentsData = commentsRes?.comments || [];
-    const commentItems = commentsData.map((comment) => ({
-      id: comment.contentId,
-      author: comment.username,
-      createdAt: comment.createdAt,
-      content: comment.body,
-      type: CONTENT_TYPES.COMMENT,
-      parentContentId: comment.parentContentId,
-      replies: [],
-    }));
+    const commentItems = commentsData.map((comment) => {
+      const { textContent, imageUrls } = parseBodyContent(comment.body);
+      return {
+        id: comment.contentId,
+        author: comment.username,
+        createdAt: comment.createdAt,
+        content: textContent,
+        imageUrls,
+        type: CONTENT_TYPES.COMMENT,
+        parentContentId: comment.parentContentId,
+        replies: [],
+      };
+    });
 
     // For now, keep the existing logic for replies (replies to the main thread)
     // This fetches replies separately since the new comments API might not include them
@@ -217,15 +271,19 @@ const fetchThread = async () => {
 
     const normalizedReplies = replyItems
       .filter((i) => i.type === CONTENT_TYPES.REPLY)
-      .map((i) => ({
-        id: i.contentId,
-        author: i.username,
-        createdAt: i.createdAt,
-        content: i.body,
-        type: i.type,
-        parentContentId: i.parentContentId,
-        replies: [],
-      }));
+      .map((i) => {
+        const { textContent, imageUrls } = parseBodyContent(i.body);
+        return {
+          id: i.contentId,
+          author: i.username,
+          createdAt: i.createdAt,
+          content: textContent,
+          imageUrls,
+          type: i.type,
+          parentContentId: i.parentContentId,
+          replies: [],
+        };
+      });
 
     const sortByDate = (list) => {
       list.sort(
@@ -354,9 +412,27 @@ async function submitContent() {
   resize: vertical;
 }
 
+.topic-image-list {
+  gap: 0.5rem;
+}
+
+.topic-image-thumb {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #fff;
+}
+
 @media (max-width: 576px) {
   .thread-detail .card-title {
     font-size: 1.25rem;
+  }
+
+  .topic-image-thumb {
+    width: 90px;
+    height: 90px;
   }
 }
 </style>

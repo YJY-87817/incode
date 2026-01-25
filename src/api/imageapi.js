@@ -1,9 +1,35 @@
 import apiClient from '@/api/request'
 
+// 取得不含 /api 的基底網址，方便把後端回傳的相對路徑轉為完整網址
+const apiBaseUrl = (apiClient.defaults?.baseURL || '').replace(/\/api$/, '')
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  if (url.startsWith('/')) return `${apiBaseUrl}${url}`
+  return `${apiBaseUrl}/${url}`
+}
+
+const normalizeResponseUrls = (response) => {
+  if (!response) return []
+
+  // 後端回傳格式：{ urls: ['/img/abc.jpg', '/img/xyz.jpg'] }
+  const urls = Array.isArray(response)
+    ? response
+    : Array.isArray(response.urls)
+      ? response.urls
+      : []
+
+  return urls
+    .map((u) => (typeof u === 'string' ? u.trim() : ''))
+    .filter(Boolean)
+    .map(toAbsoluteUrl)
+}
+
 /**
  * 上傳圖片（支持單張或多張）
  * @param {File|FileList|Array} files - 圖片檔案物件、檔案列表或陣列
- * @returns {Promise<string|Array<string>>} 返回圖片 URL 或 URL 陣列
+ * @returns {Promise<string|Array<string>>} 返回圖片 URL 或 URL 陣列（已轉為絕對路徑）
  */
 export const uploadImage = async (files) => {
   const formData = new FormData()
@@ -13,7 +39,7 @@ export const uploadImage = async (files) => {
   if (isSingleFile) {
     formData.append('files', files)
   } else {
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
       formData.append('files', file)
     })
   }
@@ -24,16 +50,23 @@ export const uploadImage = async (files) => {
         'Content-Type': 'multipart/form-data'
       }
     })
-    
-    // 單檔案返回字符串，多檔案返回陣列
-    return isSingleFile 
-      ? (Array.isArray(response) ? response[0] : response)
-      : (Array.isArray(response) ? response : [response])
+
+    const normalizedUrls = normalizeResponseUrls(response)
+    if (normalizedUrls.length === 0) {
+      throw new Error('後端未回傳圖片網址')
+    }
+
+    return isSingleFile ? normalizedUrls[0] : normalizedUrls
   } catch (error) {
     console.error('圖片上傳失敗:', error)
     throw error
   }
 }
+
+/**
+ * 多檔案上傳語意化別名（與 uploadImage 相同行為）
+ */
+export const uploadMultipleImages = async (files) => uploadImage(files)
 
 /**
  * 刪除圖片
@@ -81,6 +114,7 @@ export const deleteMultipleImages = async (fileNames) => {
 
 export default {
   uploadImage,
+  uploadMultipleImages,
   deleteImage,
   deleteMultipleImages
 }

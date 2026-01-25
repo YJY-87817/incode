@@ -15,6 +15,19 @@
           </button>
         </div>
         <p class="card-text mt-2 content-text">{{ post.content }}</p>
+        <div
+          v-if="post.imageUrls && post.imageUrls.length"
+          class="d-flex flex-wrap gap-2 mt-2 reply-image-list"
+        >
+          <img
+            v-for="(url, idx) in post.imageUrls"
+            :key="url + idx"
+            :src="url"
+            alt="留言圖片"
+            class="reply-image-thumb"
+            loading="lazy"
+          />
+        </div>
 
         <!-- 回覆輸入框 -->
         <div v-if="showReply" class="mt-3 border-top pt-3">
@@ -175,6 +188,19 @@ function cancelReply() {
 .content-text {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.reply-image-list {
+  gap: 0.5rem;
+}
+
+.reply-image-thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  background: #fff;
 }
 
 /* 巢狀回覆的樣式 */
