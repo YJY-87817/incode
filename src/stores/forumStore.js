@@ -23,6 +23,7 @@ export const useForumStore = defineStore('forum', {
     // ========== 主題列表 ==========
     topics: [],
     isLoading: false,
+    searchKeyword: '',
     pagination: {
       currentPage: 1,
       pageSize: 10,
@@ -156,11 +157,22 @@ export const useForumStore = defineStore('forum', {
         const allContents = allContentData.items || []
         
         // 2. 過濾 type=1(貼文) 和 type=2(回文)
-        const listContents = allContents
+        let listContents = allContents
           .filter(c => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY)
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         
-        // 3. 前端分頁
+        // 3. 搜尋過濾 (搜尋 title 和 body)
+        if (this.searchKeyword.trim()) {
+          const keyword = this.searchKeyword.trim().toLowerCase()
+          listContents = listContents.filter(c => {
+            const titleMatch = c.title?.toLowerCase().includes(keyword)
+            const bodyMatch = c.body?.toLowerCase().includes(keyword)
+            return titleMatch || bodyMatch
+          })
+        }
+        
+        listContents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        
+        // 4. 前端分頁
         const pageSize = this.pagination.pageSize
         const totalCount = listContents.length
         const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -176,7 +188,7 @@ export const useForumStore = defineStore('forum', {
           totalPages,
         }
         
-        // 4. 組合顯示資料
+        // 5. 組合顯示資料
         this.topics = pageItems.map(item => {
           const { textContent, imageUrls } = parseBodyContent(item.body)
           const replyStats = calculateReplyStats(item.contentId, allContents)
@@ -381,6 +393,19 @@ export const useForumStore = defineStore('forum', {
     
     triggerTopicRefresh() {
       this.lastRefreshTime = Date.now()
+    },
+    
+    // ========== 搜尋功能 ==========
+    setSearchKeyword(keyword) {
+      this.searchKeyword = keyword
+      this.pagination.currentPage = 1
+      this.fetchTopics()
+    },
+    
+    clearSearch() {
+      this.searchKeyword = ''
+      this.pagination.currentPage = 1
+      this.fetchTopics()
     }
   },
   
