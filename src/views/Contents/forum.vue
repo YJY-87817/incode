@@ -687,7 +687,7 @@ watch(
                     "
                   >
                     <!-- 主題欄 -->
-                    <td class="py-3 py-md-3">
+                    <td class="p-3 py-md-3">
                       <div class="d-flex align-items-start gap-2">
                         <div class="flex-grow-1">
                           <div class="d-flex flex-wrap gap-1 mb-1">
