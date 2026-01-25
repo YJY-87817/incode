@@ -7,6 +7,7 @@
 
 <script setup>
 import { useForumStore } from "@/stores/forumStore";
+import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 </script>
@@ -15,7 +16,7 @@ const forumStore = useForumStore();
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div
-        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3"
+        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3"
       >
         <!-- 論壇標題與說明 -->
         <div>
@@ -23,15 +24,8 @@ const forumStore = useForumStore();
           <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
         </div>
 
-        <!-- 發表新主題按鈕 -->
-        <button
-          class="btn btn-forum-primary w-100 w-md-auto"
-          @click="forumStore.toggleNewTopicBox()"
-          type="button"
-        >
-          <i class="fas fa-plus"></i>
-          <span class="d-none d-sm-inline">發表新主題</span>
-        </button>
+        <!-- 搜尋欄 -->
+        <ForumSearchBar />
       </div>
     </div>
   </div>

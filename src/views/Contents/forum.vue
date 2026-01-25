@@ -26,7 +26,6 @@ import { useForumStore } from "@/stores/forumStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import ForumHeader from "@/components/Contents/Forum/ForumHeader.vue";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
 import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
 import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
@@ -107,8 +106,6 @@ watch(
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
       <div class="col-lg-9 order-2 order-lg-1">
-        <ForumSearchBar />
-
         <CategoryFilter />
 
         <NewTopicForm
@@ -163,6 +160,15 @@ watch(
                 class="d-flex justify-content-between align-items-center"
               ></div>
             </div>
+
+            <button
+              class="btn btn-forum-primary w-100"
+              type="button"
+              @click="forumStore.toggleNewTopicBox()"
+            >
+              <i class="fas fa-plus"></i>
+              <span class="ms-2">發表新主題</span>
+            </button>
           </div>
         </div>
       </div>
