@@ -4,5 +4,6 @@
     {
         Task<string> UploadImageAsync(IFormFile file);
         Task<List<string>> UploadImagesAsync(IEnumerable<IFormFile> files);
+        Task DeleteImageAsync(string fileNameOrUrl);
     }
 }

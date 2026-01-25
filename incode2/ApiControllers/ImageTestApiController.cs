@@ -49,5 +49,19 @@ namespace incode2.ApiControllers
         return BadRequest(new { message = ex.Message });
       }
     }
+
+    [HttpDelete("/api/image")]
+    public async Task<IActionResult> Delete([FromQuery] string path)
+    {
+      try
+      {
+        await _imageService.DeleteImageAsync(path);
+        return Ok(new { message = "刪除成功" });
+      }
+      catch (Exception ex)
+      {
+        return BadRequest(new { message = ex.Message });
+      }
+    }
   }
 }
