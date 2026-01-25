@@ -2,11 +2,16 @@
 import { RouterLink } from "vue-router";
 import { ref, watch } from "vue";
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
+import { useCartStore } from "@/views/PointShop/services/cartStore";
 
 // images
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
 import downArrow from "@/assets/img/down-arrow.svg";
 import DownArrWhite from "@/assets/img/down-arrow-white.svg";
+
+// 取得購物車狀態
+const CartNow = useCartStore();
+
 
 const props = defineProps({
   action: {
@@ -318,11 +323,34 @@ watch(
                       >
                         <span>點數商城</span>
                       </RouterLink>
+                      <button
+                        class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#cartOffcanvas"
+                        style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
+                      >
+                        <span>
+                          購物車
+                        </span>
+                        <span
+                          v-if="CartNow.totalItems > 0"
+                          class="badge rounded-pill bg-danger"
+                          style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
+                        >
+                          {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                        </span>
+                      </button>
                       <RouterLink
                         :to="{ name: 'Order' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>我的訂單</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'Checkout' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>前往結帳</span>
                       </RouterLink>
                     </div>
                   </div>
@@ -342,6 +370,29 @@ watch(
                 >
                   <span>我的訂單</span>
                 </RouterLink>
+                <RouterLink
+                  :to="{ name: 'Checkout' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>前往結帳</span>
+                </RouterLink>
+                <button
+                  class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#cartOffcanvas"
+                  style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
+                >
+                  <span>
+                    <i class="bi bi-cart me-2"></i>購物車
+                  </span>
+                  <span
+                    v-if="CartNow.totalItems > 0"
+                    class="badge rounded-pill bg-danger"
+                    style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
+                  >
+                    {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                  </span>
+                </button>
               </div>
             </div>
           </li>
@@ -919,4 +970,6 @@ watch(
     </div>
   </nav>
   <!-- End Navbar -->
+
+  
 </template>

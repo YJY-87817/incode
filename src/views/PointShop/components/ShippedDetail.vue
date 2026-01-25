@@ -35,68 +35,89 @@ const toggle = async () => {
 </script>
 
 <template>
-  <div class="shipped-box p-2">
-    <button @click="toggle" :class="['btn', open ? 'btn-success' : 'btn-secondary']">
-      {{ open ? "隱藏" : "查看" }} 出貨資訊
+  <div class="shipped-detail-wrapper">
+    <button @click="toggle" :class="['toggle-btn', open ? 'active' : '']">
+      <i :class="open ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+      <span>{{ open ? "隱藏" : "查看" }} 出貨資訊</span>
     </button>
 
-    <transition name="fade">
-      <div v-if="open" class="mt-3">
-        <div v-if="loading" class="alert alert-info">
-          <i class="bi bi-hourglass-split"></i> 載入出貨資料...
+    <transition name="slide-fade">
+      <div v-if="open" class="shipped-content">
+        <div v-if="loading" class="loading-state">
+          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">載入中...</span>
+          </div>
+          <span>載入出貨資料...</span>
         </div>
 
-        <div v-if="error" class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        <div v-else-if="error" class="error-state">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span>{{ error }}</span>
         </div>
 
-        <div v-for="ship in shipped" :key="ship.shippedDate" class="card border mb-3">
-          <div class="card-body">
-            <div class="row mb-2">
-              <div class="col-12">
-                <h6 class="card-subtitle text-muted">
-                  商品:{{ ship.productName }}
-                </h6>
+        <div v-else-if="shipped.length === 0" class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <span>尚無出貨資料</span>
+        </div>
+
+        <div v-else class="shipped-cards">
+          <div v-for="ship in shipped" :key="ship.shippedDate" class="shipped-card">
+            <div class="card-header-section">
+              <div class="product-name-badge">
+                <i class="bi bi-box-seam me-1"></i>
+                <span>{{ ship.productName }}</span>
               </div>
             </div>
 
-            <div class="row">
-              <div class="col-md-6 mb-1">
-                <small class="text-muted">出貨日期</small>
-                <p class="mb-0 text-muted">
-                  <i class="bi bi-calendar-event"></i>
-                  {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
-                </p>
-              </div>
-              <div class="col-md-6 mb-2">
-                <small class="text-muted">預計到貨</small>
-                <p class="mb-0 text-muted">
-                  <i class="bi bi-calendar-check"></i>
-                  {{
-                    ship.arrivalDate
-                      ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
-                      : "尚未到貨"
-                  }}
-                </p>
-              </div>
-            </div>
+            <div class="card-body-section">
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>出貨日期</span>
+                  </div>
+                  <div class="info-value">
+                    {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
+                  </div>
+                </div>
 
-            <div class="mt-3">
-              <small class="text-muted">運送狀態</small>
-              <p>
-                <span v-if="ship.isCompleted" class="badge bg-success">
-                  <i class="bi bi-check-circle"></i> 已完成
-                </span>
-                <span v-else-if="ship.isFailed" class="badge bg-danger">
-                  <i class="bi bi-x-circle"></i> 失敗
-                </span>
-                <span v-else class="badge bg-warning text-dark">
-                  <i class="bi bi-truck"></i> 運送中
-                </span>
-              </p>
-              <small v-if="ship.remark" class="text-muted d-block">
-                <i class="bi bi-info-circle"></i> {{ ship.remark }}
-              </small>
+                <div class="info-item">
+                  <div class="info-label">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>預計到貨</span>
+                  </div>
+                  <div class="info-value" :class="{ 'text-muted': !ship.arrivalDate }">
+                    {{
+                      ship.arrivalDate
+                        ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
+                        : "尚未到貨"
+                    }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-section">
+                <div class="status-label">運送狀態</div>
+                <div class="status-badges">
+                  <span v-if="ship.isCompleted" class="status-badge status-completed">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>已完成</span>
+                  </span>
+                  <span v-else-if="ship.isFailed" class="status-badge status-failed">
+                    <i class="bi bi-x-circle-fill"></i>
+                    <span>失敗</span>
+                  </span>
+                  <span v-else class="status-badge status-shipping">
+                    <i class="bi bi-truck"></i>
+                    <span>運送中</span>
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="ship.remark" class="remark-section">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>{{ ship.remark }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -106,29 +127,283 @@ const toggle = async () => {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+.shipped-detail-wrapper {
+  width: 100%;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  color: #495057;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.card {
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+.toggle-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+.toggle-btn.active {
+  background: #e7f3ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
 }
 
-.badge {
+.toggle-btn i {
   font-size: 0.85rem;
-  padding: 0.5rem 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.toggle-btn.active i {
+  transform: rotate(180deg);
+}
+
+.shipped-content {
+  margin-top: 1rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.error-state {
+  background: #fff3cd;
+  border-color: #ffc107;
+  color: #856404;
+}
+
+.error-state i {
+  color: #ffc107;
+  font-size: 1.1rem;
+}
+
+.empty-state {
+  background: #f8f9fa;
+  color: #adb5bd;
+}
+
+.empty-state i {
+  font-size: 1.5rem;
+}
+
+.shipped-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shipped-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.shipped-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  border-color: #0d6efd;
+}
+
+.card-header-section {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.product-name-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  background: #e7f3ff;
+  border-radius: 0.5rem;
+  color: #0d6efd;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.product-name-badge i {
+  font-size: 0.9rem;
+}
+
+.card-body-section {
+  padding: 1.25rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.info-label i {
+  color: #0d6efd;
+  font-size: 0.9rem;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.status-section {
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.status-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge i {
+  font-size: 0.9rem;
+}
+
+.status-completed {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-completed i {
+  color: #198754;
+}
+
+.status-failed {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.status-failed i {
+  color: #dc3545;
+}
+
+.status-shipping {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-shipping i {
+  color: #ffc107;
+}
+
+.remark-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: #495057;
+  line-height: 1.5;
+}
+
+.remark-section i {
+  color: #0d6efd;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .card-body-section {
+    padding: 1rem;
+  }
+
+  .card-header-section {
+    padding: 0.875rem 1rem;
+  }
 }
 </style>

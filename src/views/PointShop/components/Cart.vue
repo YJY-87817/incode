@@ -18,10 +18,10 @@ const decrease = (item) => {
 <template>
   <!-- 購物車按鈕 -->
 
-  <button class="btn position-fixed start-0 top-50 translate-middle-y me-3" data-bs-toggle="offcanvas"
+  <!-- <button class="btn position-fixed start-0 top-50 translate-middle-y me-3" data-bs-toggle="offcanvas"
     data-bs-target="#cartOffcanvas">
     <i class="bi bi-cart-dash-fill h1"></i>
-  </button>
+  </button> -->
 
   <!-- 左側購物車 -->
   <div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="cartOffcanvas">

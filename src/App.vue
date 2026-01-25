@@ -17,9 +17,11 @@
 /*ertrtre*/
 import { RouterView } from "vue-router";
 import ChatWidget from "@/components/ChatWidget.vue";
+import Cart from "@/views/PointShop/components/Cart.vue";
 </script>
 
 <template>
   <router-view />
+  <Cart />
   <chat-widget />
 </template>

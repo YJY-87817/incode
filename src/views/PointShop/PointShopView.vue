@@ -5,7 +5,6 @@ import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
 import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import Cart from "@/views/PointShop/components/Cart.vue";
 
 const products = ref([]);
 const loading = ref(true);
@@ -149,7 +148,6 @@ onMounted(() => {
       </div>
     </div>
   </div>
-  <Cart />
   <DefaultFooter />
 </template>
 
