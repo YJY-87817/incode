@@ -144,6 +144,19 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
+              <label class="form-label">分類</label>
+              <select v-model="newTopicState.categoryId" class="form-select">
+                <option :value="null" disabled>請選擇分類</option>
+                <option
+                  v-for="cat in newTopicState.categories"
+                  :key="cat.id"
+                  :value="cat.id"
+                >
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">標題</label>
               <input
                 v-model="newTopicState.title"
@@ -175,19 +188,6 @@ const closeNewTopic = () => {
                   }}
                 </small>
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">分類</label>
-              <select v-model="newTopicState.categoryId" class="form-select">
-                <option :value="null" disabled>請選擇分類</option>
-                <option
-                  v-for="cat in newTopicState.categories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </option>
-              </select>
             </div>
             <div class="mb-3">
               <label class="form-label">回覆至（可選）</label>

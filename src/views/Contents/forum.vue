@@ -506,21 +506,12 @@ watch(
             type="button"
           >
             <i class="fas fa-plus"></i>
-            <span class="d-none d-sm-inline">發表</span>新主題
+            <span class="d-none d-sm-inline">發表新主題</span>
           </button>
         </div>
 
         <!-- 新主題編輯區（同頁展開，不換頁） -->
         <div v-if="showNewTopicBox" class="mt-3 p-3 border rounded bg-light">
-          <div class="mb-2">
-            <label class="form-label small text-muted">標題</label>
-            <input
-              v-model="newTopic.title"
-              type="text"
-              class="form-control"
-              placeholder="輸入主題標題"
-            />
-          </div>
           <div class="mb-2">
             <label class="form-label small text-muted">分類</label>
             <select v-model="newTopic.categoryId" class="form-select">
@@ -533,6 +524,16 @@ watch(
                 {{ category.name }}
               </option>
             </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small text-muted">標題</label>
+            <input
+              v-model="newTopic.title"
+              type="text"
+              class="form-control"
+              placeholder="輸入主題標題"
+            />
           </div>
           <div class="mb-3">
             <label class="form-label small text-muted">內容</label>
