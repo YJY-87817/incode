@@ -85,6 +85,22 @@ watch(
   overflow: hidden;
 }
 
+.input-group > input.form-control,
+.input-group > .btn {
+  height: 44px;
+}
+
+.input-group > .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.input-group i {
+  line-height: 1;
+}
+
 input.form-control {
   border: 1px solid #d1d3d4;
   border-right: none;
