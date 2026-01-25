@@ -196,19 +196,19 @@ const toAbsoluteUrl = (url) => {
 
 const parseBodyContent = (body) => {
   const raw = body || "";
-  const imagePattern =
-    /(https?:\/\/[^\s]+|\/?img\/[^\s)]+?\.(?:png|jpe?g|gif|webp|bmp))/gi;
+  // 改進的正則：匹配 http/https URL 或本地 img 路徑
+  // 改進的正則：匹配完整的 http/https 圖片 URL
+  const imagePattern = /https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
   const matches = raw.match(imagePattern) || [];
   const uniqueImages = Array.from(new Set(matches));
 
   const imageUrls = uniqueImages
-    .map((url) => url.replace(/[)\]]+$/, ""))
     .map((url) => url.trim())
     .filter(Boolean)
     .map(toAbsoluteUrl);
 
   const textContent = raw
-    .replace(imagePattern, "")
+    .replace(/https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
     .replace(/\n{2,}/g, "\n")
     .trim();
   const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");

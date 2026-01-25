@@ -20,19 +20,18 @@ const toAbsoluteUrl = (url) => {
 
 const parseBodyContent = (body) => {
   const raw = body || "";
-  const imagePattern =
-    /(https?:\/\/[\S]+|\/?img\/[\S)]+?\.(?:png|jpe?g|gif|webp|bmp))/gi;
+  // 改進的正則：匹配完整的 http/https 圖片 URL
+  const imagePattern = /https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
   const matches = raw.match(imagePattern) || [];
   const uniqueImages = Array.from(new Set(matches));
 
   const imageUrls = uniqueImages
-    .map((url) => url.replace(/[)\]]+$/, ""))
     .map((url) => url.trim())
     .filter(Boolean)
     .map(toAbsoluteUrl);
 
   const textContent = raw
-    .replace(imagePattern, "")
+    .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
     .replace(/\n{2,}/g, "\n")
     .trim();
   const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
@@ -755,6 +754,37 @@ watch(
                               {{ topic.title }}
                             </router-link>
                           </h6>
+                          <div
+                            v-if="topic.imageUrls && topic.imageUrls.length"
+                            class="d-flex flex-wrap gap-2 mt-2 mb-2 topic-image-list"
+                          >
+                            <img
+                              v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
+                              :key="url + idx"
+                              :src="url"
+                              alt="貼文圖片"
+                              class="topic-image-thumb"
+                              loading="lazy"
+                              style="
+                                max-width: 80px;
+                                max-height: 80px;
+                                object-fit: cover;
+                                border-radius: 4px;
+                              "
+                            />
+                            <div
+                              v-if="topic.imageUrls.length > 3"
+                              class="d-flex align-items-center justify-content-center text-muted small"
+                              style="
+                                width: 80px;
+                                height: 80px;
+                                background-color: #f0f0f0;
+                                border-radius: 4px;
+                              "
+                            >
+                              +{{ topic.imageUrls.length - 3 }} 張
+                            </div>
+                          </div>
                           <div class="small text-muted d-flex flex-wrap gap-2">
                             <span class="text-nowrap"
                               >👤 {{ topic.author }}</span
