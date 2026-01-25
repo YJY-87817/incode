@@ -32,6 +32,22 @@
       // [可自訂]：回傳給前端的 URL 路徑。這裡回傳的是網址路徑，不是硬碟路徑
       return $"/img/{fileName}";
     }
+
+    public async Task<List<string>> UploadImagesAsync(IEnumerable<IFormFile> files)
+    {
+      if (files == null) throw new Exception("未提供檔案");
+
+      var urls = new List<string>();
+      foreach (var file in files)
+      {
+        if (file == null || file.Length == 0) continue;
+        var url = await UploadImageAsync(file);
+        urls.Add(url);
+      }
+
+      if (urls.Count == 0) throw new Exception("沒有有效的檔案");
+      return urls;
+    }
   }
 
 }

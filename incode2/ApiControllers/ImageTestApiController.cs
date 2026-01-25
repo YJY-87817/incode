@@ -34,5 +34,20 @@ namespace incode2.ApiControllers
       }
 
     }
+
+    [HttpPost("upload-multiple")]
+    [Route("/api/images")]
+    public async Task<IActionResult> UploadMultiple(List<IFormFile> files)
+    {
+      try
+      {
+        var urls = await _imageService.UploadImagesAsync(files);
+        return Ok(new { urls });
+      }
+      catch (Exception ex)
+      {
+        return BadRequest(new { message = ex.Message });
+      }
+    }
   }
 }
