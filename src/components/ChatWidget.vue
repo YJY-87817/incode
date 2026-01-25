@@ -517,8 +517,6 @@ onUnmounted(() => {
                 </button>
             </div>
         </div>
-
-
       </div>
     </transition>
 
