@@ -29,6 +29,7 @@ import ForumHeader from "@/components/Contents/Forum/ForumHeader.vue";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
 import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
 import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
+import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 
@@ -101,7 +102,7 @@ watch(
   <DefaultNavbar light />
 
   <div class="container mt-5 mb-5">
-    <ForumHeader />
+    <!-- <ForumHeader /> -->
 
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
