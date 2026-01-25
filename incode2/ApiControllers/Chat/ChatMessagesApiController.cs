@@ -39,14 +39,21 @@ namespace incode2.ApiControllers.Chat
         // ==========================================
         private async Task<string> GetSystemPromptAsync()
         {
-            // 讀取 Prompts 資料夾下的 MovieBot.md
-            string promptPath = Path.Combine(_webHostEnvironment.ContentRootPath, "Prompts", "MovieBot.md");
-
-            if (System.IO.File.Exists(promptPath))
+            try
             {
-                return await System.IO.File.ReadAllTextAsync(promptPath);
+                // 讀取 Prompts 資料夾下的 Prompts.md
+                string promptPath = Path.Combine(_webHostEnvironment.ContentRootPath, "Prompts", "Prompts.md");
+
+                if (System.IO.File.Exists(promptPath))
+                {
+                    return await System.IO.File.ReadAllTextAsync(promptPath);
+                }
             }
-            // 預設 Prompt，如果檔案讀取失敗
+            catch (Exception ex)
+            {
+                Console.WriteLine($"讀取 Prompt 失敗: {ex.Message}");
+            }
+            // 預設 Prompt
             return "你是一個專業的電影評論家與推薦系統。如果使用者的問題與電影、影集、演員無關，請禮貌地拒絕回答。";
         }
 
@@ -57,18 +64,15 @@ namespace incode2.ApiControllers.Chat
         [Route("api/ChatMessages/SwitchMode")]
         public async Task<IActionResult> SwitchMode([FromBody] SwitchModeDto request)
         {
-            // 確保 ChatSession Model 有 Ishumanmode 欄位
+            // request.SessionId 必須是 int
             var session = await _context.ChatSession.FindAsync(request.SessionId);
             if (session == null) return NotFound("找不到對話紀錄");
 
-            // true = 真人, false = AI
             session.Ishumanmode = request.Ishumanmode;
-
             await _context.SaveChangesAsync();
 
             string modeName = request.Ishumanmode ? "真人客服" : "AI 助理";
 
-            // 通知前端模式已變更
             if (!string.IsNullOrEmpty(request.ConnectionId))
             {
                 await _hubContext.Clients.Client(request.ConnectionId)
@@ -79,7 +83,7 @@ namespace incode2.ApiControllers.Chat
         }
 
         // ==========================================
-        // 2. [API] 文字對話 (整合電影詢問 & 生圖)
+        // 2. [API] 文字對話 (使用者發送 -> 觸發 AI 或 真人通知)
         // ==========================================
         [HttpPost]
         [Route("api/ChatMessages/SendMessage")]
@@ -91,7 +95,7 @@ namespace incode2.ApiControllers.Chat
             try
             {
                 // A. 處理 Session
-                long currentSessionId = request.SessionId;
+                int currentSessionId = request.SessionId;
                 ChatSession currentSession = null;
 
                 if (currentSessionId <= 0)
@@ -101,10 +105,11 @@ namespace incode2.ApiControllers.Chat
                         Title = request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent,
                         CreatedAt = DateTime.Now,
                         UserId = 1, // TODO: 替換為真實 UserID
-                        Ishumanmode = false // 預設為 AI 模式 (false)
+                        Ishumanmode = false // 預設為 AI 模式
                     };
                     _context.ChatSession.Add(currentSession);
                     await _context.SaveChangesAsync();
+
                     currentSessionId = currentSession.ChatSessionId;
                 }
                 else
@@ -112,10 +117,12 @@ namespace incode2.ApiControllers.Chat
                     currentSession = await _context.ChatSession.FindAsync(currentSessionId);
                 }
 
-                // B. 存檔 - 使用者訊息
+                if (currentSession == null) return NotFound("找不到 Session");
+
+                // B. 存檔 - 使用者訊息 (Role = user)
                 var userMsg = new ChatMessage
                 {
-                    SessionId = (int)currentSessionId,
+                    SessionId = currentSessionId,
                     Role = "user",
                     Body = request.UserContent,
                     CreatedAt = DateTime.Now
@@ -123,42 +130,41 @@ namespace incode2.ApiControllers.Chat
                 _context.ChatMessage.Add(userMsg);
                 await _context.SaveChangesAsync();
 
-                // C. 判斷模式：真人 (Ishumanmode = true) vs AI (Ishumanmode = false)
+                // C. 判斷模式
                 if (currentSession.Ishumanmode == true)
                 {
                     // === 真人模式 ===
-                    // 1. 不呼叫 AI
-                    // 2. 透過 SignalR 通知客服群組 (假設有一個 Group 叫 "SupportAgents")
+                    // 通知客服群組有新訊息
                     await _hubContext.Clients.Group("SupportAgents")
                         .SendAsync("ReceiveSupportRequest", currentSessionId, request.UserContent);
 
-                    // 3. 回傳成功，告知前端等待客服
                     return Ok(new { success = true, sessionId = currentSessionId, mode = "live", message = "已傳送給客服人員" });
                 }
                 else
                 {
                     // === AI 模式 ===
                     string aiResponseText = "";
-                    string messageType = "AI"; // SignalR 類型：文字(AI) 或 圖片(AI_Image)
+                    string messageType = "AI";
 
-                    // 讀取 Prompt 設定檔
                     string systemPrompt = await GetSystemPromptAsync();
 
-                    // D. 判斷是否為「生圖」指令
+                    // D. 判斷生圖
                     if (request.UserContent.StartsWith("生圖") || request.UserContent.Contains("產生圖片"))
                     {
-                        // 呼叫 Service 的生圖方法 (需在 GeminiService 實作)
                         string imageDescription = request.UserContent.Replace("生圖", "").Trim();
-                        // 假設回傳圖片 URL
                         string imageUrl = await _geminiService.GenerateImageAsync(imageDescription);
 
-                        aiResponseText = $"<img src='{imageUrl}' alt='Generated Image' />";
+                        aiResponseText = imageUrl;
+                        if (!aiResponseText.StartsWith("<"))
+                        {
+                            aiResponseText = $"<img src='{imageUrl}' alt='Generated Image' />";
+                        }
+
                         messageType = "AI_Image";
                     }
                     else
                     {
-                        // E. 呼叫 AI 文字服務 (電影問答)
-                        // 組合 Prompt
+                        // E. 文字問答
                         string fullPrompt = $"{systemPrompt}\n\n使用者問題：{request.UserContent}";
                         aiResponseText = await _geminiService.GetGeminiReplyAsync(fullPrompt);
                     }
@@ -166,7 +172,7 @@ namespace incode2.ApiControllers.Chat
                     // F. 存檔 - AI 回覆
                     var aiMsg = new ChatMessage
                     {
-                        SessionId = (int)currentSessionId,
+                        SessionId = currentSessionId,
                         Role = "assistant",
                         Body = aiResponseText,
                         CreatedAt = DateTime.Now
@@ -174,7 +180,7 @@ namespace incode2.ApiControllers.Chat
                     _context.ChatMessage.Add(aiMsg);
                     await _context.SaveChangesAsync();
 
-                    // G. SignalR 推播
+                    // G. SignalR 推播給使用者
                     if (!string.IsNullOrEmpty(request.ConnectionId))
                     {
                         await _hubContext.Clients.Client(request.ConnectionId)
@@ -201,7 +207,7 @@ namespace incode2.ApiControllers.Chat
         }
 
         // ==========================================
-        // 3. [API] 以圖搜圖 (電影辨識) - 保持不變
+        // 3. [API] 以圖搜圖 (電影辨識)
         // ==========================================
         [HttpPost]
         [Route("api/ChatMessages/UploadImage")]
@@ -213,14 +219,12 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // A. 通知前端
                 if (!string.IsNullOrEmpty(request.ConnectionId))
                 {
                     await _hubContext.Clients.Client(request.ConnectionId)
                         .SendAsync("ReceiveMessage", "System", "正在分析圖片中的電影資訊...");
                 }
 
-                // B. 檔案處理
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img/chat");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
@@ -242,11 +246,9 @@ namespace incode2.ApiControllers.Chat
                     byte[] imageBytes = memoryStream.ToArray();
                     string base64Image = Convert.ToBase64String(imageBytes);
 
-                    // C. 呼叫 Gemini Vision API (搜圖)
                     string prompt = "這是一張使用者上傳的圖片。請辨識這是否為電影海報或劇照？如果是，請告訴我電影名稱、年份以及簡短劇情介紹。如果不是電影相關圖片，請描述圖片內容並告知使用者你只能回答電影相關問題。";
                     string aiReply = await _geminiService.GetGeminiImageReplyAsync(base64Image, imageFile.ContentType, prompt);
 
-                    // D. 寫入 UserImage
                     var newImage = new UserImage
                     {
                         UserId = 1,
@@ -258,7 +260,6 @@ namespace incode2.ApiControllers.Chat
                     _context.UserImage.Add(newImage);
                     await _context.SaveChangesAsync();
 
-                    // E. 寫入 ChatMessage
                     if (request.SessionId > 0)
                     {
                         var userMsg = new ChatMessage
@@ -281,7 +282,6 @@ namespace incode2.ApiControllers.Chat
                         await _context.SaveChangesAsync();
                     }
 
-                    // F. SignalR 推播
                     if (!string.IsNullOrEmpty(request.ConnectionId))
                     {
                         await _hubContext.Clients.Client(request.ConnectionId)
@@ -330,13 +330,44 @@ namespace incode2.ApiControllers.Chat
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-    }
 
-    // 這裡的 DTO 也順便更新名稱
-    public class SwitchModeDto
-    {
-        public int SessionId { get; set; }
-        public bool Ishumanmode { get; set; } // 修改這裡
-        public string ConnectionId { get; set; }
+        // ==========================================
+        // 5. [API] ★ 新增: 客服回覆專用 (AdminReply)
+        // ==========================================
+        [HttpPost]
+        [Route("api/ChatMessages/AdminReply")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> AdminReply([FromBody] MessageRequestDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                // 1. 寫入資料庫：身分標記為 assistant (代表客服)
+                var adminMsg = new ChatMessage
+                {
+                    SessionId = request.SessionId,
+                    Role = "assistant", // ★ 關鍵：設為 assistant，前端顯示在左邊(或對應位置)，且不會觸發 AI
+                    Body = request.UserContent, // 這裡的 UserContent 其實是管理員的回覆內容
+                    CreatedAt = DateTime.Now
+                };
+                _context.ChatMessage.Add(adminMsg);
+                await _context.SaveChangesAsync();
+
+                // 2. 推播給前台使用者 (透過 SessionId 群組)
+                // 確保前台 Vue 在連線時有呼叫 connection.invoke("JoinSessionGroup", sessionId)
+                string groupName = request.SessionId.ToString();
+
+                // SendAsync("ReceiveMessage", "Live", 內容) -> "Live" 讓前端知道這是真人
+                await _hubContext.Clients.Group(groupName)
+                    .SendAsync("ReceiveMessage", "Live", request.UserContent);
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"客服回覆失敗: {ex.Message}" });
+            }
+        }
     }
 }
