@@ -1,43 +1,36 @@
-import apiClient from './request'
+import apiClient from '@/api/request'
 
 /**
- * 上傳單張圖片
- * @param {File} file - 圖片檔案物件
- * @returns {Promise<string>} 返回圖片 URL
+ * 上傳圖片（支持單張或多張）
+ * @param {File|FileList|Array} files - 圖片檔案物件、檔案列表或陣列
+ * @returns {Promise<string|Array<string>>} 返回圖片 URL 或 URL 陣列
  */
-export const uploadImage = async (file) => {
+export const uploadImage = async (files) => {
   const formData = new FormData()
-  formData.append('file', file)
+  const isSingleFile = files instanceof File
+
+  // 處理單個 File 或多個檔案
+  if (isSingleFile) {
+    formData.append('files', files)
+  } else {
+    Array.from(files).forEach(file => {
+      formData.append('files', file)
+    })
+  }
 
   try {
-    // 使用 axios 上傳，需要覆蓋 Content-Type
-    const response = await apiClient.post('/image', formData, {
+    const response = await apiClient.post('/images/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
     
-    // 假設後端返回 { url: "/img/xxx.jpg" } 或直接返回 url 字串
-    return typeof response === 'string' ? response : response.url
+    // 單檔案返回字符串，多檔案返回陣列
+    return isSingleFile 
+      ? (Array.isArray(response) ? response[0] : response)
+      : (Array.isArray(response) ? response : [response])
   } catch (error) {
     console.error('圖片上傳失敗:', error)
-    throw error
-  }
-}
-
-/**
- * 上傳多張圖片
- * @param {FileList|Array} files - 圖片檔案列表
- * @returns {Promise<Array<string>>} 返回圖片 URL 陣列
- */
-export const uploadMultipleImages = async (files) => {
-  const uploadPromises = Array.from(files).map(file => uploadImage(file))
-  
-  try {
-    const results = await Promise.all(uploadPromises)
-    return results
-  } catch (error) {
-    console.error('批量上傳失敗:', error)
     throw error
   }
 }
@@ -88,7 +81,6 @@ export const deleteMultipleImages = async (fileNames) => {
 
 export default {
   uploadImage,
-  uploadMultipleImages,
   deleteImage,
   deleteMultipleImages
 }
