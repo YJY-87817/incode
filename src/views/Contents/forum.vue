@@ -93,9 +93,13 @@ const fetchCategories = () => {
 
 // 計算貼文的回應統計（從所有 content 中計算）
 const calculateReplyStats = (postId, allContents) => {
-  // 找出該貼文的所有回文（parent_content_id === postId 且 type === 2）
+  // 找出該貼文的所有回應
+  // 包括：回文(type=2)、留言(type=3)、留言回覆(type=4)
+  // 條件：parentContentId === postId
   const replies = allContents.filter(
-    (c) => c.parentContentId === postId && c.type === 2
+    (c) =>
+      c.parentContentId === postId &&
+      (c.type === 2 || c.type === 3 || c.type === 4)
   );
 
   if (replies.length === 0) {
@@ -106,7 +110,7 @@ const calculateReplyStats = (postId, allContents) => {
     };
   }
 
-  // 按時間排序，取得最新的回文
+  // 按時間排序，取得最新的回應
   const sortedReplies = replies.sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
@@ -119,29 +123,37 @@ const calculateReplyStats = (postId, allContents) => {
   };
 };
 
-// 取得主題列表（ContentApi）- 只顯示貼文類型
+// 取得主題列表（ContentApi）- 只顯示 type=1/2（貼文、回文），留言類型 3/4 僅在詳情頁顯示
 const fetchTopics = async (categoryId = null, page = 1) => {
   forumState.isLoading = true;
 
   try {
-    // 1. 先獲取貼文列表（分頁）
-    const postParams = {
-      page: page,
-      pageSize: forumState.pagination.pageSize,
-      type: 1, // 只顯示貼文類型 (CONTENT_TYPES.POST)
+    // 1. 獲取所有內容（可依分類過濾），用於前端過濾與分頁
+    const allContentParams = {
+      pageSize: 9999,
     };
-    if (categoryId) postParams.categoryId = categoryId;
+    if (categoryId) allContentParams.categoryId = categoryId;
 
-    const postData = await apiClient.get("/ContentApi", { params: postParams });
-    console.log("主題資料:", postData);
+    const allContentData = await apiClient.get("/ContentApi", {
+      params: allContentParams,
+    });
+    const allContents = allContentData.items || [];
 
-    const {
-      items: posts,
-      totalCount,
-      totalPages,
-      page: currentPage,
-      pageSize,
-    } = postData;
+    // 2. 僅保留 type=1(貼文)、type=2(回文)
+    const listContents = allContents
+      .filter(
+        (c) => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY
+      )
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // 3. 前端分頁
+    const pageSize = forumState.pagination.pageSize;
+    const totalCount = listContents.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageItems = listContents.slice(start, end);
 
     forumState.pagination = {
       currentPage,
@@ -150,22 +162,12 @@ const fetchTopics = async (categoryId = null, page = 1) => {
       totalPages,
     };
 
-    // 2. 獲取所有回文（type=2）以計算統計資料
-    const replyParams = {
-      type: 2, // 只獲取回文
-      pageSize: 9999, // 獲取所有回文（或根據實際需求調整）
-    };
-    const replyData = await apiClient.get("/ContentApi", {
-      params: replyParams,
-    });
-    const allReplies = replyData.items || [];
+    console.log("所有內容資料(已過濾 1/2):", pageItems);
 
-    console.log("回文資料:", allReplies);
-
-    // 3. 組合資料並計算統計
-    forumState.topics = posts.map((item) => {
+    // 4. 組合列表顯示資料並計算回應統計（replyCount/lastReply）
+    forumState.topics = pageItems.map((item) => {
       const { textContent, imageUrls } = parseBodyContent(item.body);
-      const replyStats = calculateReplyStats(item.contentId, allReplies);
+      const replyStats = calculateReplyStats(item.contentId, allContents);
 
       return {
         id: item.contentId,
@@ -188,7 +190,7 @@ const fetchTopics = async (categoryId = null, page = 1) => {
         // 其他欄位
         viewCount: item.viewCount ?? 0,
         isPinned: item.isPinned ?? false,
-        isHot: replyStats.replyCount > 10, // 回應超過 10 則視為熱門
+        isHot: replyStats.replyCount > 10,
       };
     });
   } catch (error) {
