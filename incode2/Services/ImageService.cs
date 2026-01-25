@@ -3,7 +3,7 @@
   public class ImageService : IImageService
   {
     // [可自訂]：設定圖片儲存的資料夾名稱，建議放在 wwwroot 之下以便網頁存取
-    private readonly string _storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img");
+    private readonly string _storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/fromApi");
 
     public ImageService()
     {
@@ -37,7 +37,7 @@
         }
 
         // [可自訂]：回傳給前端的 URL 路徑。這裡回傳的是網址路徑，不是硬碟路徑
-        urls.Add($"/img/{fileName}");
+        urls.Add($"/img/fromApi/{fileName}");
       }
 
       if (urls.Count == 0) throw new Exception("沒有有效的檔案");
