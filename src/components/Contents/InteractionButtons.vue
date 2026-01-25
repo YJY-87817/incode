@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import apiClient from "@/api/request";
+import contentInteractionApi from "@/api/contentInteractionApi";
 
 /**
  * Props
@@ -13,124 +13,166 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(["interaction-success", "interaction-error"]);
+
 /**
- * Interaction categories.
- * In a real project these would be fetched from the backend
- * (e.g. /InteractionCategoryApi). For the purpose of the UI
- * we hard‑code the known categories.
+ * Interaction categories with UI details.
  */
 const categories = ref([
-  { id: 1, name: "like" },
-  { id: 3, name: "bookmark" },
-  { id: 4, name: "block" },
-  { id: 5, name: "hide" }, // 隱藏自己的內容
+  { id: 1, name: "like", label: "讚", icon: "fas fa-thumbs-up" },
+  { id: 3, name: "bookmark", label: "收藏", icon: "fas fa-bookmark" },
+  { id: 4, name: "block", label: "檢舉", icon: "fas fa-ban" },
+  { id: 5, name: "hide", label: "隱藏", icon: "fas fa-eye-slash" },
 ]);
 
-/**
- * Returns a Bootstrap button class based on the category name.
- */
-function buttonClass(name) {
-  switch (name) {
-    case "like":
-      return "btn-forum-interaction";
-    case "bookmark":
-      return "btn-forum-interaction";
-    case "block":
-      return "btn-forum-interaction";
-    case "hide":
-      return "btn-forum-interaction";
-    default:
-      return "btn-outline-light";
-  }
-}
+// 追蹤互動狀態
+const interactionStates = ref({
+  1: false,
+  3: false,
+  4: false,
+  5: false,
+});
 
-/**
- * Returns an icon class (Font Awesome) based on the category name.
- */
-function iconClass(name) {
-  switch (name) {
-    case "like":
-      return "fas fa-thumbs-up";
-    case "bookmark":
-      return "fas fa-bookmark";
-    case "block":
-      return "fas fa-ban";
-    case "hide":
-      return "fas fa-eye-slash";
-    default:
-      return "";
-  }
-}
+const isLoading = ref({
+  1: false,
+  3: false,
+  4: false,
+  5: false,
+});
 
 /**
  * Sends the interaction to the backend.
  */
-async function handleClick(categoryId, categoryName) {
+async function handleInteraction(categoryId, categoryName) {
+  if (isLoading.value[categoryId]) return;
+
+  isLoading.value[categoryId] = true;
+
   try {
-    await apiClient.post("/ContentInteractionApi", {
-      category_id: categoryId,
-      content_id: props.contentId,
-      // user_id is taken from the auth token on the server side,
-      // so we don't need to send it from the client.
+    const response = await contentInteractionApi.postInteraction({
+      interactionCategoryId: categoryId,
+      contentId: props.contentId,
     });
-    // Simple UI feedback – you can replace this with a toast or
-    // a more sophisticated state update.
-    alert(`${categoryName} 已送出`);
+
+    if (response.isRemoved) {
+      // 移除互動
+      interactionStates.value[categoryId] = false;
+      emit("interaction-success", {
+        categoryId,
+        categoryName,
+        isRemoved: true,
+        message: "互動已移除",
+      });
+    } else {
+      // 新增或更新互動
+      interactionStates.value[categoryId] = true;
+      emit("interaction-success", {
+        categoryId,
+        categoryName,
+        isRemoved: false,
+        message: `已${categoryName}`,
+      });
+    }
   } catch (error) {
     console.error("互動失敗:", error);
-    alert("操作失敗，請稍後再試");
+    emit("interaction-error", {
+      categoryId,
+      categoryName,
+      error: error.message || "操作失敗，請稍後再試",
+    });
+  } finally {
+    isLoading.value[categoryId] = false;
   }
+}
+
+/**
+ * 取得按鈕樣式類別
+ */
+function getButtonClass(categoryId) {
+  const isActive = interactionStates.value[categoryId];
+  return isActive ? "btn-interaction-active" : "btn-interaction";
 }
 </script>
 
 <template>
-  <div class="interaction-buttons d-inline-flex align-items-center gap-1 ms-2">
+  <div class="interaction-buttons d-inline-flex align-items-center gap-2">
     <button
       v-for="cat in categories"
       :key="cat.id"
-      class="btn btn-sm btn-xs"
-      :class="buttonClass(cat.name)"
-      @click="handleClick(cat.id, cat.name)"
-      :title="cat.name"
+      class="btn btn-sm btn-interaction-button"
+      :class="getButtonClass(cat.id)"
+      @click="handleInteraction(cat.id, cat.name)"
+      :disabled="isLoading[cat.id]"
+      :title="cat.label"
+      type="button"
     >
-      <i :class="iconClass(cat.name)"></i>
+      <i :class="[cat.icon, { 'fa-spin': isLoading[cat.id] }]"></i>
+      <span class="ms-1">{{ cat.label }}</span>
     </button>
   </div>
 </template>
 
 <style scoped>
-/* 自定義互動按鈕樣式 */
-.btn-forum-interaction {
+/* 互動按鈕容器 */
+.interaction-buttons {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* 基礎互動按鈕樣式 */
+.btn-interaction-button {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  height: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+/* 未激活狀態 */
+.btn-interaction {
   background-color: transparent;
   border: 1px solid #86b0bd;
   color: #432f28;
-  transition: all 0.3s ease;
 }
 
-.btn-forum-interaction:hover {
+.btn-interaction:hover:not(:disabled) {
   background-color: #86b0bd;
   border-color: #86b0bd;
   color: #fff0dd;
 }
 
-.interaction-buttons {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
+/* 激活狀態 */
+.btn-interaction-active {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff0dd;
 }
 
-.btn-xs {
-  padding: 0.25rem 0.4rem;
-  font-size: 0.75rem;
-  line-height: 1;
-  height: fit-content;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.btn-interaction-active:hover:not(:disabled) {
+  background-color: #6b96a8;
+  border-color: #6b96a8;
 }
 
-.interaction-buttons .btn {
-  display: flex;
-  align-items: center;
+/* 禁用狀態 */
+.btn-interaction-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 動畫 */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fa-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

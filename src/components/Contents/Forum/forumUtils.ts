@@ -31,7 +31,7 @@ export const getApiBaseUrl = () => {
  * toAbsoluteUrl('/uploads/image.jpg') // 返回 baseUrl + /uploads/image.jpg
  * toAbsoluteUrl('uploads/image.jpg') // 返回 baseUrl/uploads/image.jpg
  */
-export const toAbsoluteUrl = (url) => {
+export const toAbsoluteUrl = (url: string): string => {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
   const baseUrl = getApiBaseUrl();
@@ -56,7 +56,7 @@ export const toAbsoluteUrl = (url) => {
  * parseBodyContent('看這個圖 https://example.com/pic.jpg')
  * // 返回 { textContent: '看這個圖', imageUrls: ['https://...'] }
  */
-export const parseBodyContent = (body) => {
+export const parseBodyContent = (body: string): { textContent: string; imageUrls: string[] } => {
   const raw = body || '';
   
   // 正則：完整的 http/https 圖片 URL
@@ -67,7 +67,7 @@ export const parseBodyContent = (body) => {
   // 去重：保留唯一的圖片URL
   const uniqueImages = Array.from(new Set(matches));
   const imageUrls = uniqueImages
-    .map((url) => url.trim())
+    .map((url: string) => url.trim())
     .filter(Boolean)
     .map(toAbsoluteUrl);
 
@@ -104,7 +104,7 @@ export const parseBodyContent = (body) => {
  * calculateReplyStats(1, contents)
  * // 返回 { replyCount: 5, lastReplyTime: '2024-01-01...', lastReplyUser: 'UserA' }
  */
-export const calculateReplyStats = (postId, allContents) => {
+export const calculateReplyStats = (postId: number, allContents: any[]): { replyCount: number; lastReplyTime: string | null; lastReplyUser: string | null } => {
   // 找出該貼文的所有回應
   // 條件：parentContentId === postId AND (type=2 OR type=3 OR type=4)
   const replies = allContents.filter(
@@ -123,7 +123,7 @@ export const calculateReplyStats = (postId, allContents) => {
 
   // 按時間排序（由新至舊），取得最新的回應
   const sortedReplies = replies.sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   const lastReply = sortedReplies[0];
 
@@ -144,10 +144,10 @@ export const calculateReplyStats = (postId, allContents) => {
  * formatTimeAgo('2024-01-01T10:00:00') // '2 天前'
  * formatTimeAgo(new Date()) // '剛剛'
  */
-export const formatTimeAgo = (date) => {
+export const formatTimeAgo = (date: string | Date): string => {
   const now = new Date();
   const d = new Date(date);
-  const diff = now - d;
+  const diff = now.getTime() - d.getTime();
 
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -169,7 +169,7 @@ export const formatTimeAgo = (date) => {
  * @example
  * formatDate('2024-01-15T14:30:00') // '2024-01-15 14:30'
  */
-export const formatDate = (date) => {
+export const formatDate = (date: string | Date): string => {
   if (!date) return '';
   const d = new Date(date);
   const year = d.getFullYear();
@@ -192,7 +192,7 @@ export const formatDate = (date) => {
  * appendUrls('我的貼文', ['http://example.com/1.jpg'])
  * // 返回 '我的貼文\nhttp://example.com/1.jpg'
  */
-export const appendUrls = (original, urls) => {
+export const appendUrls = (original: string, urls: string | string[]): string => {
   const list = Array.isArray(urls) ? urls : [urls];
   const chunk = list.filter(Boolean).join('\n');
   if (!chunk) return original;
@@ -214,8 +214,8 @@ export const appendUrls = (original, urls) => {
  * calculateDisplayPages(5, 20, 5) 
  * // 返回 [3, 4, 5, 6, 7]
  */
-export const calculateDisplayPages = (currentPage, totalPages, maxDisplay = 5) => {
-  const pages = [];
+export const calculateDisplayPages = (currentPage: number, totalPages: number, maxDisplay: number = 5): number[] => {
+  const pages: number[] = [];
 
   if (totalPages <= 1) return pages;
 

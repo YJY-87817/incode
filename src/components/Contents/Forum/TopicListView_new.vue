@@ -9,6 +9,7 @@
 import { computed } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
+import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
@@ -70,6 +71,22 @@ const threadDisplayPages = computed(() => {
   for (let i = start; i <= end; i++) pages.push(i);
   return pages;
 });
+
+/**
+ * 處理主題互動成功
+ */
+const handleTopicInteractionSuccess = (data) => {
+  console.log("主題互動成功:", data);
+  // 可以在此顯示 toast 或其他反饋
+};
+
+/**
+ * 處理主題互動錯誤
+ */
+const handleTopicInteractionError = (data) => {
+  console.error("主題互動失敗:", data);
+  alert(`互動失敗: ${data.error}`);
+};
 </script>
 
 <template>
@@ -147,6 +164,16 @@ const threadDisplayPages = computed(() => {
                 <i class="fas fa-clock"></i>
                 {{ formatTimeAgo(topic.createdAt) }}
               </p>
+
+              <!-- 互動按鈕 -->
+              <div class="mb-2" @click.stop>
+                <InteractionButtons
+                  :key="`topic-interactions-${topic.id}`"
+                  :contentId="topic.id"
+                  @interaction-success="handleTopicInteractionSuccess"
+                  @interaction-error="handleTopicInteractionError"
+                />
+              </div>
 
               <!-- 內容預覽 -->
               <p class="topic-content-preview text-muted mb-2">
@@ -263,6 +290,16 @@ const threadDisplayPages = computed(() => {
               {{ formatDate(forumStore.threadDetail.createdAt) }}
             </small>
           </div>
+        </div>
+
+        <!-- 互動按鈕 -->
+        <div class="mb-3">
+          <InteractionButtons
+            :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
+            :contentId="forumStore.threadDetail.id"
+            @interaction-success="handleTopicInteractionSuccess"
+            @interaction-error="handleTopicInteractionError"
+          />
         </div>
 
         <!-- 內容 -->

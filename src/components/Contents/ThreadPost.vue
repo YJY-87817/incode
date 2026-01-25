@@ -9,6 +9,15 @@
               <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
             </div>
             <small class="text-muted">{{ post.createdAt }}</small>
+            <!-- 互動按鈕 -->
+            <div class="mt-2">
+              <InteractionButtons
+                :key="`interactions-${post.id}`"
+                :contentId="post.id"
+                @interaction-success="handleInteractionSuccess"
+                @interaction-error="handleInteractionError"
+              />
+            </div>
           </div>
           <button class="btn btn-sm btn-forum-secondary" @click="toggleReply">
             <i class="fas fa-reply me-1"></i>回覆
@@ -93,6 +102,7 @@ import { ref, computed } from "vue";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
+import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 
 const props = defineProps({
   post: {
@@ -208,6 +218,22 @@ async function submitReply() {
 function cancelReply() {
   showReply.value = false;
   replyContent.value = "";
+}
+
+/**
+ * 處理互動成功
+ */
+function handleInteractionSuccess(data) {
+  console.log("互動成功:", data);
+  // 可以在此顯示 toast 或其他反饋
+}
+
+/**
+ * 處理互動錯誤
+ */
+function handleInteractionError(data) {
+  console.error("互動失敗:", data);
+  alert(`互動失敗: ${data.error}`);
 }
 </script>
 
