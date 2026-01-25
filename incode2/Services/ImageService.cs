@@ -48,6 +48,20 @@
       if (urls.Count == 0) throw new Exception("沒有有效的檔案");
       return urls;
     }
+
+    public async Task DeleteImageAsync(string fileNameOrUrl)
+    {
+      if (string.IsNullOrWhiteSpace(fileNameOrUrl)) throw new Exception("檔名無效");
+
+      // 僅保留檔名避免路徑穿越
+      var fileName = Path.GetFileName(fileNameOrUrl);
+      var filePath = Path.Combine(_storagePath, fileName);
+
+      if (!File.Exists(filePath)) throw new FileNotFoundException("檔案不存在", fileName);
+
+      File.Delete(filePath);
+      await Task.CompletedTask;
+    }
   }
 
 }
