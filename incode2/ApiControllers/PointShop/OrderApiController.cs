@@ -25,89 +25,99 @@ namespace incode2.ApiControllers
         // 取得UserId的訂單資料
         // GET: api/OrderApi/order/{UserId}
         [HttpGet("order/{UserId}")]
-        public async Task<ActionResult<IEnumerable<OrderDTO>>> GetOrder(int userId)
+        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int userId)
         {
-            // 1. 使用 ToListAsync 進行非同步查詢
-            var orders = await _context.Orders
-                .Where(e => e.UserId == userId)
-                .Select(e => new OrderDTO
-                {
-                    UserId = e.UserId,
-                    TotalPoint = e.TotalPoint,
-                    Remark = e.Remark,
-                    Status = e.Status,
-                    OrderId = e.OrderId
-                })
-                .ToListAsync();
-
-            // 2. 判斷是否找到資料 (選用：若使用者沒訂單回傳空陣列是合理的，若要嚴格檢查可用以下判斷)
-            if (orders == null)
+            try
             {
-                return NotFound($"找不到會員ID為 {userId} 的訂單資料");
-            }
+                var orders = await _context.Orders
+                    .Where(e => e.UserId == userId)
+                    .Select(e => new OrderDTO
+                    {
+                        UserId = e.UserId,
+                        TotalPoint = e.TotalPoint,
+                        Remark = e.Remark,
+                        OrderDate = e.OrderDate,
+                        Status = e.Status,
+                        OrderId = e.OrderId
+                    })
+                    .ToListAsync();
 
-            return Ok(orders);
+                // 若無訂單回傳空集合（視需求可改為 Failure/NotFound）
+                return ResultDTO<IEnumerable<OrderDTO>>.Success(orders);
+            }
+            catch (Exception ex)
+            {
+                // 統一使用 ResultDTO 回傳錯誤，並給予 500 狀態碼
+                return ResultDTO<IEnumerable<OrderDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+            }
         }
 
 
         // 取得OrderId的訂單資料
         // GET: api/OrderApi/orderdetail/{OrderId}
         [HttpGet("orderdetail/{OrderId}")]
-        public async Task<ActionResult<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
+        public async Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
         {
-            // 1. 執行非同步查詢
-            // 2. 移除 .Include()，因為 .Select() 會自動處理 Join
-            var details = await _context.Orderdetail
-                .Where(e => e.OrderId == orderId)
-                .Select(e => new OrderDetailDTO
-                {
-                    OrderdetailId = e.OrderdetailId,
-                    OrderId = e.OrderId,
-                    ProductId = e.ProductId,
-                    ProductName = e.Product.Name,     // 自動導航至 Product 資料表
-                    ImageName = e.Product.ImageName, // 自動導航至 Product 資料表
-                    Quantity = e.Quantity,
-                    UnitPointAtPurchase = e.UnitPointAtPurchase,
-                    RequiresShipping = e.RequiresShipping
-                })
-                .ToListAsync();
-
-            // 3. 檢查是否有資料
-            if (details == null || !details.Any())
+            try
             {
-                return NotFound($"找不到訂單編號為 {orderId} 的資料明細");
-            }
+                var details = await _context.Orderdetail
+                    .Where(e => e.OrderId == orderId)
+                    .Select(e => new OrderDetailDTO
+                    {
+                        OrderdetailId = e.OrderdetailId,
+                        OrderId = e.OrderId,
+                        ProductId = e.ProductId,
+                        ProductName = e.Product.Name,
+                        ImageName = e.Product.ImageName,
+                        Quantity = e.Quantity,
+                        UnitPointAtPurchase = e.UnitPointAtPurchase,
+                        RequiresShipping = e.RequiresShipping
+                    })
+                    .ToListAsync();
 
-            return Ok(details);
+                if (details == null || !details.Any())
+                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"找不到訂單編號為 {orderId} 的資料明細", 404);
+
+                return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details);
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+            }
         }
 
 
         // 取得ShippedDetailId的訂單資料
         // GET: api/OrderApi/shippeddetail/{OrderdetailId}
         [HttpGet("shippeddetail/{OrderdetailId}")]
-        public async Task<ActionResult<IEnumerable<ShippedDTO>>> GetShippedDetail(int orderDetailId)
+        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int orderDetailId)
         {
-            var results = await _context.ShippedDetail
-        .Where(e => e.OrderdetailId == orderDetailId)
-        .Select(e => new ShippedDTO
-        {
-            ShippedDate = e.ShippedDate,
-            ArrivalDate = e.ArrivalDate,
-            IsCompleted = e.IsCompleted,
-            IsFailed = e.IsFailed,
-            Remark = e.Remark,
-            OrderdetailId = e.OrderdetailId,
-            ProductId = e.Orderdetail.ProductId,
-            ProductName = e.Orderdetail.Product.Name
-        })
-        .ToListAsync();
-
-            if (results == null || !results.Any())
+            try
             {
-                return NotFound($"找不到訂單明細ID為 {orderDetailId} 的出貨資料");
-            }
+                var results = await _context.ShippedDetail
+                    .Where(e => e.OrderdetailId == orderDetailId)
+                    .Select(e => new ShippedDTO
+                    {
+                        ShippedDate = e.ShippedDate,
+                        ArrivalDate = e.ArrivalDate,
+                        IsCompleted = e.IsCompleted,
+                        IsFailed = e.IsFailed,
+                        Remark = e.Remark,
+                        OrderdetailId = e.OrderdetailId,
+                        ProductId = e.Orderdetail.ProductId,
+                        ProductName = e.Orderdetail.Product.Name
+                    })
+                    .ToListAsync();
 
-            return Ok(results);
+                if (results == null || !results.Any())
+                    return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"找不到訂單明細ID為 {orderDetailId} 的出貨資料", 404);
+
+                return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+            }
         }
 
 
