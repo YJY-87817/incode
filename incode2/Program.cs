@@ -1,12 +1,14 @@
+using incode2.Hubs;
 using incode2.Models;
 using incode2.Services;
+using incode2.Services.user;
+using incode2.Services.Notification;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using incode2.Hubs;
-using incode2.Services.Point;
+using incode2.Services.Chat;
 using incode2.Services.Users;
 using incode2.Services.Contents;
-using incode2.Services.Chat;
+using incode2.Services.Point;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,7 +107,10 @@ builder.Services.AddRazorPages();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ISocialService, SocialService>();
+builder.Services.AddScoped<IFollowService, FollowService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IStatusService, StatusService>();
 //tim
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentService, ContentService>();
