@@ -26,9 +26,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("VueApp", policy =>
     {
-        policy.WithOrigins(          
+        policy.WithOrigins(
           "https://localhost:5173",
+          "https://localhost:5174",
           "http://localhost:5173",
+          "http://localhost:5174",
           "http://localhost:8080",
           "http://localhost:3000",
           "http://localhost:7190",

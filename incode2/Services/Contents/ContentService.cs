@@ -1,5 +1,6 @@
 ﻿using incode2.Dtos;
 using incode2.Models;
+using incode2.Partials;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Contents
@@ -36,6 +37,7 @@ namespace incode2.Services.Contents
         ContentId = c.ContentId,
         Title = c.Title,
         Body = c.Body,
+        Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
         Username = c.User.Username,
         CategoryName = c.Category.CategoryName
@@ -64,6 +66,7 @@ namespace incode2.Services.Contents
         ParentContentId = c.ParentContentId,
         Title = c.Title,
         Body = c.Body,
+        Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
         UpdatedAt = (DateTime)c.UpdatedAt,
         Username = c.User.Username,
@@ -73,6 +76,7 @@ namespace incode2.Services.Contents
       .FirstOrDefaultAsync();
     }
 
+    //創立貼文
     public async Task<Content> CreateContent(CreateContentDto dto)
     {
       var content = new Content
@@ -82,6 +86,7 @@ namespace incode2.Services.Contents
         ParentContentId = dto.ParentContentId,
         Title = dto.Title,
         Body = dto.Body,
+        Type = dto.Type,
         CreatedAt = DateTime.Now,
         UpdatedAt = DateTime.Now,
         IsActive = 1
@@ -92,10 +97,17 @@ namespace incode2.Services.Contents
       return content;
     }
 
-    public async Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto)
+    //修改content
+    public async Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId)
     {
       var content = await _context.Content.FindAsync(id);
       if (content == null) return null;
+
+      // 驗證擁有者
+      if (content.UserId != currentUserId)
+      {
+        return null; // 或拋出 Unauthorized
+      }
 
       var history = new ContentHistory
       {
@@ -129,6 +141,31 @@ namespace incode2.Services.Contents
       content.UpdatedAt = DateTime.Now;
       await _context.SaveChangesAsync();
       return true;
+    }
+
+    public async Task<List<ContentDto>> GetCommentsByContentId(int contentId)
+    {
+      return await _context.Content
+      .Include(c => c.User)
+      .Include(c => c.Category)
+      .Where(c => c.ParentContentId == contentId && c.IsActive != 4)
+      .OrderByDescending(c => c.CreatedAt)
+      .Select(c => new ContentDto
+      {
+        ContentId = c.ContentId,
+        ParentContentId = c.ParentContentId,
+        UserId = c.UserId,
+        Username = c.User.Username,
+        CategoryId = c.CategoryId,
+        CategoryName = c.Category != null ? c.Category.CategoryName : null,
+        Title = c.Title,
+        Body = c.Body,
+        Type = c.Type,
+        CreatedAt = (DateTime)c.CreatedAt,
+        UpdatedAt = (DateTime)c.UpdatedAt,
+        Ishidden = c.IsActive == 2 ? true : false
+      })
+      .ToListAsync();
     }
   }
 }

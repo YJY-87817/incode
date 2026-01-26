@@ -1,9 +1,12 @@
 ﻿using incode2.Dtos;
+using incode2.Extensions;
 using incode2.Models;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
 using incode2.Services.Contents;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+
 
 namespace incode2.ApiControllers.Content
 {
@@ -33,9 +36,17 @@ namespace incode2.ApiControllers.Content
       return Ok(content);
     }
 
+    //創立貼文
     [HttpPost]
+    //[Authorize]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
+      //這行可以取得當下登入的user所有資料
+      
+      var userId = User.GetId();
+        //int.Parse(User.Claims.FirstOrDefault().Value);
+      dto.UserId = userId;
+
       if (!ModelState.IsValid) return BadRequest(ModelState);
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
@@ -44,7 +55,11 @@ namespace incode2.ApiControllers.Content
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateContent(int id, [FromBody] UpdateContentDto dto)
     {
-      var updated = await _contentService.UpdateContent(id, dto);
+      //這行可以取得當下登入的user所有資料
+      var currentUserId = User.GetId();
+      //int.Parse(User.Claims.FirstOrDefault().Value);
+
+      var updated = await _contentService.UpdateContent(id, dto, currentUserId);
       if (updated == null) return NotFound(new { message = "找不到此內容" });
       return Ok(updated);
     }
@@ -55,6 +70,18 @@ namespace incode2.ApiControllers.Content
       var success = await _contentService.DeleteContent(id);
       if (!success) return NotFound(new { message = "找不到此內容" });
       return Ok(new { message = "刪除成功" });
+    }
+
+    [HttpGet("{id}/comments")]
+    public async Task<IActionResult> GetCommentsByContentId(int id)
+    {
+      var comments = await _contentService.GetCommentsByContentId(id);
+      return Ok(new
+      {
+        contentId = id,
+        comments = comments,
+        count = comments.Count
+      });
     }
   }
 }
