@@ -5,6 +5,10 @@ using incode2.Services.user;
 using incode2.Services.Notification;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using incode2.Services.Chat;
+using incode2.Services.Users;
+using incode2.Services.Contents;
+using incode2.Services.Point;
 
 var builder = WebApplication.CreateBuilder(args);
 
