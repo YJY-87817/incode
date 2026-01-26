@@ -34,7 +34,7 @@ namespace incode2.Services.Contents
 
     // 取得使用者對特定內容的互動類型
 
-    public async Task<ContentInteractionDto?> GetUserInteraction(int contentId, int userId)
+    public async Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId)
     {
       return await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId && ci.UserId == userId)
@@ -48,14 +48,13 @@ namespace incode2.Services.Contents
           UserId = ci.UserId,
           CreatedAt = ci.CreatedAt ?? DateTime.Now
         })
-        .FirstOrDefaultAsync();
+        .ToListAsync();
     }
 
 
     // 新增或移除互動（Toggle）
     // 如果使用者已經有該互動 -> 刪除（取消）
     // 如果使用者沒有該互動 -> 新增
-    // 如果使用者有其他互動 -> 更新為新的互動類型
 
     public async Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto)
     {
@@ -70,48 +69,45 @@ namespace incode2.Services.Contents
       var categoryExists = await _context.InteractionCategory
         .AnyAsync(ic => ic.InteractionCategoryId == dto.InteractionCategoryId);
       if (!categoryExists)
-        throw new Exception($"互動分類 ID {dto.InteractionCategoryId} 不存在");
+        throw new Exception($"互動類別 ID {dto.InteractionCategoryId} 不存在");
 
-      // 查找現有互動（同一使用者對同一內容）
+      // 查找現有互動（同一使用者對同一內容同一分類）
       var existingInteraction = await _context.ContentInteraction
-        .FirstOrDefaultAsync(ci => ci.ContentId == dto.ContentId && ci.UserId == dto.UserId);
+        .FirstOrDefaultAsync(ci => ci.ContentId == dto.ContentId
+          && ci.UserId == dto.UserId
+          && ci.CategoryId == dto.InteractionCategoryId);
 
       if (existingInteraction != null)
       {
-        // 如果已存在相同的互動類型 -> 刪除（取消）
-        if (existingInteraction.CategoryId == dto.InteractionCategoryId)
-        {
-          _context.ContentInteraction.Remove(existingInteraction);
-          //實際刪除在這行
-          await _context.SaveChangesAsync();
-          
-          // 回傳 null 表示互動已被移除
-          return null;
-        }
-        else
-        {
-          // 如果互動類型不同 -> 更新為新的互動類型
-          existingInteraction.CategoryId = dto.InteractionCategoryId;
-          existingInteraction.CreatedAt = DateTime.Now;
-        }
-      }
-      else
-      {
-        // 新增互動
-        var newInteraction = new ContentInteraction
-        {
-          ContentId = dto.ContentId,
-          UserId = dto.UserId,
-          CategoryId = dto.InteractionCategoryId,
-          CreatedAt = DateTime.Now
-        };
-        _context.ContentInteraction.Add(newInteraction);
+        _context.ContentInteraction.Remove(existingInteraction);
+        await _context.SaveChangesAsync();
+
+        return null;
       }
 
+      var newInteraction = new ContentInteraction
+      {
+        ContentId = dto.ContentId,
+        UserId = dto.UserId,
+        CategoryId = dto.InteractionCategoryId,
+        CreatedAt = DateTime.Now
+      };
+      _context.ContentInteraction.Add(newInteraction);
       await _context.SaveChangesAsync();
 
-      // 回傳更新後的互動
-      return await GetUserInteraction(dto.ContentId, dto.UserId);
+      return await _context.ContentInteraction
+        .Where(ci => ci.ContentInteractionId == newInteraction.ContentInteractionId)
+        .Include(ci => ci.Category)
+        .Select(ci => new ContentInteractionDto
+        {
+          ContentInteractionId = ci.ContentInteractionId,
+          InteractionCategoryId = ci.CategoryId,
+          InteractionCategoryName = ci.Category.Name,
+          ContentId = ci.ContentId,
+          UserId = ci.UserId,
+          CreatedAt = ci.CreatedAt ?? DateTime.Now
+        })
+        .FirstAsync();
     }
 
 
@@ -146,7 +142,7 @@ namespace incode2.Services.Contents
     {
       var stats = await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId)
-        .Include(ci => ci.Category) // 先載入 Category 導覽屬性
+        .Include(ci => ci.Category)
         .GroupBy(ci => ci.Category.Name)
         .Select(g => new
         {
@@ -159,7 +155,7 @@ namespace incode2.Services.Contents
       {
         ContentId = contentId,
         InteractionStats = stats,
-        TotalInteractions = stats.Sum(s => (int)s.GetType().GetProperty("Count").GetValue(s))
+        TotalInteractions = stats.Sum(s => s.Count)
       };
     }
   }

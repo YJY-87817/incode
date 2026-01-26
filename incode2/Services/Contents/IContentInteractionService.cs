@@ -13,7 +13,7 @@ namespace incode2.Services.Contents
     /// <summary>
     /// 取得使用者對特定內容的互動類型
     /// </summary>
-    Task<ContentInteractionDto?> GetUserInteraction(int contentId, int userId);
+    Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId);
 
     /// <summary>
     /// 新增或移除互動（Toggle）
