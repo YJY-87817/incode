@@ -19,6 +19,7 @@
     "bootstrap": "5.1.3",
     "deep-chat": "^2.4.0",
     "lucide-vue-next": "^0.562.0",
+    "marked": "^17.0.1",
     "pinia": "2.0.14",
     "pinia-plugin-persist": "^1.0.0",
     "prismjs": "1.28.0",
