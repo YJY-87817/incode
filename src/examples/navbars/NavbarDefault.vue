@@ -126,21 +126,20 @@ watch(
     ' navbar-dark bg-gradient-dark z-index-3 py-3': props.dark,
   }">
     <div :class="props.transparent || props.light || props.dark
-        ? 'container'
-        : 'container-fluid px-0'
+      ? 'container'
+      : 'container-fluid px-0'
       ">
       <RouterLink class="navbar-brand d-none d-md-block" :class="[
         (props.transparent && textDark.value) || !props.transparent
           ? 'text-dark font-weight-bolder ms-sm-3'
           : 'text-white font-weight-bolder ms-sm-3',
-      ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim"
-        data-placement="bottom">
+      ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
         <i class="fas fa-hat-cowboy-side"></i>
         incode影庫
       </RouterLink>
       <RouterLink class="navbar-brand d-block d-md-none" :class="props.transparent || props.dark
-          ? 'text-white'
-          : 'font-weight-bolder ms-sm-3'
+        ? 'text-white'
+        : 'font-weight-bolder ms-sm-3'
         " to="/" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
         Material Design
       </RouterLink>
@@ -149,6 +148,55 @@ watch(
       </RouterLink>
       <div class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0" id="navigation">
         <ul class="navbar-nav navbar-nav-hover ms-auto">
+          <!-- 討論區 -->
+          <li class="nav-item dropdown dropdown-hover mx-2">
+            <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
+              id="dropdownMenuPages" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
+                dashboard</i>
+              討論區
+              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-2 d-lg-block d-none" />
+              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-1 d-lg-none d-block ms-auto" />
+            </a>
+            <div class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
+              style="overflow: hidden" aria-labelledby="dropdownMenuPages">
+              <div class="row d-none d-lg-block">
+                <div class="col-12 px-4 py-2">
+                  <div class="row">
+                    <div class="position-relative">
+                      <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
+                        <span>討論區</span>
+                      </RouterLink>
+                      <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
+                        <span>預設首頁</span>
+                      </RouterLink>
+                      <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
+                        <span>下載TMDB海報</span>
+                      </RouterLink>
+                      <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
+                        <span>上傳圖測試</span>
+                      </RouterLink>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 響應式討論區 -->
+              <div class="d-lg-none">
+                <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
+                  <span>討論區</span>
+                </RouterLink>
+                <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
+                  <span>預設首頁</span>
+                </RouterLink>
+                <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
+                  <span>下載TMDB海報</span>
+                </RouterLink>
+                <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
+                  <span>上傳圖測試</span>
+                </RouterLink>
+              </div>
+            </div>
+          </li>
           <!-- 任務區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
@@ -205,12 +253,12 @@ watch(
               </div>
             </div>
           </li>
+          <!-- 購物車 -->
+          <i class="bi bi-cart-dash d-flex cursor-pointer align-items-center  "></i>
           <!-- 點數商城區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
               id="dropdownMenuPages" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                dashboard</i>
               點數商城
               <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-2 d-lg-block d-none" />
               <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-1 d-lg-none d-block ms-auto" />
@@ -269,55 +317,6 @@ watch(
                   <span>前往結帳</span>
                 </RouterLink>
 
-              </div>
-            </div>
-          </li>
-          <!-- 討論區 -->
-          <li class="nav-item dropdown dropdown-hover mx-2">
-            <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
-              id="dropdownMenuPages" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                dashboard</i>
-              討論區
-              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-2 d-lg-block d-none" />
-              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-1 d-lg-none d-block ms-auto" />
-            </a>
-            <div class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
-              style="overflow: hidden" aria-labelledby="dropdownMenuPages">
-              <div class="row d-none d-lg-block">
-                <div class="col-12 px-4 py-2">
-                  <div class="row">
-                    <div class="position-relative">
-                      <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
-                        <span>討論區</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
-                        <span>預設首頁</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
-                        <span>下載TMDB海報</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
-                        <span>上傳圖測試</span>
-                      </RouterLink>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- 響應式討論區 -->
-              <div class="d-lg-none">
-                <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
-                  <span>討論區</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
-                  <span>預設首頁</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
-                  <span>下載TMDB海報</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
-                  <span>上傳圖測試</span>
-                </RouterLink>
               </div>
             </div>
           </li>
