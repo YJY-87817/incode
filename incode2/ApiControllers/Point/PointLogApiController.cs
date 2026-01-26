@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using incode2.Models;
 using incode2.DTO;
 using incode2.Dtos;
+using incode2.Extensions;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 namespace incode2.ApiControllers.Point
 {
@@ -59,11 +62,13 @@ namespace incode2.ApiControllers.Point
         //}
 
         // 修改後的 GET：只抓特定使用者的紀錄
-        [HttpGet("user/{userId}")]
-        public async Task<IEnumerable<PointLogDTO>> GetPointLogByUser(int userId)
+        [HttpGet("user/my-logs")]
+        [Authorize]
+        public async Task<IEnumerable<PointLogDTO>> GetPointLogByUser()
         {
+            int UserId = User.GetId(); // 從 JWT 取得使用者 ID
             return await _context.PointLog
-                .Where(pl => pl.UserId == userId) // 關鍵：過濾使用者
+                .Where(pl => pl.UserId == UserId) // 關鍵：過濾使用者
                 .OrderByDescending(pl => pl.CreatedAt) // 讓最新的在上面
                 .Select(pl => new PointLogDTO
                 {
