@@ -25,7 +25,6 @@ import { useForumStore } from "@/stores/forumStore";
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import ForumHeader from "@/components/Contents/Forum/ForumHeader.vue";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
 import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
 import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
