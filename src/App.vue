@@ -25,7 +25,7 @@ const authStore = useAuthStore();
 
 onMounted(() => {
   console.log("App 啟動，檢查登入狀態...");
-  authStore.checkLoginStatus(); //之後接api
+  // authStore.checkLoginStatus(); //之後接api
 });
 
 </script>
