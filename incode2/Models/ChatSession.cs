@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace incode2.Models;
 
@@ -16,6 +17,10 @@ public partial class ChatSession
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    // 對應資料庫的小寫"ishumanmode"
+    [Column("ishumanmode")]
+    public bool Ishumanmode { get; set; }
 
     public virtual ICollection<ChatMessage> ChatMessage { get; set; } = new List<ChatMessage>();
 
