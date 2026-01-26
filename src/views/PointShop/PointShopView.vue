@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
-import FilterPanel from "@/components/PointShop/FilterPanel.vue";
-import ProductGrid from "@/components/PointShop/ProductGrid.vue";
+import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
+import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
+import MaterialPagination from "@/components/MaterialPagination.vue";
+import MaterialPaginationItem from "@/components/MaterialPaginationItem.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
 const products = ref([]);
 const loading = ref(true);
@@ -27,11 +29,11 @@ const fetchProducts = () => {
   getProducts()
     .then((response) => {
       // 成功處理邏輯
-      products.value = response.data;
+      products.value = response.data.data;
 
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
-      response.data.forEach((product) => {
+      response.data.data.forEach((product) => {
         if (product.type) {
           uniqueCategories.add(product.type);
         }
@@ -44,7 +46,7 @@ const fetchProducts = () => {
       }));
 
       // 設定最大價格
-      const maxPrice = Math.max(...response.data.map((p) => p.point || 0));
+      const maxPrice = Math.max(...response.data.data.map((p) => p.point || 0));
       filters.value.maxPrice = maxPrice;
     })
     .catch((error) => {
@@ -106,9 +108,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <DefaultNavbar darkText />
+  <DefaultNavbar light />
 
-  <div class="min-vh-100 pb-5 bg" style="">
+  <div class="min-vh-100 pb-5 " style="">
     <div class="container pt-5 mb-5">
       <div class="col-12 mb-4">
         <div class="card border-0 bg-light shadow-sm">
@@ -127,23 +129,24 @@ onMounted(() => {
         <div class="col-lg-9">
           <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
             @reset-filters="resetFilters" />
-          <div class="d-flex justify-content-center mt-5">
-            <nav aria-label="Page navigation pointshop">
-              <ul class="pagination">
-                <li class="page-item">
-                  <a class="page-link" href="#" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                  </a>
-                </li>
-                <li class="page-item"><a class="page-link" href="#">1</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          </div>
+
+          <section class="py-4">
+            <div class="container">
+              <div class="row justify-space-between py-2">
+                <div class="col-lg-4 mx-auto">
+                  <MaterialPagination>
+                    <MaterialPaginationItem prev class="ms-auto" />
+                    <MaterialPaginationItem label="1" active />
+                    <MaterialPaginationItem label="2" />
+                    <MaterialPaginationItem label="3" />
+                    <MaterialPaginationItem label="4" />
+                    <MaterialPaginationItem label="5" />
+                    <MaterialPaginationItem next />
+                  </MaterialPagination>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -152,9 +155,4 @@ onMounted(() => {
   <DefaultFooter />
 </template>
 
-<style scoped>
-.bg {
-background-color: #bfc6c4;
-background-image: url("data:image/svg+xml,%3Csvg width='84' height='16' viewBox='0 0 84 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M78 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM30 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM10 0h2v16h-2V0zm6 0h4v16h-4V0zM2 0h4v16H2V0zm50 0h2v16h-2V0zM38 0h2v16h-2V0zm28 0h2v16h-2V0zm-8 0h6v16h-6V0zM42 0h6v16h-6V0z' fill='%23e8e2d8' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
-}
-</style>
+<style scoped></style>

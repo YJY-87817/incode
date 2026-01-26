@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import ProductCard from "@/components/PointShop/ProductCard.vue";
+import ProductCard from "@/views/PointShop/components/ProductCard.vue";
 
 const props = defineProps({
   products: {
@@ -31,11 +31,7 @@ const emit = defineEmits(["reset-filters"]);
 
     <template v-else-if="filteredProducts.length > 0">
       <div class="row g-3">
-        <div
-          v-for="item in filteredProducts"
-          :key="item.productId"
-          class="col-12 col-md-6 col-lg-6"
-        >
+        <div v-for="item in filteredProducts" :key="item.productId" class="col-12 col-md-6 col-lg-6">
           <ProductCard :product="item" />
         </div>
       </div>
@@ -45,10 +41,7 @@ const emit = defineEmits(["reset-filters"]);
       <div class="py-5">
         <i class="bi bi-search fs-1 text-muted"></i>
         <p class="mt-3 mb-0 text-muted">沒有符合篩選條件的商品。</p>
-        <button
-          @click="$emit('reset-filters')"
-          class="btn btn-sm btn-link mt-2"
-        >
+        <button @click="$emit('reset-filters')" class="btn btn-sm btn-link mt-2">
           清除篩選條件
         </button>
       </div>

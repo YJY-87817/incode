@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import ShippedDetail from "@/components/PointShop/ShippedDetail.vue";
+import ShippedDetail from "@/views/PointShop/components/ShippedDetail.vue";
 import { getOrderDetails } from "@/views/PointShop/services/PointShopApi";
 
 const props = defineProps({
@@ -83,8 +83,8 @@ const getStatusBadgeClass = (status) => {
                 <div class="products-list">
                   <div v-for="detail in details" :key="detail.orderdetailId" class="product-item">
                     <div class="product-image-wrapper">
-                      <img :src="`https://localhost:7190/img/product/${detail.imageName}`"
-                        class="product-image" :alt="detail.productName" />
+                      <img :src="`https://localhost:7190/img/product/${detail.imageName}`" class="product-image"
+                        :alt="detail.productName" />
                     </div>
                     <div class="product-info">
                       <h6 class="product-name">{{ detail.productName }}</h6>
@@ -416,6 +416,7 @@ const getStatusBadgeClass = (status) => {
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

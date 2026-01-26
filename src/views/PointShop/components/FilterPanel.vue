@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted, ref } from "vue";
+
 const props = defineProps({
   filters: {
     type: Object,
@@ -36,9 +38,6 @@ const handleResetFilters = () => {
   emit("reset-filters");
 };
 
-import { onMounted, ref } from "vue";
-// 如果您有引入 bootstrap JS
-// import { Collapse } from 'bootstrap';
 
 const filterCollapseRef = ref(null);
 const filterHeaderRef = ref(null);

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { getOrdersByUser } from "@/views/PointShop/services/PointShopApi";
-import OrderItem from "@/components/PointShop/OrderItem.vue";
+import OrderItem from "@/views/PointShop/components/OrderItem.vue";
 
 const props = defineProps({
   userId: Number,
@@ -181,6 +181,7 @@ onMounted(async () => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
