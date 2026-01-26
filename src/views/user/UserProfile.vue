@@ -1,0 +1,188 @@
+<script setup>
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
+  import { useUserStore } from "@/stores/user/userStore";
+
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+
+  const userStore = useUserStore();
+  const router = useRouter();
+
+  // 模擬文章資料
+  const items = ref([
+    {
+      id: 1,
+      title: "夏日午後的海岸線",
+      type: "風景",
+      date: "2024-06-01",
+      content: "這是在墾丁拍攝的一組照片，光線非常完美，展現了大海的層次感...",
+      img: "https://cdn.vuetifyjs.com/images/cards/sunshine.jpg",
+    },
+    {
+      id: 2,
+      title: "城市角落的人像攝影",
+      type: "人像",
+      date: "2024-06-01",
+      content: "利用自然光與建築陰影的對比，捕捉模特兒最自然的神情。",
+      img: "https://picsum.photos/id/1011/500/300",
+    },
+    {
+      id: 3,
+      title: "極簡主義建築美學",
+      type: "建築",
+      date: "2024-06-01",
+      content: "探索清水模建築的幾何線條，黑白攝影的表現手法。",
+      img: "https://picsum.photos/id/1025/500/300",
+    },
+    {
+      id: 4,
+      title: "街頭貓咪日記",
+      type: "動物",
+      date: "2024-06-01",
+      content: "紀錄巷弄裡遇見的每一隻浪浪，牠們眼中的世界。",
+      img: "https://picsum.photos/id/1074/500/300",
+    },
+  ]);
+
+  onMounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.add("bg-grey-lighten-5"); // 加上全頁背景色
+    userStore.fetchUserProfile();
+  });
+</script>
+
+<template>
+  <DefaultNavbar transparent />
+  <div
+    style="height: 200px; background: linear-gradient(to right, #344767, #4b5d7e); position: absolute; top: 0; width: 100%; z-index: 0;">
+  </div>
+  <!-- 放圖片
+   <div style="height: 350px; position: relative;">
+    <v-img src="https://picsum.photos/1920/400?blur=4" cover height="100%" class="align-end">
+      <div
+        style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.6));">
+      </div>
+    </v-img>
+  </div> -->
+
+  <v-container class="mt-10 position-relative" style="min-height: 85vh; margin-top: -60px; z-index: 1;">
+
+    <v-card class="rounded-xl pa-6 mb-5" elevation="0" border>
+      <div class="d-flex flex-column flex-md-row align-center align-md-end">
+
+        <div class="mr-md-6 mb-4 mb-md-0" style="margin-top: -10px;">
+          <v-avatar size="140" class="border border-4 border-white elevation-3 bg-white">
+            <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="User Avatar" cover></v-img>
+          </v-avatar>
+        </div>
+        <div class="text-center text-md-left flex-grow-1 mb-4 mb-md-0">
+          <v-row>
+            <h1 class="text-h4 font-weight-bold text-grey-darken-3 mb-1 ml-6">Brooke</h1>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" variant="flat" rounded="pill" class="px-4 text-body-1 font-weight-bold"
+              prepend-icon="mdi-plus">
+              追蹤
+            </v-btn>
+          </v-row>
+          <v-row>
+            <div class="d-flex justify-center justify-md-start gap-4 mt-3 ml-8">
+              <div class="text-center mr-4">
+                <span class="text-h6 font-weight-bold text-grey-darken-3">1,423</span>
+                <span class="text-caption text-grey ml-1">文章</span>
+              </div>
+              <div class="text-center mr-4">
+                <span class="text-h6 font-weight-bold text-grey-darken-3">9</span>
+                <span class="text-caption text-grey ml-1">任務</span>
+              </div>
+              <div class="text-center mr-4">
+                <span class="text-h6 font-weight-bold text-grey-darken-3">168</span>
+                <span class="text-caption text-grey ml-1">關注</span>
+              </div>
+              <div class="text-center">
+                <span class="text-h6 font-weight-bold text-grey-darken-3">1,034</span>
+                <span class="text-caption text-grey ml-1">粉絲</span>
+              </div>
+            </div>
+          </v-row>
+        </div>
+      </div>
+    </v-card>
+
+    <div class="mb-6">
+      <div class="d-flex justify-space-between align-end mb-4 px-2">
+        <div>
+          <h2 class="text-h5 font-weight-bold text-grey-darken-3">Brooke 的討論區</h2>
+          <p class="text-caption text-grey">最新發佈的文章與動態</p>
+        </div>
+        <v-btn variant="text" color="primary" size="small" append-icon="mdi-arrow-right" class="font-weight-bold">
+          查看全部
+        </v-btn>
+      </div>
+
+      <v-row>
+        <v-col v-for="(item, index) in items" :key="item.id" cols="12" sm="6" md="4">
+          <v-card class="h-100 d-flex flex-column rounded-lg" border flat hover elevation="0">
+            <v-img :src="item.img" height="200" cover class="rounded-t-lg align-end"
+              gradient="to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%">
+              <v-card-title class="text-white text-subtitle-1 font-weight-bold px-4 pb-2">
+                {{ item.title }}
+              </v-card-title>
+            </v-img>
+
+            <v-card-item class="pt-3 pb-2 flex-grow-1">
+              <div class="d-flex align-center justify-space-between mb-2">
+                <v-chip size="x-small" color="primary" variant="tonal" class="font-weight-bold">
+                  {{ item.type }}
+                </v-chip>
+                <span class="text-caption text-grey">
+                  <v-icon icon="mdi-calendar-blank" size="small" start class="mr-1"></v-icon>
+                  {{ item.date }}
+                </span>
+              </div>
+
+              <div class="text-body-2 text-medium-emphasis text-truncate-2">
+                {{ item.content }}
+              </div>
+            </v-card-item>
+
+            <v-divider></v-divider>
+
+            <v-card-actions class="px-4 py-3">
+              <v-btn variant="text" color="grey-darken-1" class="px-0 text-capitalize" size="small">
+                閱讀更多
+              </v-btn>
+              <v-spacer></v-spacer>
+              <v-btn icon="mdi-heart-outline" size="small" variant="text" color="grey"></v-btn>
+              <v-btn icon="mdi-bookmark-outline" size="small" variant="text" color="grey"></v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <v-container class="d-flex flex-column align-center mt-8">
+      <v-btn variant="text" color="primary" rounded="pill" class="text-body-2">
+        載入更多文章
+        <v-icon end icon="mdi-chevron-down"></v-icon>
+      </v-btn>
+    </v-container>
+
+  </v-container>
+
+  <DefaultFooter />
+</template>
+
+<style scoped>
+  .gap-4 {
+    gap: 24px;
+  }
+
+  .text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>

@@ -19,13 +19,17 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   actions: {
-    // [重點] 必須保留此函式，因為你的 Vue Template 有呼叫它
+    getAxiosConfig() {
+      if (this.token) {
+        return { headers: { Authorization: `Bearer ${this.token}` } };
+      }
+      return {};
+    },
     clearError(field) {
       if (this.errors[field]) {
         this.errors[field] = "";
       }
     },
-
     resetForm() {
       this.form = { email: "", password: "", confirmPassword: "" };
       this.errors = { email: "", password: "", confirmPassword: "" };
@@ -58,10 +62,9 @@ export const useAuthStore = defineStore("auth", {
       }
 
       try {
-        // 2. 發送 API
-        // 注意：這裡假設您的後端 API 路徑
+       const API_BASE_URL = "https://localhost:7190/api";
         const response = await axios.post(
-          "https://localhost:7190/api/AuthApi/register",
+         `${API_BASE_URL}/UserApi/profile`,
           {
             email: this.form.email,
             password: this.form.password,
@@ -89,7 +92,12 @@ export const useAuthStore = defineStore("auth", {
         this.isLoading = false;
       }
     },
-
+checkLoginStatus() {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        this.token = storedToken;
+        // 可以在這裡順便呼叫 API 確認 Token 是否過期
+      }},
     // --- 登入邏輯 (保留您第一段代碼的精華) ---
     async login() {
       this.isLoading = true;

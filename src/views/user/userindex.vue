@@ -1,243 +1,196 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import axios from "axios";
-import Typed from "typed.js";
-// 引入 Store 以便取得 Token
-import { useAuthStore } from "@/views/user/auth";
-const authStore = useAuthStore();
+  import { onMounted, onUnmounted, ref, shallowRef } from "vue";
+  import { useRouter } from "vue-router";
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+  import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+  import { useAuthStore } from "@/stores/user/auth";
 
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import bg0 from "@/assets/img/bg9.jpg";
-import Information from "@/views/user/Sections/userInformation.vue";
-import Profile from "@/views/user/Sections/userProfile.vue";
-import Posts from "@/views/user/Sections/userPosts.vue";
+  // 引入 Store
+  const authStore = useAuthStore();
+  const router = useRouter();
 
-const router = useRouter();
-const API_BASE_URL = "https://localhost:7190/api";
+  // 狀態控制
+  const dialog = shallowRef(false);
+  const activeTab = ref(null); // 控制下方 Tab
 
-const goToBasic = () => {
-  router.push("/login");
-};
-const goToindex = () => {
-  router.push("/");
-};
+  // 表單資料
+  const name = ref("暱稱name");
+  const email = ref("email@example.com");
+  const formValid = ref(false);
 
-const isLoading = ref(false);
-// 計算關注人數
-const followingCount = computed(() =>
-  followingList.value ? followingList.value.length : 0
-);
-
-const getAxiosConfig = () => {
-  const config = {
-    withCredentials: true, // 允許跨域請求攜帶 Cookie (Session)
-    headers: {
-      "Content-Type": "application/json",
+  // 驗證規則
+  const rules = {
+    required: (value) => !!value || "此欄位必填",
+    email: (value) => {
+      const pattern = /^[^@]+@[^@]+\.[^@]+$/;
+      return pattern.test(value) || "Email 格式不正確";
     },
   };
-  return config; //彈性方便改回 JWT 模式
-};
 
-// 關注清單
-const followingList = ref([]);
-const fetchFollowingList = async () => {
-  try {
-    isLoading.value = true;
-    const response = await axios.get(
-      `${API_BASE_URL}/Social/following`,
-      getAxiosConfig()
-    );
+  // 模擬通知資料
+  const notifications = ref([
+    { id: 1, title: "系統", subtitle: "您的密碼已成功修改", time: "剛剛", icon: "mdi-cog", color: "grey-darken-1" },
+    { id: 2, title: "任務", subtitle: "恭喜完成新手任務！點數已發放。", time: "1小時前", icon: "mdi-check-circle", color: "success" },
+    { id: 3, title: "好友", subtitle: "小明 回覆了您的文章", time: "昨天", icon: "mdi-account-multiple", color: "primary" },
+  ]);
 
-    // 檢查 1: 如果回傳的是字串且包含 HTML 標籤，代表被導向去登入頁面了
-    if (
-      typeof response.data === "string" &&
-      response.data.includes("<!DOCTYPE")
-    ) {
-      alert("請重新登入");
-      router.push("/login");
-      return;
-    }
+  // Hooks
+  onMounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.add("bg-grey-lighten-5"); // 全局背景色
+  });
 
-    const data = response.data;
-    if (Array.isArray(data)) {
-      followingList.value = data;
-    } else if (data && Array.isArray(data.result)) {
-      followingList.value = data.result;
-    } else {
-      followingList.value = [];
-    }
-  } catch (error) {
-    console.error("取得關注清單失敗:", error);
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403)
-    ) {
-      alert("請先登入");
-      router.push("/login");
-    }
-  } finally {
-    isLoading.value = false;
-  }
-};
-// 取消關注功能
-const unfollow = async (targetId) => {
-  if (!confirm("確定要取消關注嗎？")) return;
-
-  try {
-    await axios.post(
-      `${API_BASE_URL}/Social/unfollow/${targetId}`,
-      {}, // POST 需要有 body，即使是空的
-      getAxiosConfig()
-    );
-
-    // 成功後，從前端清單移除該使用者，避免重新整理頁面
-    followingList.value = followingList.value.filter((u) => u.id !== targetId);
-    alert("已取消關注");
-  } catch (error) {
-    console.error("取消關注失敗", error);
-    alert("操作失敗，請稍後再試");
-  }
-};
-
-//hooks
-onMounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.add("about-us");
-  body.classList.add("bg-gray-200");
-
-  if (document.getElementById("typed")) {
-    new Typed("#typed", {
-      stringsElement: "#typed-strings",
-      typeSpeed: 90,
-      backSpeed: 90,
-      backDelay: 200,
-      startDelay: 500,
-      loop: true,
-    });
-  }
-  fetchFollowingList(); //呼叫後端 API
-});
-
-onUnmounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.remove("about-us");
-  body.classList.remove("bg-gray-200");
-});
+  onUnmounted(() => {
+    const body = document.getElementsByTagName("body")[0];
+    body.classList.remove("bg-grey-lighten-5");
+  });
 </script>
+
 <template>
-  <DefaultNavbar
-    :action="{
-      route: 'javascript:;',
-      label: 'Buy Now',
-      color: 'btn-white',
-    }"
-    transparent
-  />
-  <header class="bg-gradient-dark">
-    <div
-      class="page-header min-vh-75"
-      :style="{ backgroundImage: `url(${bg0})` }"
-    >
-      <span class="mask bg-gradient-dark opacity-6"></span>
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-lg-8 text-center mx-auto my-auto">
-            <h1 class="text-white">
-              welcome to incode<span class="text-white" id="typed"></span>
-            </h1>
-            <div id="typed-strings">
-              <h1>!!!</h1>
-              <h1>~~~</h1>
-            </div>
-            <p class="lead mb-4 text-white opacity-8">會員中心</p>
-            <button
-              type="submit"
-              class="btn bg-white text-dark"
-              @click="
-                authStore.login();
-                goToBasic();
-              "
-            >
-              <span class="text-success text-gradient font-weight-bold">
-                登入
-              </span>
-            </button>
-            <button
-              type="submit"
-              class="btn bg-white text-dark"
-              @click="
-                authStore.logout();
-                goToindex();
-              "
-            >
-              <span class="text-success text-gradient font-weight-bold">
-                登出
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+  <DefaultNavbar transparent />
+
+  <div
+    style="height: 200px; background: linear-gradient(to right, #344767, #4b5d7e); position: absolute; top: 0; width: 100%; z-index: 0;">
+  </div>
+
+  <v-container class="mt-10 position-relative" style="min-height: 85vh; z-index: 1;">
+
+    <div class="text-center mb-5 pt-16">
+      <h1 class="text-h3 font-weight-bold text-grey-darken-4">會員中心</h1>
+      <p class="text-subtitle-1 text-grey-darken-1">Welcome back, User</p>
     </div>
-  </header>
-  <Profile />
 
-  <div class="card card-body shadow-xl mx-3 mx-md-4 mt-n6">
-    <Information />
+    <v-row>
+      <v-col cols="12" md="8">
+        <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">我的資料</h3>
 
-    <div class="row mt-4" v-if="followingList && followingList.length > 0">
-      <div class="col-md-8 col-12 mx-auto">
-        <h5>關注列表詳情：({{ followingCount }}人)</h5>
-        <ul class="list-group">
-          <li
-            v-for="user in followingList"
-            :key="user.userId"
-            class="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <div class="d-flex align-items-center">
-              <!-- 顯示頭像 (如果有) -->
-              <img
-                v-if="user.imageUrl"
-                :src="user.imageUrl"
-                class="avatar avatar-sm me-3 border-radius-lg"
-                alt="user"
-              />
-              <div class="d-flex flex-column">
-                <!-- 修正：使用 username 對應 DTO -->
-                <h6 class="mb-1 text-dark text-sm">
-                  {{ user.username || "未命名使用者" }}
-                </h6>
-                <span class="text-xs">{{ user.Email }}</span>
+        <v-card class="rounded-xl overflow-visible pa-6" elevation="0" border>
+          <div class="d-flex align-center mb-2">
+            <div style="position: relative;" class="mb-4 mr-4">
+              <v-avatar size="120" class="border border-4 border-white elevation-2">
+                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="User Avatar" cover></v-img>
+                <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
+                  style="position: absolute; bottom: 0; right: 0;"></v-btn>
+              </v-avatar>
+            </div>
+            <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">暱稱 Name</h2>
+          </div>
+
+          <v-divider class="mb-5"></v-divider>
+
+          <v-row class="text-body-2">
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
+              <span class="text-grey-darken-1">Email：</span>
+              <span class="font-weight-medium ml-1">email@example.com</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
+              <span class="text-grey-darken-1">手機：</span>
+              <span class="font-weight-medium ml-1">0912-345-678</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
+              <span class="text-grey-darken-1">地址：</span>
+              <span class="font-weight-medium ml-1">台北市信義區</span>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex align-center py-2">
+              <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
+              <span class="text-grey-darken-1">生日：</span>
+              <span class="font-weight-medium ml-1">1995-01-01</span>
+            </v-col>
+          </v-row>
+          <div class="mt-4 d-flex justify-content-end">
+            <v-dialog v-model="dialog" max-width="600">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" prepend-icon="mdi-pencil-outline" variant="tonal" color="primary" rounded="pill"
+                  size="small">
+                  編輯資料
+                </v-btn>
+              </template>
+
+              <v-card rounded="xl" class="pa-6">
+                <div class="d-flex justify-space-between align-center mb-6">
+                  <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
+                  <v-btn icon="mdi-close" variant="text" @click="dialog = false"></v-btn>
+                </div>
+
+                <v-form v-model="formValid">
+                  <v-row dense>
+                    <v-col cols="12" sm="6">
+                      <v-text-field v-model="name" label="暱稱" variant="outlined" density="comfortable"
+                        :rules="[rules.required]"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-text-field v-model="email" label="Email" variant="outlined" density="comfortable"
+                        :rules="[rules.required, rules.email]"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-text-field label="手機" variant="outlined" density="comfortable"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="6"><!--改生日 -->
+                      <v-select label="年齡" :items="['0-17', '18-29', '30-54', '54+']" variant="outlined"
+                        density="comfortable"></v-select>
+                    </v-col>
+                    <v-col cols="12">
+                      <v-text-field label="地址" variant="outlined" density="comfortable"></v-text-field>
+                    </v-col>
+                  </v-row>
+                </v-form>
+
+                <v-card-actions class="pa-0 mt-4">
+                  <v-spacer></v-spacer>
+                  <v-btn variant="text" color="grey" @click="dialog = false">取消</v-btn>
+                  <v-btn color="primary" variant="flat" :disabled="!formValid" @click="dialog = false">保存變更</v-btn>
+                </v-card-actions>
+
+              </v-card>
+            </v-dialog>
+          </div>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="4">
+        <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">最新通知</h3>
+
+        <div class="d-flex flex-column gap-3">
+          <v-card v-for="item in notifications" :key="item.id" class="rounded-lg mb-3" border flat hover>
+            <div class="d-flex align-start pa-4">
+              <v-avatar :color="item.color" variant="tonal" class="mr-3" rounded>
+                <v-icon :icon="item.icon"></v-icon>
+              </v-avatar>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-space-between align-center mb-1">
+                  <span class="text-subtitle-2 font-weight-bold">{{ item.title }}</span>
+                  <span class="text-caption text-grey">{{ item.time }}</span>
+                </div>
+                <div class="text-body-2 text-grey-darken-1">{{ item.subtitle }}</div>
               </div>
             </div>
-            <button
-              class="btn btn-sm btn-outline-danger mb-0"
-              @click="unfollow(user.userId)"
-            >
-              取消關注
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
+          </v-card>
+        </div>
+      </v-col>
+    </v-row>
+    <v-row class="mt-5">
+      <v-col cols="12">
+        <v-card class="rounded-xl overflow-hidden" border flat>
 
-    <!-- 讀取中 -->
-    <div class="row mt-4" v-else-if="isLoading">
-      <div class="col-12 text-center">
-        <p>載入中...</p>
-      </div>
-    </div>
-    <div class="row mt-4" v-else-if="!isLoading">
-      <div class="col-12 text-center text-muted">
-        <p>目前沒有關注任何人<!-- 無資料時的顯示 --></p>
-      </div>
-    </div>
-  </div>
-  <div class="card card-body blur shadow-blur mx-3 mx-md-4 mt-n6 mb-4">
-    <Posts />
+          <nav class="mt-5 text-center" style="font-size: 24px">
+            <router-link :to="{ name: 'UserMission' }">任務</router-link> |
+            <router-link :to="{ name: 'UserCollections' }">討論區</router-link>
+          </nav>
 
-    <!-- <AboutTeam /> -->
-  </div>
+          <div class="nested-content">
+            <router-view></router-view>
+          </div>
+
+        </v-card>
+      </v-col>
+    </v-row>
+
+
+
+  </v-container>
+
   <DefaultFooter />
 </template>
