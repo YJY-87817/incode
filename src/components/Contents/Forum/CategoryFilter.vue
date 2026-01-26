@@ -7,7 +7,6 @@
 
 <script setup>
 import { useForumStore } from "@/stores/forumStore";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 </script>
@@ -91,10 +90,6 @@ const forumStore = useForumStore();
         >
           <p>目前沒有分類</p>
         </div>
-      </div>
-
-      <div class="w-100">
-        <ForumSearchBar />
       </div>
     </div>
   </div>

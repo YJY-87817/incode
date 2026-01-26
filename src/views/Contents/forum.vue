@@ -107,7 +107,10 @@ watch(
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
       <div class="col-lg-9 order-2 order-lg-1">
+        <!-- 分類欄 -->
         <CategoryFilter />
+        <!-- 搜尋欄 -->
+        <ForumSearchBar />
 
         <NewTopicForm
           v-if="forumStore.showNewTopicBox"

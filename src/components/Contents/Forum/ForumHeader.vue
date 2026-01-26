@@ -7,7 +7,6 @@
 
 <script setup>
 import { useForumStore } from "@/stores/forumStore";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 </script>
@@ -22,11 +21,6 @@ const forumStore = useForumStore();
         <div>
           <h2 class="mb-2 fs-3 fs-md-2">💬 技術論壇</h2>
           <p class="text-muted mb-0 small">分享知識、交流技術、共同成長</p>
-        </div>
-
-        <!-- 搜尋欄 -->
-        <div class="forum-search flex-grow-1 w-100 w-md-auto">
-          <ForumSearchBar />
         </div>
       </div>
     </div>

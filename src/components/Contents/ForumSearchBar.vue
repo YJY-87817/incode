@@ -76,7 +76,7 @@ watch(
 
 <style scoped>
 .search-bar {
-  max-width: 600px;
+  width: 100%;
 }
 
 .input-group {
