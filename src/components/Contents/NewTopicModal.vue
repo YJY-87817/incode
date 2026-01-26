@@ -69,7 +69,21 @@ const fetchTopics = (categoryId = null) => {
 
 onMounted(() => {
   fetchCategories();
+  // 同步 store 中選中的分類
+  if (forumStore.selectedCategory) {
+    newTopicState.categoryId = forumStore.selectedCategory;
+  }
 });
+
+// 監聽 store 的 selectedCategory 變化
+watch(
+  () => forumStore.selectedCategory,
+  (newCategory) => {
+    if (newCategory) {
+      newTopicState.categoryId = newCategory;
+    }
+  }
+);
 
 watch(
   () => newTopicState.categoryId,

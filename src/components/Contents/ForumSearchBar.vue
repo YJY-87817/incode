@@ -9,7 +9,7 @@
     <div class="input-group">
       <input
         type="text"
-        class="form-control"
+        class="p-1 form-control"
         placeholder="搜尋主題標題或內容…"
         v-model="searchInput"
         @input="onInput"

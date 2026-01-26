@@ -137,6 +137,8 @@ export const useForumStore = defineStore('forum', {
     
     selectCategory(categoryId) {
       this.selectedCategory = this.selectedCategory === categoryId ? null : categoryId
+      // 同步更新新主題的分類
+      this.newTopic.categoryId = this.selectedCategory
       this.pagination.currentPage = 1
       this.fetchTopics()
     },
