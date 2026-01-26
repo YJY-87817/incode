@@ -129,8 +129,12 @@
           (props.transparent && textDark.value) || !props.transparent
             ? 'text-dark font-weight-bolder ms-sm-3'
             : 'text-white font-weight-bolder ms-sm-3',
-        ]" :to="{ name: 'presentation' }" rel="tooltip" title="Designed and Coded by Creative Tim"
-        data-placement="bottom">
+        ]"
+        :to="{ name: 'firstview' }"
+        rel="tooltip"
+        title="Designed and Coded by Creative Tim"
+        data-placement="bottom"
+      >
         <i class="fas fa-hat-cowboy-side"></i>
         incode影庫
       </RouterLink>
@@ -264,14 +268,23 @@
                       <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
                         <span>討論區</span>
                       </RouterLink>
-                      <RouterLink :to="{ name: 'test' }" class="dropdown-item border-radius-md">
-                        <span>test</span>
+                      <RouterLink
+                        :to="{ name: 'presentation' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>預設首頁</span>
                       </RouterLink>
-                      <RouterLink :to="{ name: 'contactus' }" class="dropdown-item border-radius-md">
-                        <span>Contact Us</span>
+                      <RouterLink
+                        :to="{ name: 'tmdb' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>下載TMDB海報</span>
                       </RouterLink>
-                      <RouterLink :to="{ name: 'author' }" class="dropdown-item border-radius-md">
-                        <span>Author</span>
+                      <RouterLink
+                        :to="{ name: 'imagetest' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>上傳圖測試</span>
                       </RouterLink>
                     </div>
                   </div>
@@ -282,14 +295,23 @@
                 <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
                   <span>討論區</span>
                 </RouterLink>
-                <RouterLink :to="{ name: 'test' }" class="dropdown-item border-radius-md">
-                  <span>test</span>
+                <RouterLink
+                  :to="{ name: 'presentation' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>預設首頁</span>
                 </RouterLink>
-                <RouterLink :to="{ name: 'contactus' }" class="dropdown-item border-radius-md">
-                  <span>Contact Us</span>
+                <RouterLink
+                  :to="{ name: 'tmdb' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>下載TMDB海報</span>
                 </RouterLink>
-                <RouterLink :to="{ name: 'author' }" class="dropdown-item border-radius-md">
-                  <span>Author</span>
+                <RouterLink
+                  :to="{ name: 'imagetest' }"
+                  class="dropdown-item border-radius-md"
+                >
+                  <span>上傳圖測試</span>
                 </RouterLink>
               </div>
             </div>

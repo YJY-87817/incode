@@ -36,41 +36,57 @@ const contentInteractionApi = {
    *
    * Request body (JSON):
    * {
-   *   "category_id": number,   // ID from interaction_category
-   *   "content_id": number,    // ID of the content (post)
+   *   "interactionCategoryId": number,   // ID from interaction_category
+   *   "contentId": number,    // ID of the content (post)
    *   // user_id is inferred from the auth token on the server side
-   *   // optional note field can be added if needed
    * }
    *
    * @param {Object} payload
-   * @param {number} payload.category_id
-   * @param {number} payload.content_id
-   * @returns {Promise<Object>} The created content_interaction record
+   * @param {number} payload.interactionCategoryId
+   * @param {number} payload.contentId
+   * @returns {Promise<Object>} The created content_interaction record or null if removed
    */
-  postInteraction({ category_id, content_id }) {
+  postInteraction({ interactionCategoryId, contentId }) {
     return apiClient.post("/ContentInteractionApi", {
-      category_id,
-      content_id,
+      interactionCategoryId,
+      contentId,
     });
   },
 
   /**
    * Convenience helpers for common actions.
    * These simply call postInteraction with the appropriate category ID.
-   * Adjust the IDs to match your database seed data.
+   * Category IDs: 1=Like, 3=Bookmark, 4=Block, 5=Hide
    */
   like(contentId) {
-    return this.postInteraction({ category_id: 1, content_id: contentId });
+    return this.postInteraction({ interactionCategoryId: 1, contentId });
   },
   
   bookmark(contentId) {
-    return this.postInteraction({ category_id: 3, content_id: contentId });
+    return this.postInteraction({ interactionCategoryId: 3, contentId });
   },
   block(contentId) {
-    return this.postInteraction({ category_id: 4, content_id: contentId });
+    return this.postInteraction({ interactionCategoryId: 4, contentId });
   },
   hide(contentId) {
-    return this.postInteraction({ category_id: 5, content_id: contentId });
+    return this.postInteraction({ interactionCategoryId: 5, contentId });
+  },
+
+  /**
+   * Fetch comments for a specific content item.
+   *
+   * GET /ContentApi/{contentId}/comments
+   *
+   * @param {number} contentId - The ID of the content to fetch comments for
+   * @returns {Promise<Object>} Object containing:
+   *   {
+   *     contentId: number,
+   *     comments: Array,
+   *     count: number
+   *   }
+   */
+  getComments(contentId) {
+    return apiClient.get(`/ContentApi/${contentId}/comments`);
   },
 };
 

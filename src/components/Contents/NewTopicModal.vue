@@ -1,18 +1,12 @@
 <script setup>
-import { reactive, onMounted, watch } from "vue";
-import axios from "axios";
+import { reactive, onMounted, watch, ref } from "vue";
 import { useForumStore } from "@/stores/forumStore";
-
-const apiBaseUrl = "https://localhost:7190/api";
-const apiClient = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import apiClient from "@/api/request.js";
+import { uploadImage } from "@/api/imageapi.js";
 
 const forumStore = useForumStore();
+
+const isUploadingImages = ref(false);
 
 const newTopicState = reactive({
   title: "",
@@ -23,11 +17,34 @@ const newTopicState = reactive({
   topics: [],
 });
 
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
+
+const handleImageUpload = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    newTopicState.body = appendUrls(newTopicState.body, uploaded);
+  } catch (error) {
+    console.error("圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
+
 const fetchCategories = () => {
   apiClient
     .get("/CategoryApi")
-    .then((response) => {
-      newTopicState.categories = response.data;
+    .then((data) => {
+      newTopicState.categories = data;
     })
     .catch((error) => {
       console.error("載入分類失敗:", error);
@@ -39,8 +56,8 @@ const fetchTopics = (categoryId = null) => {
   if (categoryId) params.categoryId = categoryId;
   apiClient
     .get("/ContentApi", { params })
-    .then((response) => {
-      newTopicState.topics = response.data.items.map((item) => ({
+    .then((data) => {
+      newTopicState.topics = data.items.map((item) => ({
         id: item.contentId,
         title: item.title,
       }));
@@ -52,7 +69,21 @@ const fetchTopics = (categoryId = null) => {
 
 onMounted(() => {
   fetchCategories();
+  // 同步 store 中選中的分類
+  if (forumStore.selectedCategory) {
+    newTopicState.categoryId = forumStore.selectedCategory;
+  }
 });
+
+// 監聽 store 的 selectedCategory 變化
+watch(
+  () => forumStore.selectedCategory,
+  (newCategory) => {
+    if (newCategory) {
+      newTopicState.categoryId = newCategory;
+    }
+  }
+);
 
 watch(
   () => newTopicState.categoryId,
@@ -127,6 +158,19 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
+              <label class="form-label">分類</label>
+              <select v-model="newTopicState.categoryId" class="form-select">
+                <option :value="null" disabled>請選擇分類</option>
+                <option
+                  v-for="cat in newTopicState.categories"
+                  :key="cat.id"
+                  :value="cat.id"
+                >
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">標題</label>
               <input
                 v-model="newTopicState.title"
@@ -141,19 +185,23 @@ const closeNewTopic = () => {
                 class="form-control"
                 rows="4"
               ></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">分類</label>
-              <select v-model="newTopicState.categoryId" class="form-select">
-                <option :value="null" disabled>請選擇分類</option>
-                <option
-                  v-for="cat in newTopicState.categories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </option>
-              </select>
+              <div
+                class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="form-control form-control-sm"
+                  @change="handleImageUpload"
+                  :disabled="isUploadingImages"
+                />
+                <small class="text-muted">
+                  上傳後會自動把圖片網址加入內容。{{
+                    isUploadingImages ? "上傳中..." : ""
+                  }}
+                </small>
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label">回覆至（可選）</label>
@@ -174,10 +222,10 @@ const closeNewTopic = () => {
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
-            <button class="btn btn-secondary me-2" @click="closeNewTopic">
+            <button class="btn btn-forum-secondary me-2" @click="closeNewTopic">
               取消
             </button>
-            <button type="submit" class="btn btn-primary">發表</button>
+            <button type="submit" class="btn btn-forum-primary">發表</button>
           </div>
         </form>
       </div>
@@ -186,10 +234,37 @@ const closeNewTopic = () => {
 </template>
 
 <style scoped>
+/* 自定義按鈕樣式 */
+.btn-forum-primary {
+  background-color: #432f28;
+  border-color: #432f28;
+  color: #fff0dd;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-primary:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
+.btn-forum-secondary {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #432f28;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-secondary:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #432f28;
+}
+
 .custom-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(67, 47, 40, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,12 +272,32 @@ const closeNewTopic = () => {
 }
 
 .modal-dialog {
-  background: white;
+  background: #fff0dd;
   border-radius: 0.3rem;
   max-width: 500px;
   width: 100%;
   padding: 1rem;
   position: relative;
   z-index: 2100;
+  border: 1px solid #d1d3d4;
+}
+
+.modal-header {
+  border-bottom-color: #d1d3d4;
+}
+
+.modal-footer {
+  border-top-color: #d1d3d4;
+}
+
+.form-control,
+.form-select {
+  border-color: #d1d3d4;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #86b0bd;
+  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
 }
 </style>

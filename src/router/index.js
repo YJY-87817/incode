@@ -3,6 +3,10 @@ import PresentationView from "../views/Presentation/PresentationView.vue";
 import AboutView from "../views/LandingPages/AboutUs/AboutView.vue";
 import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
+
+// tim 以下
+import FirstView from "@/views/FirstView.vue"
+// tim 以上
 // owen
 import Register from "@/views/user/Register.vue";
 import Login from "@/views/user/Login.vue";
@@ -42,11 +46,18 @@ import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      // 首頁改成這個_tim
       path: "/",
+      name: "firstview",
+      component: FirstView,
+    },
+    {
+      path: "/presentation",
       name: "presentation",
       component: PresentationView,
     },
@@ -166,7 +177,12 @@ const router = createRouter({
     {
       path: "/forum",
       name: "forum",
-      component: () => import("@/views/forum/forum.vue"),
+      component: () => import("@/views/Contents/forum.vue"),
+    },
+    {
+      path: "/forum/new-topic",
+      name: "new-topic",
+      component: () => import("@/views/Contents/NewTopicPage.vue"),
     },
     {
       path: "/test",
@@ -175,7 +191,12 @@ const router = createRouter({
     },
     // 以上是tim的路由
 
-    // owen    
+    // owen
+    {
+      path: "/user",
+      name: "user",
+      component: () => import("@/views/user/userindex.vue"),
+    },
     {
       path: "/register",
       name: "Register",
