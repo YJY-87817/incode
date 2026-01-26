@@ -1,131 +1,145 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
 import axios from "axios";
 
-export const useAuthStore = defineStore("auth", {
-  state: () => ({
-    user: null,
-    // 整合表單欄位，涵蓋登入與註冊所需
-    form: {
+export const useAuthStore = defineStore("auth", () => {
+  // --- State (資料狀態) ---
+  const user = ref(null);
+  const isAuthenticated = ref(false);
+  const isLoading = ref(false);
+
+  // 整合表單資料 (讓 Login/Register 頁面共用)
+  const form = ref({
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    birthday: "",
+    avatarUrl: ""
+  });
+  const errors = ref({});
+
+  // --- Helper Actions (輔助功能) ---
+
+  // 重置表單與錯誤
+  function resetForm() {
+    form.value = {
       email: "",
-      password: "",
-      confirmPassword: "", // 註冊專用
-    },
-    errors: {
-      email: "",
+      username: "",
       password: "",
       confirmPassword: "",
-    },
-    isLoading: false,
-  }),
-
-  actions: {    
-    clearError(field) {
-      if (this.errors[field]) {
-        this.errors[field] = "";
-      }
-    },
-    resetForm() {
-      this.form = { email: "", password: "", confirmPassword: "" };
-      this.errors = { email: "", password: "", confirmPassword: "" };
-      this.isLoading = false;
-    },
-
-    // --- 註冊邏輯 ---
-    async register() {
-      this.isLoading = true;
-      this.errors = {}; // 清空舊錯誤
-
-      // 1. 前端驗證 (Front-end Validation)
-      let isValid = true;
-      if (!this.form.email) {
-        this.errors.email = "必須填寫 Email";
-        isValid = false;
-      }
-      if (!this.form.password) {
-        this.errors.password = "必須填寫密碼";
-        isValid = false;
-      }
-      if (this.form.password !== this.form.confirmPassword) {
-        this.errors.confirmPassword = "兩次輸入的密碼不一致";
-        isValid = false;
-      }
-
-      if (!isValid) {
-        this.isLoading = false;
-        return false;
-      }
-
-      try {
-       const API_BASE_URL = "https://localhost:7190/api";
-        const response = await axios.post(
-         `${API_BASE_URL}/AuthApi/register`,
-          {
-            email: this.form.email,
-            password: this.form.password,
-            confirmPassword: this.form.confirmPassword,
-          },
-          {
-            headers: { "Content-Type": "application/json" }
-          }
-        );
-
-        if (response.status === 200) {
-          alert("註冊成功！");
-          this.resetForm();
-          return true;
-        }
-      } catch (error) {
-        console.error("註冊失敗", error);
-        if (error.response && error.response.data) {
-          this.errors.email = error.response.data.message || "註冊失敗";
-        } else {
-          this.errors.email = "無法連接伺服器";
-        }
-        return false;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-async login(loginData) {
-      this.isLoading = true;
-      this.errors = {email: ""};
-try {
-    const response = await axios.post(
-      "https://localhost:7190/api/AuthApi/Login", // 請確認您的後端完整網址
-      loginData,
-      {
-        withCredentials: true, 
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (response.status === 200) {     
-      this.user = response.data;       
-      this.resetForm();
-      return true;
-    }
-  } catch (error) {
-    console.error("登入失敗", error);
-    
-    if (error.response && error.response.data) {      
-      this.errors.email = error.response.data.message || error.response.data || "帳號或密碼錯誤";
-    } else {
-      this.errors.email = "無法連接伺服器";
-    }
-    return false;
-  } finally {
-    this.isLoading = false;
+      name: "",
+      birthday: "",
+      avatarUrl: ""
+    };
+    errors.value = {};
+    isLoading.value = false;
   }
-},
+  
+  async function login() {
+    isLoading.value = true;
+    errors.value = {};
 
-    async logout() {
-      // ... 您的登出邏輯 (保持不變)
-      try {
-        await axios.post("https://localhost:7190/api/AuthApi/logout", {}, { withCredentials: true });
-        this.user = null;
-      } catch (error) {
-        console.error("登出失敗", error);
+    try {
+      // 設定 withCredentials 為 true 是 Cookie 驗證的關鍵
+      const response = await axios.post(
+        "/api/AuthApi/Login", 
+        {
+          email: form.value.email,
+          password: form.value.password
+        }
+      );
+
+      if (response.status === 200) {
+        user.value = response.data; // 儲存使用者資料
+        isAuthenticated.value = true;
+        return true; // 回傳成功
       }
+    } catch (error) {
+      console.error("登入失敗", error);
+      if (error.response && error.response.data) {
+        // 假設後端回傳錯誤訊息在 message 欄位
+        errors.value.email = error.response.data.message || "帳號或密碼錯誤";
+      } else {
+        errors.value.email = "無法連接伺服器";
+      }
+      return false; // 回傳失敗
+    } finally {
+      isLoading.value = false;
     }
-  },
+  }
+
+  // 2. 註冊
+  async function register() {
+    isLoading.value = true;
+    errors.value = {};
+
+    // 前端簡易驗證
+    if (form.value.password !== form.value.confirmPassword) {
+      errors.value.confirmPassword = "兩次輸入的密碼不一致";
+      isLoading.value = false;
+      return false;
+    }
+
+    try {
+      const response = await axios.post("/api/AuthApi/Register", form.value);
+
+      if (response.status === 200) {
+        return true;
+      }
+    } catch (error) {
+      console.error("註冊失敗", error);
+      errors.value.email = error.response?.data?.message || "註冊發生錯誤";
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 3. 登出
+  async function logout() {
+    try {
+      // 呼叫後端清除 Server 端的 Cookie
+      await axios.post("/api/AuthApi/Logout");
+    } catch (e) {
+      console.error("登出 API 錯誤", e);
+    } finally {
+      // 無論 API 是否成功，前端都要清除狀態
+      user.value = null;
+      isAuthenticated.value = false;
+      resetForm();
+      // 選擇性：重新載入頁面以確保乾淨的狀態
+      // window.location.reload(); 
+    }
+  }
+
+  // 4. 檢查登入狀態 (給 App.vue onMounted 使用)
+  // 這是 Cookie 驗證最重要的部分：重新整理後確認 Cookie 是否有效
+  async function checkAuth() {
+    try {
+      const res = await axios.get("/api/AuthApi/check"); 
+      if (res.status === 200) {
+        user.value = res.data;
+        isAuthenticated.value = true;
+      }
+    } catch {
+      // Cookie 過期或無效
+      user.value = null;
+      isAuthenticated.value = false;
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    form,
+    errors,
+    login,
+    register,
+    logout,
+    checkAuth,
+    resetForm
+  };
 });

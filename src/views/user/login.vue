@@ -5,38 +5,39 @@ import { useAuthStore } from "@/stores/user/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const rememberMe = ref(false);
+const visible = ref(false);
 const formValid = ref(false);
 const email = ref("");
 const password = ref("");
-const rememberMe = ref(false);
-const visible = ref(false);
-const isLoading = ref(false);
+const terms = ref(false);
 
 const rules = {
   required: (value) => !!value || "此欄位必填",
   email: (value) => {
+    // Email 格式規則
     const pattern = /^[^@]+@[^@]+\.[^@]+$/;
     return pattern.test(value) || "Email 格式不正確";
   },
 };
 
 const handleLogin = async () => {
- if (!formValid.value) return; 
+  if (!formValid.value) return;
 
   isLoading.value = true;
-  try {   
+  try {
     const loginData = {
       email: email.value,
-      password: password.value
+      password: password.value,
     };
     console.log("正在嘗試登入...", loginData);
     const success = await authStore.login(loginData);
-    
+
     console.log("Store 回傳結果:", success); // <--- 檢查這裡印出什麼
 
     if (success) {
-      console.log("準備跳轉頁面...");      
-      await router.push("/userindex"); 
+      console.log("準備跳轉頁面...");
+      await router.push("/userindex");
     } else {
       alert("登入失敗，請檢查帳號密碼");
     }
@@ -48,9 +49,9 @@ const handleLogin = async () => {
 };
 
 onMounted(() => {
-  // 如果有引入 material-input js 可保留，但在 Vuetify 3 通常不需要
-  // setMaterialInput();
-  authStore.resetForm();
+  if (authStore.resetForm) {
+    authStore.resetForm(); // 進入登入頁面時重置清掉 Store 裡的殘留資料
+  }
 });
 </script>
 
