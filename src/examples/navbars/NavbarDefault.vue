@@ -1,12 +1,49 @@
 <script setup>
-import { RouterLink } from "vue-router";
-import { ref, watch } from "vue";
-import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
+  import { RouterLink } from "vue-router";
+  import { ref, watch } from "vue";
 
-// images
-import ArrDark from "@/assets/img/down-arrow-dark.svg";
-import downArrow from "@/assets/img/down-arrow.svg";
-import DownArrWhite from "@/assets/img/down-arrow-white.svg";
+  import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
+import { useCartStore } from "@/views/PointShop/services/cartStore";
+  import UserIndex from "@/views/user/UserIndex.vue";
+  import UserMission from "@/views/user/UserMission.vue";
+
+  import ArrDark from "@/assets/img/down-arrow-dark.svg";
+  import downArrow from "@/assets/img/down-arrow.svg";
+  import DownArrWhite from "@/assets/img/down-arrow-white.svg";
+
+// 取得購物車狀態
+const CartNow = useCartStore();
+
+  import { useAuthStore } from "@/stores/user/auth";
+  const authStore = useAuthStore();
+
+  const menuItems = [
+    {
+      title: '會員中心',
+      icon: 'mdi-account-circle-outline',
+      to: { name: 'UserIndex' }
+    },
+    {
+      title: '我的任務',
+      icon: 'mdi-flag-variant-outline',
+      to: { name: 'UserMission' }
+    },
+    {
+      title: '我的點數',
+      icon: 'mdi-star-outline',
+      to: { name: 'point-log' }
+    },
+    {
+      title: '我的購物車',
+      icon: 'mdi-cart-outline',
+      to: { name: 'Checkout' }
+    },
+  ];
+
+  const handleLogout = async () => {
+    await authStore.logout();
+    router.push("/login");
+  };
 
   const props = defineProps({
     transparent: {
@@ -67,16 +104,16 @@ import DownArrWhite from "@/assets/img/down-arrow-white.svg";
     textDark.value = false;
   }
 
-watch(
-  () => type.value,
-  (newValue) => {
-    if (newValue === "mobile") {
-      textDark.value = true;
-    } else {
-      textDark.value = false;
+  watch(
+    () => type.value,
+    (newValue) => {
+      if (newValue === "mobile") {
+        textDark.value = true;
+      } else {
+        textDark.value = false;
+      }
     }
-  }
-);
+  );
 </script>
 
 <template>
@@ -185,11 +222,23 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <!-- <div
-                        class="dropdown-header text-dark font-weight-bolder d-flex align-items-center px-1"
+                      <button
+                        class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#cartOffcanvas"
+                        style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
                       >
-                        點數商城
-                      </div> -->
+                        <span>
+                          購物車
+                        </span>
+                        <span
+                          v-if="CartNow.totalItems > 0"
+                          class="badge rounded-pill bg-danger"
+                          style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
+                        >
+                          {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                        </span>
+                      </button>
                       <RouterLink
                         :to="{ name: 'PointShop' }"
                         class="dropdown-item border-radius-md"
@@ -203,7 +252,7 @@ watch(
                         :to="{ name: 'Checkout' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>購物車</span>
+                        <span>前往結帳</span>
                       </RouterLink>
                     </div>
                   </div>
@@ -211,6 +260,23 @@ watch(
               </div>
               <!-- 響應式點數商城 -->
               <div class="d-lg-none">
+                <button
+                  class="dropdown-item border-radius-md d-flex align-items-center justify-content-between"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#cartOffcanvas"
+                  style="background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 0.5rem 1rem;"
+                >
+                  <span>
+                  購物車
+                  </span>
+                  <span
+                    v-if="CartNow.totalItems > 0"
+                    class="badge rounded-pill bg-danger"
+                    style="font-size: 0.65rem; padding: 0.25em 0.5em; min-width: 1.25rem;"
+                  >
+                    {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                  </span>
+                </button>
                 <RouterLink
                   :to="{ name: 'PointShop' }"
                   class="dropdown-item border-radius-md"
@@ -224,7 +290,7 @@ watch(
                   :to="{ name: 'Checkout' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>購物車</span>
+                  <span>前往結帳</span>
                 </RouterLink>
 
               </div>
