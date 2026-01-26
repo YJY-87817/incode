@@ -57,7 +57,20 @@
         return;
       }
 
-      const res = await axios.post("/api/AuthApi/Register", formData.value);
+     const payload = {
+        email: formData.value.email,
+        password: formData.value.password,
+        confirmpassword: formData.value.confirmpassword,
+        username: formData.value.username,       
+        // 處理生日：如果有值就傳送，如果是空字串就傳送 null (或不傳)
+        // 注意：請確認後端 DTO 的 Birth 允許 null (DateTime?)
+        birth: formData.value.birth ? formData.value.birth : null 
+      };
+
+      console.log("準備傳送的資料:", payload); // 在 Console 檢查一下資料對不對
+
+      // 3. 發送請求 (使用 payload 而不是 formData.value)
+      const res = await axios.post("https://localhost:7190/api/AuthApi/register", payload);
 
       if (res.status === 200) {
         console.log("註冊成功！");
@@ -94,7 +107,7 @@
               </v-col>
 
               <v-col cols="12" sm="6">
-                <v-text-field v-model="formData.name" label="暱稱" placeholder="怎麼稱呼您?" variant="outlined"
+                <v-text-field v-model="formData.username" label="暱稱" placeholder="怎麼稱呼您?" variant="outlined"
                   density="comfortable" color="primary" prepend-inner-icon="mdi-account-outline"></v-text-field>
               </v-col>
 
@@ -111,12 +124,7 @@
               <v-col cols="12" sm="6">
                 <v-text-field v-model="formData.confirmPassword" label="確認密碼" type="password" variant="outlined"
                   density="comfortable" color="primary" prepend-inner-icon="mdi-lock-check-outline"></v-text-field>
-              </v-col>
-
-              <v-col cols="12">
-                <v-textarea v-model="formData.intro" label="自我介紹" placeholder="簡單介紹一下自己..." variant="outlined"
-                  density="comfortable" color="primary" rows="3" prepend-inner-icon="mdi-text"></v-textarea>
-              </v-col>
+              </v-col>              
             </v-row>
           </v-form>
         </v-col>
