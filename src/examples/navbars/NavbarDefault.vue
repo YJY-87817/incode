@@ -1,44 +1,12 @@
 <script setup>
-  import { RouterLink } from "vue-router";
-  import { ref, watch } from "vue";
+import { RouterLink } from "vue-router";
+import { ref, watch } from "vue";
+import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 
-  import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
-  import UserIndex from "@/views/user/UserIndex.vue";
-  import UserMission from "@/views/user/UserMission.vue";
-
-  import ArrDark from "@/assets/img/down-arrow-dark.svg";
-  import downArrow from "@/assets/img/down-arrow.svg";
-  import DownArrWhite from "@/assets/img/down-arrow-white.svg";
-  import { useAuthStore } from "@/stores/user/auth";
-  const authStore = useAuthStore();
-
-  const menuItems = [
-    {
-      title: '會員中心',
-      icon: 'mdi-account-circle-outline',
-      to: { name: 'UserIndex' }
-    },
-    {
-      title: '我的任務',
-      icon: 'mdi-flag-variant-outline',
-      to: { name: 'UserMission' }
-    },
-    {
-      title: '我的點數',
-      icon: 'mdi-star-outline',
-      to: { name: 'point-log' }
-    },
-    {
-      title: '我的購物車',
-      icon: 'mdi-cart-outline',
-      to: { name: 'Checkout' }
-    },
-  ];
-
-  const handleLogout = async () => {
-    await authStore.logout();
-    router.push("/login");
-  };
+// images
+import ArrDark from "@/assets/img/down-arrow-dark.svg";
+import downArrow from "@/assets/img/down-arrow.svg";
+import DownArrWhite from "@/assets/img/down-arrow-white.svg";
 
   const props = defineProps({
     transparent: {
@@ -99,16 +67,16 @@
     textDark.value = false;
   }
 
-  watch(
-    () => type.value,
-    (newValue) => {
-      if (newValue === "mobile") {
-        textDark.value = true;
-      } else {
-        textDark.value = false;
-      }
+watch(
+  () => type.value,
+  (newValue) => {
+    if (newValue === "mobile") {
+      textDark.value = true;
+    } else {
+      textDark.value = false;
     }
-  );
+  }
+);
 </script>
 
 <template>
@@ -222,13 +190,19 @@
                       >
                         點數商城
                       </div> -->
-                      <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+                      <RouterLink
+                        :to="{ name: 'PointShop' }"
+                        class="dropdown-item border-radius-md"
+                      >
                         <span>點數商城</span>
                       </RouterLink>
                       <RouterLink :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
                         <span>我的訂單</span>
                       </RouterLink>
-                      <RouterLink :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
+                      <RouterLink
+                        :to="{ name: 'Checkout' }"
+                        class="dropdown-item border-radius-md"
+                      >
                         <span>購物車</span>
                       </RouterLink>
                     </div>
@@ -237,15 +211,22 @@
               </div>
               <!-- 響應式點數商城 -->
               <div class="d-lg-none">
-                <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+                <RouterLink
+                  :to="{ name: 'PointShop' }"
+                  class="dropdown-item border-radius-md"
+                >
                   <span>點數商城</span>
                 </RouterLink>
                 <RouterLink :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
                   <span>我的訂單</span>
                 </RouterLink>
-                <RouterLink :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
+                <RouterLink
+                  :to="{ name: 'Checkout' }"
+                  class="dropdown-item border-radius-md"
+                >
                   <span>購物車</span>
                 </RouterLink>
+
               </div>
             </div>
           </li>
@@ -729,4 +710,6 @@
     </div>
   </nav>
   <!-- End Navbar -->
+
+  
 </template>

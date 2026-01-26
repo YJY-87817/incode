@@ -49,7 +49,8 @@ $colors: (
   "cyan": $cyan,
   "white": $white,
   "gray": $gray-600,
-  "gray-dark": $gray-800) !default;
+  "gray-dark": $gray-800,
+  ) !default;
 // scss-docs-end colors-map
 
 $primary: #0d6efd !default;
@@ -61,7 +62,6 @@ $danger: #dc3545 !default;
 $light: #f8f9fa !default;
 $dark: #212529 !default;
 
-
 // scss-docs-start theme-colors-map
 $theme-colors: (
   "primary": $primary,
@@ -72,55 +72,65 @@ $theme-colors: (
   "danger": $danger,
   "light": $light,
   "dark": $dark,
-  "white": $white) !default;
+  "white": $white,
+  ) !default;
 // scss-docs-end theme-colors-map
 
 // Gradient colors
-$primary-gradient: #ec407a !default;
-$primary-gradient-state: #d81b60 !default;
+$primary-gradient: #0d6efd !default;
+$primary-gradient-state: #0b5ed7 !default;
 
-$secondary-gradient: #747b8a !default;
-$secondary-gradient-state: #495361 !default;
+$secondary-gradient: #6c757d !default;
+$secondary-gradient-state: #5c636a !default;
 
-$info-gradient: #49a3f1 !default;
-$info-gradient-state: #1a73e8 !default;
+$info-gradient: #0dcaf0 !default;
+$info-gradient-state: #31d5f8 !default;
 
-$success-gradient: #66bb6a !default;
-$success-gradient-state: #43a047 !default;
+$success-gradient: #198754 !default;
+$success-gradient-state: #157347 !default;
 
-$danger-gradient: #ef5350 !default;
-$danger-gradient-state: #e53935 !default;
+$danger-gradient: #dc3545 !default;
+$danger-gradient-state: #bb2d3b !default;
 
-$warning-gradient: #ffa726 !default;
-$warning-gradient-state: #fb8c00 !default;
+$warning-gradient: #ffc107 !default;
+$warning-gradient-state: #ffbb33 !default;
 
-$dark-gradient: #42424a !default;
-$dark-gradient-state: #191919 !default;
+$dark-gradient: #212529 !default;
+$dark-gradient-state: #16191c !default;
 
-$light-gradient: #ebeff4 !default;
-$light-gradient-state: #ced4da !default;
+$light-gradient: #f8f9fa !default;
+$light-gradient-state: #e2e6ea !default;
 
-$dark-gradient-dark: #323a54 !default;
-$dark-gradient-state-dark: #1a2035 !default;
+$dark-gradient-dark: #1a1d20 !default;
+$dark-gradient-state-dark: #0d0f11 !default;
 
 // Gradient Colors map
 $theme-gradient-colors: (
   "primary": ($primary-gradient,
-    $primary-gradient-state ),
+    $primary-gradient-state,
+  ),
   "secondary": ($secondary-gradient,
-    $secondary-gradient-state ),
+    $secondary-gradient-state,
+  ),
   "success": ($success-gradient,
-    $success-gradient-state ),
+    $success-gradient-state,
+  ),
   "info": ($info-gradient,
-    $info-gradient-state ),
+    $info-gradient-state,
+  ),
   "warning": ($warning-gradient,
-    $warning-gradient-state ),
+    $warning-gradient-state,
+  ),
   "danger": ($danger-gradient,
-    $danger-gradient-state ),
+    $danger-gradient-state,
+  ),
   "light": ($light-gradient,
-    $light-gradient-state ),
+    $light-gradient-state,
+  ),
   "dark": ($dark-gradient,
-    $dark-gradient-state )) !default;
+    $dark-gradient-state,
+  ),
+  ) !default;
 
 // Set a specific jump point for requesting color jumps
 $theme-color-interval: 8% !default;
@@ -289,7 +299,8 @@ $spacers: (
   9: $spacer * 10,
   10: $spacer * 12,
   11: $spacer * 14,
-  12: $spacer * 16) !default;
+  12: $spacer * 16,
+  ) !default;
 
 $negative-spacers: if($enable-negative-margins,
     negativify-map($spacers),
@@ -312,7 +323,8 @@ $position-values: (
   9: 9%,
   10: 10%,
   50: 50%,
-  100: 100%) !default;
+  100: 100%,
+  ) !default;
 
 // Body
 //
@@ -354,7 +366,8 @@ $grid-breakpoints: (
   md: 768px,
   lg: 992px,
   xl: 1200px,
-  xxl: 1400px) !default;
+  xxl: 1400px,
+  ) !default;
 // scss-docs-end grid-breakpoints
 
 @include _assert-ascending($grid-breakpoints, "$grid-breakpoints"
@@ -371,7 +384,8 @@ $container-max-widths: (
   md: 720px,
   lg: 960px,
   xl: 1140px,
-  xxl: 1320px) !default;
+  xxl: 1320px,
+  ) !default;
 // scss-docs-end container-max-widths
 
 @include _assert-ascending($container-max-widths, "$container-max-widths"
@@ -412,7 +426,8 @@ $border-widths: (
   2: 2px,
   3: 3px,
   4: 4px,
-  5: 5px) !default;
+  5: 5px,
+  ) !default;
 
 $rounded-pill: 50rem !default;
 
@@ -463,7 +478,8 @@ $aspect-ratios: (
   "1x1": 100%,
   "4x3": calc(3 / 4 * 100%),
   "16x9": calc(9 / 16 * 100%),
-  "21x9": calc(9 / 21 * 100%)) !default;
+  "21x9": calc(9 / 21 * 100%),
+  ) !default;
 // scss-docs-end aspect-ratios
 // stylelint-enable function-disallowed-list
 
@@ -570,7 +586,8 @@ $display-font-sizes: (
   3: 4rem,
   4: 3.5rem,
   5: 3rem,
-  6: 2.5rem) !default;
+  6: 2.5rem,
+  ) !default;
 
 $display-font-weight: 300 !default;
 $display-line-height: $headings-line-height !default;
@@ -706,7 +723,8 @@ $table-variants: (
   "warning": shift-color($warning, $table-bg-scale),
   "danger": shift-color($danger, $table-bg-scale),
   "light": $light,
-  "dark": $dark) !default;
+  "dark": $dark,
+  ) !default;
 // scss-docs-end table-variables
 
 // Buttons + Forms
@@ -849,7 +867,8 @@ $btn-font-colors: map-merge(("primary": $btn-primary-font-color,
       "success": $btn-success-font-color,
       "warning": $btn-warning-font-color,
       "dark": $btn-dark-font-color,
-      "light": $btn-light-font-color ),
+      "light": $btn-light-font-color,
+    ),
     $btn-font-colors
 );
 
@@ -936,12 +955,13 @@ $input-height-lg: unset !default;
 
 $input-transition: 0.2s ease !default;
 
-$input-background: no-repeat bottom, 50% calc(100% - 1px);
-$input-background-size: 0 100%, 100% 100%;
-$input-background-size-focus: 100% 100%, 100% 100%;
-$input-background-image: linear-gradient(0deg,
-    $success 2px,
-    rgba(156, 39, 176, 0) 0),
+$input-background: no-repeat bottom,
+  50% calc(100% - 1px);
+$input-background-size: 0 100%,
+  100% 100%;
+$input-background-size-focus: 100% 100%,
+  100% 100%;
+$input-background-image: linear-gradient(0deg, $success 2px, rgba(156, 39, 176, 0) 0),
   linear-gradient(0deg, #d2d2d2 1px, hsla(0, 0%, 82%, 0) 0);
 $input-background-image-valid: linear-gradient(0deg,
     $success 2px,
@@ -962,8 +982,10 @@ $form-check-padding-left: $form-check-input-width + 0.45em !default;
 $form-check-margin-bottom: 0.125rem !default;
 $form-check-label-color: null !default;
 $form-check-label-cursor: null !default;
-$form-check-transition: background-color 0.25s ease, border-color 0.25s ease,
-  background-position 0.15s ease-in-out, opacity 0.15s ease-out,
+$form-check-transition: background-color 0.25s ease,
+  border-color 0.25s ease,
+  background-position 0.15s ease-in-out,
+  opacity 0.15s ease-out,
   box-shadow 0.15s ease-in-out !default;
 $form-check-transition-time: 0.25s !default;
 
@@ -985,7 +1007,8 @@ $form-check-input-checked-bg-image: linear-gradient(195deg,
 $form-check-radio-checked-bg-image: $form-check-input-checked-bg-image !default;
 $form-check-radio-after-width: 0.8375rem !default;
 $form-check-radio-after-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-  0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 12px rgba(53, 71, 102, 0.1) !default;
+  0 2px 4px -1px rgba(0, 0, 0, 0.06),
+  0 0 0 12px rgba(53, 71, 102, 0.1) !default;
 $form-check-radio-transition: 0.05s ease;
 
 $form-check-input-indeterminate-color: $component-active-color !default;
@@ -1001,9 +1024,11 @@ $form-switch-check-after-width: 1.25rem !default;
 $form-switch-check-after-transition: 0.1s ease !default;
 $form-switch-check-after-border-color: $gray-400 !default;
 $form-switch-check-active-after-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-  0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 15px rgba(0, 0, 0, 0.1) !default;
+  0 2px 4px -1px rgba(0, 0, 0, 0.06),
+  0 0 0 15px rgba(0, 0, 0, 0.1) !default;
 $form-switch-check-active-checked-after-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-  0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 15px rgba(53, 71, 102, 0.1) !default;
+  0 2px 4px -1px rgba(0, 0, 0, 0.06),
+  0 0 0 15px rgba(53, 71, 102, 0.1) !default;
 
 $form-switch-check-top: -2.5px !default;
 $form-switch-check-left: -5px !default;
@@ -1087,12 +1112,14 @@ $form-range-thumb-bg: $component-active-bg !default;
 $form-range-thumb-border: 0 !default;
 $form-range-thumb-border-radius: 1rem !default;
 $form-range-thumb-box-shadow: 0 0.1rem 0.25rem rgba($black, 0.1) !default;
-$form-range-thumb-focus-box-shadow: 0 0 0 1px $body-bg, $input-focus-box-shadow !default;
+$form-range-thumb-focus-box-shadow: 0 0 0 1px $body-bg,
+  $input-focus-box-shadow !default;
 $form-range-thumb-focus-box-shadow-width: $input-focus-width !default; // For focus box shadow issue in Edge
 $form-range-thumb-active-bg: lighten($component-active-bg, 35%) !default;
 $form-range-thumb-disabled-bg: $gray-500 !default;
 $form-range-thumb-transition: background-color 0.15s ease-in-out,
-  border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !default;
+  border-color 0.15s ease-in-out,
+  box-shadow 0.15s ease-in-out !default;
 
 $form-file-height: $input-height !default;
 $form-file-focus-border-color: $input-focus-border-color !default;
@@ -1140,9 +1167,12 @@ $form-feedback-icon-invalid: url("data:image/svg+xml,<svg xmlns='http://www.w3.o
 // scss-docs-start form-validation-states
 $form-validation-states: (
   "valid": ("color": $form-feedback-valid-color,
-    "icon": $form-feedback-icon-valid ),
+    "icon": $form-feedback-icon-valid,
+  ),
   "invalid": ("color": $form-feedback-invalid-color,
-    "icon": $form-feedback-icon-invalid )) !default;
+    "icon": $form-feedback-icon-invalid,
+  ),
+  ) !default;
 // scss-docs-end form-validation-states
 
 // Z-index master list

@@ -27,9 +27,17 @@
     authStore.checkLoginStatus(); //之後接api
   });
 
+<<<<<<< HEAD
+=======
+/*ertrtre*/
+import { RouterView } from "vue-router";
+import ChatWidget from "@/components/ChatWidget.vue";
+import Cart from "@/views/PointShop/components/Cart.vue";
+>>>>>>> _dev_yjy
 </script>
 
 <template>
   <router-view />
+  <Cart />
   <chat-widget />
 </template>

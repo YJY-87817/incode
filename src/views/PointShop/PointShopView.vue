@@ -1,22 +1,103 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import productService from "@/views/PointShop/services/productService";
-import ProductCard from "@/views/PointShop/componets/ProductCard.vue";
+import { getProducts } from "@/views/PointShop/services/PointShopApi";
+import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
+import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
 const products = ref([]);
 const loading = ref(true);
 
-const fetchProducts = async () => {
-  try {
-    const response = await productService.getProducts();
-    products.value = response.data;
-  } catch (error) {
-    console.error("抓取商品失敗:", error);
-  } finally {
-    loading.value = false;
+// 篩選狀態
+const filters = ref({
+  minPrice: 0,
+  maxPrice: 10000,
+  categories: [],
+  inStock: false,
+});
+
+// 可用的類別列表（從產品資料動態生成）
+const categories = ref([]);
+
+const fetchProducts = () => {
+  // 開始抓取前，通常會手動開啟 loading (原本 async 函式通常也會在開頭設定)
+  loading.value = true;
+
+  getProducts()
+    .then((response) => {
+      // 成功處理邏輯
+      products.value = response.data;
+
+      // 從產品資料動態提取類別
+      const uniqueCategories = new Set();
+      response.data.forEach((product) => {
+        if (product.type) {
+          uniqueCategories.add(product.type);
+        }
+      });
+
+      // 轉換為陣列格式
+      categories.value = Array.from(uniqueCategories).map((name, index) => ({
+        id: index + 1,
+        name: name,
+      }));
+
+      // 設定最大價格
+      const maxPrice = Math.max(...response.data.map((p) => p.point || 0));
+      filters.value.maxPrice = maxPrice;
+    })
+    .catch((error) => {
+      // 錯誤處理邏輯
+      console.error("抓取商品失敗:", error);
+    })
+    .finally(() => {
+      // 不論成功或失敗都會執行的邏輯
+      loading.value = false;
+    });
+};
+
+// 篩選後的商品
+const filteredProducts = computed(() => {
+  return products.value.filter((product) => {
+    // 價格篩選
+    const priceCheck =
+      product.point >= filters.value.minPrice &&
+      product.point <= filters.value.maxPrice;
+
+    // 類別篩選（使用 Type）
+    const categoryCheck =
+      filters.value.categories.length === 0 ||
+      filters.value.categories.includes(product.type);
+
+    // 庫存篩選
+    const stockCheck =
+      !filters.value.inStock || (product.stock && product.stock > 0);
+
+    return priceCheck && categoryCheck && stockCheck;
+  });
+});
+
+const toggleCategory = (categoryName) => {
+  const index = filters.value.categories.indexOf(categoryName);
+  if (index > -1) {
+    filters.value.categories.splice(index, 1);
+  } else {
+    filters.value.categories.push(categoryName);
   }
+};
+
+const resetFilters = () => {
+  filters.value = {
+    minPrice: 0,
+    maxPrice: 10000,
+    categories: [],
+    inStock: false,
+  };
+};
+
+const handleFilterUpdate = (newFilters) => {
+  filters.value = newFilters;
 };
 
 onMounted(() => {
@@ -25,41 +106,44 @@ onMounted(() => {
 </script>
 
 <template>
-  <DefaultNavbar :action="{ route: 'javascript:;' }" />
+  <DefaultNavbar darkText />
 
-  <div class="container mt-5 mb-5">
-    <div class="row mb-4">
-      <div class="col-12">
+  <div class="min-vh-100 pb-5 bg" style="">
+    <div class="container pt-5 mb-5">
+      <div class="col-12 mb-4">
         <div class="card border-0 bg-light shadow-sm">
           <div class="card-body p-4">
             <h2 class="fw-bold mb-1">點數商城</h2>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="row">
-      <div v-if="loading" class="col-12 text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">載入中...</span>
+      <div class="row">
+        <div class="col-lg-3">
+          <FilterPanel :filters="filters" :categories="categories" @update:filters="handleFilterUpdate"
+            @toggle-category="toggleCategory" @reset-filters="resetFilters" />
         </div>
-        <p class="mt-2 text-muted">商品載入中，請稍候...</p>
-      </div>
 
-      <template v-else-if="products.length > 0">
-        <div
-          v-for="item in products"
-          :key="item.productId"
-          class="col-12 col-md-6 col-lg-3 mb-4"
-        >
-          <ProductCard :product="item" />
-        </div>
-      </template>
-
-      <div v-else class="col-12 text-center py-5">
-        <div class="alert alert-secondary py-5">
-          <i class="bi bi-cart-x fs-1"></i>
-          <p class="mt-3 mb-0">目前沒有可兌換的商品。</p>
+        <div class="col-lg-9">
+          <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
+            @reset-filters="resetFilters" />
+          <div class="d-flex justify-content-center mt-5">
+            <nav aria-label="Page navigation pointshop">
+              <ul class="pagination">
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
+                <li class="page-item"><a class="page-link" href="#">1</a></li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
       </div>
     </div>
@@ -67,3 +151,10 @@ onMounted(() => {
 
   <DefaultFooter />
 </template>
+
+<style scoped>
+.bg {
+background-color: #bfc6c4;
+background-image: url("data:image/svg+xml,%3Csvg width='84' height='16' viewBox='0 0 84 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M78 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM30 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM10 0h2v16h-2V0zm6 0h4v16h-4V0zM2 0h4v16H2V0zm50 0h2v16h-2V0zM38 0h2v16h-2V0zm28 0h2v16h-2V0zm-8 0h6v16h-6V0zM42 0h6v16h-6V0z' fill='%23e8e2d8' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+</style>
