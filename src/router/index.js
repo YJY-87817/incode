@@ -187,7 +187,17 @@ const router = createRouter({
     {
       path: "/test",
       name: "test",
-      component: () => import("@/views/forum/test.vue"),
+      component: () => import("@/views/Contents/test.vue"),
+    },
+    {
+      path: "/tmdb",
+      name: "tmdb",
+      component: () => import("@/views/Contents/tmdb.vue"),
+    },
+    {
+      path: "/imagetest",
+      name: "imagetest",
+      component: () => import("@/components/Contents/ImageTest.vue"),
     },
     // 以上是tim的路由
 
@@ -195,7 +205,7 @@ const router = createRouter({
     {
       path: "/user",
       name: "user",
-      component: () => import("@/views/user/userindex.vue"),
+      component: () => import("@/views/user/UserIndex.vue"),
     },
     {
       path: "/register",
