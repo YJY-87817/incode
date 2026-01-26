@@ -16,9 +16,12 @@
 -->
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import apiClient from "@/api/request.js";
+import { uploadImage } from "@/api/imageapi.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import { CONTENT_TYPES } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const props = defineProps({
@@ -85,6 +88,17 @@ const emit = defineEmits([
   "reply-submitted",
   "thread-page-change",
 ]);
+
+// ========== 留言/回文輸入狀態 ==========
+const showQuickReply = ref(false);
+const quickReplyContent = ref("");
+const quickReplyMode = ref("comment"); // comment | reply
+const isSubmittingQuickReply = ref(false);
+const isUploadingQuickReplyImages = ref(false);
+
+const quickReplyLabel = computed(() =>
+  quickReplyMode.value === "comment" ? "留言" : "回文"
+);
 
 /**
  * 處理主題互動成功
@@ -160,6 +174,90 @@ const nextThreadPage = () => {
     emit("thread-page-change", props.threadCurrentPage + 1);
   }
 };
+
+/**
+ * 留言/回文輸入框相關
+ */
+const appendUrls = (original, urls) => {
+  const list = Array.isArray(urls) ? urls : [urls];
+  const chunk = list.filter(Boolean).join("\n");
+  if (!chunk) return original;
+  return [original.trim(), chunk].filter(Boolean).join("\n");
+};
+
+const resetQuickReply = () => {
+  quickReplyContent.value = "";
+  quickReplyMode.value = "comment";
+};
+
+const toggleQuickReply = () => {
+  showQuickReply.value = !showQuickReply.value;
+  if (!showQuickReply.value) {
+    resetQuickReply();
+  }
+};
+
+const handleQuickReplyImages = async (event) => {
+  const files = event.target?.files;
+  if (!files || !files.length) return;
+  isUploadingQuickReplyImages.value = true;
+  try {
+    const uploaded = await uploadImage(files);
+    quickReplyContent.value = appendUrls(quickReplyContent.value, uploaded);
+  } catch (error) {
+    console.error("留言/回文圖片上傳失敗:", error);
+    alert("圖片上傳失敗，請稍後再試");
+  } finally {
+    isUploadingQuickReplyImages.value = false;
+    if (event.target) event.target.value = "";
+  }
+};
+
+const submitQuickReply = async () => {
+  if (!props.threadDetail?.id) {
+    alert("未找到對應的主題，請重新嘗試");
+    return;
+  }
+
+  if (!quickReplyContent.value.trim()) {
+    alert("請輸入內容");
+    return;
+  }
+
+  if (isSubmittingQuickReply.value) return;
+  isSubmittingQuickReply.value = true;
+
+  const isComment = quickReplyMode.value === "comment";
+  const dto = {
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: props.threadDetail.categoryId,
+    parentContentId: props.threadDetail.id,
+    title: `${isComment ? "留言" : "Re"}: ${props.threadDetail.title}`,
+    body: quickReplyContent.value.trim(),
+    type: isComment ? CONTENT_TYPES.COMMENT : CONTENT_TYPES.REPLY,
+  };
+
+  try {
+    await apiClient.post("/ContentApi", dto);
+    alert("已送出！");
+    emit("reply-submitted");
+    resetQuickReply();
+    showQuickReply.value = false;
+  } catch (error) {
+    console.error("送出留言/回文失敗:", error);
+    alert("送出失敗，請稍後再試");
+  } finally {
+    isSubmittingQuickReply.value = false;
+  }
+};
+
+watch(
+  () => props.selectedThread,
+  () => {
+    showQuickReply.value = false;
+    resetQuickReply();
+  }
+);
 </script>
 
 <template>
@@ -244,6 +342,101 @@ const nextThreadPage = () => {
         <div class="p-3">
           <div class="mt-3 mt-md-5">
             <h5 class="fs-5 fs-md-4 mb-3">💬 回覆 / 留言</h5>
+
+            <div
+              class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
+            >
+              <button
+                class="btn btn-forum-primary btn-sm"
+                type="button"
+                @click="toggleQuickReply"
+              >
+                <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
+                <span class="ms-1">
+                  {{ showQuickReply ? "收起留言/回文" : "留言 / 回文" }}
+                </span>
+              </button>
+              <small class="text-muted" v-if="!showQuickReply">
+                開啟後可直接留言或回文，不需切換頁面
+              </small>
+            </div>
+
+            <transition name="fade">
+              <div v-show="showQuickReply" class="quick-reply-box">
+                <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+                  <label class="mb-0 small text-muted">送出類型</label>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <input
+                      type="radio"
+                      class="btn-check"
+                      name="quickReplyMode"
+                      id="quickReplyComment"
+                      value="comment"
+                      v-model="quickReplyMode"
+                    />
+                    <label class="btn btn-outline-dark" for="quickReplyComment">
+                      留言
+                    </label>
+
+                    <input
+                      type="radio"
+                      class="btn-check"
+                      name="quickReplyMode"
+                      id="quickReplyReply"
+                      value="reply"
+                      v-model="quickReplyMode"
+                    />
+                    <label class="btn btn-outline-dark" for="quickReplyReply">
+                      回文
+                    </label>
+                  </div>
+                  <small class="text-muted">
+                    目前為：{{ quickReplyLabel }}
+                  </small>
+                </div>
+
+                <textarea
+                  v-model="quickReplyContent"
+                  class="form-control"
+                  rows="4"
+                  placeholder="直接輸入{{ quickReplyLabel }}內容，可貼上圖片網址或使用下方上傳"
+                ></textarea>
+
+                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    class="form-control form-control-sm"
+                    @change="handleQuickReplyImages"
+                    :disabled="isUploadingQuickReplyImages"
+                  />
+                  <small class="text-muted">
+                    {{ isUploadingQuickReplyImages ? "上傳中..." : "上傳後自動附加圖片網址" }}
+                  </small>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 quick-reply-actions">
+                  <button
+                    class="btn btn-forum-primary btn-sm"
+                    type="button"
+                    @click="submitQuickReply"
+                    :disabled="isSubmittingQuickReply || !quickReplyContent.trim()"
+                  >
+                    <i class="fas fa-paper-plane me-1"></i>
+                    {{ isSubmittingQuickReply ? "送出中..." : "送出" }}
+                  </button>
+                  <button
+                    class="btn btn-forum-secondary btn-sm"
+                    type="button"
+                    @click="toggleQuickReply"
+                    :disabled="isSubmittingQuickReply"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            </transition>
 
             <!-- 所有留言 -->
             <div v-if="threadComments.length > 0" class="mb-4">
@@ -667,6 +860,21 @@ const nextThreadPage = () => {
   z-index: 10;
 }
 
+.quick-reply-toggle .btn {
+  min-width: 120px;
+}
+
+.quick-reply-box {
+  background: rgba(255, 240, 221, 0.5);
+  border: 1px solid #d1d3d4;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.quick-reply-actions .btn {
+  min-width: 100px;
+}
+
 .thread-detail-image {
   max-width: 100%;
   max-height: 500px;
@@ -712,6 +920,10 @@ const nextThreadPage = () => {
 
   .thread-detail-image {
     max-height: 400px;
+  }
+
+  .quick-reply-actions .btn {
+    min-width: 90px;
   }
 }
 
