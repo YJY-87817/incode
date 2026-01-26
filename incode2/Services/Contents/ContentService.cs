@@ -79,10 +79,26 @@ namespace incode2.Services.Contents
     //創立貼文
     public async Task<Content> CreateContent(CreateContentDto dto)
     {
+      int? categoryId = dto.CategoryId;
+
+      // 如果有父內容 ID（回文/留言/留言回覆），則繼承父內容的 CategoryId
+      if (dto.ParentContentId.HasValue)
+      {
+        var parentContent = await _context.Content
+          .Where(c => c.ContentId == dto.ParentContentId.Value)
+          .Select(c => new { c.CategoryId })
+          .FirstOrDefaultAsync();
+
+        if (parentContent != null)
+        {
+          categoryId = parentContent.CategoryId;
+        }
+      }
+
       var content = new Content
       {
         UserId = dto.UserId,
-        CategoryId = dto.CategoryId,
+        CategoryId = categoryId,
         ParentContentId = dto.ParentContentId,
         Title = dto.Title,
         Body = dto.Body,
