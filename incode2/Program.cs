@@ -9,6 +9,7 @@ using incode2.Services.Chat;
 using incode2.Services.Users;
 using incode2.Services.Contents;
 using incode2.Services.Point;
+using incode2.Services.PointShop;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +119,8 @@ builder.Services.AddScoped<IContentInteractionService, ContentInteractionService
 builder.Services.AddScoped<IContentService, ContentService>();
 //yjy
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 //qiu
 builder.Services.AddScoped<IPointLogService, PointLogService>();
 builder.Services.AddScoped<IMissionService, MissionService>();
