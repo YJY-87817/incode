@@ -172,7 +172,16 @@ const CartNow = useCartStore();
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <RouterLink :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
+                       <RouterLink
+                        :to="{ name: 'test-qiu' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>TestQiu</span>
+                      </RouterLink>
+                      <RouterLink
+                        :to="{ name: 'point-log' }"
+                        class="dropdown-item border-radius-md"
+                      >
                         <span>我的點數明細</span>
                       </RouterLink>
                       <RouterLink :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
@@ -190,7 +199,16 @@ const CartNow = useCartStore();
               </div>
               <!-- 響應式任務 -->
               <div class="d-lg-none">
-                <RouterLink :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
+                <RouterLink
+                        :to="{ name: 'test-qiu' }"
+                        class="dropdown-item border-radius-md"
+                      >
+                        <span>TestQiu</span>
+                      </RouterLink>
+                <RouterLink
+                  :to="{ name: 'point-log' }"
+                  class="dropdown-item border-radius-md"
+                >
                   <span>我的點數明細</span>
                 </RouterLink>
                 <RouterLink :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">

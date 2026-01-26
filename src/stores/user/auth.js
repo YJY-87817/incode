@@ -121,7 +121,12 @@ checkLoginStatus() {
         );
 
         if (response.status === 200) {
+          console.log('Login response data:', response.data);
           this.user = response.data;
+          // 儲存 token 到 localStorage
+          if (response.data.token) {
+            localStorage.setItem('access_token', response.data.token);
+          }
           this.resetForm();
           return true;
         }
@@ -143,6 +148,8 @@ checkLoginStatus() {
       try {
         await axios.post("https://localhost:7190/api/AuthApi/logout", {}, { withCredentials: true });
         this.user = null;
+        // 移除 token
+        localStorage.removeItem('access_token');
       } catch (error) {
         console.error("登出失敗", error);
       }

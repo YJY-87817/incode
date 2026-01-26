@@ -82,125 +82,98 @@ const handleCheckout = () => {
   setTimeout(() => {
     isLoading.value = false;
     alert(
-      `儲值成功！已選擇支付方式：${selectedPayment.value}，共支付 NT$ ${finalDetails.value.price}`
+      `儲值成功！已選擇支付方式：${selectedPayment.value}，共支付 NT$ ${finalDetails.value.price}`,
     );
   }, 2000);
 };
 </script>
 
 <template>
-  <DefaultNavbar transparent />
+  <DefaultNavbar light="" />
 
-  <div class="bg-gray-200 min-vh-100 pb-5">
-    <header class="position-relative">
-      <div
-        class="page-header min-height-200 border-radius-xl mt-4 mx-4"
-        style="
-          background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1920&q=80');
-        "
-      >
-        <span class="mask bg-gradient-dark opacity-6"></span>
-      </div>
-    </header>
-
+  <div class="bg-gray-200 min-vh-100 pb-5 mt-6">
     <div class="container-fluid mt-n6">
       <div class="row">
         <div class="col-lg-10 mx-auto">
-          <div class="card card-body blur shadow-blur mb-4 border-0">
-            <div class="row align-items-center">
-              <div class="col-auto">
-                <img
-                  :src="user.avatar"
-                  class="avatar avatar-md border-radius-lg shadow"
-                />
-              </div>
-              <div class="col-auto my-auto">
-                <h6 class="mb-0 font-weight-bolder">{{ user.name }}</h6>
-                <p class="text-xs mb-0 text-secondary">
-                  目前餘額:
-                  <span class="text-primary font-weight-bold"
-                    >{{ user.balance.toLocaleString() }} Pts</span
-                  >
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <h4 class="mb-3 ps-2 font-weight-bolder">1. 選擇方案</h4>
-          <div class="row">
-            <div v-for="plan in plans" :key="plan.id" class="col-md-4 mb-4">
-              <div
-                @click="selectPlan(plan.id)"
-                :class="[
-                  'card shadow-sm border-radius-lg text-center p-3 cursor-pointer transition-all plan-card',
-                  selectedPlan === plan.id
-                    ? 'border border-primary border-2 ring-active'
-                    : '',
-                ]"
-              >
+          <div class="container mt-4">
+            <h4 class="mb-3 ps-2 font-weight-bolder">1. 選擇方案</h4>
+            <div class="row">
+              <div v-for="plan in plans" :key="plan.id" class="col-md-4 mb-4">
                 <div
-                  v-if="plan.popular"
-                  class="badge bg-gradient-primary position-absolute top-0 start-50 translate-middle"
+                  @click="selectPlan(plan.id)"
+                  :class="[
+                    'card shadow-sm border-radius-lg text-center p-3 cursor-pointer transition-all plan-card',
+                    selectedPlan === plan.id
+                      ? 'border border-primary border-2 ring-active'
+                      : '',
+                  ]"
                 >
-                  熱門推薦
-                </div>
-                <div class="card-body">
-                  <p
-                    class="text-uppercase font-weight-bold text-xs text-secondary mb-1"
+                  <div
+                    v-if="plan.popular"
+                    class="badge bg-gradient-primary position-absolute top-0 start-50 translate-middle"
                   >
-                    {{ plan.points }} 點數
-                  </p>
-                  <h2 class="font-weight-bolder mb-0">NT$ {{ plan.price }}</h2>
-                  <small
-                    v-if="plan.bonus > 0"
-                    class="text-success font-weight-bold"
-                    >額外贈送 {{ plan.bonus }} 點</small
-                  >
-                  <small v-else class="text-transparent">N/A</small>
+                    熱門推薦
+                  </div>
+                  <div class="card-body">
+                    <p
+                      class="text-uppercase font-weight-bold text-xs text-secondary mb-1"
+                    >
+                      {{ plan.points }} 點數
+                    </p>
+                    <h2 class="font-weight-bolder mb-0">
+                      NT$ {{ plan.price }}
+                    </h2>
+                    <small
+                      v-if="plan.bonus > 0"
+                      class="text-success font-weight-bold"
+                      >額外贈送 {{ plan.bonus }} 點</small
+                    >
+                    <small v-else class="text-transparent">N/A</small>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="col-12 mb-4">
-              <div
-                @click="selectedPlan = 'custom'"
-                :class="[
-                  'card shadow-sm border-radius-lg p-4 cursor-pointer transition-all',
-                  selectedPlan === 'custom'
-                    ? 'border border-primary border-2 ring-active'
-                    : '',
-                ]"
-              >
-                <div class="row align-items-center">
-                  <div class="col-md-6">
-                    <h6 class="font-weight-bold text-sm text-secondary mb-3">
-                      自定義儲值額度 (最低 100)
-                    </h6>
-                    <div
-                      class="input-group input-group-outline"
-                      :class="{
-                        'is-filled': customAmount,
-                        'is-focused': selectedPlan === 'custom',
-                      }"
-                    >
-                      <input
-                        type="number"
-                        class="form-control"
-                        v-model="customAmount"
-                        placeholder="請輸入金額"
-                      />
+              <div class="col-12 mb-4">
+                <div
+                  @click="selectedPlan = 'custom'"
+                  :class="[
+                    'card shadow-sm border-radius-lg p-4 cursor-pointer transition-all',
+                    selectedPlan === 'custom'
+                      ? 'border border-primary border-2 ring-active'
+                      : '',
+                  ]"
+                >
+                  <div class="row align-items-center">
+                    <div class="col-md-6">
+                      <h6 class="font-weight-bold text-sm text-secondary mb-3">
+                        自定義儲值額度 (最低 100)
+                      </h6>
+                      <div
+                        class="input-group input-group-outline"
+                        :class="{
+                          'is-filled': customAmount,
+                          'is-focused': selectedPlan === 'custom',
+                        }"
+                      >
+                        <input
+                          type="number"
+                          class="form-control"
+                          v-model="customAmount"
+                          placeholder="請輸入金額"
+                        />
+                      </div>
+                      <small
+                        v-if="customAmount && customAmount < 100"
+                        class="text-danger mt-1 d-block text-xs"
+                        >金額不可低於 100</small
+                      >
                     </div>
-                    <small
-                      v-if="customAmount && customAmount < 100"
-                      class="text-danger mt-1 d-block text-xs"
-                      >金額不可低於 100</small
-                    >
-                  </div>
-                  <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
-                    <p class="text-sm mb-0 text-secondary">預計獲得點數</p>
-                    <h2 class="font-weight-bolder text-primary mb-0">
-                      {{ (customAmount || 0).toLocaleString() }} Pts
-                    </h2>
+                    <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                      <p class="text-sm mb-0 text-secondary">預計獲得點數</p>
+                      <h2 class="font-weight-bolder text-primary mb-0">
+                        {{ (customAmount || 0).toLocaleString() }} Pts
+                      </h2>
+                    </div>
                   </div>
                 </div>
               </div>

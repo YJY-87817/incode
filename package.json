@@ -19,6 +19,7 @@
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
+    "bootstrap-vue-next": "^0.42.0",
     "deep-chat": "^2.4.1",
     "lucide-vue-next": "^0.562.0",
     "pinia": "^3.0.4",
@@ -30,7 +31,8 @@
     "vue-count-to": "1.0.13",
     "vue-prism-editor": "2.0.0-alpha.2",
     "vue-router": "^4.6.4",
-    "vuetify": "^3.11.7"
+    "vuetify": "^3.11.7",
+    "vue3-bootstrap-paginate": "^1.0.0"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "1.15.0",

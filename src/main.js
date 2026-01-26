@@ -23,15 +23,18 @@ const vuetify = createVuetify({
 // Nucleo Icons
 import "./assets/css/nucleo-icons.css";
 import "./assets/css/nucleo-svg.css";
-// Bootstrap Icons
-import "bootstrap-icons/font/bootstrap-icons.css";
+
+//Bootstrap
+import { createBootstrap } from "bootstrap-vue-next";
+import "bootstrap/dist/css/bootstrap.css";
+import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
+import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import materialKit from "./material-kit";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
 const app = createApp(App);
-
 
 const pinia = createPinia();
 
@@ -41,4 +44,5 @@ app.use(pinia);
 app.use(router);
 app.use(materialKit);
 app.use(vuetify)
+app.use(createBootstrap());
 app.mount("#app");

@@ -38,6 +38,7 @@ import ElDropdowns from "../layouts/sections/elements/dropdowns/DropdownsView.vu
 import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressBarsView.vue";
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
+import TestQiu from "../views/point/TestQiu.vue";
 import Mission from "../views/point/Mission.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
@@ -265,6 +266,11 @@ const router = createRouter({
     // owen
 
     // qiu以下
+    {
+      path: "/test-qiu",
+      name: "test-qiu",
+      component: TestQiu, // 我的任務
+    },
     {
       path: "/mytask",
       name: "mytask",
