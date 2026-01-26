@@ -13,9 +13,8 @@ namespace incode2.Services.Contents
       _context = context;
     }
 
-    /// <summary>
-    /// 取得特定內容的所有互動
-    /// </summary>
+    // 取得特定內容的所有互動
+
     public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
     {
       return await _context.ContentInteraction
@@ -33,9 +32,8 @@ namespace incode2.Services.Contents
         .ToListAsync();
     }
 
-    /// <summary>
-    /// 取得使用者對特定內容的互動類型
-    /// </summary>
+    // 取得使用者對特定內容的互動類型
+
     public async Task<ContentInteractionDto?> GetUserInteraction(int contentId, int userId)
     {
       return await _context.ContentInteraction
@@ -53,12 +51,12 @@ namespace incode2.Services.Contents
         .FirstOrDefaultAsync();
     }
 
-    /// <summary>
-    /// 新增或移除互動（Toggle）
-    /// 如果使用者已經有該互動 -> 刪除（取消）
-    /// 如果使用者沒有該互動 -> 新增
-    /// 如果使用者有其他互動 -> 更新為新的互動類型
-    /// </summary>
+
+    // 新增或移除互動（Toggle）
+    // 如果使用者已經有該互動 -> 刪除（取消）
+    // 如果使用者沒有該互動 -> 新增
+    // 如果使用者有其他互動 -> 更新為新的互動類型
+
     public async Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto)
     {
       // 檢查content是否存在
@@ -116,9 +114,9 @@ namespace incode2.Services.Contents
       return await GetUserInteraction(dto.ContentId, dto.UserId);
     }
 
-    /// <summary>
-    /// 移除互動
-    /// </summary>
+
+    // 移除互動
+
     public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
       var interaction = await _context.ContentInteraction
@@ -133,21 +131,22 @@ namespace incode2.Services.Contents
       return true;
     }
 
-    /// <summary>
-    /// 取得互動分類列表
-    /// </summary>
-    public async Task<List<InteractionCategory>> GetInteractionCategories()
+
+    // 取得互動分類列表
+
+    public async Task<List<InteractionCategory>> GetInteractionCategory()
     {
       return await _context.InteractionCategory.ToListAsync();
     }
 
-    /// <summary>
-    /// 統計內容的互動數（按分類）
-    /// </summary>
+
+    // 統計內容的互動數（按分類）
+
     public async Task<object> GetInteractionStats(int contentId)
     {
       var stats = await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId)
+        .Include(ci => ci.Category) // 先載入 Category 導覽屬性
         .GroupBy(ci => ci.Category.Name)
         .Select(g => new
         {
