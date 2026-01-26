@@ -40,39 +40,6 @@ const updateWindowWidth = () => {
 };
 
 /**
- * 新主題提交流程
- */
-const handleNewTopicSubmit = async (payload) => {
-  forumStore.newTopic.title = payload.title;
-  forumStore.newTopic.body = payload.body;
-  forumStore.newTopic.categoryId = payload.categoryId;
-  await forumStore.submitNewTopic();
-};
-
-/**
- * 取消新主題編輯
- */
-const handleNewTopicCancel = () => {
-  forumStore.cancelNewTopic();
-};
-
-/**
- * 同步分類選擇到 store
- */
-const handleNewTopicCategoryChange = (categoryId) => {
-  forumStore.updateNewTopicCategory(categoryId);
-};
-
-/**
- * 回覆後重新拉取詳情
- */
-const handleReplySubmitted = async () => {
-  if (forumStore.selectedThread) {
-    await forumStore.fetchThreadDetail(forumStore.selectedThread);
-  }
-};
-
-/**
  * 初始化與清理
  */
 onMounted(() => {
@@ -111,35 +78,9 @@ watch(
         <!-- 搜尋欄 -->
         <ForumSearchBar />
 
-        <NewTopicForm
-          v-if="forumStore.showNewTopicBox"
-          :categories="forumStore.categories"
-          :window-width="forumStore.windowWidth"
-          :is-submitting="forumStore.isSubmittingNewTopic"
-          :is-uploading-images="forumStore.isUploadingNewTopicImages"
-          @submit="handleNewTopicSubmit"
-          @cancel="handleNewTopicCancel"
-          @category-change="handleNewTopicCategoryChange"
-        />
+        <NewTopicForm v-if="forumStore.showNewTopicBox" />
 
-        <TopicListView
-          :topics="forumStore.topics"
-          :categories="forumStore.categories"
-          :is-loading="forumStore.isLoading"
-          :pagination="forumStore.pagination"
-          :selected-thread="forumStore.selectedThread"
-          :thread-detail="forumStore.threadDetail"
-          :thread-posts="forumStore.threadPosts"
-          :thread-comments="forumStore.threadComments"
-          :thread-current-page="forumStore.threadCurrentPage"
-          :thread-items-per-page="forumStore.threadItemsPerPage"
-          :selected-category-name="forumStore.selectedCategoryName"
-          @page-change="forumStore.changePage"
-          @thread-open="forumStore.openThread"
-          @thread-close="forumStore.closeThread"
-          @reply-submitted="handleReplySubmitted"
-          @thread-page-change="forumStore.changeThreadPage"
-        />
+        <TopicListView />
       </div>
 
       <!-- 側邊欄 -->

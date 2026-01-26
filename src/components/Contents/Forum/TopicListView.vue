@@ -2,92 +2,19 @@
 <!-- 
   主題列表視圖組件 (含列表/詳情雙視圖)
   職責: 管理主題列表顯示、詳情頁切換、分頁、回覆功能
-  Props:
-    - topics: 主題列表資料
-    - categories: 分類列表 (用於詳情頁)
-    - isLoading: 是否載入中
-    - pagination: 分頁資訊 { currentPage, pageSize, totalCount, totalPages }
-    - selectedThread: 目前選中的主題ID
-  Emits:
-    - page-change: 頁碼變更
-    - thread-open: 打開主題詳情
-    - thread-close: 關閉主題詳情
-    - reply-submitted: 回覆已提交
+  使用 Pinia Store，不使用 props/emit
 -->
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
-import { CONTENT_TYPES } from "@/stores/forumStore.js";
+import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
-const props = defineProps({
-  topics: {
-    type: Array,
-    default: () => [],
-  },
-  categories: {
-    type: Array,
-    default: () => [],
-  },
-  isLoading: {
-    type: Boolean,
-    default: false,
-  },
-  pagination: {
-    type: Object,
-    default: () => ({
-      currentPage: 1,
-      pageSize: 10,
-      totalCount: 0,
-      totalPages: 1,
-    }),
-  },
-  selectedThread: {
-    type: [Number, null],
-    default: null,
-  },
-  threadDetail: {
-    type: Object,
-    default: () => ({
-      id: null,
-      title: "",
-      author: "",
-      createdAt: "",
-      content: "",
-      imageUrls: [],
-      categoryId: null,
-      type: null,
-    }),
-  },
-  threadPosts: {
-    type: Array,
-    default: () => [],
-  },
-  threadComments: {
-    type: Array,
-    default: () => [],
-  },
-  threadCurrentPage: {
-    type: Number,
-    default: 1,
-  },
-  threadItemsPerPage: {
-    type: Number,
-    default: 5,
-  },
-});
-
-const emit = defineEmits([
-  "page-change",
-  "thread-open",
-  "thread-close",
-  "reply-submitted",
-  "thread-page-change",
-]);
+const forumStore = useForumStore();
 
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
@@ -119,59 +46,35 @@ const handleTopicInteractionError = (data) => {
 /**
  * 分頁相關計算
  */
-const displayPages = computed(() => {
-  const { currentPage, totalPages } = props.pagination;
-  const pages = [];
-  const maxDisplay = 5;
-
-  if (totalPages <= 1) return pages;
-
-  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
-  let end = Math.min(totalPages, start + maxDisplay - 1);
-
-  if (end - start < maxDisplay - 1) {
-    start = Math.max(1, end - maxDisplay + 1);
-  }
-
-  for (let i = start; i <= end; i++) pages.push(i);
-  return pages;
-});
+const displayPages = computed(() => forumStore.displayPages);
 
 /**
  * 執行線程分頁
  */
-const threadTotalPages = computed(() =>
-  Math.ceil(props.threadPosts.length / props.threadItemsPerPage)
-);
+const threadTotalPages = computed(() => forumStore.threadTotalPages);
 
-const paginatedThreadPosts = computed(() => {
-  const start = (props.threadCurrentPage - 1) * props.threadItemsPerPage;
-  return props.threadPosts.slice(start, start + props.threadItemsPerPage);
-});
+const paginatedThreadPosts = computed(() => forumStore.paginatedThreadPosts);
 
 /**
  * 頁面導航
  */
 const goToPage = (page) => {
-  if (page < 1 || page > props.pagination.totalPages) return;
-  emit("page-change", page);
+  forumStore.changePage(page);
 };
 
 const goToThreadPage = (page) => {
-  if (page >= 1 && page <= threadTotalPages.value) {
-    emit("thread-page-change", page);
-  }
+  forumStore.changeThreadPage(page);
 };
 
 const prevThreadPage = () => {
-  if (props.threadCurrentPage > 1) {
-    emit("thread-page-change", props.threadCurrentPage - 1);
+  if (forumStore.threadCurrentPage > 1) {
+    forumStore.changeThreadPage(forumStore.threadCurrentPage - 1);
   }
 };
 
 const nextThreadPage = () => {
-  if (props.threadCurrentPage < threadTotalPages.value) {
-    emit("thread-page-change", props.threadCurrentPage + 1);
+  if (forumStore.threadCurrentPage < threadTotalPages.value) {
+    forumStore.changeThreadPage(forumStore.threadCurrentPage + 1);
   }
 };
 
@@ -214,7 +117,7 @@ const handleQuickReplyImages = async (event) => {
 };
 
 const submitQuickReply = async () => {
-  if (!props.threadDetail?.id) {
+  if (!forumStore.threadDetail?.id) {
     alert("未找到對應的主題，請重新嘗試");
     return;
   }
@@ -230,9 +133,9 @@ const submitQuickReply = async () => {
   const isComment = quickReplyMode.value === "comment";
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: props.threadDetail.categoryId,
-    parentContentId: props.threadDetail.id,
-    title: `${isComment ? "留言" : "Re"}: ${props.threadDetail.title}`,
+    categoryId: forumStore.threadDetail.categoryId,
+    parentContentId: forumStore.threadDetail.id,
+    title: `${isComment ? "留言" : "Re"}: ${forumStore.threadDetail.title}`,
     body: quickReplyContent.value.trim(),
     type: isComment ? CONTENT_TYPES.COMMENT : CONTENT_TYPES.REPLY,
   };
@@ -240,7 +143,12 @@ const submitQuickReply = async () => {
   try {
     await apiClient.post("/ContentApi", dto);
     alert("已送出！");
-    emit("reply-submitted");
+    
+    // 直接调用 store 重新获取详情
+    if (forumStore.selectedThread) {
+      await forumStore.fetchThreadDetail(forumStore.selectedThread);
+    }
+    
     resetQuickReply();
     showQuickReply.value = false;
   } catch (error) {
@@ -250,44 +158,36 @@ const submitQuickReply = async () => {
     isSubmittingQuickReply.value = false;
   }
 };
-
-watch(
-  () => props.selectedThread,
-  () => {
-    showQuickReply.value = false;
-    resetQuickReply();
-  }
-);
 </script>
 
 <template>
   <div class="card shadow-sm">
     <!-- 卡片標題 (列表視圖) -->
     <div
-      v-if="!selectedThread"
+      v-if="!forumStore.selectedThread"
       class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
     >
       <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
       <div class="d-flex flex-wrap gap-2">
         <span
           class="badge bg-secondary"
-          v-if="$attrs['selected-category-name']"
+          v-if="forumStore.selectedCategoryName"
         >
-          {{ $attrs["selected-category-name"] }}
+          {{ forumStore.selectedCategoryName }}
         </span>
-        <span class="badge bg-info"> 共 {{ pagination.totalCount }} 筆 </span>
+        <span class="badge bg-info"> 共 {{ forumStore.pagination.totalCount }} 筆 </span>
       </div>
     </div>
 
     <!-- 卡片內容 -->
     <div class="card-body p-0">
       <!-- 詳情視圖 -->
-      <div v-if="selectedThread">
+      <div v-if="forumStore.selectedThread">
         <!-- 返回按鈕 -->
         <div class="p-3 border-bottom">
           <button
             class="btn btn-sm btn-forum-secondary"
-            @click="$emit('thread-close')"
+            @click="forumStore.closeThread()"
           >
             <i class="fas fa-arrow-left me-2"></i>
             返回列表
@@ -297,19 +197,19 @@ watch(
         <!-- 帖文內容 -->
         <div class="card-body border-bottom">
           <h3 class="card-title fs-4 fs-md-3 text-break">
-            {{ threadDetail.title }}
+            {{ forumStore.threadDetail.title }}
           </h3>
           <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
-            <span>by {{ threadDetail.author }}</span>
+            <span>by {{ forumStore.threadDetail.author }}</span>
             <span>·</span>
-            <span>{{ formatDate(threadDetail.createdAt) }}</span>
+            <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
 
           <!-- 主題互動按鈕 -->
           <div class="mb-3">
             <InteractionButtons
-              :key="`thread-detail-interactions-${threadDetail.id}`"
-              :contentId="threadDetail.id"
+              :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
+              :contentId="forumStore.threadDetail.id"
               @interaction-success="handleTopicInteractionSuccess"
               @interaction-error="handleTopicInteractionError"
             />
@@ -319,16 +219,16 @@ watch(
             class="card-text"
             style="white-space: pre-wrap; word-break: break-word"
           >
-            {{ threadDetail.content }}
+            {{ forumStore.threadDetail.content }}
           </p>
 
           <!-- 帖文圖片 -->
           <div
-            v-if="threadDetail.imageUrls && threadDetail.imageUrls.length"
+            v-if="forumStore.threadDetail.imageUrls && forumStore.threadDetail.imageUrls.length"
             class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
           >
             <img
-              v-for="(url, idx) in threadDetail.imageUrls"
+              v-for="(url, idx) in forumStore.threadDetail.imageUrls"
               :key="url + idx"
               :src="url"
               alt="貼文圖片"
@@ -439,14 +339,14 @@ watch(
             </transition>
 
             <!-- 所有留言 -->
-            <div v-if="threadComments.length > 0" class="mb-4">
+            <div v-if="forumStore.threadComments.length > 0" class="mb-4">
               <h6 class="fs-6 mb-2">📝 所有留言</h6>
               <ThreadPost
-                v-for="comment in threadComments"
+                v-for="comment in forumStore.threadComments"
                 :key="'comment-' + comment.id"
                 :post="comment"
-                :category-id="threadDetail.categoryId"
-                @reply-added="$emit('reply-submitted')"
+                :category-id="forumStore.threadDetail.categoryId"
+                :hide-nested-replies="true"
               />
             </div>
 
@@ -457,8 +357,7 @@ watch(
                 v-for="post in paginatedThreadPosts"
                 :key="post.id"
                 :post="post"
-                :category-id="threadDetail.categoryId"
-                @reply-added="$emit('reply-submitted')"
+                :category-id="forumStore.threadDetail.categoryId"
               />
             </div>
 
@@ -469,7 +368,7 @@ watch(
               >
                 <li
                   class="page-item"
-                  :class="{ disabled: threadCurrentPage === 1 }"
+                  :class="{ disabled: forumStore.threadCurrentPage === 1 }"
                   @click="prevThreadPage"
                 >
                   <a class="page-link px-2 px-md-3" href="javascript:void(0)">
@@ -480,7 +379,7 @@ watch(
                   class="page-item"
                   v-for="page in threadTotalPages"
                   :key="page"
-                  :class="{ active: threadCurrentPage === page }"
+                  :class="{ active: forumStore.threadCurrentPage === page }"
                   @click="goToThreadPage(page)"
                 >
                   <a class="page-link px-2 px-md-3" href="javascript:void(0)">
@@ -489,7 +388,7 @@ watch(
                 </li>
                 <li
                   class="page-item"
-                  :class="{ disabled: threadCurrentPage === threadTotalPages }"
+                  :class="{ disabled: forumStore.threadCurrentPage === threadTotalPages }"
                   @click="nextThreadPage"
                 >
                   <a class="page-link px-2 px-md-3" href="javascript:void(0)">
@@ -505,7 +404,7 @@ watch(
       <!-- 列表視圖 -->
       <div v-else>
         <!-- 載入中 -->
-        <div v-if="isLoading && topics.length === 0" class="text-center py-5">
+        <div v-if="forumStore.isLoading && forumStore.topics.length === 0" class="text-center py-5">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">載入中...</span>
           </div>
@@ -513,7 +412,7 @@ watch(
 
         <!-- 空狀態 -->
         <div
-          v-else-if="topics.length === 0"
+          v-else-if="forumStore.topics.length === 0"
           class="text-center py-5 text-muted"
         >
           <p>此分類目前沒有主題</p>
@@ -544,10 +443,10 @@ watch(
             </thead>
             <tbody>
               <tr
-                v-for="topic in topics"
+                v-for="topic in forumStore.topics"
                 :key="topic.id"
                 class="forum-row"
-                @click="$emit('thread-open', topic.id)"
+                @click="forumStore.openThread(topic.id)"
               >
                 <!-- 主題欄 -->
                 <td class="p-3 py-md-3">
@@ -668,7 +567,7 @@ watch(
 
     <!-- 分頁導航 (列表視圖) -->
     <div
-      v-if="!selectedThread && pagination.totalPages > 1"
+      v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
       class="card-footer bg-white py-2 py-md-3"
     >
       <nav class="d-flex justify-content-center">
@@ -678,12 +577,12 @@ watch(
           <!-- 上一頁 -->
           <li
             class="page-item"
-            :class="{ disabled: pagination.currentPage === 1 }"
+            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
           >
             <a
               class="page-link"
               href="#"
-              @click.prevent="goToPage(pagination.currentPage - 1)"
+              @click.prevent="goToPage(forumStore.pagination.currentPage - 1)"
             >
               &lsaquo;
             </a>
@@ -707,7 +606,7 @@ watch(
             v-for="pageNum in displayPages"
             :key="pageNum"
             class="page-item"
-            :class="{ active: pageNum === pagination.currentPage }"
+            :class="{ active: pageNum === forumStore.pagination.currentPage }"
           >
             <a class="page-link" href="#" @click.prevent="goToPage(pageNum)">
               {{ pageNum }}
@@ -717,7 +616,7 @@ watch(
           <!-- 省略號 -->
           <li
             v-if="
-              displayPages[displayPages.length - 1] < pagination.totalPages - 1
+              displayPages[displayPages.length - 1] < forumStore.pagination.totalPages - 1
             "
             class="page-item disabled d-none d-md-block"
           >
@@ -726,15 +625,15 @@ watch(
 
           <!-- 末頁 -->
           <li
-            v-if="displayPages[displayPages.length - 1] < pagination.totalPages"
+            v-if="displayPages[displayPages.length - 1] < forumStore.pagination.totalPages"
             class="page-item d-none d-md-block"
           >
             <a
               class="page-link"
               href="#"
-              @click.prevent="goToPage(pagination.totalPages)"
+              @click.prevent="goToPage(forumStore.pagination.totalPages)"
             >
-              {{ pagination.totalPages }}
+              {{ forumStore.pagination.totalPages }}
             </a>
           </li>
 
@@ -742,13 +641,13 @@ watch(
           <li
             class="page-item"
             :class="{
-              disabled: pagination.currentPage === pagination.totalPages,
+              disabled: forumStore.pagination.currentPage === forumStore.pagination.totalPages,
             }"
           >
             <a
               class="page-link"
               href="#"
-              @click.prevent="goToPage(pagination.currentPage + 1)"
+              @click.prevent="goToPage(forumStore.pagination.currentPage + 1)"
             >
               &rsaquo;
             </a>

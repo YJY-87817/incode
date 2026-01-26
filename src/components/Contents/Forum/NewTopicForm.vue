@@ -2,62 +2,20 @@
 <!-- 
   新主題發表表單組件
   職責: 管理新主題的標題、內容、分類、圖片上傳和提交
-  Props:
-    - categories: 分類列表
-    - windowWidth: 視窗寬度 (用於響應式調整)
-    - isSubmitting: 是否提交中
-    - isUploadingImages: 是否上傳圖片中
-  Emits:
-    - submit: 提交表單 (emit { title, body, categoryId })
-    - cancel: 取消編輯
-    - images-uploaded: 圖片上傳完成 (emit imageUrls)
-    - category-change: 分類變更
+  使用 Pinia Store，不使用 props/emit
 -->
 
 <script setup>
-import { reactive, computed, watch, onMounted } from "vue";
+import { computed, watch, onMounted } from "vue";
 import { uploadImage } from "@/api/imageapi.js";
 import { useForumStore } from "@/stores/forumStore";
 
 const forumStore = useForumStore();
 
-const props = defineProps({
-  categories: {
-    type: Array,
-    default: () => [],
-  },
-  windowWidth: {
-    type: Number,
-    default: 1024,
-  },
-  isSubmitting: {
-    type: Boolean,
-    default: false,
-  },
-  isUploadingImages: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const emit = defineEmits([
-  "submit",
-  "cancel",
-  "images-uploaded",
-  "category-change",
-]);
-
-// 表單狀態
-const form = reactive({
-  title: "",
-  body: "",
-  categoryId: null,
-});
-
 // 初始化時同步 store 的選中分類
 onMounted(() => {
-  if (forumStore.selectedCategory) {
-    form.categoryId = forumStore.selectedCategory;
+  if (forumStore.selectedCategory && !forumStore.newTopic.categoryId) {
+    forumStore.newTopic.categoryId = forumStore.selectedCategory;
   }
 });
 
@@ -65,7 +23,9 @@ onMounted(() => {
 watch(
   () => forumStore.selectedCategory,
   (newCategory) => {
-    form.categoryId = newCategory;
+    if (newCategory) {
+      forumStore.newTopic.categoryId = newCategory;
+    }
   }
 );
 
@@ -77,19 +37,23 @@ const handleImageUpload = async (event) => {
   const files = event.target?.files;
   if (!files || !files.length) return;
 
+  forumStore.isUploadingNewTopicImages = true;
+  
   try {
     const uploaded = await uploadImage(files);
     const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
     const chunk = urls.filter(Boolean).join("\n");
 
     if (chunk) {
-      form.body = [form.body.trim(), chunk].filter(Boolean).join("\n");
-      emit("images-uploaded", urls);
+      forumStore.newTopic.body = [forumStore.newTopic.body.trim(), chunk]
+        .filter(Boolean)
+        .join("\n");
     }
   } catch (error) {
     console.error("圖片上傳失敗:", error);
     alert("圖片上傳失敗，請稍後再試");
   } finally {
+    forumStore.isUploadingNewTopicImages = false;
     if (event.target) event.target.value = "";
   }
 };
@@ -98,7 +62,11 @@ const handleImageUpload = async (event) => {
  * 驗證表單
  */
 const isFormValid = computed(() => {
-  return form.title.trim() && form.body.trim() && form.categoryId;
+  return (
+    forumStore.newTopic.title.trim() &&
+    forumStore.newTopic.body.trim() &&
+    forumStore.newTopic.categoryId
+  );
 });
 
 /**
@@ -109,28 +77,14 @@ const handleSubmit = () => {
     alert("請填寫所有必填欄位");
     return;
   }
-  emit("submit", {
-    title: form.title.trim(),
-    body: form.body.trim(),
-    categoryId: form.categoryId,
-  });
+  forumStore.submitNewTopic();
 };
 
 /**
  * 取消編輯
  */
 const handleCancel = () => {
-  form.title = "";
-  form.body = "";
-  form.categoryId = null;
-  emit("cancel");
-};
-
-/**
- * 分類變更時通知父組件
- */
-const handleCategoryChange = () => {
-  emit("category-change", form.categoryId);
+  forumStore.cancelNewTopic();
 };
 </script>
 
@@ -148,13 +102,12 @@ const handleCategoryChange = () => {
           <span class="text-danger">*</span>
         </label>
         <select
-          v-model="form.categoryId"
+          v-model="forumStore.newTopic.categoryId"
           class="form-select"
-          @change="handleCategoryChange"
         >
           <option :value="null" disabled>選擇分類</option>
           <option
-            v-for="category in categories"
+            v-for="category in forumStore.categories"
             :key="category.id"
             :value="category.id"
           >
@@ -170,14 +123,14 @@ const handleCategoryChange = () => {
           <i class="fas fa-heading"></i> 標題 <span class="text-danger">*</span>
         </label>
         <input
-          v-model="form.title"
+          v-model="forumStore.newTopic.title"
           type="text"
           class="form-control"
           placeholder="輸入主題標題 (簡潔明瞭)"
           maxlength="200"
         />
         <small class="text-muted d-block mt-1">
-          {{ form.title.length }}/200
+          {{ forumStore.newTopic.title.length }}/200
         </small>
       </div>
 
@@ -187,9 +140,9 @@ const handleCategoryChange = () => {
           <i class="fas fa-pen"></i> 內容 <span class="text-danger">*</span>
         </label>
         <textarea
-          v-model="form.body"
+          v-model="forumStore.newTopic.body"
           class="form-control"
-          :rows="windowWidth < 768 ? 4 : 5"
+          :rows="forumStore.windowWidth < 768 ? 4 : 5"
           placeholder="撰寫主題內容... (可在內容中貼上圖片URL或使用下方上傳功能)"
         ></textarea>
       </div>
@@ -206,9 +159,9 @@ const handleCategoryChange = () => {
             multiple
             class="form-control form-control-sm"
             @change="handleImageUpload"
-            :disabled="isUploadingImages"
+            :disabled="forumStore.isUploadingNewTopicImages"
           />
-          <small v-if="isUploadingImages" class="text-warning">
+          <small v-if="forumStore.isUploadingNewTopicImages" class="text-warning">
             <i class="fas fa-spinner fa-spin"></i> 上傳中...
           </small>
           <small v-else class="text-muted">
@@ -224,16 +177,16 @@ const handleCategoryChange = () => {
         <button
           class="btn btn-forum-primary"
           @click="handleSubmit"
-          :disabled="isSubmitting || !isFormValid"
+          :disabled="forumStore.isSubmittingNewTopic || !isFormValid"
         >
           <i class="fas fa-paper-plane me-2"></i>
-          {{ isSubmitting ? "發送中..." : "發表" }}
+          {{ forumStore.isSubmittingNewTopic ? "發送中..." : "發表" }}
         </button>
         <button
           class="btn btn-forum-secondary"
           type="button"
           @click="handleCancel"
-          :disabled="isSubmitting"
+          :disabled="forumStore.isSubmittingNewTopic"
         >
           取消
         </button>

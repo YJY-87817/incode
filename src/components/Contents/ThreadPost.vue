@@ -82,7 +82,7 @@
 
     <!-- 巢狀回覆 -->
     <div
-      v-if="post.replies && post.replies.length > 0"
+      v-if="!hideNestedReplies && post.replies && post.replies.length > 0"
       class="replies-container ms-4"
     >
       <ThreadPost
@@ -91,7 +91,6 @@
         :post="reply"
         :is-reply="true"
         :category-id="categoryId"
-        @reply-added="$emit('reply-added')"
       />
     </div>
   </div>
@@ -101,8 +100,10 @@
 import { ref, computed } from "vue";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
-import { CONTENT_TYPES } from "@/stores/forumStore.js";
+import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+
+const forumStore = useForumStore();
 
 const props = defineProps({
   post: {
@@ -117,9 +118,11 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
+  hideNestedReplies: {
+    type: Boolean,
+    default: false,
+  },
 });
-
-const emit = defineEmits(["reply-added"]);
 
 const showReply = ref(false);
 const replyContent = ref("");
@@ -205,8 +208,11 @@ async function submitReply() {
     alert("回覆成功！");
     replyContent.value = "";
     showReply.value = false;
-    // 發射事件通知父元件重新載入資料
-    emit("reply-added");
+    
+    // 直接调用 forumStore 重新获取帖文详情
+    if (forumStore.selectedThread) {
+      await forumStore.fetchThreadDetail(forumStore.selectedThread);
+    }
   } catch (error) {
     console.error("回覆失敗:", error);
     alert("回覆失敗，請稍後再試");
