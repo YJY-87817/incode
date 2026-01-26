@@ -357,6 +357,7 @@ Table chat_session {
   title nvarchar(100) [not null, note: "對話標題"]
   created_at datetime [default: `current_timestamp`, note: "當下建立的時間"]
   updated_at datetime [default: `current_timestamp`, note: "當下更新的時間"]
+  ishumanmode bit [not null, default: 0] // 0: AI模式, 1: 真人模式
   note { "聊天室列表與狀態紀錄" }
 }
 
