@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+
 const apiClient = axios.create({
   baseURL: "https://localhost:7190/api",
   // 在這裡改timeout時間 
@@ -7,16 +8,18 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
+
 apiClient.interceptors.request.use(config => {
-  const token = localStorage.getItem('token') 
+  const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 }, error => Promise.reject(error))
 
+
 apiClient.interceptors.response.use(
-  response => response.data, 
+  response => response.data,
   error => {
     if (error.response && error.response.status === 401) {
       console.error('登入逾時，請重新登入')
@@ -24,5 +27,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
 
 export default apiClient
