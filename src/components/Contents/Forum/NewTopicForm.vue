@@ -15,8 +15,11 @@
 -->
 
 <script setup>
-import { reactive, computed } from "vue";
+import { reactive, computed, watch, onMounted } from "vue";
 import { uploadImage } from "@/api/imageapi.js";
+import { useForumStore } from "@/stores/forumStore";
+
+const forumStore = useForumStore();
 
 const props = defineProps({
   categories: {
@@ -50,6 +53,21 @@ const form = reactive({
   body: "",
   categoryId: null,
 });
+
+// 初始化時同步 store 的選中分類
+onMounted(() => {
+  if (forumStore.selectedCategory) {
+    form.categoryId = forumStore.selectedCategory;
+  }
+});
+
+// 監聽 store 的 selectedCategory 變化並同步到表單
+watch(
+  () => forumStore.selectedCategory,
+  (newCategory) => {
+    form.categoryId = newCategory;
+  }
+);
 
 /**
  * 處理圖片上傳
