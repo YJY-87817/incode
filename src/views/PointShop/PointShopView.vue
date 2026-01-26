@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
-import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
-import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
+import FilterPanel from "@/components/PointShop/FilterPanel.vue";
+import ProductGrid from "@/components/PointShop/ProductGrid.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 

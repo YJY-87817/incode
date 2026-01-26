@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { getOrdersByUser } from "@/views/PointShop/services/PointShopApi";
-import OrderItem from "./OrderItem.vue";
+import OrderItem from "@/components/PointShop/OrderItem.vue";
 
 const props = defineProps({
   userId: Number,

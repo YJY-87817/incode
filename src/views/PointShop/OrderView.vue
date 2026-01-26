@@ -1,7 +1,7 @@
 <script setup>
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import OrderList from "@/views/PointShop/components/OrderList.vue";
+import OrderList from "@/components/PointShop/OrderList.vue";
 
 const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
 </script>
