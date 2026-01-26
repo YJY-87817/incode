@@ -102,7 +102,10 @@ const submitNewTopic = () => {
     alert("請填寫標題與內容");
     return;
   }
-  if (!newTopicState.categoryId) {
+  
+  // 若有 parentContentId，不需檢查 categoryId（會使用 parent 的 category）
+  // 若無 parentContentId，需檢查 categoryId
+  if (!newTopicState.parentContentId && !newTopicState.categoryId) {
     alert("請選擇分類");
     return;
   }
