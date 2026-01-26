@@ -66,7 +66,7 @@ const viewDetail = (task) => {
 
 <template>
   <div class="fixed-top w-100 z-index-3">
-    <DefaultNavbar transparent />
+    <DefaultNavbar light="" />
   </div>
 
   <div class="bg-gray-100 min-vh-100 pb-5">
@@ -81,7 +81,7 @@ const viewDetail = (task) => {
                 <img :src="stats.avatar" class="border-radius-lg shadow-sm" />
               </div>
               <div>
-                <h3 class="text-white font-weight-bolder mb-0">影迷管理中心</h3>
+                <h3 class="text-white font-weight-bolder mb-0">任務管理中心</h3>
                 <p class="text-white opacity-8 mb-0">
                   追蹤您的電影委託進度與積分報酬
                 </p>

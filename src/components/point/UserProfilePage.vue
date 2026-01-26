@@ -1,4 +1,4 @@
-<!-- 使用者資訊欄 -->
+<!-- 使用者資訊欄
 <script setup>
 import { defineProps } from "vue";
 import CityProfile from "@/assets/img/city-profile.jpg";
@@ -191,4 +191,4 @@ const props = defineProps({
   background: linear-gradient(90deg, #17a2b8, #00d2ff) !important;
   box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
 }
-</style>
+</style> -->
