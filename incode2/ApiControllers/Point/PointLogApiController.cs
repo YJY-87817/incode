@@ -10,6 +10,7 @@ using incode2.DTO;
 using incode2.Dtos;
 using incode2.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 namespace incode2.ApiControllers.Point
 {
@@ -62,6 +63,7 @@ namespace incode2.ApiControllers.Point
 
         // 修改後的 GET：只抓特定使用者的紀錄
         [HttpGet("user/my-logs")]
+        [Authorize]
         public async Task<IEnumerable<PointLogDTO>> GetPointLogByUser()
         {
             int UserId = User.GetId(); // 從 JWT 取得使用者 ID
