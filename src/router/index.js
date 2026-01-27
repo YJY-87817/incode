@@ -44,7 +44,7 @@ import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
 // yjy 以下
-import PointShopView from "@/views/PointShop/PointShopView.vue";
+import ProductView from "@/views/PointShop/ProductView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
 import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
@@ -299,7 +299,7 @@ const router = createRouter({
     // yjy 以下
     {
       path: "/PointShop/Product",
-      component: PointShopView,
+      component: ProductView,
       children: [
         {
           path: '',
