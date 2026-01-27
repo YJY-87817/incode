@@ -25,11 +25,6 @@ namespace incode2.ApiControllers
         }
 
         var urls = await _imageService.UploadImagesAsync(files);
-        if (urls.Count == 1)
-        {
-          return Ok(new { url = urls[0] });
-        }
-
         return Ok(new { urls });
       }
       catch (Exception ex)
