@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import MaterialButton from "@/components/MaterialButton.vue";
-import MaterialInput from "@/components/MaterialInput.vue";
+import FooterCentered from "@/examples/footers/FooterCentered.vue";
 
 // 1. 狀態控制
 const activeTab = ref("platform");
@@ -328,7 +327,7 @@ onMounted(() => {
       <div
         class="page-header min-height-250 border-radius-xl mt-4 mx-4 shadow-lg"
         style="
-          background-image: url('https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1920&q=80');
+          background-image: url(&quot;https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1920&q=80&quot;);
         "
       >
         <span class="mask bg-gradient-dark opacity-7"></span>
@@ -914,6 +913,7 @@ onMounted(() => {
       class="drawer-backdrop"
     ></div>
   </div>
+  <FooterCentered />
 </template>
 
 <style scoped>
