@@ -51,15 +51,17 @@ const handleAddToCart = () => {
 
                 <div class="col-12 col-md-6 d-flex flex-column h-100">
                     <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-link text-info p-0" aria-label="Close" @click="$router.back()">
-                            <i class="bi bi-x-lg fs-5"></i>
+                        <button class="btn p-0" aria-label="Close" @click="$router.back()">
+                            <h6>
+                                <i class="bi bi-caret-left-fill"></i>返回
+                            </h6>
                         </button>
                     </div>
 
                     <div>
                         <span class="badge rounded-pill bg-primary bg-opacity-10 mb-2">{{
                             product.type
-                        }}</span>
+                            }}</span>
                         <h2 class="card-title fw-bold text-body-highlight mb-3" :title="product.name">{{ product.name }}
                         </h2>
                     </div>
@@ -103,7 +105,7 @@ const handleAddToCart = () => {
                     <h5 class="mb-3 fw-bold d-flex align-items-center">
                         <span class="far fa-file-alt me-2 text-primary"></span>商品詳情
                     </h5>
-                    <div class="text-body-secondary lh-lg">
+                    <div class="lh-lg">
                         <p>{{ product.description }}</p>
                     </div>
                 </div>
