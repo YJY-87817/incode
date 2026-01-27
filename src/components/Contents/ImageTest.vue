@@ -3,6 +3,7 @@ import { ref } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import ImageCarousel from "./ImageCarousel.vue";
 import { uploadMultipleImages } from "@/api/imageapi";
+import RichTextEditor from "@/components/RichTextEditor.vue";
 
 // 多圖上傳相關
 const selectedFiles = ref([]); // 儲存選中的多個檔案
@@ -13,6 +14,7 @@ const isSaving = ref(false); // 保存狀態
 const errorMessage = ref(""); // 錯誤訊息
 const uploadProgress = ref(0); // 上傳進度
 const successMessage = ref(""); // 成功訊息
+const rteContent = ref("<p>在這裡測試 Tiptap</p>");
 
 // 當使用者選擇多個檔案時觸發
 const handleFileChange = (event) => {
@@ -251,31 +253,22 @@ const clearAllImages = () => {
           </div>
         </div>
         <div class="card shadow-sm mt-4">
-          <div class="card-header bg-gradient-info"></div>
-          <div class="card-body"></div>
-        </div>
-
-        <!-- 使用說明 -->
-        <div class="card shadow-sm mt-4">
           <div class="card-header bg-gradient-info">
-            <h6 class="text-white mb-0">
-              <i class="fas fa-info-circle me-2"></i>使用說明
-            </h6>
+            <h5 class="text-white mb-0">Tiptap 富文字編輯器測試</h5>
           </div>
           <div class="card-body">
-            <ul class="mb-0">
-              <li>點擊「選擇圖片」按鈕可一次選擇多張圖片</li>
-              <li>選擇後會顯示預覽，圖片只在前端暫時顯示</li>
-              <li>點擊預覽圖上的「✕」可移除不需要的圖片</li>
-              <li>
-                確認無誤後，點擊「保存圖片」才會上傳到伺服器並保存到資料庫
-              </li>
-              <li>已保存的圖片會顯示在下方，可以左右滑動查看</li>
-              <li>點擊縮圖可快速切換到指定圖片</li>
-              <li>使用「取消」按鈕可清除所有預覽圖片（不影響已保存的圖片）</li>
-            </ul>
+            <RichTextEditor
+              v-model="rteContent"
+              placeholder="在此輸入測試內容..."
+            />
+            <div class="mt-3">
+              <h6 class="mb-2">即時預覽</h6>
+              <div class="border rounded p-3 bg-light" v-html="rteContent"></div>
+            </div>
           </div>
         </div>
+
+        
       </div>
     </div>
   </div>
