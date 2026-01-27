@@ -47,6 +47,8 @@ import PointLog from "../views/point/PointLog.vue";
 import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
+import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
+import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
 // yjy 以上
 
 const router = createRouter({
@@ -297,8 +299,20 @@ const router = createRouter({
     // yjy 以下
     {
       path: "/PointShop/Product",
-      name: "PointShop",
       component: PointShopView,
+      children: [
+        {
+          path: '',
+          name: "PointShop",
+          component: ProductGrid,
+        },
+        {
+          path: ':id',
+          name: "ProductDetail",
+          component: ProductDetail,
+          props: true,
+        }
+      ]
     },
     {
       path: "/PointShop/Order",

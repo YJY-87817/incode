@@ -127,10 +127,19 @@ onMounted(() => {
         </div>
 
         <div class="col-lg-9">
-          <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
+          <!-- <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
             @reset-filters="resetFilters" />
-          <ProductDetail />
+          <br>
+          <br> -->
+          <router-view v-slot="{ Component }">
+            <transition name="fade" mode="out-in">
+              <component :is="Component" :products="products" :filtered-products="filteredProducts" :loading="loading"
+                @reset-filters="resetFilters" />
+            </transition>
+          </router-view>
         </div>
+
+
       </div>
     </div>
   </div>

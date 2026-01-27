@@ -18,53 +18,47 @@ const handleAddToCart = () => {
 </script>
 
 <template>
+
+
   <div class="card h-auto shadow-sm border-0 product-hover-effect">
     <div class="row g-0">
       <!-- 圖片區域 -->
       <div class="col-md-4">
-        <div
-          class="product-image-container position-relative bg-light overflow-hidden"
-        >
-          <img
-            :src="`https://localhost:7190/img/product/${product.imageName}`"
-            :alt="product.name"
-            class="img-fluid product-image"
-          />
-          <div class="position-absolute top-0 start-0 m-2">
-            <span class="badge bg-primary opacity-75 fw-normal">{{
-              product.type
-            }}</span>
+        <router-link :to="{ name: 'ProductDetail', params: { id: product.productId } }">
+          <div class="product-image-container position-relative bg-light overflow-hidden">
+            <img :src="`https://localhost:7190/img/product/${product.imageName}`" :alt="product.name"
+              class="img-fluid product-image" />
+            <div class="position-absolute top-0 start-0 m-2">
+              <span class="badge bg-primary opacity-75 fw-normal">{{
+                product.type
+              }}</span>
+            </div>
           </div>
-        </div>
+        </router-link>
       </div>
 
       <!-- 內容區域 -->
       <div class="col-md-8">
         <div class="card-body d-flex flex-column h-100">
-          <h5 class="card-title fw-bold text-truncate" :title="product.name">
-            {{ product.name }}
-          </h5>
-          <p
-            class="card-text text-muted small flex-grow-1 text-multi-line-truncate"
-          >
-            {{ product.description }}
-          </p>
+          <router-link :to="{ name: 'ProductDetail', params: { id: product.productId } }">
 
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="text-primary fw-bold fs-5"
-              >{{ product.point }} <small>P</small></span
-            >
-            <span class="badge rounded-pill bg-light text-dark border">
-              庫存: {{ product.stock }}
-            </span>
-          </div>
+            <h5 class="card-title fw-bold text-truncate" :title="product.name">
+              {{ product.name }}
+            </h5>
+            <p class="card-text text-muted small flex-grow-1 text-multi-line-truncate">
+              {{ product.description }}
+            </p>
 
-          <button
-            @click="handleAddToCart"
-            :disabled="product.stock <= 0"
-            class="btn w-100 fw-bold transition"
-            :class="product.stock > 0 ? 'btn-outline-primary' : 'btn-secondary'"
-          >
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="text-primary fw-bold fs-5">{{ product.point }} <small>P</small></span>
+              <span class="badge rounded-pill bg-light text-dark border">
+                庫存: {{ product.stock }}
+              </span>
+            </div>
+          </router-link>
+
+          <button @click="handleAddToCart" :disabled="product.stock <= 0" class="btn w-100 fw-bold transition"
+            :class="product.stock > 0 ? 'btn-outline-primary' : 'btn-secondary'">
             {{ product.stock > 0 ? "加入購物車" : "已售完" }}
           </button>
         </div>
@@ -81,6 +75,7 @@ const handleAddToCart = () => {
     box-shadow 0.2s ease-in-out;
   overflow: hidden;
 }
+
 .product-hover-effect:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12) !important;
@@ -101,6 +96,7 @@ const handleAddToCart = () => {
   object-fit: cover;
   transition: transform 0.3s ease;
 }
+
 .product-hover-effect:hover .object-fit-cover {
   transform: scale(1.05);
 }
