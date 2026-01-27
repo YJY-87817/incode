@@ -128,7 +128,7 @@ watch(
 <style scoped>
 /* 自定義顏色方案 */
 :root {
-  --forum-primary: #432f28;
+  --forum-primary: #145369;
   --forum-light: #fff0dd;
   --forum-gray: #d1d3d4;
   --forum-accent: #86b0bd;
@@ -136,8 +136,8 @@ watch(
 
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: #432f28;
-  border-color: #432f28;
+  background-color: #145369;
+  border-color: #145369;
   color: #fff0dd;
   transition: all 0.3s ease;
 }
@@ -145,9 +145,9 @@ watch(
 .btn-forum-primary:hover {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(67, 47, 40, 0.3);
+  box-shadow: 0 4px 8px rgba(20, 83, 105, 0.3);
 }
 
 .btn-forum-primary:disabled {
@@ -177,7 +177,7 @@ watch(
 }
 
 .badge.bg-info {
-  background-color: #432f28 !important;
+  background-color: #145369 !important;
   color: #fff0dd;
 }
 
@@ -187,13 +187,13 @@ watch(
 }
 
 .card-header {
-  background-color: #fff0dd !important;
+  background-color: #86B0BD !important;
   border-bottom-color: #d1d3d4;
 }
 
 .card-header h5,
 .card-header h6 {
-  color: #432f28;
+  color: #fff;
 }
 
 /* 表格樣式 */
@@ -217,41 +217,41 @@ watch(
 
 /* 分頁樣式 */
 .pagination .page-item.active .page-link {
-  background-color: #432f28;
-  border-color: #432f28;
+  background-color: #145369;
+  border-color: #145369;
   color: #fff0dd;
 }
 
 .pagination .page-link {
-  color: #432f28;
+  color: #145369;
   border-color: #d1d3d4;
 }
 
 .pagination .page-link:hover {
   background-color: #fff0dd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 /* 載入動畫顏色 */
 .spinner-border {
-  color: #432f28 !important;
+  color: #145369 !important;
 }
 
 /* 文字顏色 */
 .text-primary {
-  color: #432f28 !important;
+  color: #145369 !important;
 }
 
 /* 留言框樣式 */
 .reply-box {
   background-color: rgba(255, 240, 221, 0.5);
-  border-left-color: #432f28;
+  border-left-color: #145369;
 }
 
 /* 邊框顏色 */
 .border-forum-selected {
-  border-color: #432f28 !important;
+  border-color: #145369 !important;
   border-width: 2px !important;
 }
 

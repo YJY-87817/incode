@@ -665,12 +665,12 @@ const submitQuickReply = async () => {
 }
 
 .card-header {
-  background-color: #fff0dd !important;
+  background-color: #86B0BD !important;
   border-bottom-color: #d1d3d4;
 }
 
 .card-header h5 {
-  color: #432f28;
+  color: #fff;
 }
 
 .card-footer {
@@ -681,20 +681,20 @@ const submitQuickReply = async () => {
 .btn-forum-secondary {
   background-color: transparent;
   border: 1px solid #d1d3d4;
-  color: #432f28;
+  color: #145369;
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
   background-color: #fff0dd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 /* 表格樣式 */
 .table-light {
   background-color: #fff0dd !important;
-  color: #432f28;
+  color: #145369;
 }
 
 .table-hover tbody tr:hover {
@@ -718,22 +718,22 @@ const submitQuickReply = async () => {
 /* 徽章樣式 */
 .badge.bg-secondary {
   background-color: #86b0bd !important;
-  color: #432f28;
+  color: #fff;
 }
 
 .badge.bg-info {
-  background-color: #432f28 !important;
+  background-color: #145369 !important;
   color: #fff0dd;
 }
 
 .badge.bg-primary {
   background-color: #86b0bd !important;
-  color: #432f28;
+  color: #fff;
 }
 
 /* 主題標題 */
 .topic-title-link {
-  color: #432f28;
+  color: #145369;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
@@ -782,25 +782,25 @@ const submitQuickReply = async () => {
 
 /* 分頁樣式 */
 .pagination .page-item.active .page-link {
-  background-color: #432f28;
-  border-color: #432f28;
+  background-color: #145369;
+  border-color: #145369;
   color: #fff0dd;
 }
 
 .pagination .page-link {
-  color: #432f28;
+  color: #145369;
   border-color: #d1d3d4;
 }
 
 .pagination .page-link:hover {
   background-color: #fff0dd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 /* 載入動畫 */
 .spinner-border {
-  color: #432f28 !important;
+  color: #145369 !important;
 }
 
 /* 響應式調整 */

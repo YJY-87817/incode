@@ -142,20 +142,20 @@ function getButtonClass(categoryId) {
 .btn-interaction {
   background-color: transparent;
   border: 1px solid #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 .btn-interaction:hover:not(:disabled) {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #fff0dd;
+  color: #fff;
 }
 
 /* 激活狀態 */
 .btn-interaction-active {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #fff0dd;
+  color: #fff;
 }
 
 .btn-interaction-active:hover:not(:disabled) {

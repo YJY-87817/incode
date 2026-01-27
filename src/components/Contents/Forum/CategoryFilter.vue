@@ -102,12 +102,12 @@ const forumStore = useForumStore();
 }
 
 .card-header {
-  background-color: #fff0dd !important;
+  background-color: #86B0BD !important;
   border-bottom-color: #d1d3d4;
 }
 
 .card-header h5 {
-  color: #432f28;
+  color: #fff;
 }
 
 /* 分類卡片樣式 */
@@ -136,14 +136,14 @@ const forumStore = useForumStore();
  */
 .category-card.border-primary {
   background: #fff0dd;
-  border-color: #432f28 !important;
+  border-color: #145369 !important;
   border-width: 2px;
   box-shadow: 0 0 0 3px rgba(134, 176, 189, 0.2);
 }
 
 /* 分類名稱樣式 */
 .category-card h6 {
-  color: #432f28;
+  color: #145369;
   font-size: 0.85rem;
   line-height: 1.2;
 }
@@ -155,7 +155,7 @@ const forumStore = useForumStore();
 }
 
 .category-card.border-primary .category-tags {
-  color: #432f28;
+  color: #145369;
   font-weight: 500;
 }
 
@@ -187,12 +187,12 @@ const forumStore = useForumStore();
 
 /* 載入動畫顏色 */
 .spinner-border {
-  color: #432f28 !important;
+  color: #145369 !important;
 }
 
 /* 鍵盤焦點樣式 (無障礙) */
 .category-card:focus-visible {
-  outline: 2px solid #432f28;
+  outline: 2px solid #145369;
   outline-offset: 2px;
 }
 

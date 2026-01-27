@@ -246,8 +246,8 @@ function handleInteractionError(data) {
 <style scoped>
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: #432f28;
-  border-color: #432f28;
+  background-color: #145369;
+  border-color: #145369;
   color: #fff0dd;
   transition: all 0.3s ease;
 }
@@ -255,7 +255,7 @@ function handleInteractionError(data) {
 .btn-forum-primary:hover {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #fff;
 }
 
 .btn-forum-primary:disabled {
@@ -268,19 +268,19 @@ function handleInteractionError(data) {
 .btn-forum-secondary {
   background-color: transparent;
   border: 1px solid #d1d3d4;
-  color: #432f28;
+  color: #145369;
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
   background-color: #fff0dd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 .card-title {
   font-weight: 600;
-  color: #432f28;
+  color: #145369;
 }
 
 .thread-post .card {
@@ -295,7 +295,7 @@ function handleInteractionError(data) {
 .content-text {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #432f28;
+  color: #145369;
 }
 
 .reply-image-list {
