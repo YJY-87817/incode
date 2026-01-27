@@ -422,12 +422,12 @@ async function submitContent() {
   isSubmitting.value = true;
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: thread.value.categoryId ? thread.value.categoryId : 1,
-    ParentContentId: threadId,
-    Title: `Re: ${thread.value.title}`,
-    Body: body,
-    Type: config.type,
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: thread.value.categoryId ? thread.value.categoryId : 1,
+    parentContentId: threadId,
+    title: `Re: ${thread.value.title}`,
+    body,
+    type: config.type,
   };
 
   try {

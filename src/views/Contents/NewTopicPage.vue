@@ -3,6 +3,7 @@ import { reactive, onMounted, watch, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
+import { CONTENT_TYPES } from "@/stores/forumStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 
@@ -95,12 +96,14 @@ const submitNewTopic = () => {
     return;
   }
 
+  const isReply = Boolean(newTopicState.parentContentId);
   const dto = {
-    CategoryId: newTopicState.categoryId,
-    ParentContentId: newTopicState.parentContentId,
-    Title: newTopicState.title,
-    Body: newTopicState.body,
-    Type: 1, // 設定為貼文類型 (CONTENT_TYPES.POST)
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: newTopicState.categoryId,
+    parentContentId: newTopicState.parentContentId,
+    title: newTopicState.title,
+    body: newTopicState.body,
+    type: isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST,
   };
 
   apiClient

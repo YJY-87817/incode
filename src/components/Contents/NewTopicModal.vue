@@ -1,6 +1,6 @@
 <script setup>
 import { reactive, onMounted, watch, ref } from "vue";
-import { useForumStore } from "@/stores/forumStore";
+import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 
@@ -110,12 +110,14 @@ const submitNewTopic = () => {
     return;
   }
 
+  const isReply = Boolean(newTopicState.parentContentId);
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: newTopicState.categoryId,
     parentContentId: newTopicState.parentContentId,
     title: newTopicState.title,
     body: newTopicState.body,
+    type: isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST,
   };
 
   apiClient

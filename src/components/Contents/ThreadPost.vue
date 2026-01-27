@@ -195,12 +195,12 @@ async function submitReply() {
   isSubmittingReply.value = true;
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
-    ParentContentId: props.post.id, // 回覆到當前貼文/留言
-    Title: `Re: ${props.post.content.substring(0, 50)}...`, // 簡短標題
-    Body: replyContent.value.trim(),
-    Type: CONTENT_TYPES.COMMENT_REPLY, // 設定為留言回覆類型
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
+    parentContentId: props.post.id, // 回覆到當前貼文/留言
+    title: `Re: ${props.post.content.substring(0, 50)}...`, // 簡短標題
+    body: replyContent.value.trim(),
+    type: CONTENT_TYPES.COMMENT_REPLY, // 設定為留言回覆類型
   };
 
   try {
