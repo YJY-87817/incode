@@ -60,11 +60,8 @@ const handleRegister = async () => {
     const payload = {
       email: formData.value.email,
       password: formData.value.password,
-      confirmpassword: formData.value.confirmpassword,
-      username: formData.value.username,
-      // 處理生日：如果有值就傳送，如果是空字串就傳送 null (或不傳)
-      // 注意：請確認後端 DTO 的 Birth 允許 null (DateTime?)
-      birth: formData.value.birth ? formData.value.birth : null,
+      username: formData.value.username || undefined,
+      birth: formData.value.birth || null, // 允許 null (DateTime?)
     };
 
     console.log("準備傳送的資料:", payload); // 在 Console 檢查一下資料對不對

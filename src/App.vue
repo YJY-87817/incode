@@ -23,9 +23,9 @@ import { useAuthStore } from "@/stores/user/auth";
 
 const authStore = useAuthStore();
 
-onMounted(() => {
+onMounted(async () => {
   console.log("App 啟動，檢查登入狀態...");
-  // authStore.checkLoginStatus(); //之後接api
+  await authStore.checkAuth();
 });
 </script>
 

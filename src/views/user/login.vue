@@ -1,21 +1,21 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/user/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const isLoading = ref(false);
+const errorMessage = ref("");
 const rememberMe = ref(false);
 const visible = ref(false);
 const formValid = ref(false);
 const email = ref("");
 const password = ref("");
-const terms = ref(false);
 
 const rules = {
   required: (value) => !!value || "此欄位必填",
   email: (value) => {
-    // Email 格式規則
     const pattern = /^[^@]+@[^@]+\.[^@]+$/;
     return pattern.test(value) || "Email 格式不正確";
   },
@@ -23,36 +23,31 @@ const rules = {
 
 const handleLogin = async () => {
   if (!formValid.value) return;
-
   isLoading.value = true;
+  errorMessage.value = "";
   try {
     const loginData = {
       email: email.value,
       password: password.value,
+      rememberMe: rememberMe.value,
     };
     console.log("正在嘗試登入...", loginData);
     const success = await authStore.login(loginData);
-
-    console.log("Store 回傳結果:", success); // <--- 檢查這裡印出什麼
-
     if (success) {
       console.log("準備跳轉頁面...");
       await router.push("/userindex");
-    } else {
-      alert("登入失敗，請檢查帳號密碼");
     }
   } catch (error) {
-    console.error("登入過程發生錯誤:", error);
+    console.error("登入失敗:", error);
+    if (error.response && error.response.data) {
+      errorMessage.value = error.response.data.message || "帳號或密碼錯誤";
+    } else {
+      errorMessage.value = "伺服器無回應，請稍後再試";
+    }
   } finally {
     isLoading.value = false;
   }
 };
-
-onMounted(() => {
-  if (authStore.resetForm) {
-    authStore.resetForm(); // 進入登入頁面時重置清掉 Store 裡的殘留資料
-  }
-});
 </script>
 
 <template>
@@ -88,6 +83,7 @@ onMounted(() => {
               density="comfortable"
               color="primary"
               :rules="[rules.required, rules.email]"
+              autocomplete="username"
             ></v-text-field>
           </div>
 
@@ -104,6 +100,7 @@ onMounted(() => {
               color="primary"
               :rules="[rules.required]"
               @click:append-inner="visible = !visible"
+              autocomplete="current-password"
             ></v-text-field>
           </div>
 
@@ -124,7 +121,17 @@ onMounted(() => {
               忘記密碼?
             </a>
           </div>
-
+          <v-alert
+            v-if="errorMessage"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4 text-caption"
+            closable
+            @click:close="errorMessage = ''"
+          >
+            {{ errorMessage }}
+          </v-alert>
           <v-btn
             type="submit"
             color="primary"
@@ -158,7 +165,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 讓 checkbox 的 label 文字稍微小一點，更精緻 */
 :deep(.v-label) {
   font-size: 0.875rem;
   color: #666;
