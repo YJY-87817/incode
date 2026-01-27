@@ -12,8 +12,9 @@ using incode2.Services.Point;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<incodedatabaseContext>(options => {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+builder.Services.AddDbContext<incodedatabaseContext>(options =>
+{
+  options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
 
 
@@ -24,22 +25,22 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // ==========================================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("VueApp", policy =>
-    {
-        policy.WithOrigins(
-          "https://localhost:5173",
-          "https://localhost:5174",
-          "http://localhost:5173",
-          "http://localhost:5174",
-          "http://localhost:8080",
-          "http://localhost:3000",
-          "http://localhost:7190",
-          "http://localhost:3001"
-        )
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
-    });
+  options.AddPolicy("VueApp", policy =>
+  {
+    policy.WithOrigins(
+        "https://localhost:5173",
+        "https://localhost:5174",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:7190",
+        "http://localhost:3001"
+      )
+      .AllowAnyMethod()
+      .AllowAnyHeader()
+      .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
+  });
 });
 
 // Gemini服務
@@ -144,17 +145,33 @@ else
   app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
+//以下tim的
+// 在 app.UseStaticFiles(); 之前添加
+app.UseStaticFiles(new StaticFileOptions
+{
+  OnPrepareResponse = ctx =>
+  {
+    // 為圖片文件添加 CORS headers
+    if (ctx.File.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+        ctx.File.Name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+        ctx.File.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+        ctx.File.Name.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
+        ctx.File.Name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+    {
+      ctx.Context.Response.Headers.Add("Access-Control-Allow-Origin", "https://localhost:5173");
+      ctx.Context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+    }
+  }
+});
+//以上tim的
 
-// 
-app.UseCors("VueApp");
+app.UseHttpsRedirection();
+app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
+app.UseStaticFiles(); // 如果有靜態文件
+app.UseRouting();
 app.UseAuthentication(); //  Cookie)
 app.UseAuthorization();  //  Role)
-
 // https://localhost:xxxx/img/
-app.UseStaticFiles();
 app.MapStaticAssets();
 // 
 
