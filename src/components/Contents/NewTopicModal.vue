@@ -111,18 +111,20 @@ const submitNewTopic = () => {
   }
 
   const dto = {
-    UserId: 1, // TODO: 改成實際使用者 ID
-    CategoryId: newTopicState.categoryId,
-    ParentContentId: newTopicState.parentContentId,
-    Title: newTopicState.title,
-    Body: newTopicState.body,
+    userId: 1, // TODO: 改成實際使用者 ID
+    categoryId: newTopicState.categoryId,
+    parentContentId: newTopicState.parentContentId,
+    title: newTopicState.title,
+    body: newTopicState.body,
   };
 
   apiClient
     .post("/ContentApi", dto)
     .then(() => {
       alert("發表成功");
-      forumStore.triggerTopicRefresh();
+      // 直接刷新主題列表而不是只觸發信號
+      forumStore.pagination.currentPage = 1;
+      forumStore.fetchTopics();
       closeNewTopic();
     })
     .catch((error) => {
