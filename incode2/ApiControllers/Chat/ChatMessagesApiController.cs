@@ -64,22 +64,49 @@ namespace incode2.ApiControllers.Chat
         [Route("api/ChatMessages/SwitchMode")]
         public async Task<IActionResult> SwitchMode([FromBody] SwitchModeDto request)
         {
-            // request.SessionId 必須是 int
+            // 嘗試尋找 Session
             var session = await _context.ChatSession.FindAsync(request.SessionId);
-            if (session == null) return NotFound("找不到對話紀錄");
 
-            session.Ishumanmode = request.Ishumanmode;
-            await _context.SaveChangesAsync();
+            // 如果找不到 (session == null)，直接建立一個新的！
+            if (session == null)
+            {
+                session = new ChatSession
+                {
+                    // 如果是用戶第一次來，可能沒有 UserID，預設給 1
+                    UserId = 1,
+                    Title = "新對話 " + DateTime.Now.ToString("MM/dd HH:mm"),
+                    Ishumanmode = request.Ishumanmode, // 直接設定成請求的模式
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+
+                _context.ChatSession.Add(session);
+                await _context.SaveChangesAsync();
+
+                // 更新 request 的 SessionId，因為等一下 SignalR 可能會用到
+                request.SessionId = session.ChatSessionId;
+            }
+            else
+            {
+                // 如果找到了，就照常更新
+                session.Ishumanmode = request.Ishumanmode;
+                await _context.SaveChangesAsync();
+            }
 
             string modeName = request.Ishumanmode ? "真人客服" : "AI 助理";
 
+            // 通知前端 (SignalR)
             if (!string.IsNullOrEmpty(request.ConnectionId))
             {
+                // 先把 Connection 加入這個新 Session 的群組 (防呆)
+                await _hubContext.Groups.AddToGroupAsync(request.ConnectionId, session.ChatSessionId.ToString());
+
                 await _hubContext.Clients.Client(request.ConnectionId)
                     .SendAsync("ReceiveMessage", "System", $"已切換至 {modeName} 模式");
             }
 
-            return Ok(new { success = true, mode = modeName });
+            // ★ 回傳新的 sessionId 給前端，讓前端更新 LocalStorage
+            return Ok(new { success = true, mode = modeName, sessionId = session.ChatSessionId });
         }
 
         // ==========================================
