@@ -41,7 +41,7 @@ namespace incode2.Controllers.Users
             }
 
             // 2. 呼叫 Service 進行註冊 (使用您剛剛定義的 ServiceResult)
-            var result = await _authService.RegisterAsync(model.Email, model.Password);
+            var result = await _authService.RegisterAsync(model.Email, model.Password, model.Username);
 
             if (result != "Success")
             {

@@ -9,5 +9,6 @@ namespace incode2.Services.Users
         Task<User?> GetUserByIdAsync(int id);
         Task<bool> IsEmailExistAsync(string email);
         Task CreateUserAsync(User user);
+        Task<bool> IsUsernameExistAsync(string username);
     }
 }
