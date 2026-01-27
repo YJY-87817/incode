@@ -2,11 +2,9 @@
 import { reactive, onMounted, watch, ref } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
-import { uploadImage } from "@/api/imageapi.js";
+import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 
 const forumStore = useForumStore();
-
-const isUploadingImages = ref(false);
 
 const newTopicState = reactive({
   title: "",
@@ -16,29 +14,6 @@ const newTopicState = reactive({
   categories: [],
   topics: [],
 });
-
-const appendUrls = (original, urls) => {
-  const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join("\n");
-  if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join("\n");
-};
-
-const handleImageUpload = async (event) => {
-  const files = event.target?.files;
-  if (!files || !files.length) return;
-  isUploadingImages.value = true;
-  try {
-    const uploaded = await uploadImage(files);
-    newTopicState.body = appendUrls(newTopicState.body, uploaded);
-  } catch (error) {
-    console.error("圖片上傳失敗:", error);
-    alert("圖片上傳失敗，請稍後再試");
-  } finally {
-    isUploadingImages.value = false;
-    if (event.target) event.target.value = "";
-  }
-};
 
 const fetchCategories = () => {
   apiClient
@@ -98,11 +73,16 @@ watch(
 );
 
 const submitNewTopic = () => {
+  console.log(
+    "[NewTopicModal] submitNewTopic - 當前 body:",
+    newTopicState.body
+  );
+
   if (!newTopicState.title || !newTopicState.body) {
     alert("請填寫標題與內容");
     return;
   }
-  
+
   // 若有 parentContentId，不需檢查 categoryId（會使用 parent 的 category）
   // 若無 parentContentId，需檢查 categoryId
   if (!newTopicState.parentContentId && !newTopicState.categoryId) {
@@ -120,6 +100,8 @@ const submitNewTopic = () => {
     type: isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST,
   };
 
+  console.log("[NewTopicModal] submitNewTopic - 提交 DTO:", dto);
+
   apiClient
     .post("/ContentApi", dto)
     .then(() => {
@@ -130,7 +112,7 @@ const submitNewTopic = () => {
       closeNewTopic();
     })
     .catch((error) => {
-      console.error("發表失敗:", error);
+      console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
       alert("發表失敗，請稍後再試");
     });
 };
@@ -204,28 +186,10 @@ const closeNewTopic = () => {
             </div>
             <div class="mb-3">
               <label class="form-label">內容</label>
-              <textarea
+              <TiptapEditor
                 v-model="newTopicState.body"
-                class="form-control"
-                rows="4"
-              ></textarea>
-              <div
-                class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  class="form-control form-control-sm"
-                  @change="handleImageUpload"
-                  :disabled="isUploadingImages"
-                />
-                <small class="text-muted">
-                  上傳後會自動把圖片網址加入內容。{{
-                    isUploadingImages ? "上傳中..." : ""
-                  }}
-                </small>
-              </div>
+                placeholder="請輸入貼文內容..."
+              />
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
@@ -303,7 +267,7 @@ const closeNewTopic = () => {
 
 .form-control,
 .form-select {
-  border-color: #d1d3d4;
+  border: 1px solid #d1d3d4;
   padding-left: 0.75rem;
 }
 

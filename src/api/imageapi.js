@@ -13,12 +13,22 @@ const toAbsoluteUrl = (url) => {
 const normalizeResponseUrls = (response) => {
   if (!response) return []
 
-  // 後端回傳格式：{ urls: ['/img/abc.jpg', '/img/xyz.jpg'] }
-  const urls = Array.isArray(response)
-    ? response
-    : Array.isArray(response.urls)
-      ? response.urls
-      : []
+  // 後端回傳格式可能是：
+  // 1. { urls: ['/img/abc.jpg', '/img/xyz.jpg'] }
+  // 2. ['/img/abc.jpg', '/img/xyz.jpg']
+  // 3. { data: { urls: [...] } }
+  // 4. { data: [...] }
+  let urls = []
+  
+  if (Array.isArray(response)) {
+    urls = response
+  } else if (response.urls && Array.isArray(response.urls)) {
+    urls = response.urls
+  } else if (response.data && Array.isArray(response.data)) {
+    urls = response.data
+  } else if (response.data && response.data.urls && Array.isArray(response.data.urls)) {
+    urls = response.data.urls
+  }
 
   return urls
     .map((u) => (typeof u === 'string' ? u.trim() : ''))
@@ -51,14 +61,22 @@ export const uploadImage = async (files) => {
       }
     })
 
+    console.log('圖片上傳回應:', response)
     const normalizedUrls = normalizeResponseUrls(response)
+    console.log('正規化後的 URLs:', normalizedUrls)
+    
     if (normalizedUrls.length === 0) {
-      throw new Error('後端未回傳圖片網址')
+      throw new Error('後端未回傳圖片網址，回應:', JSON.stringify(response))
     }
 
     return isSingleFile ? normalizedUrls[0] : normalizedUrls
   } catch (error) {
     console.error('圖片上傳失敗:', error)
+    console.error('錯誤詳情:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    })
     throw error
   }
 }
