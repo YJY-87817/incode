@@ -27,11 +27,6 @@ onMounted(() => {
   console.log("App 啟動，檢查登入狀態...");
   // authStore.checkLoginStatus(); //之後接api
 });
-
-onMounted(() => {
-  console.log("App 啟動，檢查登入狀態...");
-  authStore.checkAuth(); //之後接api
-});
 </script>
 
 <template>
