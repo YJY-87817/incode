@@ -187,7 +187,7 @@ watch(
 }
 
 .card-header {
-  background-color: #86B0BD !important;
+  background-color: #86b0bd !important;
   border-bottom-color: #d1d3d4;
 }
 

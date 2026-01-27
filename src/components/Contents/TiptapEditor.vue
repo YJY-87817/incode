@@ -2,11 +2,13 @@
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
-import Image from "@tiptap/extension-image";
+import ImageExtension from "@tiptap/extension-image";
 import YouTube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
-import { ref, watch } from "vue";
+import { ref, watch, nextTick, onBeforeUnmount } from "vue";
 import { uploadImage } from "@/api/imageapi.js";
+import Cropper from "cropperjs";
+import "cropperjs/dist/cropper.css";
 
 const props = defineProps({
   modelValue: String,
@@ -19,6 +21,12 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 const isUploadingImages = ref(false);
+const showCropper = ref(false);
+const cropSource = ref("");
+const cropper = ref(null);
+const cropImageEl = ref(null);
+const selectedImageNode = ref(null);
+const selectedImagePos = ref(null);
 
 const editor = useEditor({
   content: props.modelValue || "",
@@ -30,7 +38,7 @@ const editor = useEditor({
       horizontalRule: false,
     }),
     Underline,
-    Image.configure({
+    ImageExtension.configure({
       allowBase64: true,
     }),
     YouTube.configure({
@@ -48,7 +56,80 @@ const editor = useEditor({
     console.log("[TiptapEditor] onUpdate - 發送 HTML:", html);
     emit("update:modelValue", html);
   },
+  onCreate: ({ editor: editorInstance }) => {
+    // 添加雙擊圖片事件監聽
+    const editorElement = editorInstance.view.dom;
+    editorElement.addEventListener("dblclick", handleImageDoubleClick);
+  },
 });
+
+// 處理雙擊圖片事件
+const handleImageDoubleClick = async (event) => {
+  const target = event.target;
+  if (target.tagName === "IMG" && editor.value) {
+    event.preventDefault();
+
+    // 獲取圖片的 src
+    const imgSrc = target.getAttribute("src");
+    if (!imgSrc) return;
+
+    try {
+      // 保存當前選中的圖片節點位置，以便替換
+      const pos = editor.value.view.posAtDOM(target, 0);
+      selectedImagePos.value = pos;
+      selectedImageNode.value = target;
+
+      // 重新創建一個帶 crossorigin 的圖片元素，避免 canvas 污染
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        try {
+          // 使用 canvas 將圖片轉換為 Blob
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          // 設置 canvas 大小與圖片相同
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+
+          // 繪製圖片到 canvas
+          ctx.drawImage(img, 0, 0);
+
+          // 將 canvas 轉換為 Blob
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                throw new Error("無法創建圖片 Blob");
+              }
+              const file = new File([blob], "image.jpg", {
+                type: "image/jpeg",
+              });
+              // 打開裁切器
+              openCropperForEdit(file);
+            },
+            "image/jpeg",
+            0.95
+          );
+        } catch (error) {
+          console.error("[TiptapEditor] Canvas 處理失敗", error);
+          alert("無法載入圖片，請稍後再試");
+        }
+      };
+
+      img.onerror = () => {
+        console.error("[TiptapEditor] 圖片載入失敗");
+        alert("無法載入圖片，請稍後再試");
+      };
+
+      // 開始載入圖片
+      img.src = imgSrc;
+    } catch (error) {
+      console.error("[TiptapEditor] 無法載入圖片進行編輯", error);
+      alert("無法載入圖片，請稍後再試");
+    }
+  }
+};
 
 // 監聽 props.modelValue 變化，同步到編輯器
 // 只在編輯器完全初始化後同步，避免頻繁更新
@@ -171,6 +252,103 @@ const undo = () => {
 const redo = () => {
   editor.value?.chain().focus().redo().run();
 };
+
+// 打開裁剪器進行編輯
+const openCropperForEdit = (file) => {
+  const url = URL.createObjectURL(file);
+  cropSource.value = url;
+  showCropper.value = true;
+  nextTick(() => {
+    if (cropper.value) {
+      cropper.value.destroy();
+      cropper.value = null;
+    }
+    if (!cropImageEl.value) return;
+    cropper.value = new Cropper(cropImageEl.value, {
+      viewMode: 1,
+      aspectRatio: NaN,
+      autoCropArea: 1,
+      background: false,
+      responsive: true,
+    });
+  });
+};
+
+// 關閉裁剪器
+const closeCropper = () => {
+  if (cropper.value) {
+    cropper.value.destroy();
+    cropper.value = null;
+  }
+  if (cropSource.value) URL.revokeObjectURL(cropSource.value);
+  showCropper.value = false;
+  cropSource.value = "";
+  selectedImageNode.value = null;
+  selectedImagePos.value = null;
+};
+
+// 插入裁剪後的圖片
+const insertCroppedImage = async () => {
+  if (!cropper.value || !editor.value) return;
+  const canvas = cropper.value.getCroppedCanvas();
+  if (!canvas) {
+    closeCropper();
+    return;
+  }
+
+  isUploadingImages.value = true;
+  try {
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9)
+    );
+
+    // 嘗試上傳圖片
+    let src;
+    try {
+      const urls = await uploadImage([
+        new File([blob], "cropped.jpg", { type: "image/jpeg" }),
+      ]);
+      src = Array.isArray(urls) ? urls[0] : urls;
+      console.log("[TiptapEditor] 裁剪圖片上傳成功:", src);
+    } catch (uploadError) {
+      console.error(
+        "[TiptapEditor] 裁剪圖片上傳失敗，使用 base64:",
+        uploadError
+      );
+      src = canvas.toDataURL("image/jpeg", 0.9);
+    }
+
+    // 如果有選中的圖片位置，則替換該圖片，否則插入新圖片
+    if (selectedImagePos.value !== null) {
+      // 選中圖片節點並替換
+      editor.value.commands.setNodeSelection(selectedImagePos.value);
+      editor.value.commands.deleteSelection();
+      editor.value.commands.setImage({ src });
+      console.log("[TiptapEditor] 已替換現有圖片");
+    } else {
+      // 插入新圖片
+      editor.value.commands.setImage({ src });
+      console.log("[TiptapEditor] 已插入新圖片");
+    }
+  } catch (error) {
+    console.error("[TiptapEditor] 插入裁剪圖片失敗:", error);
+    alert("插入裁剪圖片失敗，請稍後再試");
+  } finally {
+    isUploadingImages.value = false;
+    closeCropper();
+  }
+};
+
+// 組件銷毀前清理
+onBeforeUnmount(() => {
+  if (editor.value) {
+    const editorElement = editor.value.view.dom;
+    editorElement.removeEventListener("dblclick", handleImageDoubleClick);
+    editor.value.destroy();
+  }
+  if (cropper.value) cropper.value.destroy();
+  if (cropSource.value) URL.revokeObjectURL(cropSource.value);
+});
 </script>
 
 <template>
@@ -252,6 +430,32 @@ const redo = () => {
     </div>
 
     <EditorContent v-if="editor" :editor="editor" class="editor-content" />
+  </div>
+
+  <!-- 圖片裁剪器彈窗 -->
+  <div v-if="showCropper" class="cropper-modal" @click.self="closeCropper">
+    <div class="cropper-container">
+      <div class="cropper-header">
+        <h5>裁剪圖片</h5>
+        <button type="button" class="close-btn" @click="closeCropper">✕</button>
+      </div>
+      <div class="cropper-body">
+        <img ref="cropImageEl" :src="cropSource" alt="Crop Image" />
+      </div>
+      <div class="cropper-footer">
+        <button type="button" class="btn-cancel" @click="closeCropper">
+          取消
+        </button>
+        <button
+          type="button"
+          class="btn-confirm"
+          @click="insertCroppedImage"
+          :disabled="isUploadingImages"
+        >
+          {{ isUploadingImages ? "處理中..." : "確認裁剪" }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -388,5 +592,135 @@ const redo = () => {
 
 :deep(.ProseMirror li) {
   margin: 0.25rem 0;
+}
+
+/* 裁剪器模態框樣式 */
+.cropper-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.cropper-container {
+  background: #fff;
+  border-radius: 0.5rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cropper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #d1d3d4;
+}
+
+.cropper-header h5 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #145369;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #f0f0f0;
+  color: #145369;
+}
+
+.cropper-body {
+  padding: 1rem;
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+}
+
+.cropper-body img {
+  max-width: 100%;
+  display: block;
+}
+
+.cropper-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #d1d3d4;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #d1d3d4;
+}
+
+.btn-cancel {
+  background: #fff;
+  color: #145369;
+}
+
+.btn-cancel:hover {
+  background: #f8f9fa;
+  border-color: #86b0bd;
+}
+
+.btn-confirm {
+  background: #145369;
+  color: #fff;
+  border-color: #145369;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: #86b0bd;
+  border-color: #86b0bd;
+}
+
+.btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .cropper-container {
+    width: 95vw;
+    max-height: 85vh;
+  }
+
+  .cropper-header,
+  .cropper-footer {
+    padding: 0.75rem 1rem;
+  }
 }
 </style>
