@@ -369,5 +369,35 @@ namespace incode2.ApiControllers.Chat
                 return StatusCode(500, new { error = $"客服回覆失敗: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        [Route("api/ChatMessages/CreateSession")]
+        public async Task<IActionResult> CreateSession([FromBody] ChatSessionDto request)
+        {
+            try
+            {
+                // 1. 建立新對話物件
+                var newSession = new ChatSession
+                {
+                    // 若前端有傳 UserId 就用，沒有就預設 1
+                    UserId = (request != null && request.UserId > 0) ? request.UserId : 1,
+                    Title = "新對話 " + DateTime.Now.ToString("MM/dd HH:mm"),
+                    Ishumanmode = false,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+
+                // 2. 存入資料庫
+                _context.ChatSession.Add(newSession);
+                await _context.SaveChangesAsync();
+
+                // 3. 回傳新產生的 ID 給前端
+                return Ok(new { sessionId = newSession.ChatSessionId });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"建立對話失敗: {ex.Message}" });
+            }
+        }
     }
 }
