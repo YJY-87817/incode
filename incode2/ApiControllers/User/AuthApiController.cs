@@ -97,7 +97,14 @@ namespace incode2.ApiControllers.user
             return Ok(new
             {
                 message = "登入成功",
-                user = new { user.Username, Role = roleName }
+                user = new
+                {
+                    id = user.UserId,          
+                    username = user.Username,
+                    email = user.Email,       
+                    role = roleName,
+                    avatarUrl = user.ImageUrl 
+                }
             });
         }
                
