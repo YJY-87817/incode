@@ -5,19 +5,19 @@ import ContactView from "../views/LandingPages/ContactUs/ContactView.vue";
 import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
 
 // tim 以下
-import FirstView from "@/views/FirstView.vue"
+import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
 import Register from "@/views/user/Register.vue";
 import Login from "@/views/user/Login.vue";
 import UserIndex from "@/views/user/UserIndex.vue";
-import UserProfile from "@/views/user/UserProfile.vue"
-import UserSettings from "@/views/user/UserSettings.vue"
-import UserCollections from "@/views/user/UserCollections.vue"
-import UserPost from "@/views/user/UserPost.vue"
-import UserLike from "@/views/user/UserLike.vue"
-import UserSave from "@/views/user/UserSave.vue"
-import UserMission from "@/views/user/UserMission.vue"
+import UserProfile from "@/views/user/UserProfile.vue";
+import UserSettings from "@/views/user/UserSettings.vue";
+import UserCollections from "@/views/user/UserCollections.vue";
+import UserPost from "@/views/user/UserPost.vue";
+import UserLike from "@/views/user/UserLike.vue";
+import UserSave from "@/views/user/UserSave.vue";
+import UserMission from "@/views/user/UserMission.vue";
 // owen
 import PageHeaders from "../layouts/sections/page-sections/page-headers/HeadersView.vue";
 import PageFeatures from "../layouts/sections/page-sections/features/FeaturesView.vue";
@@ -46,7 +46,6 @@ import PointLog from "../views/point/PointLog.vue";
 import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
-
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -224,11 +223,10 @@ const router = createRouter({
       component: UserSettings,
     },
     {
-      path: "/userprofile/:username",//每個使用者不同
+      path: "/userprofile/:username", //每個使用者不同
       name: "UserProfile",
       component: UserProfile,
     },
-
 
     {
       path: "/userindex",
@@ -259,9 +257,10 @@ const router = createRouter({
               path: "UserLike",
               name: "UserLike",
               component: UserLike,
-            }
-          ]
-        }]
+            },
+          ],
+        },
+      ],
     },
     // owen
 

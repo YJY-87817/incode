@@ -206,6 +206,8 @@ onMounted(() => {
               >
                 <option selected>全部類型</option>
                 <option value="平台任務">平台任務</option>
+                <option value="委託任務">委託任務</option>
+                <option value="預扣點數">預扣點數</option>
                 <option value="商品兌換">購買商品</option>
                 <option value="系統贈送">系統贈送</option>
                 <option value="退款/修正">退款/修正</option>
