@@ -371,19 +371,29 @@ const sendMessage = async (text) => {
     isSending.value = true;
 
     try {
-        const sid = await ensureSession();
-        // 防呆
-        if (!sid || sid <= 0) {
-            throw new Error("Invalid Session ID");
-        }
-
+        const sid = await ensureSession(); // 這裡可能拿到舊 ID (例如 1)
+        
         const payload = {
             sessionId: sid,
             userContent: text,
             connectionId: connectionId.value
         };
 
-        await axios.post(`${API_BASE_URL}/api/ChatMessages/SendMessage`, payload);
+        // 發送請求
+        const res = await axios.post(`${API_BASE_URL}/api/ChatMessages/SendMessage`, payload);
+
+        // ★★★ 新增這段：同步後端回傳的 ID ★★★
+        if (res.data && res.data.sessionId) {
+            const newSid = res.data.sessionId;
+            
+            // 如果後端回傳的 ID 跟我們手上的不一樣 (代表後端因為找不到而開了新的)
+            if (newSid !== parseInt(sid)) {
+                console.log(`對話 Session 更新: ${sid} -> ${newSid}`);
+                localStorage.setItem('chatSessionId', newSid); // 更新 LocalStorage
+                chatStore.setSessionId(newSid);                // 更新 Store
+            }
+        }
+
     } catch (error) {
         console.error("發送失敗:", error);
         isSending.value = false;
