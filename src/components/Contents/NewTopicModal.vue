@@ -161,6 +161,36 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
+              <label class="form-label">分類</label>
+              <select v-model="newTopicState.categoryId" class="form-select">
+                <option :value="null" disabled>請選擇分類</option>
+                <option
+                  v-for="cat in newTopicState.categories"
+                  :key="cat.id"
+                  :value="cat.id"
+                >
+                  {{ cat.name }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">回覆至（可選）</label>
+              <select
+                v-model="newTopicState.parentContentId"
+                class="form-select"
+                :disabled="!newTopicState.categoryId"
+              >
+                <option :value="null">無（發表新主題）</option>
+                <option
+                  v-for="topic in newTopicState.topics"
+                  :key="topic.id"
+                  :value="topic.id"
+                >
+                  {{ topic.title }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">標題</label>
               <input
                 v-model="newTopicState.title"
@@ -175,6 +205,23 @@ const closeNewTopic = () => {
                 class="form-control"
                 rows="4"
               ></textarea>
+              <div
+                class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="form-control form-control-sm"
+                  @change="handleImageUpload"
+                  :disabled="isUploadingImages"
+                />
+                <small class="text-muted">
+                  上傳後會自動把圖片網址加入內容。{{
+                    isUploadingImages ? "上傳中..." : ""
+                  }}
+                </small>
+              </div>
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
@@ -232,12 +279,14 @@ const closeNewTopic = () => {
 .modal-dialog {
   background: #fff;
   border-radius: 0.3rem;
-  max-width: 420px;
+  max-width: 550px;
   width: 100%;
   padding: 1rem;
   position: relative;
   z-index: 2100;
   border: 1px solid #d1d3d4;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -251,6 +300,7 @@ const closeNewTopic = () => {
 .form-control,
 .form-select {
   border-color: #d1d3d4;
+  padding-left: 0.75rem;
 }
 
 .form-control:focus,
