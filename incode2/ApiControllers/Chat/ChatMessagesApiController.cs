@@ -125,27 +125,29 @@ namespace incode2.ApiControllers.Chat
                 int currentSessionId = request.SessionId;
                 ChatSession currentSession = null;
 
-                if (currentSessionId <= 0)
-                {
-                    currentSession = new ChatSession
-                    {
-                        Title = request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent,
-                        CreatedAt = DateTime.Now,
-                        UserId = 1, // TODO: 替換為真實 UserID
-                        Ishumanmode = false // 預設為 AI 模式
-                    };
-                    _context.ChatSession.Add(currentSession);
-                    await _context.SaveChangesAsync();
-
-                    currentSessionId = currentSession.ChatSessionId;
-                }
-                else
+                if (currentSessionId > 0)
                 {
                     currentSession = await _context.ChatSession.FindAsync(currentSessionId);
                 }
 
-                if (currentSession == null) return NotFound("找不到 Session");
+                // 如果 ID 是 0，或者「有 ID 但資料庫找不到 (null)」，就建立新的
+                if (currentSession == null)
+                {
+                    currentSession = new ChatSession
+                    {
+                        // 取訊息前 20 字當標題
+                        Title = request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        UserId = 1, // TODO: 之後改成真實 UserID
+                        Ishumanmode = false // 預設 AI 模式
+                    };
+                    _context.ChatSession.Add(currentSession);
+                    await _context.SaveChangesAsync();
 
+                    // 更新目前的 ID，讓後續程式碼使用這個新的
+                    currentSessionId = currentSession.ChatSessionId;
+                }
                 // B. 存檔 - 使用者訊息 (Role = user)
                 var userMsg = new ChatMessage
                 {
