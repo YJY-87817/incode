@@ -62,24 +62,46 @@ namespace incode2.Services.Users
         }  
 
         //  登入驗證
-        public async Task<User?> ValidateUserAsync(string email, string password)
+        public async Task<LoginResult> ValidateUserAsync(string email, string password)
             {
             var user = await _userService.GetUserByEmailAsync(email);
 
             if (user == null)
             {
-                return null; // 找不到人
+                return new LoginResult
+                {
+                    IsSuccess = false,
+                    Message = "帳號或密碼錯誤"
+                };
+            }
+
+            if (user.IsActive == false)  // 帳號明確被設為 false (停權)，擋下來
+            {
+                return new LoginResult
+                {
+                    IsSuccess = false,
+                    Message = "此帳號出現異常情況已被鎖定，請聯繫客服。"
+                };
             }
 
             // 2. 驗證密碼
             bool isPasswordCorrect = _passwordService.Verify(password, user.Password);
 
-            if (isPasswordCorrect)
+            if (!isPasswordCorrect)
             {
-                return user; // 密碼對了，把整個人(包含 UserId)回傳出去
+                return new LoginResult
+                {
+                    IsSuccess = false,
+                    Message = "帳號或密碼錯誤"
+                };
             }
 
-            return null; // 密碼錯了
+            return new LoginResult
+            {
+                IsSuccess = true,
+                Message = "登入成功",
+                Member = user
+            };
         }
     }        
 }

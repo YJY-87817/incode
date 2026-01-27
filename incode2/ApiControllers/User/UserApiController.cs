@@ -128,8 +128,7 @@ namespace incode2.ApiController.user
             if (dto.Phone != null) user.Phone = dto.Phone;
             if (dto.Address != null) user.Address = dto.Address;
             if (dto.Birthday != null) user.Birthday = dto.Birthday;
-
-            // 4. 存檔
+           
             try
             {
                 await _context.SaveChangesAsync();

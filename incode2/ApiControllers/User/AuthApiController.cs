@@ -1,12 +1,12 @@
 ﻿using Azure.Core;
 using incode2.Dtos.Users;
 using incode2.Enums;
+using incode2.Extensions;
 using incode2.Services.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using incode2.Extensions;
 
 namespace incode2.ApiControllers.user
 {
@@ -15,10 +15,12 @@ namespace incode2.ApiControllers.user
     public class AuthApiController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public AuthApiController(IAuthService authService)
+        public AuthApiController(IAuthService authService, IUserService userService)
         {
             _authService = authService;
+            _userService = userService;
         }
 
         //
@@ -48,8 +50,7 @@ namespace incode2.ApiControllers.user
                 return StatusCode(500, new
                 {
                     message = "伺服器內部錯誤",
-                    error = ex.Message,
-                    inner = ex.InnerException?.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -58,15 +59,29 @@ namespace incode2.ApiControllers.user
         public async Task<IActionResult> Login([FromBody] LoginDto loginData)
         {
             // 1. 呼叫 Service 驗證帳密
-            var user = await _authService.ValidateUserAsync(loginData.Email, loginData.Password);
+            var result = await _authService.ValidateUserAsync(loginData.Email, loginData.Password);
 
-            if (user == null)
-            {
-                return Unauthorized(new { message = "帳號或密碼錯誤" });
+            if (!result.IsSuccess)
+            {                
+                return BadRequest(new { message = result.Message });
             }
 
-            // 2. 準備 Cookie 的內容 (Claims)
-            // 這裡把 RoleId 轉成易讀的字串，方便前端判斷
+            // 抓取 IP
+            string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            // (進階) 如果你的網站架在 Cloudflare 或 Load Balancer
+            //if (Request.Headers.ContainsKey("X-Forwarded-For"))
+            //{
+            //    ipAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            //}
+
+            // 如果是本機開發 (Localhost)，IP 可能是 "::1"，這是正常的
+            if (string.IsNullOrEmpty(ipAddress)) ipAddress = "127.0.0.1";
+
+            await _userService.AddLoginLogAsync(result.Member.UserId, ipAddress);
+
+            var user = result.Member;            
+            if (user == null) return BadRequest(new { message = "登入資料異常" });
+                        
             string roleName = user.RoleId == (int)RoleType.Admin ? "Admin" : "Member";
 
             var claims = new List<Claim>
@@ -96,7 +111,7 @@ namespace incode2.ApiControllers.user
 
             return Ok(new
             {
-                message = "登入成功",
+                message = result.Message,
                 user = new
                 {
                     id = user.UserId,          
