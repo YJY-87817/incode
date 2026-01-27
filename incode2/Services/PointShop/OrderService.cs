@@ -14,6 +14,7 @@ namespace incode2.Services.PointShop
             _context = context;
         }
 
+        // 取得UserId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrderAsync(int userId)
         {
             try
@@ -39,6 +40,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 取得OrderId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetailAsync(int orderId)
         {
             try
@@ -69,6 +71,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 取得ShippedDetailId的訂單資料
         public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetailAsync(int orderDetailId)
         {
             try
@@ -99,6 +102,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 新增訂單
         public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order)
         {
             if (order == null || order.Items == null || !order.Items.Any())
@@ -175,6 +179,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 新增寄送資料
         public async Task<ResultDTO<int>> CreateShippedAsync(NewShippedRequest shipped)
         {
             // 檢驗是否空
@@ -225,6 +230,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 修改寄送資料
         public async Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped)
         {
             // 檢驗是否空
@@ -261,6 +267,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 修改訂單資料
         public async Task<ResultDTO<int>> EditOrderAsync(int orderId, OrderRequest order)
         {
             // 取得修改前訂單資料
@@ -348,6 +355,7 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 取消訂單
         public async Task<ResultDTO<int>> CancelOrderAsync(int orderId)
         {
             // 取得修改前訂單資料

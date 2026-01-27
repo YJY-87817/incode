@@ -21,11 +21,12 @@ namespace incode2.ApiControllers
             _productService = productService;
         }
 
+        // 取得全部商品
         // GET: api/ProductApi
         [HttpGet]
         public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct()
         {
-            return await _productService.GetProduct();
+            return await _productService.GetProductAsync();
         }
     }
 }

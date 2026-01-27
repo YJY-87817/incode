@@ -14,10 +14,12 @@ namespace incode2.Services.PointShop
             _context = context;
         }
 
-        public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct()
+        public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProductAsync()
         {
-            // 增加 ToListAsync() 讓資料庫查詢非同步執行
-            var products = await _context.Product
+            try 
+            {
+                // 增加 ToListAsync() 讓資料庫查詢非同步執行
+                var products = await _context.Product
                 .Where(e => e.OnSale == true)
                 .Select(e => new ProductDTO
                 {
@@ -32,7 +34,13 @@ namespace incode2.Services.PointShop
                 })
                 .ToListAsync();
 
-            return ResultDTO<IEnumerable<ProductDTO>>.Success(products);
+                return ResultDTO<IEnumerable<ProductDTO>>.Success(products);
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<IEnumerable<ProductDTO>>.Failure($"取得商品失敗: {ex.Message}");
+            }
+            
         }
 
     }
