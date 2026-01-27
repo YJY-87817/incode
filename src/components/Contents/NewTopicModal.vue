@@ -161,19 +161,6 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label class="form-label">分類</label>
-              <select v-model="newTopicState.categoryId" class="form-select">
-                <option :value="null" disabled>請選擇分類</option>
-                <option
-                  v-for="cat in newTopicState.categories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </option>
-              </select>
-            </div>
-            <div class="mb-3">
               <label class="form-label">標題</label>
               <input
                 v-model="newTopicState.title"
@@ -188,40 +175,6 @@ const closeNewTopic = () => {
                 class="form-control"
                 rows="4"
               ></textarea>
-              <div
-                class="mt-2 d-flex flex-column flex-sm-row gap-2 align-items-start"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  class="form-control form-control-sm"
-                  @change="handleImageUpload"
-                  :disabled="isUploadingImages"
-                />
-                <small class="text-muted">
-                  上傳後會自動把圖片網址加入內容。{{
-                    isUploadingImages ? "上傳中..." : ""
-                  }}
-                </small>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">回覆至（可選）</label>
-              <select
-                v-model="newTopicState.parentContentId"
-                class="form-select"
-                :disabled="!newTopicState.categoryId"
-              >
-                <option :value="null">無（發表新主題）</option>
-                <option
-                  v-for="topic in newTopicState.topics"
-                  :key="topic.id"
-                  :value="topic.id"
-                >
-                  {{ topic.title }}
-                </option>
-              </select>
             </div>
           </div>
           <div class="modal-footer d-flex justify-content-end">
@@ -268,6 +221,8 @@ const closeNewTopic = () => {
   position: fixed;
   inset: 0;
   background: rgba(67, 47, 40, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,9 +230,9 @@ const closeNewTopic = () => {
 }
 
 .modal-dialog {
-  background: #fff0dd;
+  background: #fff;
   border-radius: 0.3rem;
-  max-width: 500px;
+  max-width: 420px;
   width: 100%;
   padding: 1rem;
   position: relative;

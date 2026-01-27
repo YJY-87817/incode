@@ -26,7 +26,7 @@ import { useForumStore } from "@/stores/forumStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
-import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
+import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
@@ -78,7 +78,8 @@ watch(
         <!-- 搜尋欄 -->
         <ForumSearchBar />
 
-        <NewTopicForm v-if="forumStore.showNewTopicBox" />
+        <!-- 新主題改為使用彈出視窗 -->
+        <NewTopicModal />
 
         <TopicListView />
       </div>
@@ -108,7 +109,7 @@ watch(
             <button
               class="btn btn-forum-primary w-100"
               type="button"
-              @click="forumStore.toggleNewTopicBox()"
+              @click="forumStore.toggleNewTopicModal(true)"
             >
               <i class="fas fa-plus"></i>
               <span class="ms-2">發表新主題</span>
