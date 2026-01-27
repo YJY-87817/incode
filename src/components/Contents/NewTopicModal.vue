@@ -247,7 +247,7 @@ const closeNewTopic = () => {
 .modal-dialog {
   background: #fff;
   border-radius: 0.3rem;
-  max-width: 550px;
+  max-width: 90%;
   width: 100%;
   padding: 1rem;
   position: relative;
