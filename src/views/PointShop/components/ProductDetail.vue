@@ -1,11 +1,11 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 // 直接接收路由參數作為 props
 const props = defineProps({
     id: String,
     products: {
-        type: Array,
+        type: Object,
         required: true,
     },
 });
@@ -14,8 +14,27 @@ const product = computed(() => {
     return props.products.find(p => String(p.productId) === String(props.id));
 });
 
+const quantity = ref(1);
+const changeQty = (num) => {
+    const newQty = quantity.value + num;
+    // 檢查：不能小於 1，且不能超過商品庫存 (如果 product 存在)
+    if (newQty >= 1 && (!product.value || newQty <= product.value.stock)) {
+        quantity.value = newQty;
+    }
+};
 
 const cartStore = useCartStore();
+
+const handleAddToCart = () => {
+    var count = 0
+    for (let i = 0; i < quantity.value; i++) {
+        cartStore.addToCart(product.value);
+        count++;
+    }
+    // 可以在這裡添加提示訊息
+    alert(`已將 ${product.value.name} * ${count} 加入購物車！`);
+};
+
 </script>
 
 <template>
@@ -40,7 +59,7 @@ const cartStore = useCartStore();
                     <div>
                         <span class="badge rounded-pill bg-primary bg-opacity-10 mb-2">{{
                             product.type
-                            }}</span>
+                        }}</span>
                         <h2 class="card-title fw-bold text-body-highlight mb-3" :title="product.name">{{ product.name }}
                         </h2>
                     </div>
@@ -56,18 +75,22 @@ const cartStore = useCartStore();
                         </div>
 
                         <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden border">
-                            <button class="btn btn-light border-0 px-3 transition m-0" type="button">
+                            <button class="btn btn-light border-0 px-3 transition m-0" type="button"
+                                @click="changeQty(-1)">
                                 <i class=" bi bi-dash-lg"></i>
                             </button>
-                            <input type="number" class="form-control border-0 text-center bg-white fw-bold" value="1"
-                                min="1">
-                            <button class="btn btn-light border-0 px-3 transition m-0" type="button">
+                            <input type="number" class="form-control border-0 text-center bg-white fw-bold"
+                                v-model.number="quantity" min="1" :max="product?.stock">
+                            <button class="btn btn-light border-0 px-3 transition m-0" type="button"
+                                @click="changeQty(1)">
                                 <i class="bi bi-plus-lg"></i>
                             </button>
                         </div>
 
-                        <button class="btn btn-lg btn-outline-primary w-100 fw-bold transition rounded-pill shadow-sm">
-                            <i class="fas fa-shopping-cart me-2"></i>加入購物車
+                        <button @click="handleAddToCart" :disabled="product.stock <= 0"
+                            class="btn btn-lg w-100 fw-bold transition rounded-pill shadow-sm"
+                            :class="product.stock > 0 ? 'btn-outline-primary' : 'btn-secondary'">
+                            <i class="fas fa-shopping-cart me-2"></i>{{ product.stock > 0 ? "加入購物車" : "已售完" }}
                         </button>
                     </div>
                 </div>
