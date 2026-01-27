@@ -1,4 +1,5 @@
-﻿using incode2.Models;
+﻿using Humanizer;
+using incode2.Models;
 
 namespace incode2.Services.Users
 {
@@ -8,6 +9,6 @@ namespace incode2.Services.Users
         Task<User?> ValidateUserAsync(string email, string password);
 
         // 2. 註冊使用者 
-        Task<string> RegisterAsync(string email, string password);
+        Task<string> RegisterAsync(string email, string password, string Username);
     }
 }

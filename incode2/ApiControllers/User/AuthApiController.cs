@@ -24,16 +24,15 @@ namespace incode2.ApiControllers.user
         //
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
-        {
-            // 1. 後端驗證：這裡會自動檢查 ConfirmPassword 是否等於 Password
+        {            
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // 如果不一致，這裡直接退回 400 錯誤
+                return BadRequest(ModelState); 
             }
 
             try
             {
-                var result = await _authService.RegisterAsync(dto.Email, dto.Password);
+                var result = await _authService.RegisterAsync(dto.Email, dto.Password, dto.Username);
 
                 if (result == "Success")
                 {
@@ -46,16 +45,14 @@ namespace incode2.ApiControllers.user
             }
             catch (Exception ex)
             {
-                // 捕捉 500 錯誤並回傳給前端看 (開發階段用)
                 return StatusCode(500, new
                 {
                     message = "伺服器內部錯誤",
                     error = ex.Message,
-                    inner = ex.InnerException?.Message // 這裡通常會顯示 RoleId 錯誤的原因
+                    inner = ex.InnerException?.Message 
                 });
             }
         }
-
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginData)

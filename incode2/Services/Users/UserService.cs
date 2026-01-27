@@ -48,5 +48,10 @@ namespace incode2.Services.Users
             _context.User.Add(user);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> IsUsernameExistAsync(string username)
+        {
+            return await _context.User.AnyAsync(u => u.Username == username);
+        }
     }
 }
