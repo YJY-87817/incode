@@ -2,9 +2,10 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "https://localhost:7190/api",
+  withCredentials: true,// 攜帶cookie
 });
 
-export const getOrdersByUser = (userId) => api.get(`/OrderApi/order/${userId}`);
+export const getOrdersByUser = () => api.get(`/OrderApi/order`);
 
 export const getOrderDetails = (orderId) =>
   api.get(`/OrderApi/orderdetail/${orderId}`);

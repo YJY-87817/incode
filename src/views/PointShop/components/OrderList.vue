@@ -3,16 +3,13 @@ import { ref, onMounted } from "vue";
 import { getOrdersByUser } from "@/views/PointShop/services/PointShopApi";
 import OrderItem from "@/views/PointShop/components/OrderItem.vue";
 
-const props = defineProps({
-  userId: Number,
-});
 
 const orders = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
   try {
-    const res = await getOrdersByUser(props.userId);
+    const res = await getOrdersByUser();
     orders.value = res.data.data;
   } finally {
     loading.value = false;

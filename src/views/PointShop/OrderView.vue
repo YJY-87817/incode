@@ -3,7 +3,7 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import OrderList from "@/views/PointShop/components/OrderList.vue";
 
-const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
+// const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
 </script>
 
 <template>
@@ -18,7 +18,7 @@ const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
           </div>
         </div>
       </div>
-      <OrderList :userId="userId"></OrderList>
+      <OrderList></OrderList>
     </div>
   </div>
   <DefaultFooter />
