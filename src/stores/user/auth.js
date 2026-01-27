@@ -13,9 +13,7 @@ async function login(payload) {
     isLoading.value = true;
     try {      
       const response = await axios.post(`${API_BASE_URL}/AuthApi/Login`, payload);
-      if (response.status === 200) {     
-        console.log("後端回傳的完整資料:", response.data);
-        console.log("我嘗試抓取的 User:", response.data.user);   
+      if (response.status === 200) {       
         user.value = response.data.user;
         isAuthenticated.value = true;
         return true; 

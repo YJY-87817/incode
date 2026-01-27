@@ -102,10 +102,10 @@ onUnmounted(() => {
           </h3>
           <v-card class="rounded-xl overflow-hidden" elevation="0" border>
             <div
-              class="d-flex align-center mb-2"
+              class="d-flex align-center pa-6"
               style="background-color: #86b0bd"
             >
-              <div style="position: relative" class="mb-3 mr-4">
+              <div style="position: relative" class="mb-0 mr-6">
                 <v-avatar
                   size="120"
                   class="border border-4 border-white elevation-2"
@@ -124,11 +124,50 @@ onUnmounted(() => {
                   ></v-btn>
                 </v-avatar>
               </div>
-              <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
-                暱稱 Name
-              </h2>
+              <div class="d-flex flex-column justify-center w-100">
+                <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
+                  暱稱 Name
+                </h2>
+                <div class="d-flex flex-wrap align-center gap-4 mt-2">
+                  <div class="text-center mr-4">
+                    <span class="text-h10 font-weight-bold text-grey-darken-3"
+                      >1,423</span
+                    >
+                    <span class="text-caption text-white ml-1">文章</span>
+                  </div>
+
+                  <div class="text-center mr-4">
+                    <span class="text-h10 font-weight-bold text-grey-darken-3"
+                      >9</span
+                    >
+                    <span class="text-caption text-white ml-1">任務</span>
+                  </div>
+
+                  <div class="text-center mr-4">
+                    <span class="text-h10 font-weight-bold text-grey-darken-3"
+                      >9</span
+                    >
+                    <span class="text-caption text-white ml-1">點數</span>
+                  </div>
+
+                  <div class="text-center mr-4">
+                    <span class="text-h10 font-weight-bold text-grey-darken-3"
+                      >168</span
+                    >
+                    <span class="text-caption text-white ml-1">關注</span>
+                  </div>
+
+                  <div class="text-center">
+                    <span class="text-h10 font-weight-bold text-grey-darken-3"
+                      >1,034</span
+                    >
+                    <span class="text-caption text-white ml-1">粉絲</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <v-row class="text-body-2">
+
+            <v-row class="text-body-2 mt-2 pa-4">
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
                 <span class="text-grey-darken-1">Email：</span>
@@ -250,7 +289,7 @@ onUnmounted(() => {
             最新通知
           </h3>
 
-          <div class="d-flex flex-column gap-3">
+          <div class="d-flex flex-column">
             <v-card
               v-for="item in notifications"
               :key="item.id"
