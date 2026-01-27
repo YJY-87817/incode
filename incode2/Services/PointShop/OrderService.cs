@@ -17,6 +17,7 @@ namespace incode2.Services.PointShop
         // 取得UserId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrderAsync(int userId)
         {
+
             try
             {
                 var orders = await _context.Orders
@@ -137,7 +138,7 @@ namespace incode2.Services.PointShop
                 {
                     UserId = order.UserId,
                     Remark = order.Remark ?? "",
-                    Status = "Pending",
+                    Status = "代處理",
                     OrderDate = DateTime.Now,
                     TotalPoint = 0,
                 };
@@ -279,6 +280,10 @@ namespace incode2.Services.PointShop
             if (oldOrder.Status == "已完成")
                 return ResultDTO<int>.Failure("訂單已完成不能修改");
 
+
+            if (oldOrder.Status == "已寄送")
+                return ResultDTO<int>.Failure("訂單已完成不能修改");
+
             // 開啟交易
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -363,6 +368,9 @@ namespace incode2.Services.PointShop
 
             if (oldOrder == null)
                 return ResultDTO<int>.Failure("找不到該訂單");
+
+            if (oldOrder.Status == "已完成")
+                return ResultDTO<int>.Failure("訂單已完成不能取消");
 
             if (oldOrder.Status == "已完成")
                 return ResultDTO<int>.Failure("訂單已完成不能取消");

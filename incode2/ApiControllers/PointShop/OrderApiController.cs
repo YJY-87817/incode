@@ -3,11 +3,15 @@ using incode2.Dtos.PointShop;
 using incode2.Services.PointShop;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using incode2.Extensions;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace incode2.ApiControllers
 {
     [EnableCors("VueApp")]
     [ApiController]
+    //[Authorize]
     [Route("api/[controller]")]
     public class OrderApiController : ControllerBase
     {
@@ -18,13 +22,16 @@ namespace incode2.ApiControllers
             _orderService = orderService;
         }
 
+        private int userId => HttpContext.User.GetId();
 
         // 取得UserId的訂單資料
-        // GET: api/OrderApi/order/{UserId}
+        // GET: api/OrderApi/order
+        //[HttpGet("order")]
+        //public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder() //登入才可找
         [HttpGet("order/{UserId}")]
-        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int userId)
+        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int UserId)
         {
-            return await _orderService.GetOrderAsync(userId);
+            return await _orderService.GetOrderAsync(UserId);
         }
 
 
@@ -51,6 +58,7 @@ namespace incode2.ApiControllers
         [HttpPost("OrderPost")]
         public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest order)
         {
+            order.UserId = userId;
             return await _orderService.CreateOrderAsync(order);
         }
 
@@ -78,6 +86,7 @@ namespace incode2.ApiControllers
         [HttpPut("OrderPut/{OrderId}")]
         public async Task<ResultDTO<int>> EditOrder(int OrderId, [FromBody] OrderRequest order)
         {
+            
             return await _orderService.EditOrderAsync(OrderId, order);
         }
 
