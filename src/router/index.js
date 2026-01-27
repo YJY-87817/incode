@@ -224,7 +224,7 @@ const router = createRouter({
       component: UserSettings,
     },
     {
-      path: "/userprofile/:username",//每個使用者不同
+      path: "/userprofile",///:username每個使用者不同
       name: "UserProfile",
       component: UserProfile,
     },
