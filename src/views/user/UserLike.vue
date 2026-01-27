@@ -33,74 +33,76 @@ const items = ref([
 </script>
 
 <template>
-  <div class="mt-4 mb-4 px-4">
-    <h3 class="text-h6 font-weight-bold text-grey-darken-3">點讚內容</h3>
-  </div>
+  <div class="container">
+    <div class="mt-4 mb-4 px-4">
+      <h3 class="text-h6 font-weight-bold text-grey-darken-3">點讚內容</h3>
+    </div>
 
-  <v-container class="pa-0 px-4" max-width="900">
-    <v-row>
-      <v-col v-for="item in items" :key="item.id" cols="12">
-        <v-card class="mb-3 rounded-lg" border flat elevation="0">
-          <div class="d-flex flex-column flex-sm-row">
-            <v-img
-              :src="item.img"
-              width="100%"
-              max-width="200"
-              height="140"
-              cover
-              class="flex-shrink-0 d-none d-sm-block rounded-s-lg"
-            ></v-img>
+    <v-container class="pa-0 px-4" max-width="900">
+      <v-row>
+        <v-col v-for="item in items" :key="item.id" cols="12">
+          <v-card class="mb-3 rounded-lg" border flat elevation="0">
+            <div class="d-flex flex-column flex-sm-row">
+              <v-img
+                :src="item.img"
+                width="100%"
+                max-width="200"
+                height="140"
+                cover
+                class="flex-shrink-0 d-none d-sm-block rounded-s-lg"
+              ></v-img>
 
-            <v-img
-              :src="item.img"
-              height="180"
-              cover
-              class="d-sm-none rounded-t-lg"
-            ></v-img>
+              <v-img
+                :src="item.img"
+                height="180"
+                cover
+                class="d-sm-none rounded-t-lg"
+              ></v-img>
 
-            <div class="flex-grow-1 d-flex flex-column">
-              <v-card-item>
-                <v-card-title class="text-body-1 font-weight-bold pt-0">
-                  {{ item.title }}
-                </v-card-title>
-                <v-card-subtitle class="text-body-2 mt-1">
-                  {{ item.content }}
-                </v-card-subtitle>
-              </v-card-item>
+              <div class="flex-grow-1 d-flex flex-column">
+                <v-card-item>
+                  <v-card-title class="text-body-1 font-weight-bold pt-0">
+                    {{ item.title }}
+                  </v-card-title>
+                  <v-card-subtitle class="text-body-2 mt-1">
+                    {{ item.content }}
+                  </v-card-subtitle>
+                </v-card-item>
 
-              <v-spacer></v-spacer>
-
-              <v-card-actions class="px-4 pb-3">
-                <v-btn
-                  color="primary"
-                  variant="text"
-                  size="small"
-                  @click="item.show = !item.show"
-                >
-                  {{ item.show ? "收起詳情" : "閱讀更多" }}
-                </v-btn>
                 <v-spacer></v-spacer>
-                <v-btn
-                  :icon="item.show ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                  variant="text"
-                  color="grey"
-                  density="comfortable"
-                  @click="item.show = !item.show"
-                ></v-btn>
-              </v-card-actions>
-            </div>
-          </div>
 
-          <v-expand-transition>
-            <div v-show="item.show" class="bg-grey-lighten-5">
-              <v-divider></v-divider>
-              <v-card-text class="text-body-2 text-grey-darken-2 pa-6">
-                {{ item.details }}
-              </v-card-text>
+                <v-card-actions class="px-4 pb-3">
+                  <v-btn
+                    color="primary"
+                    variant="text"
+                    size="small"
+                    @click="item.show = !item.show"
+                  >
+                    {{ item.show ? "收起詳情" : "閱讀更多" }}
+                  </v-btn>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    :icon="item.show ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                    variant="text"
+                    color="grey"
+                    density="comfortable"
+                    @click="item.show = !item.show"
+                  ></v-btn>
+                </v-card-actions>
+              </div>
             </div>
-          </v-expand-transition>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+
+            <v-expand-transition>
+              <div v-show="item.show" class="bg-grey-lighten-5">
+                <v-divider></v-divider>
+                <v-card-text class="text-body-2 text-grey-darken-2 pa-6">
+                  {{ item.details }}
+                </v-card-text>
+              </div>
+            </v-expand-transition>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
 </template>
