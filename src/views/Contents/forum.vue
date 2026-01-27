@@ -45,6 +45,8 @@ const updateWindowWidth = () => {
 onMounted(() => {
   updateWindowWidth();
   window.addEventListener("resize", updateWindowWidth);
+  // 每次進入論壇頁面時，關閉任何已開啟的帖文，回到總覽
+  forumStore.closeThread();
   forumStore.fetchCategories();
   forumStore.fetchTopics();
 });
