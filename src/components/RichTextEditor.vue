@@ -55,7 +55,39 @@ const editor = useEditor({
   onUpdate: ({ editor }) => {
     emit("update:modelValue", editor.getHTML());
   },
+  onCreate: ({ editor }) => {
+    // 添加雙擊圖片事件監聽
+    const editorElement = editor.view.dom;
+    editorElement.addEventListener('dblclick', handleImageDoubleClick);
+  },
 });
+
+const handleImageDoubleClick = async (event) => {
+  const target = event.target;
+  if (target.tagName === 'IMG' && editor.value) {
+    event.preventDefault();
+    
+    // 獲取圖片的 src
+    const imgSrc = target.getAttribute('src');
+    if (!imgSrc) return;
+    
+    try {
+      // 將圖片轉換為 Blob
+      const response = await fetch(imgSrc);
+      const blob = await response.blob();
+      const file = new File([blob], 'image.jpg', { type: blob.type });
+      
+      // 保存當前選中的圖片節點位置，以便替換
+      const pos = editor.value.view.posAtDOM(target, 0);
+      editor.value.commands.setNodeSelection(pos);
+      
+      // 打開裁切器
+      openCropperForEdit(file);
+    } catch (error) {
+      console.error('無法載入圖片進行編輯', error);
+    }
+  }
+};
 
 watch(
   () => props.modelValue,
@@ -83,12 +115,49 @@ const openImagePicker = () => {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
-  input.onchange = (event) => handleImageSelect(event.target.files?.[0] || null);
+  input.multiple = true;
+  input.onchange = (event) => handleImageSelect(event.target.files);
   input.click();
 };
 
-const handleImageSelect = (file) => {
-  if (!file) return;
+const handleImageSelect = async (files) => {
+  if (!files || files.length === 0) return;
+  
+  // 批量插入所有選中的圖片
+  for (const file of files) {
+    await insertImageDirectly(file);
+  }
+};
+
+const insertImageDirectly = async (file) => {
+  if (!file || !editor.value) return;
+  
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      let src = e.target.result;
+      
+      // 如果有上傳功能，嘗試上傳
+      if (props.imageUpload) {
+        try {
+          const uploaded = await props.imageUpload(file);
+          if (uploaded) src = uploaded;
+        } catch (error) {
+          console.error("Image upload failed", error);
+        }
+      }
+      
+      editor.value.commands.setImage({ src, alt: file.name || "image", width: widthPreset.value });
+      
+      // 等待 DOM 更新後再繼續
+      await nextTick();
+      setTimeout(() => resolve(), 10);
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+const openCropperForEdit = (file) => {
   pendingFile.value = file;
   const url = URL.createObjectURL(file);
   cropSource.value = url;
@@ -139,11 +208,25 @@ const insertCroppedImage = async () => {
     }
   }
 
-  editor.value
-    .chain()
-    .focus()
-    .setImage({ src, alt: pendingFile.value?.name || "image", width: widthPreset.value })
-    .run();
+  // 檢查是否已選中圖片（編輯模式），如果是則替換，否則插入新圖片
+  const { selection } = editor.value.state;
+  const node = selection.$from.parent;
+  
+  if (node && node.type.name === 'image') {
+    // 更新現有圖片
+    editor.value
+      .chain()
+      .focus()
+      .updateAttributes('image', { src, alt: pendingFile.value?.name || "image", width: widthPreset.value })
+      .run();
+  } else {
+    // 插入新圖片
+    editor.value
+      .chain()
+      .focus()
+      .setImage({ src, alt: pendingFile.value?.name || "image", width: widthPreset.value })
+      .run();
+  }
 
   closeCropper();
 };
@@ -172,7 +255,11 @@ const isYoutubeUrl = (url) => {
 };
 
 onBeforeUnmount(() => {
-  if (editor.value) editor.value.destroy();
+  if (editor.value) {
+    const editorElement = editor.value.view.dom;
+    editorElement.removeEventListener('dblclick', handleImageDoubleClick);
+    editor.value.destroy();
+  }
   if (cropper.value) cropper.value.destroy();
   if (cropSource.value) URL.revokeObjectURL(cropSource.value);
 });
@@ -339,6 +426,13 @@ onBeforeUnmount(() => {
   margin: 12px auto;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:deep(.ProseMirror img:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 :deep(.ProseMirror blockquote) {
@@ -366,7 +460,8 @@ onBeforeUnmount(() => {
 .cropper-card {
   background: #fff;
   border-radius: 10px;
-  width: min(90vw, 720px);
+  width: min(85vw, 600px);
+  max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -381,10 +476,16 @@ onBeforeUnmount(() => {
 
 .cropper-body {
   padding: 12px;
+  max-height: calc(85vh - 120px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cropper-body img {
   max-width: 100%;
+  max-height: calc(85vh - 120px);
   display: block;
 }
 
