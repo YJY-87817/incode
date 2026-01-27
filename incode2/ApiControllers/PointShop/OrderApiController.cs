@@ -11,7 +11,7 @@ namespace incode2.ApiControllers
 {
     [EnableCors("VueApp")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     [Route("api/[controller]")]
     public class OrderApiController : ControllerBase
     {
@@ -26,12 +26,12 @@ namespace incode2.ApiControllers
 
         // 取得UserId的訂單資料
         // GET: api/OrderApi/order
-        //[HttpGet("order")]
-        //public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder() //登入才可找
-        [HttpGet("order/{UserId}")]
-        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int UserId)
+        [HttpGet("order")]
+        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder() //登入才可找
+        //[HttpGet("order/{UserId}")]
+        //public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int UserId)
         {
-            return await _orderService.GetOrderAsync(UserId);
+            return await _orderService.GetOrderAsync(userId);
         }
 
 
