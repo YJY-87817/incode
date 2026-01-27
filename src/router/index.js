@@ -43,10 +43,11 @@ import Mission from "../views/point/Mission.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
+// yjy 以下
 import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
-
+// yjy 以上
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -295,7 +296,7 @@ const router = createRouter({
 
     // yjy 以下
     {
-      path: "/PointShop/PointShop",
+      path: "/PointShop/Product",
       name: "PointShop",
       component: PointShopView,
     },

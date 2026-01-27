@@ -3,8 +3,8 @@ import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
 import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
-import MaterialPagination from "@/components/MaterialPagination.vue";
-import MaterialPaginationItem from "@/components/MaterialPaginationItem.vue";
+import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
+// 套版範例
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
@@ -129,24 +129,7 @@ onMounted(() => {
         <div class="col-lg-9">
           <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
             @reset-filters="resetFilters" />
-
-          <section class="py-4">
-            <div class="container">
-              <div class="row justify-space-between py-2">
-                <div class="col-lg-4 mx-auto">
-                  <MaterialPagination>
-                    <MaterialPaginationItem prev class="ms-auto" />
-                    <MaterialPaginationItem label="1" active />
-                    <MaterialPaginationItem label="2" />
-                    <MaterialPaginationItem label="3" />
-                    <MaterialPaginationItem label="4" />
-                    <MaterialPaginationItem label="5" />
-                    <MaterialPaginationItem next />
-                  </MaterialPagination>
-                </div>
-              </div>
-            </div>
-          </section>
+          <ProductDetail />
         </div>
       </div>
     </div>
