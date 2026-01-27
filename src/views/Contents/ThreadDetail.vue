@@ -22,25 +22,7 @@ export default {
           <span>·</span>
           <span>{{ thread.createdAt }}</span>
         </p>
-        <p
-          class="card-text"
-          style="white-space: pre-wrap; word-break: break-word"
-        >
-          {{ thread.content }}
-        </p>
-        <div
-          v-if="thread.imageUrls && thread.imageUrls.length"
-          class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
-        >
-          <img
-            v-for="(url, idx) in thread.imageUrls"
-            :key="url + idx"
-            :src="url"
-            alt="貼文圖片"
-            class="topic-image-thumb"
-            loading="lazy"
-          />
-        </div>
+        <div class="card-text rich-content" v-html="thread.contentHtml"></div>
       </div>
     </div>
 
@@ -182,6 +164,7 @@ import { useRoute } from "vue-router";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
 import { uploadImage } from "@/api/imageapi.js";
+import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 
 const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
 
@@ -192,30 +175,7 @@ const toAbsoluteUrl = (url) => {
   return `${apiBaseUrl}/${url}`;
 };
 
-const parseBodyContent = (body) => {
-  const raw = body || "";
-  // 改進的正則：匹配 http/https URL 或本地 img 路徑
-  // 改進的正則：匹配完整的 http/https 圖片 URL
-  const imagePattern = /https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
-  const matches = raw.match(imagePattern) || [];
-  const uniqueImages = Array.from(new Set(matches));
-
-  const imageUrls = uniqueImages
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map(toAbsoluteUrl);
-
-  const textContent = raw
-    .replace(/https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
-  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
-
-  return {
-    textContent: displayText,
-    imageUrls,
-  };
-};
+const normalizeContent = (body) => normalizeRichContent(body, toAbsoluteUrl);
 // 視窗寬度響應式變數
 const windowWidth = ref(window.innerWidth);
 
@@ -231,7 +191,8 @@ const thread = ref({
   title: "",
   author: "",
   createdAt: "",
-  content: "",
+  contentHtml: "",
+  contentText: "",
   imageUrls: [],
 });
 
@@ -247,13 +208,16 @@ const fetchThread = async () => {
 
     const detail = detailRes?.contentId ? detailRes : detailRes?.data;
     if (detail && detail.contentId) {
-      const { textContent, imageUrls } = parseBodyContent(detail.body);
+      const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
+        detail.body
+      );
       thread.value = {
         id: detail.contentId,
         title: detail.title,
         author: detail.username,
         createdAt: detail.createdAt,
-        content: textContent,
+        contentHtml: sanitizedHtml,
+        contentText: textContent,
         imageUrls,
         categoryId: detail.categoryId,
         type: detail.type,
@@ -263,12 +227,15 @@ const fetchThread = async () => {
     // Process comments from the new API endpoint
     const commentsData = commentsRes?.comments || [];
     const commentItems = commentsData.map((comment) => {
-      const { textContent, imageUrls } = parseBodyContent(comment.body);
+      const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
+        comment.body
+      );
       return {
         id: comment.contentId,
         author: comment.username,
         createdAt: comment.createdAt,
-        content: textContent,
+        contentHtml: sanitizedHtml,
+        contentText: textContent,
         imageUrls,
         type: CONTENT_TYPES.COMMENT,
         parentContentId: comment.parentContentId,
@@ -286,12 +253,15 @@ const fetchThread = async () => {
     const normalizedReplies = replyItems
       .filter((i) => i.type === CONTENT_TYPES.REPLY)
       .map((i) => {
-        const { textContent, imageUrls } = parseBodyContent(i.body);
+        const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
+          i.body
+        );
         return {
           id: i.contentId,
           author: i.username,
           createdAt: i.createdAt,
-          content: textContent,
+          contentHtml: sanitizedHtml,
+          contentText: textContent,
           imageUrls,
           type: i.type,
           parentContentId: i.parentContentId,
@@ -493,6 +463,22 @@ async function submitContent() {
   margin-bottom: 0.5rem;
   line-height: 1.3;
   color: #432f28;
+}
+
+.rich-content {
+  color: #432f28;
+  word-break: break-word;
+}
+
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.rich-content p {
+  margin-bottom: 0.5rem;
 }
 
 .thread-detail textarea {

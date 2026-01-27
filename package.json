@@ -30,6 +30,7 @@
     "bootstrap-vue-next": "^0.42.0",
     "cropperjs": "^1.6.2",
     "deep-chat": "^2.4.1",
+    "dompurify": "^3.3.1",
     "lucide-vue-next": "^0.562.0",
     "marked": "^17.0.1",
     "pinia": "^3.0.4",

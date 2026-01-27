@@ -23,20 +23,7 @@
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
-        <p class="card-text mt-2 content-text">{{ post.content }}</p>
-        <div
-          v-if="post.imageUrls && post.imageUrls.length"
-          class="d-flex flex-wrap gap-2 mt-2 reply-image-list"
-        >
-          <img
-            v-for="(url, idx) in post.imageUrls"
-            :key="url + idx"
-            :src="url"
-            alt="留言圖片"
-            class="reply-image-thumb"
-            loading="lazy"
-          />
-        </div>
+        <div class="card-text mt-2 rich-content" v-html="safeContent"></div>
 
         <!-- 回覆輸入框 -->
         <div v-if="showReply" class="mt-3 border-top pt-3">
@@ -102,6 +89,7 @@ import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 
 const forumStore = useForumStore();
 
@@ -123,6 +111,15 @@ const props = defineProps({
     default: false,
   },
 });
+
+const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
+
+const toAbsoluteUrl = (url) => {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
+  return `${apiBaseUrl}/${url}`;
+};
 
 const showReply = ref(false);
 const replyContent = ref("");
@@ -162,6 +159,17 @@ const badgeClass = computed(() => {
   }
 });
 
+const safeContent = computed(() => {
+  const rawHtml = props.post.contentHtml ?? props.post.content ?? "";
+  const { sanitizedHtml } = normalizeRichContent(rawHtml, toAbsoluteUrl);
+  return sanitizedHtml;
+});
+
+const contentSummary = computed(() => {
+  const base = props.post.contentText ?? props.post.content ?? "";
+  return typeof base === "string" ? base : String(base ?? "");
+});
+
 function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
@@ -198,7 +206,7 @@ async function submitReply() {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
-    title: `Re: ${props.post.content.substring(0, 50)}...`, // 簡短標題
+    title: `Re: ${contentSummary.value.substring(0, 50)}...`, // 簡短標題
     body: replyContent.value.trim(),
     type: CONTENT_TYPES.COMMENT_REPLY, // 設定為留言回覆類型
   };
@@ -208,7 +216,7 @@ async function submitReply() {
     alert("回覆成功！");
     replyContent.value = "";
     showReply.value = false;
-    
+
     // 直接调用 forumStore 重新获取帖文详情
     if (forumStore.selectedThread) {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
@@ -292,23 +300,17 @@ function handleInteractionError(data) {
   box-shadow: 0 4px 8px rgba(134, 176, 189, 0.3);
 }
 
-.content-text {
+.rich-content {
   white-space: pre-wrap;
   word-break: break-word;
   color: #145369;
 }
 
-.reply-image-list {
-  gap: 0.5rem;
-}
-
-.reply-image-thumb {
-  width: 96px;
-  height: 96px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #d1d3d4;
-  background: #fff0dd;
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0.5rem 0;
 }
 
 /* 巢狀回覆的樣式 */
