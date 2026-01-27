@@ -6,7 +6,6 @@ import { useChatStore } from '@/stores/chatmessagestores';
 import { marked } from 'marked';
 import aiAvatarGif from '@/assets/gif/1.gif'; // 請確認路徑
 
-
 const chatStore = useChatStore();
 const isOpen = ref(false);
 const userInput = ref('');
@@ -17,19 +16,15 @@ const connection = ref(null);
 const connectionId = ref('');
 const isConnecting = ref(false);
 
-
 // ★ 核心狀態：是否為真人模式
 const isHumanMode = ref(false);
-
 
 // 預覽與檔案狀態
 const previewImage = ref(null);
 const selectedFile = ref(null);
 
-
-// ★ 後端 API 網址 (請確認 Port)
+// ★ 後端 API 網址
 const API_BASE_URL = "https://localhost:7190";
-
 
 // 時間格式化
 const formatTime = (dateInput) => {
@@ -37,13 +32,11 @@ const formatTime = (dateInput) => {
     return date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
-
 // Markdown 解析
 const renderMarkdown = (text) => {
     if (!text) return '';
     return marked.parse(text);
 };
-
 
 // 處理圖片完整路徑
 const getFullImageUrl = (url) => {
@@ -52,13 +45,11 @@ const getFullImageUrl = (url) => {
     return `${API_BASE_URL}${url}`;
 };
 
-
 // 切換視窗
 const toggleChat = () => {
     isOpen.value = !isOpen.value;
     if (isOpen.value) scrollToBottom();
 };
-
 
 const scrollToBottom = async () => {
     await nextTick();
@@ -67,63 +58,67 @@ const scrollToBottom = async () => {
     }
 };
 
-
 watch(() => chatStore.messages.length, () => scrollToBottom());
 
 
-// ==========================================
-// ★ 0. 確保 Session 存在
-// ==========================================
 const ensureSession = async () => {
     let sid = localStorage.getItem('chatSessionId');
-    if (!sid) {
+
+    // ★★★ 修改重點：增加檢查 '0', 'undefined', 'null' ★★★
+    // 如果偵測到 ID 無效，強制重新建立
+    if (!sid || sid === '0' || sid === 'undefined' || sid === 'null') {
+        console.log("偵測到無效 Session ID (0 或空)，正在向後端申請新 ID...");
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/ChatSessionsApi/Create`, {
-                userId: 1
-            });
-            sid = res.data.sessionId;
+            const res = await axios.post(`${API_BASE_URL}/api/ChatMessages/CreateSession`, {
+            userId: 1
+        });
+            sid = res.data.sessionId; // 取得新 ID (例如 15)
+            
+            if (!sid) throw new Error("後端回傳 SessionId 為空");
+
+            console.log(`建立新 Session 成功: ${sid}`);
             localStorage.setItem('chatSessionId', sid);
             chatStore.setSessionId(sid);
+
         } catch (error) {
-            console.error("建立對話失敗", error);
+            console.error("建立對話失敗:", error);
+            // 如果連建立都失敗，回傳 0 讓後續邏輯擋下
             return 0;
         }
     } else {
+        // 如果 ID 有效，直接存入 Store
         chatStore.setSessionId(parseInt(sid));
     }
 
+    const finalId = parseInt(sid);
 
-    // 補救措施：如果 SignalR 已連線，補加入群組
-    if (connection.value?.state === signalR.HubConnectionState.Connected) {
-        connection.value.invoke("JoinSessionGroup", sid.toString())
+    // 補救措施：如果 SignalR 已連線，確保加入正確的群組
+    if (connection.value?.state === signalR.HubConnectionState.Connected && finalId > 0) {
+        connection.value.invoke("JoinSessionGroup", finalId.toString())
             .catch(err => console.error("加入群組失敗(補):", err));
     }
 
-
-    return parseInt(sid);
+    return finalId;
 };
-
 
 // ==========================================
 // ★ 1. 載入歷史紀錄
 // ==========================================
 const loadHistory = async () => {
     const sid = await ensureSession();
-    if (!sid) return;
-
+    if (!sid || sid === 0) return; // 防呆
 
     try {
         const res = await axios.get(`${API_BASE_URL}/api/ChatMessages/GetHistory/${sid}`);
         const data = res.data;
-       
+        
         chatStore.clearMessages();
-       
+        
         if (Array.isArray(data)) {
             data.forEach(msg => {
                 const isUser = msg.role === 'user';
                 let content = msg.body;
                 let imgUrl = null;
-
 
                 if (content && content.includes('<img')) {
                     const match = content.match(/src='([^']*)'/);
@@ -133,14 +128,12 @@ const loadHistory = async () => {
                     content = renderMarkdown(content);
                 }
 
-
                 chatStore.addMessage({
                     role: isUser ? 'user' : 'ai',
                     text: content,
                     imageUrl: imgUrl,
                     time: new Date(msg.createdAt),
-                    // 歷史紀錄暫時預設為 AI (false)，除非後端有存 isHuman 欄位
-                    isHuman: false
+                    isHuman: msg.isHuman || false
                 });
             });
         }
@@ -149,14 +142,12 @@ const loadHistory = async () => {
     }
 };
 
-
 // ==========================================
-// ★ 2. SignalR 初始化 (處理頭像邏輯)
+// ★ 2. SignalR 初始化
 // ==========================================
 const initSignalR = async () => {
     if (connection.value?.state === signalR.HubConnectionState.Connected) return;
     isConnecting.value = true;
-
 
     try {
         const newConnection = new signalR.HubConnectionBuilder()
@@ -164,12 +155,10 @@ const initSignalR = async () => {
             .withAutomaticReconnect()
             .build();
 
-
         newConnection.on("ReceiveMessage", (type, message) => {
             console.log(`[SignalR] ${type}:`, message);
 
-
-            // 1. 系統通知 (切換模式狀態)
+            // 1. 系統通知
             if (type === 'System') {
                 chatStore.addMessage({
                     role: 'ai',
@@ -182,14 +171,13 @@ const initSignalR = async () => {
                 return;
             }
 
-
-            // ★ 2. 真人客服回覆 (Live) -> 顯示真人頭像 👨‍💼
+            // 2. 真人客服回覆
             if (type === 'Live') {
                 chatStore.addMessage({
                     role: 'ai',
                     text: message,
                     imageUrl: null,
-                    isHuman: true, // ★ 設定為真人
+                    isHuman: true,
                     time: new Date()
                 });
                 isHumanMode.value = true;
@@ -197,13 +185,10 @@ const initSignalR = async () => {
                 return;
             }
 
-
-            // 3. AI 回覆 (AI) -> 顯示機器人頭像 🤖
-            // 以及圖片處理
+            // 3. AI 回覆
             let imgUrl = null;
             let textContent = message;
-            let isMessageHuman = false; // 預設 AI 為機器人
-
+            let isMessageHuman = false;
 
             if (type === 'AI_Image' || type === 'User_Image') {
                 if (message.startsWith('<img') || message.includes('src=')) {
@@ -215,38 +200,31 @@ const initSignalR = async () => {
                 textContent = '';
                 if (type === 'User_Image') return;
             } else {
-                // AI 純文字
                 textContent = renderMarkdown(message);
-                isMessageHuman = false; // AI 是機器人
+                isMessageHuman = false;
             }
 
-
-            // 加入訊息
             chatStore.addMessage({
                 role: 'ai',
                 text: textContent,
                 imageUrl: imgUrl,
-                isHuman: isMessageHuman, // 根據類型決定頭像
+                isHuman: isMessageHuman,
                 time: new Date()
             });
-
 
             isSending.value = false;
         });
 
-
         await newConnection.start();
         console.log("SignalR Connected ID:", newConnection.connectionId);
-       
+        
         connectionId.value = newConnection.connectionId;
         connection.value = newConnection;
 
-
-        // 加入群組
-        if (chatStore.sessionId) {
+        // 加入群組 (確保使用 store 裡的正確 ID)
+        if (chatStore.sessionId && chatStore.sessionId > 0) {
             await newConnection.invoke("JoinSessionGroup", chatStore.sessionId.toString());
         }
-
 
     } catch (err) {
         console.error("SignalR 連線失敗:", err);
@@ -256,28 +234,41 @@ const initSignalR = async () => {
     }
 };
 
-
-// ==========================================
-// ★ 3. 呼叫真人客服 (User -> Agent)
-// ==========================================
 const triggerTransfer = async () => {
     if (isSending.value || isHumanMode.value) return;
 
-
     try {
         isSending.value = true;
+        
+        // 1. 先嘗試取得目前的 Session (這步通常會拿到舊的或是重新申請的)
         const sid = await ensureSession();
-       
-        // 切換為真人模式 (true)
+        
+        // 防呆
+        if (!sid || sid <= 0) {
+            chatStore.addMessage({ role: 'ai', text: "⚠️ 連線異常，請重新整理網頁。", time: new Date() });
+            isSending.value = false;
+            return;
+        }
+
+        // 2. 準備 Payload
         const payload = {
             sessionId: sid,
             ishumanmode: true,
             connectionId: connectionId.value
         };
-       
-        await axios.post(`${API_BASE_URL}/api/ChatMessages/SwitchMode`, payload);
-        // 後端 SignalR 會回傳 System 訊息確認切換
-       
+        
+        // 3. 發送請求，並接收回傳結果
+        const res = await axios.post(`${API_BASE_URL}/api/ChatMessages/SwitchMode`, payload);
+        
+        // ★★★ 新增這段：檢查後端是否幫我們建立了全新的 ID ★★★
+        if (res.data && res.data.sessionId) {
+            // 如果後端回傳的 ID 跟我們原本的不一樣 (或是單純為了確保同步)
+            // 更新本地 LocalStorage 和 Store
+            console.log("後端自動建立了新 Session (同步更新):", res.data.sessionId);
+            localStorage.setItem('chatSessionId', res.data.sessionId);
+            chatStore.setSessionId(res.data.sessionId);
+        }
+        
     } catch (error) {
         console.error("轉接失敗:", error);
         chatStore.addMessage({ role: 'ai', text: "轉接失敗，請稍後再試。", time: new Date() });
@@ -285,38 +276,33 @@ const triggerTransfer = async () => {
     }
 };
 
-
 // ==========================================
 // ★ 4. 結束真人對話 (User -> AI)
 // ==========================================
 const endChat = async () => {
     if (!isHumanMode.value) return;
 
-
     try {
         const sid = await ensureSession();
-       
-        // 切換回 AI 模式 (false)
+        // 防呆
+        if (!sid || sid <= 0) return;
+
         const payload = {
             sessionId: sid,
             ishumanmode: false,
             connectionId: connectionId.value
         };
 
-
         await axios.post(`${API_BASE_URL}/api/ChatMessages/SwitchMode`, payload);
-        // 後端 SignalR 會回傳 System 訊息確認切換
     } catch (error) {
         console.error("結束對話失敗:", error);
     }
 };
 
-
 // ==========================================
 // 5. 傳送邏輯 (圖片/文字)
 // ==========================================
 const triggerFileUpload = () => fileInput.value.click();
-
 
 const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -326,12 +312,10 @@ const handleFileChange = (event) => {
     event.target.value = '';
 };
 
-
 const removePreview = () => {
     selectedFile.value = null;
     previewImage.value = null;
 };
-
 
 const handleSend = async () => {
     if (selectedFile.value) {
@@ -341,10 +325,15 @@ const handleSend = async () => {
     }
 };
 
-
 const sendImageWithText = async (file, text) => {
     if (!connection.value) await initSignalR();
 
+    // 確保 ID 有效
+    const sid = await ensureSession();
+    if (!sid || sid <= 0) {
+        alert("連線建立中，請稍後再試...");
+        return;
+    }
 
     chatStore.addMessage({
         role: 'user',
@@ -353,17 +342,14 @@ const sendImageWithText = async (file, text) => {
         time: new Date()
     });
 
-
     const formData = new FormData();
-    formData.append("SessionId", chatStore.sessionId);
+    formData.append("SessionId", sid); // 使用確認過的 sid
     formData.append("Image", file);
     formData.append("ConnectionId", connectionId.value);
-
 
     removePreview();
     userInput.value = '';
     isSending.value = true;
-
 
     try {
         await axios.post(`${API_BASE_URL}/api/ChatMessages/UploadImage`, formData, {
@@ -376,25 +362,26 @@ const sendImageWithText = async (file, text) => {
     }
 };
 
-
 const sendMessage = async (text) => {
     if (isSending.value) return;
     if (!connection.value) await initSignalR();
-
 
     chatStore.addMessage({ role: 'user', text: text, time: new Date() });
     userInput.value = '';
     isSending.value = true;
 
-
     try {
         const sid = await ensureSession();
+        // 防呆
+        if (!sid || sid <= 0) {
+            throw new Error("Invalid Session ID");
+        }
+
         const payload = {
             sessionId: sid,
             userContent: text,
             connectionId: connectionId.value
         };
-
 
         await axios.post(`${API_BASE_URL}/api/ChatMessages/SendMessage`, payload);
     } catch (error) {
@@ -404,12 +391,10 @@ const sendMessage = async (text) => {
     }
 };
 
-
 onMounted(async () => {
     await initSignalR();
     await loadHistory();
 });
-
 
 onUnmounted(() => {
     if (connection.value) connection.value.stop();
@@ -554,9 +539,6 @@ onUnmounted(() => {
 
 .chip-btn.danger { color: #c0392b; border-color: #c0392b; }
 .chip-btn.danger:hover { background: #fff5f5; }
-
-
-/* ... (CSS 樣式保持不變) ... */
 .custom-chat-window { width: 420px; height: 520px; background: linear-gradient(90deg, rgb(239, 242, 247) 0%, rgb(235, 239, 248) 50%, rgb(208, 224, 247) 100%); border-radius: 20px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; font-family: 'Segoe UI', sans-serif; border: 1px solid rgba(255,255,255,0.5); }
 .chat-header { background: linear-gradient(135deg, #4398a5, #3a5f54); color: white; padding: 15px 17px; flex-shrink: 0; display: flex; align-items: center; }
 .header-title { font-size: 18px; font-weight: bold; }
@@ -600,7 +582,7 @@ onUnmounted(() => {
 .floating-btn { width: 60px; height: 60px; border-radius: 50%; background: transparent; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); position: relative; overflow: hidden; transition: all 0.3s; }
 .floating-btn:hover { transform: scale(1.08); }
 .floating-btn.is-open { transform: rotate(90deg); background: #333; }
-.icon-chat-gif { width: 100%; height: 100%; object-fit: cover; transform: scale(1.3); }
+.icon-chat-gif { width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); }
 .icon-close { width: 24px; height: 24px; color: white; }
 .header-status { margin-left: auto; display: flex; align-items: center; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-left: 5px; }
