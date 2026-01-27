@@ -5,6 +5,6 @@ namespace incode2.Services.PointShop
 {
     public interface IProductService
     {
-        Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct();
+        Task<ResultDTO<IEnumerable<ProductDTO>>> GetProductAsync();
     }
 }
