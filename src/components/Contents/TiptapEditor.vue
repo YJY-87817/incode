@@ -557,6 +557,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.ProseMirror img) {
+  width: 25%;
   max-width: 100%;
   height: auto;
   margin: 0.5rem 0;
