@@ -7,6 +7,10 @@ import { useAuthStore } from "@/stores/user/auth";
 const router = useRouter();
 const authStore = useAuthStore();
 
+const form = ref(null);
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+
 // 表單資料
 const formData = ref({
   email: "",
@@ -16,6 +20,21 @@ const formData = ref({
   birth: "",
   intro: "",
 });
+
+const emailRules = [
+  (v) => !!v || "Email 為必填欄位",
+  (v) => /.+@.+\..+/.test(v) || "Email 格式不正確",
+];
+
+const passwordRules = [
+  (v) => !!v || "密碼為必填欄位",
+  (v) => (v && v.length >= 6) || "密碼長度需至少 6 個字元",
+];
+
+const confirmPasswordRules = [
+  (v) => !!v || "確認密碼為必填欄位",
+  (v) => v === formData.value.password || "兩次輸入的密碼不一致",
+];
 
 // 檔案上傳相關
 const selectedFile = ref(null);
@@ -50,30 +69,13 @@ const uploadImage = async () => {
 };
 
 const handleRegister = async () => {
+  // 先驗證表單
+  const { valid } = await form.value.validate();
+  if (!valid) return;
+
   try {
-    // 這裡建議先做簡單的驗證 (例如密碼是否相同)
-    if (formData.value.password !== formData.value.confirmPassword) {
-      alert("兩次密碼輸入不一致");
-      return;
-    }
-
-    const payload = {
-      email: formData.value.email,
-      password: formData.value.password,
-      username: formData.value.username || undefined,
-      birth: formData.value.birth || null, // 允許 null (DateTime?)
-    };
-
-    console.log("準備傳送的資料:", payload); // 在 Console 檢查一下資料對不對
-
-    // 3. 發送請求 (使用 payload 而不是 formData.value)
-    const res = await axios.post(
-      "https://localhost:7190/api/AuthApi/register",
-      payload,
-    );
-
-    if (res.status === 200) {
-      console.log("註冊成功！");
+    const success = await authStore.register(formData.value);
+    if (success) {
       showWelcomeDialog.value = true;
     }
   } catch (error) {
@@ -103,12 +105,13 @@ const handleRegister = async () => {
         <v-col cols="12" md="7">
           <h2 class="text-h5 font-weight-bold mb-6 text-primary">註冊帳號</h2>
 
-          <v-form @submit.prevent="handleRegister">
+          <v-form ref="form" @submit.prevent="handleRegister">
             <v-row dense>
               <v-col cols="12">
                 <v-text-field
                   v-model="formData.email"
-                  label="帳號 (Email)"
+                  :rules="emailRules"
+                  label="*帳號 (Email)*"
                   placeholder="name@example.com"
                   variant="outlined"
                   density="comfortable"
@@ -144,8 +147,11 @@ const handleRegister = async () => {
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="formData.password"
-                  label="密碼"
-                  type="password"
+                  :rules="passwordRules"
+                  label="*密碼*"
+                  :type="showPassword ? 'text' : 'password'"
+                  :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                  @click:append-inner="showPassword = !showPassword"
                   variant="outlined"
                   density="comfortable"
                   color="primary"
@@ -156,8 +162,15 @@ const handleRegister = async () => {
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="formData.confirmPassword"
-                  label="確認密碼"
-                  type="password"
+                  :rules="confirmPasswordRules"
+                  label="*確認密碼*"
+                  :type="showConfirmPassword ? 'text' : 'password'"
+                  :append-inner-icon="
+                    showConfirmPassword ? 'mdi-eye' : 'mdi-eye-off'
+                  "
+                  @click:append-inner="
+                    showConfirmPassword = !showConfirmPassword
+                  "
                   variant="outlined"
                   density="comfortable"
                   color="primary"
@@ -177,7 +190,7 @@ const handleRegister = async () => {
             <h3
               class="text-subtitle-1 font-weight-bold mb-4 text-grey-darken-1"
             >
-              設定個人頭像
+              設定個人大頭貼
             </h3>
 
             <v-card
@@ -262,7 +275,7 @@ const handleRegister = async () => {
       </div>
     </v-card>
 
-    <v-dialog v-model="showWelcomeDialog" max-width="500">
+    <v-dialog v-model="showWelcomeDialog" max-width="500" persistent>
       <v-card rounded="xl" class="text-center pa-6">
         <v-icon size="60" color="success" class="mb-4">mdi-check-circle</v-icon>
         <h2 class="text-h5 font-weight-bold mb-2">歡迎加入 Incode!</h2>
@@ -270,13 +283,21 @@ const handleRegister = async () => {
           您的帳號已建立成功，現在您可以開始探索論壇或執行任務了。
         </p>
 
-        <div class="d-flex justify-center gap-4">
-          <v-btn color="primary" variant="flat" rounded="lg" to="/forum"
-            >前往討論區</v-btn
-          >
-          <v-btn color="secondary" variant="tonal" rounded="lg" to="/mytask"
-            >前往任務區</v-btn
-          >
+        <div class="d-flex justify-center">
+          <div class="btn-grid-container">
+            <v-btn class="custom-hover-btn" rounded="lg" block to="/"
+              >前往首頁</v-btn
+            >
+            <v-btn class="custom-hover-btn" rounded="lg" block to="/userindex"
+              >前往會員中心</v-btn
+            >
+            <v-btn class="custom-hover-btn" rounded="lg" block to="/forum"
+              >前往討論區</v-btn
+            >
+            <v-btn class="custom-hover-btn" rounded="lg" block to="/mytask"
+              >前往任務區</v-btn
+            >
+          </div>
         </div>
       </v-card>
     </v-dialog>
@@ -284,12 +305,33 @@ const handleRegister = async () => {
 </template>
 
 <style scoped>
-/* 如果有需要微調的地方可以寫在這裡，但目前主要依賴 Vuetify class */
-.gap-2 {
-  gap: 8px;
+/* 排版設定：建立 2欄 x 2列 的網格，中間有間距 */
+.btn-grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 兩個等寬的欄位 */
+  gap: 16px; /* 按鈕之間的間距，可依需求調整 */
+  width: 100%;
+  max-width: 400px; /* 限制最大寬度，避免在大螢幕太開 */
 }
 
-.gap-4 {
-  gap: 16px;
+/* 按鈕樣式設定 */
+.custom-hover-btn {
+  /* 預設狀態 */
+  background-color: #145369 !important; /* 指定顏色 */
+  color: #ffffff !important; /* 文字白色 */
+  border: 1px solid #145369 !important; /* 預設邊框同色 */
+  transition: all 0.3s ease; /* 平滑過渡效果 */
+
+  /* 確保高度一致，如果有需要可以強制設定 height */
+  height: 48px !important;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* 滑鼠懸停 (Hover) 效果 */
+.custom-hover-btn:hover {
+  background-color: #ffffff !important; /* 背景變白 */
+  color: #145369 !important; /* 文字變回深色 */
+  border: 1px solid #145369 !important; /* 保留邊框 */
 }
 </style>

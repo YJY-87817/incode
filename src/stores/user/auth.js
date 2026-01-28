@@ -3,8 +3,7 @@ import { ref } from "vue";
 import axios from "axios";
 
 export const useAuthStore = defineStore("auth", () => {
-  // --- State (資料狀態) ---
-  const API_BASE_URL = "https://localhost:7190/api";
+  // --- State (資料狀態) --- 
   const user = ref(null);
   const isAuthenticated = ref(false);
   const isLoading = ref(false);
@@ -12,7 +11,7 @@ export const useAuthStore = defineStore("auth", () => {
 async function login(payload) {
     isLoading.value = true;
     try {      
-      const response = await axios.post(`${API_BASE_URL}/AuthApi/Login`, payload);
+      const response = await axios.post("/AuthApi/Login", payload);
       if (response.status === 200) {       
         user.value = response.data.user;
         isAuthenticated.value = true;
@@ -29,19 +28,25 @@ async function login(payload) {
   async function register(payload) {
     isLoading.value = true;
     try {
-      const response = await axios.post(`${API_BASE_URL}/AuthApi/Register`, payload);
-      return response.status === 200;
-    } catch (error) {
-      console.error("註冊失敗", error);
-      throw error;
-    } finally {
-      isLoading.value = false;
+      const response = await axios.post("/AuthApi/Register", payload);
+if (response.status === 200) {// 因為後端會回傳 user 物件，直接存起來         
+          if (response.data.user) {
+         user.value = response.data.user;
+         isAuthenticated.value = true;
+      }  
+      return true;
     }
+  } catch (error) {
+    console.error("註冊失敗", error);
+    throw error;
+  } finally {
+    isLoading.value = false;
   }
+}
 
   async function logout() {
     try {
-      await axios.post(`${API_BASE_URL}/AuthApi/Logout`);
+      await axios.post("/AuthApi/Logout");
     } catch (e) {
       console.error("登出 API 錯誤", e);
     } finally {      
@@ -54,7 +59,7 @@ async function login(payload) {
 
   async function checkAuth() {
     try {      
-      const res = await axios.get(`${API_BASE_URL}/AuthApi/check`); 
+      const res = await axios.get("/AuthApi/check"); 
       if (res.status === 200 && res.data.isLoggedIn) {       
       user.value = {
         id: res.data.userId,       
