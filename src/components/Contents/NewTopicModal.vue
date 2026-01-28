@@ -109,6 +109,12 @@ const selectCategoryFromDropdown = (category) => {
   showCategoryDropdown.value = false;
 };
 
+const hideCategoryDropdown = () => {
+  setTimeout(() => {
+    showCategoryDropdown.value = false;
+  }, 150);
+};
+
 const createCategoryFromSearch = async () => {
   const name = categorySearch.value.trim();
   if (!name || isCreatingCategory.value) return;
@@ -247,7 +253,7 @@ const closeNewTopic = () => {
                 list="category-options"
                 placeholder="輸入或搜尋分類..."
                 @focus="showCategoryDropdown = true"
-                @blur="setTimeout(() => (showCategoryDropdown = false), 150)"
+                @blur="hideCategoryDropdown"
                 @keyup.enter.prevent="
                   categorySuggestions.length === 0
                     ? createCategoryFromSearch()
