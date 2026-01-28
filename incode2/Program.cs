@@ -146,19 +146,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting();
-
-// 
+app.UseRouting(); 
 app.UseCors("VueApp");
 app.UseAuthentication(); //  Cookie)
 app.UseAuthorization();  //  Role)
 
 // https://localhost:xxxx/img/
-app.UseStaticFiles();
 app.MapStaticAssets();
-// 
-
-//
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
