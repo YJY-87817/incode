@@ -17,6 +17,9 @@ const newTopicState = reactive({
 const categorySearch = ref("");
 const showCategoryDropdown = ref(false);
 const isCreatingCategory = ref(false);
+const showCreateCategoryModal = ref(false);
+const newCategoryName = ref("");
+const newCategoryDescription = ref("");
 
 const filteredCategories = computed(() => {
   const keyword = categorySearch.value.trim().toLowerCase();
@@ -118,23 +121,48 @@ const createCategoryFromSearch = async () => {
     return;
   }
 
+  newCategoryName.value = name;
+  newCategoryDescription.value = "";
+  showCreateCategoryModal.value = true;
+};
+
+const submitCreateCategory = async () => {
+  const name = newCategoryName.value.trim();
+  if (!name) {
+    alert("請輸入分類名稱");
+    return;
+  }
+
   try {
     isCreatingCategory.value = true;
-    const created = await forumStore.createCategory(name);
+    const created = await forumStore.createCategory(
+      name,
+      newCategoryDescription.value.trim() || null,
+      null
+    );
     if (created?.id) {
       newTopicState.categoryId = created.id;
+      categorySearch.value = created.name || name;
     } else {
       const fallback = (forumStore.categories || []).find(
         (cat) => cat.name === name
       );
-      if (fallback) newTopicState.categoryId = fallback.id;
+      if (fallback) {
+        newTopicState.categoryId = fallback.id;
+        categorySearch.value = fallback.name || name;
+      }
     }
+    showCreateCategoryModal.value = false;
   } catch (error) {
     console.error("新增分類失敗:", error);
     alert("新增分類失敗，請稍後再試");
   } finally {
     isCreatingCategory.value = false;
   }
+};
+
+const closeCreateCategoryModal = () => {
+  showCreateCategoryModal.value = false;
 };
 
 const submitNewTopic = () => {
@@ -315,6 +343,56 @@ const closeNewTopic = () => {
               取消
             </button>
             <button type="submit" class="btn btn-forum-primary">發表</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+    v-if="showCreateCategoryModal"
+    class="custom-modal-backdrop"
+    @click.self="closeCreateCategoryModal"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form @submit.prevent="submitCreateCategory">
+          <div
+            class="modal-header d-flex justify-content-between align-items-center mb-3"
+          >
+            <h5 class="modal-title mb-0">新增分類</h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="closeCreateCategoryModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">分類名稱</label>
+              <input v-model="newCategoryName" class="form-control" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">描述</label>
+              <textarea
+                v-model="newCategoryDescription"
+                class="form-control"
+                rows="3"
+                placeholder="請輸入分類描述"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer d-flex justify-content-end">
+            <button
+              type="button"
+              class="btn btn-forum-secondary me-2"
+              @click="closeCreateCategoryModal"
+            >
+              取消
+            </button>
+            <button type="submit" class="btn btn-forum-primary">
+              送出
+            </button>
           </div>
         </form>
       </div>

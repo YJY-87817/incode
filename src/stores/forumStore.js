@@ -166,7 +166,7 @@ export const useForumStore = defineStore('forum', {
       this.fetchTopics()
     },
 
-    async createCategory(categoryName) {
+    async createCategory(categoryName, description = null, parentCategoryId = null) {
       const name = String(categoryName ?? '').trim()
       if (!name) {
         throw new Error('分類名稱不可為空')
@@ -174,9 +174,9 @@ export const useForumStore = defineStore('forum', {
 
       try {
         const payload = {
+          parentCategoryId,
           name,
-          description: null,
-          isActive: 1,
+          description: description ?? null,
         }
         const created = await apiClient.post('/CategoryApi', payload)
         const normalized = normalizeCategory(created, name)
