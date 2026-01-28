@@ -3,6 +3,7 @@ using incode2.Dtos.Users;
 using incode2.Enums;
 using incode2.Extensions;
 using incode2.Services.Users;
+using incode2.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ namespace incode2.ApiControllers.user
             _userService = userService;
         }
 
-        //
+        ///AuthApi/Register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {            
@@ -38,7 +39,29 @@ namespace incode2.ApiControllers.user
 
                 if (result == "Success")
                 {
-                    return Ok(new { message = "註冊成功" });
+                    var loginResult = await _authService.ValidateUserAsync(dto.Email, dto.Password);
+                    
+                    if (!loginResult.IsSuccess || loginResult.Member == null)
+                    {
+                        return BadRequest(new { message = "註冊成功但自動登入失敗" });
+                    }
+
+                    var newUser = loginResult.Member;
+                    await SignInProcessAsync(newUser, false); // false 代表註冊預設不記住我
+                    string roleName = newUser.RoleId == (int)RoleType.Admin ? "Admin" : "Member";
+
+                    return Ok(new
+                    {
+                        message = "註冊成功並已登入",
+                        user = new
+                        {
+                            userid = newUser.UserId,
+                            usersername = newUser.Username,
+                            email = newUser.Email,
+                            role = roleName,
+                            avatarUrl = newUser.ImageUrl
+                        }
+                    });
                 }
                 else
                 {
@@ -55,6 +78,31 @@ namespace incode2.ApiControllers.user
             }
         }
 
+        private async Task SignInProcessAsync(User user, bool rememberMe)
+        {
+            string roleName = user.RoleId == (int)RoleType.Admin ? "Admin" : "Member";
+
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(ClaimTypes.Name, user.Username ?? user.Email),
+        new Claim(ClaimTypes.Role, roleName)
+    };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddMinutes(30)
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginData)
         {
@@ -68,47 +116,20 @@ namespace incode2.ApiControllers.user
 
             // 抓取 IP
             string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrEmpty(ipAddress)) ipAddress = "127.0.0.1"; // 本機開發 (Localhost)，IP 可能是 "::1"
             // (進階) 如果你的網站架在 Cloudflare 或 Load Balancer
             //if (Request.Headers.ContainsKey("X-Forwarded-For"))
             //{
             //    ipAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault();
             //}
 
-            // 如果是本機開發 (Localhost)，IP 可能是 "::1"，這是正常的
-            if (string.IsNullOrEmpty(ipAddress)) ipAddress = "127.0.0.1";
-
             await _userService.AddLoginLogAsync(result.Member.UserId, ipAddress);
 
             var user = result.Member;            
             if (user == null) return BadRequest(new { message = "登入資料異常" });
-                        
+            await SignInProcessAsync(user, loginData.RememberMe); // 呼叫共用方法簽發 Cookie
             string roleName = user.RoleId == (int)RoleType.Admin ? "Admin" : "Member";
-
-            var claims = new List<Claim>
-            {
-                // 放入 UserId (這是最重要的，之後都靠這個認人)
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                // 放入顯示名稱(有使用者名稱就用名稱，沒有的話就用 Email 代替
-                new Claim(ClaimTypes.Name, user.Username ?? user.Email),
-                // 放入權限角色
-                new Claim(ClaimTypes.Role, roleName)
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = loginData.RememberMe, // 記住我 (關閉瀏覽器後 Cookie 還在)
-                // 設定過期時間 (例如：如果有勾記住我，就存 7 天；沒勾就存 30 分鐘，或是不設定由瀏覽器決定)
-                ExpiresUtc = loginData.RememberMe ? DateTime.UtcNow.AddDays(7) : DateTime.UtcNow.AddMinutes(30)
-            };
-
-            // 3. 簽發 Cookie (瀏覽器會收到 Set-Cookie)
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                authProperties);
-
+            
             return Ok(new
             {
                 message = result.Message,
