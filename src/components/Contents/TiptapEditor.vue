@@ -598,8 +598,8 @@ onBeforeUnmount(() => {
 .cropper-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  /* background: rgba(0, 0, 0, 0.75); */
+  /* backdrop-filter: blur(4px); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -614,7 +614,7 @@ onBeforeUnmount(() => {
   width: 800px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 40px rgba(0, 0, 0);
 }
 
 .cropper-header {
@@ -623,6 +623,7 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #d1d3d4;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .cropper-header h5 {
@@ -659,7 +660,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: rgba(248, 249, 250, 0.95);
 }
 
 .cropper-body img {

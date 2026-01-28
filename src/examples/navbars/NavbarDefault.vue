@@ -527,7 +527,8 @@ watch(
               >會員中心
             </RouterLink>
           </li>
-          <div
+          <!-- 未知的多於導覽列項目 -->
+          <!-- <div
             class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md dropdown-md-responsive p-3 border-radius-lg mt-0 mt-lg-3"
             aria-labelledby="dropdownMenuBlocks"
           >
@@ -1116,7 +1117,7 @@ watch(
                 </div>
               </div>
             </div>
-          </li>
+          </li> -->
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
           <!--手機版登入 -->
