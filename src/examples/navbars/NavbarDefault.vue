@@ -29,9 +29,9 @@ const menuItems = [
     to: { name: "point-log" },
   },
   {
-    title: "我的購物車",
+    title: "我的訂單",
     icon: "mdi-cart-outline",
-    to: { name: "Checkout" },
+    to: { name: "Order" },
   },
 ];
 
