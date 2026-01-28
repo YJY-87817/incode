@@ -26,6 +26,11 @@ const filteredCategories = computed(() => {
   );
 });
 
+const categorySuggestions = computed(() => {
+  if (!categorySearch.value.trim()) return [];
+  return filteredCategories.value.slice(0, 8);
+});
+
 const fetchTopics = (categoryId = null) => {
   const params = {};
   if (categoryId) params.categoryId = categoryId;
@@ -71,6 +76,22 @@ watch(
     } else {
       newTopicState.topics = [];
     }
+  }
+);
+
+watch(
+  () => categorySearch.value,
+  (value) => {
+    const input = String(value || "").trim();
+    if (!input) {
+      newTopicState.categoryId = null;
+      return;
+    }
+
+    const match = (forumStore.categories || []).find(
+      (cat) => String(cat.name || "").toLowerCase() === input.toLowerCase()
+    );
+    newTopicState.categoryId = match ? match.id : null;
   }
 );
 
@@ -180,15 +201,33 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label class="form-label">搜尋分類</label>
+              <label class="form-label">分類</label>
               <input
                 v-model="categorySearch"
                 class="form-control"
-                placeholder="輸入關鍵字搜尋分類"
+                list="category-options"
+                placeholder="輸入或搜尋分類..."
+                @keyup.enter.prevent="
+                  categorySuggestions.length === 0
+                    ? createCategoryFromSearch()
+                    : null
+                "
               />
+              <datalist id="category-options">
+                <option
+                  v-for="cat in categorySuggestions"
+                  :key="cat.id"
+                  :value="cat.name"
+                />
+              </datalist>
+
               <div class="d-flex justify-content-between align-items-center mt-2">
                 <small class="text-muted">
-                  找到 {{ filteredCategories.length }} 個分類
+                  {{
+                    categorySearch.trim()
+                      ? `找到 ${filteredCategories.length} 個分類`
+                      : `共 ${forumStore.categories?.length || 0} 個分類`
+                  }}
                 </small>
                 <button
                   v-if="categorySearch && filteredCategories.length === 0"
@@ -197,22 +236,12 @@ const closeNewTopic = () => {
                   :disabled="isCreatingCategory"
                   @click="createCategoryFromSearch"
                 >
-                  {{ isCreatingCategory ? "建立中..." : "建立新分類" }}
+                  {{ isCreatingCategory ? "建立中..." : "自動建立分類" }}
                 </button>
               </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">分類</label>
-              <select v-model="newTopicState.categoryId" class="form-select">
-                <option :value="null" disabled>請選擇分類</option>
-                <option
-                  v-for="cat in filteredCategories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </option>
-              </select>
+              <small class="text-muted d-block mt-1">
+                選擇或輸入分類名稱，找不到時可直接建立
+              </small>
             </div>
             <div class="mb-3">
               <label class="form-label">回覆至（可選）</label>
