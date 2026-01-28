@@ -20,6 +20,8 @@ const isCreatingCategory = ref(false);
 const showCreateCategoryModal = ref(false);
 const newCategoryName = ref("");
 const newCategoryDescription = ref("");
+const showCategoryDescriptionModal = ref(false);
+const showCategoryNameModal = ref(false);
 
 const filteredCategories = computed(() => {
   const keyword = categorySearch.value.trim().toLowerCase();
@@ -135,7 +137,13 @@ const createCategoryFromSearch = async () => {
 const submitCreateCategory = async () => {
   const name = newCategoryName.value.trim();
   if (!name) {
-    alert("請輸入分類名稱");
+    showCategoryNameModal.value = true;
+    return;
+  }
+
+  const description = newCategoryDescription.value.trim();
+  if (!description) {
+    showCategoryDescriptionModal.value = true;
     return;
   }
 
@@ -143,7 +151,7 @@ const submitCreateCategory = async () => {
     isCreatingCategory.value = true;
     const created = await forumStore.createCategory(
       name,
-      newCategoryDescription.value.trim() || null,
+      description,
       null
     );
     if (created?.id) {
@@ -169,6 +177,14 @@ const submitCreateCategory = async () => {
 
 const closeCreateCategoryModal = () => {
   showCreateCategoryModal.value = false;
+};
+
+const closeCategoryDescriptionModal = () => {
+  showCategoryDescriptionModal.value = false;
+};
+
+const closeCategoryNameModal = () => {
+  showCategoryNameModal.value = false;
 };
 
 const submitNewTopic = () => {
@@ -401,6 +417,72 @@ const closeNewTopic = () => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+    v-if="showCategoryDescriptionModal"
+    class="create-category-backdrop"
+    @click.self="closeCategoryDescriptionModal"
+  >
+    <div class="create-category-dialog">
+      <div class="create-category-content">
+        <div
+          class="modal-header d-flex justify-content-between align-items-center mb-3"
+        >
+          <h5 class="modal-title mb-0">提醒</h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="closeCategoryDescriptionModal"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">分類描述為必填，請先填寫描述。</p>
+        </div>
+        <div class="modal-footer d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-forum-primary"
+            @click="closeCategoryDescriptionModal"
+          >
+            我知道了
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    v-if="showCategoryNameModal"
+    class="create-category-backdrop"
+    @click.self="closeCategoryNameModal"
+  >
+    <div class="create-category-dialog">
+      <div class="create-category-content">
+        <div
+          class="modal-header d-flex justify-content-between align-items-center mb-3"
+        >
+          <h5 class="modal-title mb-0">提醒</h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="closeCategoryNameModal"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">分類名稱為必填，請先填寫名稱。</p>
+        </div>
+        <div class="modal-footer d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-forum-primary"
+            @click="closeCategoryNameModal"
+          >
+            我知道了
+          </button>
+        </div>
       </div>
     </div>
   </div>
