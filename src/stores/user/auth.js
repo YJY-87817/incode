@@ -64,11 +64,13 @@ if (response.status === 200) {// 因為後端會回傳 user 物件，直接存�
       user.value = {
         id: res.data.userId,       
         username: res.data.username,
-        role: res.data.role
+        role: res.data.role,
+        avatar: res.data.avatar ||'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' //改成替代圖片
       };      
       isAuthenticated.value = true;
     } else {
-      throw new Error("未登入");
+      user.value = null;
+        isAuthenticated.value = false;
     }
   } catch (error) {
     user.value = null;

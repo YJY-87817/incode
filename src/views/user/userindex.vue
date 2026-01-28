@@ -55,14 +55,6 @@ const notifications = ref([
   },
 ]);
 
-const handleLogout = async () => {
-  await authStore.logout();
-
-  router.push("/login");
-
-  alert("您已安全登出");
-};
-
 // Hooks
 onMounted(() => {
   const body = document.getElementsByTagName("body")[0];
@@ -85,14 +77,6 @@ onUnmounted(() => {
       <div class="text-center mb-3">
         <h1 class="text-h3 font-weight-bold text-grey-darken-4">會員中心</h1>
         <p class="text-subtitle-1 text-grey-darken-1">Welcome back, User</p>
-        <v-btn
-          color="error"
-          variant="text"
-          prepend-icon="mdi-logout"
-          @click="handleLogout"
-        >
-          登出
-        </v-btn>
       </div>
 
       <v-row>

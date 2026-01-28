@@ -3,14 +3,13 @@ import { RouterLink } from "vue-router";
 import { ref, watch } from "vue";
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
+import { useAuthStore } from "@/stores/user/auth";
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
 import downArrow from "@/assets/img/down-arrow.svg";
 import DownArrWhite from "@/assets/img/down-arrow-white.svg";
 
 // 取得購物車狀態
 const CartNow = useCartStore();
-
-import { useAuthStore } from "@/stores/user/auth";
 const authStore = useAuthStore();
 
 const menuItems = [
@@ -22,7 +21,7 @@ const menuItems = [
   {
     title: "我的任務",
     icon: "mdi-flag-variant-outline",
-    to: { name: "UserMission" },
+    to: { name: "mytask" },
   },
   {
     title: "我的點數",
@@ -1115,55 +1114,103 @@ watch(
           </li>
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
-          <!--手機版登入 -->
-          <!-- 下拉選單 <v-menu v-if="authStore.isLoggedIn" min-width="200px" rounded="xl" offset="10"
-            transition="slide-y-transition">
-            <template v-slot:activator="{ props }">
-              <v-btn icon v-bind="props" class="ml-2" size="large">
-                <v-avatar size="45" class="border border-opacity-25">
-                  <v-img :src="authStore.user?.avatar || 'https://cdn.vuetifyjs.com/images/john.jpg'" alt="User"
-                    cover></v-img>
-                </v-avatar>
-              </v-btn>
-            </template>
-
-            <v-card border elevation="4" class="rounded-xl mt-2">
-              <v-list density="compact" nav>
-
-                <v-list-item class="mb-2" prepend-avatar="https://cdn.vuetifyjs.com/images/john.jpg">
-                  <v-list-item-title class="font-weight-bold">Brooke</v-list-item-title>
-                  <v-list-item-subtitle class="text-caption">user@example.com</v-list-item-subtitle>
-                </v-list-item>
-
-                <v-divider class="mb-2"></v-divider>
-
-                <v-list-item v-for="(item, index) in menuItems" :key="index" :to="item.to" :prepend-icon="item.icon"
-                  :title="item.title" active-class="text-primary bg-primary-lighten-5" color="primary" rounded="lg"
-                  class="mb-1"></v-list-item>
-
-                <v-divider class="my-2"></v-divider>
-
-                <v-list-item prepend-icon="mdi-logout" title="登出" rounded="lg" class="text-error"
-                  @click="handleLogout"></v-list-item>
-              </v-list>
-            </v-card>
-          </v-menu> -->
-          <li class="nav-item">
-            <RouterLink
-              v-if="!authStore.isLoggedIn"
-              to="/login"
-              class="btn btn-sm bg-gradient-success mb-0"
-            >
-              登入會員
+          <li class="nav-item" v-if="!authStore.isAuthenticated">
+            <RouterLink to="/login" class="btn btn-sm mb-0 nav-login-btn">
+              登入
             </RouterLink>
+          </li>
 
-            <button
-              v-else
-              class="btn btn-sm bg-gradient-danger mb-0"
-              @click="authStore.logout()"
+          <li class="nav-item dropdown dropdown-hover mx-2" v-else>
+            <a
+              role="button"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center justify-content-center"
+              id="dropdownMenuUser"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              style="height: 100%; min-height: 40px"
             >
-              登出
-            </button>
+              <div
+                class="d-flex align-items-center justify-content-center bg-white shadow-sm"
+                style="
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  border: 2px solid #fff;
+                  overflow: hidden;
+                "
+              >
+                <img
+                  v-if="authStore.user?.avatar"
+                  :src="authStore.user.avatar"
+                  alt="Avatar"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                  "
+                />
+                <img
+                  v-else
+                  src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"
+                  alt="Default"
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                  "
+                />
+              </div>
+            </a>
+
+            <div
+              class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md p-3 border-radius-lg mt-0 mt-lg-3"
+              aria-labelledby="dropdownMenuUser"
+            >
+              <div class="d-flex align-items-center px-2 py-2 mb-2">
+                <div class="d-flex flex-column">
+                  <h6 class="text-dark font-weight-bolder mb-0">
+                    {{ authStore.user?.username || "親愛的會員" }}
+                  </h6>
+                  <span class="text-xs text-muted">歡迎回來</span>
+                </div>
+              </div>
+
+              <hr class="horizontal dark my-1" />
+
+              <ul class="list-group">
+                <li
+                  v-for="(item, index) in menuItems"
+                  :key="index"
+                  class="nav-item list-group-item border-0 p-0"
+                >
+                  <RouterLink
+                    :to="item.to"
+                    class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center"
+                  >
+                    <i
+                      v-if="item.icon"
+                      :class="`mdi ${item.icon} me-2 text-primary`"
+                    ></i>
+                    <span>{{ item.title }}</span>
+                  </RouterLink>
+                </li>
+
+                <hr class="horizontal dark my-2" />
+
+                <li class="nav-item list-group-item border-0 p-0">
+                  <a
+                    href="javascript:;"
+                    class="dropdown-item py-2 ps-3 border-radius-md text-danger d-flex align-items-center"
+                    @click="handleLogout"
+                  >
+                    <i class="mdi mdi-logout me-2"></i>
+                    <span>登出</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
         </ul>
       </div>
@@ -1171,3 +1218,22 @@ watch(
   </nav>
   <!-- End Navbar -->
 </template>
+
+<style scoped>
+/* 登入按鈕 */
+.nav-login-btn {
+  /* 預設狀態 */
+  background-color: #145369 !important; /* 指定顏色 */
+  color: #ffffff !important; /* 文字白色 */
+  border: 1px solid #145369 !important; /* 邊框同色 */
+  margin-left: 10px; /* 左側間距 */
+  transition: all 0.3s ease; /* 平滑過渡效果 */
+}
+
+/* 滑鼠懸停 (Hover) 效果 */
+.nav-login-btn:hover {
+  background-color: #ffffff !important; /* 背景變白 */
+  color: #145369 !important; /* 文字變回深色 */
+  border: 1px solid #145369 !important; /* 保留邊框 */
+}
+</style>
