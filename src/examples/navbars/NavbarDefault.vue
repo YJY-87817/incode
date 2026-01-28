@@ -152,7 +152,7 @@ watch(
         </span>
       </button>
       <div class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0" id="navigation">
-        <ul class="navbar-nav navbar-nav-hover ms-auto">
+        <ul class="navbar-nav navbar-nav-hover">
           <!-- 討論區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
@@ -314,28 +314,6 @@ watch(
                 </RouterLink>
               </div>
             </div>
-          </li>
-          <!-- owen -->
-          <li class="nav-link ps-2 d-flex cursor-pointer align-items-center">
-            <RouterLink :to="{ name: 'UserIndex' }" class="dropdown-item border-radius-md">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                person</i>會員中心
-            </RouterLink>
-          </li>
-          <!-- 購物車 -->
-          <li class="nav-item dropdown dropdown-hover">
-            <button class="d-flex align-items-center position-relative" data-bs-toggle="offcanvas"
-              data-bs-target="#cartOffcanvas" style="background: none; border: none; cursor: pointer; padding: 0.5rem;">
-              <div class="position-relative d-inline-block">
-                <i class="bi bi-cart-dash" style="font-size: 1.2rem; line-height: 1;"></i>
-
-                <span v-if="CartNow.totalItems > 0"
-                  class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-                  style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
-                  {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
-                </span>
-              </div>
-            </button>
           </li>
           <!-- 範例 -->
           <!-- <div
@@ -696,8 +674,43 @@ watch(
             </div>
           </li> -->
         </ul>
-        <ul class="navbar-nav ms-2">
+        <!-- 搜尋框 -->
+        <div class="mx-auto d-none d-lg-flex align-items-center" style="max-width: 350px; flex: 1;">
+          <div class="input-group d-flex align-items-center"
+            style="background: #f8f9fa; border-radius: 50px; padding: 0.25rem 0.5rem;">
+            <input type="text" class="form-control border-0 bg-transparent shadow-none" placeholder="搜尋"
+              style="padding: 0.5rem 1rem; color: #344767; outline: none; box-shadow: none !important; background-image: none !important;" />
+            <button type="button" class="btn border-0 bg-transparent d-flex align-items-center justify-content-center"
+              style="outline: none; padding: 0.5rem 0.75rem; margin: 0; line-height: 1;">
+              <i class="material-icons text-muted"
+                style="font-size: 1.75rem; display: block; line-height: 1;">search</i>
+            </button>
+          </div>
+        </div>
+        <ul class="navbar-nav ms-auto ms-2">
           <!--手機版登入 -->
+          <!-- 購物車 -->
+          <li class="nav-item dropdown dropdown-hover">
+            <button class="d-flex align-items-center position-relative" data-bs-toggle="offcanvas"
+              data-bs-target="#cartOffcanvas" style="background: none; border: none; cursor: pointer; padding: 0.5rem;">
+              <div class="position-relative d-inline-block">
+                <i class="bi bi-cart-dash" style="font-size: 1.2rem; line-height: 1;"></i>
+
+                <span v-if="CartNow.totalItems > 0"
+                  class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                  style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
+                  {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+                </span>
+              </div>
+            </button>
+          </li>
+          <!-- owen -->
+          <li class="nav-link ps-2 d-flex cursor-pointer align-items-center">
+            <RouterLink :to="{ name: 'UserIndex' }" class="dropdown-item border-radius-md">
+              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
+                person</i>會員中心
+            </RouterLink>
+          </li>
           <!-- 下拉選單 <v-menu v-if="authStore.isLoggedIn" min-width="200px" rounded="xl" offset="10"
             transition="slide-y-transition">
             <template v-slot:activator="{ props }">
