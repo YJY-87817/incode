@@ -29,7 +29,7 @@ const decrease = (item) => {
       <h5 class="offcanvas-title">
         <i class="bi bi-cart-dash-fill h1"></i> 購物車
       </h5>
-      <button type="button" class="btn btn-danger" @click="CartNow.clearCart()">
+      <button type="button" class="btn" style="background-color: #145369; color: white;" @click="CartNow.clearCart()">
         清空購物車
       </button>
     </div>
@@ -47,13 +47,18 @@ const decrease = (item) => {
           </div>
 
           <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="increase(item)">
+            <button class="btn btn-sm"
+              style="font-size: 0.875rem; background-color: #145369; color: white; border-color: #145369;"
+              @click="increase(item)">
               +
             </button>
-            <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="decrease(item)">
+            <button class="btn btn-sm"
+              style="font-size: 0.875rem; background-color: #145369; color: white; border-color: #145369;"
+              @click="decrease(item)">
               −
             </button>
-            <button class="btn btn-sm btn-outline-danger" style="font-size: 0.875rem;"
+            <button class="btn btn-sm"
+              style="font-size: 0.875rem; background-color: #145369; color: white; border-color: #145369;"
               @click="CartNow.removeFromCart(item.productId)">
               <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
             </button>
@@ -76,7 +81,7 @@ const decrease = (item) => {
           <span>{{ CartNow.totalItems }} 件</span>
         </div>
         <RouterLink :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
-          <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="offcanvas">
+          <button class="btn w-100 mt-3" style="background-color: #145369; color: white;" data-bs-dismiss="offcanvas">
             前往結帳
           </button>
         </RouterLink>

@@ -149,8 +149,8 @@ onMounted(() => {
 }
 
 .form-check-custom .form-check-input:checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: #145369;
+  border-color: #145369;
 }
 
 /* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */

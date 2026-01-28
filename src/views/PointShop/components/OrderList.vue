@@ -40,9 +40,11 @@ onMounted(async () => {
       </div>
       <h4 class="empty-title">目前沒有任何訂單</h4>
       <p class="empty-description">開始購物來累積您的訂單吧！</p>
-      <button class="btn btn-primary btn-lg empty-action">
-        <i class="bi bi-cart-plus me-2"></i>前往購物
-      </button>
+      <RouterLink :to="{ name: 'PointShop' }">
+        <button class="btn btn-lg empty-action" style="background-color: #145369; color: white;">
+          <i class="bi bi-cart-plus me-2"></i>前往購物
+        </button>
+      </RouterLink>
     </div>
 
     <div v-else class="orders-wrapper">

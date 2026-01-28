@@ -30,7 +30,7 @@ const getStatusBadgeClass = (status) => {
     case "待出貨":
       return "bg-warning text-dark";
     case "已出貨":
-      return "bg-success text-dark";
+      return "text-white" + " " + "" + " style=\"background-color: #86B0BD;\""
     case "已取消":
       return "bg-danger";
     default:
