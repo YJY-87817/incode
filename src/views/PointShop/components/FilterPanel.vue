@@ -10,11 +10,16 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  series: {
+    type: Array,
+    required: true,
+  },
 });
 
 const emit = defineEmits([
   "update:filters",
   "toggle-category",
+  "toggle-series",
   "reset-filters",
 ]);
 
@@ -32,6 +37,10 @@ const updateInStock = (value) => {
 
 const handleToggleCategory = (categoryName) => {
   emit("toggle-category", categoryName);
+};
+
+const handleToggleSeries = (seriesName) => {
+  emit("toggle-series", seriesName);
 };
 
 const handleResetFilters = () => {
@@ -105,6 +114,21 @@ onMounted(() => {
                 :checked="filters.categories.includes(category.name)" @change="handleToggleCategory(category.name)" />
               <label :for="`category-${category.id}`" class="form-check-label">
                 {{ category.name }}
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4 border-bottom pb-3">
+          <label class="form-label fw-bold">
+            <i class="bi bi-collection"></i> 商品系列
+          </label>
+          <div class="form-check-list">
+            <div v-for="seriesItem in series" :key="seriesItem.id" class="form-check form-check-custom mb-2">
+              <input :id="`series-${seriesItem.id}`" type="checkbox" class="form-check-input"
+                :checked="filters.series.includes(seriesItem.name)" @change="handleToggleSeries(seriesItem.name)" />
+              <label :for="`series-${seriesItem.id}`" class="form-check-label">
+                {{ seriesItem.name }}
               </label>
             </div>
           </div>

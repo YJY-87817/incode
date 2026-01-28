@@ -16,11 +16,13 @@ const filters = ref({
   minPrice: 0,
   maxPrice: 10000,
   categories: [],
+  series: [],
   inStock: false,
 });
 
 // 可用的類別列表（從產品資料動態生成）
 const categories = ref([]);
+const series = ref([]);
 
 const fetchProducts = () => {
   // 開始抓取前，通常會手動開啟 loading (原本 async 函式通常也會在開頭設定)
@@ -33,14 +35,23 @@ const fetchProducts = () => {
 
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
+      const uniqueSeries = new Set();
       response.data.data.forEach((product) => {
         if (product.type) {
           uniqueCategories.add(product.type);
+        }
+        if (product.series) {
+          uniqueSeries.add(product.series);
         }
       });
 
       // 轉換為陣列格式
       categories.value = Array.from(uniqueCategories).map((name, index) => ({
+        id: index + 1,
+        name: name,
+      }));
+
+      series.value = Array.from(uniqueSeries).map((name, index) => ({
         id: index + 1,
         name: name,
       }));
@@ -72,11 +83,16 @@ const filteredProducts = computed(() => {
       filters.value.categories.length === 0 ||
       filters.value.categories.includes(product.type);
 
+    // 系列篩選（使用 series）
+    const seriesCheck =
+      filters.value.series.length === 0 ||
+      filters.value.series.includes(product.series);
+
     // 庫存篩選
     const stockCheck =
       !filters.value.inStock || (product.stock && product.stock > 0);
 
-    return priceCheck && categoryCheck && stockCheck;
+    return priceCheck && categoryCheck && seriesCheck && stockCheck;
   });
 });
 
@@ -89,11 +105,21 @@ const toggleCategory = (categoryName) => {
   }
 };
 
+const toggleSeries = (seriesName) => {
+  const index = filters.value.series.indexOf(seriesName);
+  if (index > -1) {
+    filters.value.series.splice(index, 1);
+  } else {
+    filters.value.series.push(seriesName);
+  }
+};
+
 const resetFilters = () => {
   filters.value = {
     minPrice: 0,
     maxPrice: 10000,
     categories: [],
+    series: [],
     inStock: false,
   };
 };
@@ -122,8 +148,8 @@ onMounted(() => {
 
       <div class="row">
         <div class="col-lg-3">
-          <FilterPanel :filters="filters" :categories="categories" @update:filters="handleFilterUpdate"
-            @toggle-category="toggleCategory" @reset-filters="resetFilters" />
+          <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
+            @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
         </div>
 
         <div class="col-lg-9">
