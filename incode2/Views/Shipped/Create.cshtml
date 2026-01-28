@@ -46,18 +46,18 @@
                         <h5 class="text-secondary mb-3"><i class="bi bi-calendar-event me-2"></i>物流排程</h5>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label asp-for="ShippedDate" class="form-label fw-bold text-dark">寄送日期</label>
-                                <input asp-for="ShippedDate" type="date" class="form-control">
+                                <label asp-for="ShippedDate" class="form-label fw-bold text-dark">寄送日期時間</label>
+                                <input asp-for="ShippedDate" type="datetime-local" class="form-control">
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="ArrivalDate" class="form-label fw-bold text-dark">送達日期</label>
-                                <input asp-for="ArrivalDate" type="date" class="form-control">
+                                <label asp-for="ArrivalDate" class="form-label fw-bold text-dark">送達日期時間</label>
+                                <input asp-for="ArrivalDate" type="datetime-local" class="form-control">
                             </div>
                         </div>
 
                         <div class="mb-4">
                             <label asp-for="Remark" class="form-label fw-bold text-dark">備註</label>
-                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="例如：警衛室代收、週末不配送等..."></textarea>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="例如:警衛室代收、週末不配送等..."></textarea>
                         </div>
 
                         <div class="d-flex gap-2 pt-2">
