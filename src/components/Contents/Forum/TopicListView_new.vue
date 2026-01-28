@@ -10,6 +10,7 @@ import { computed } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import HtmlIframe from "@/components/HtmlIframe.vue";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
@@ -303,11 +304,14 @@ const handleTopicInteractionError = (data) => {
         </div>
 
         <!-- 內容 -->
-        <div class="thread-content mb-3">
-          <div
-            class="mb-3 rich-content"
-            v-html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
-          ></div>
+         <div class="thread-content mb-3">
+           <HtmlIframe
+             class="mb-3 rich-content"
+             :html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
+             :min-height="120"
+             text-color="#432f28"
+             :extra-css="'body { white-space: pre-wrap; }'"
+           />
 
           <!-- 圖片 -->
           <div

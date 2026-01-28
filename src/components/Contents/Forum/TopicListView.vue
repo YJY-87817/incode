@@ -11,6 +11,7 @@ import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import HtmlIframe from "@/components/HtmlIframe.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "./forumUtils";
 
@@ -215,11 +216,13 @@ const submitQuickReply = async () => {
             />
           </div>
 
-          <div
+          <HtmlIframe
             class="card-text rich-content"
-            style="white-space: pre-wrap; word-break: break-word"
-            v-html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
-          ></div>
+            :html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
+            :min-height="120"
+            text-color="#432f28"
+            :extra-css="'body { white-space: pre-wrap; }'"
+          />
 
           <!-- 帖文圖片 -->
           <div

@@ -23,7 +23,13 @@
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
-        <div class="card-text mt-2 rich-content" v-html="safeContent"></div>
+        <HtmlIframe
+          class="card-text mt-2 rich-content"
+          :html="safeContent"
+          :min-height="60"
+          text-color="#145369"
+          :extra-css="'body { white-space: pre-wrap; }'"
+        />
 
         <!-- 回覆輸入框 -->
         <div v-if="showReply" class="mt-3 border-top pt-3">
@@ -85,6 +91,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import HtmlIframe from "@/components/HtmlIframe.vue";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";

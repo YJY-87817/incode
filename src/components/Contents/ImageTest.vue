@@ -4,6 +4,7 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import ImageCarousel from "./ImageCarousel.vue";
 import { uploadMultipleImages } from "@/api/imageapi";
 import RichTextEditor from "@/components/Contents/RichTextEditor.vue";
+import HtmlIframe from "@/components/HtmlIframe.vue";
 
 // 多圖上傳相關
 const selectedFiles = ref([]); // 儲存選中的多個檔案
@@ -263,10 +264,11 @@ const clearAllImages = () => {
             />
             <div class="mt-3">
               <h6 class="mb-2">即時預覽</h6>
-              <div
+              <HtmlIframe
                 class="border rounded p-3 bg-light"
-                v-html="rteContent"
-              ></div>
+                :html="rteContent"
+                :min-height="120"
+              />
             </div>
           </div>
         </div>
