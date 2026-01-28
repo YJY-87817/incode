@@ -161,6 +161,7 @@ Table point_log {
   source_id int [ note: '點數異動來源類型的 id']
   point_type_definition_id int [not null, ref: > point_type_definition.point_type_definition_id, note: '點數異動類型']
   change_amount int [not null, note: '本次變動點數（正數＝收入，負數＝支出）']
+  balance_after int [not null, note: '變動後餘額（建議改用觸發器自動計算或 VIEW 即時計算，避免手動維護出錯）']
   status nvarchar(50) [not null,check: `[status] IN ('pending','success','failed','cancelled','system')`, default: 'success', note: 'pending, success, failed, cancelled, system']  
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
@@ -168,7 +169,7 @@ Table point_log {
 // 點數類型定義
 Table point_type_definition {
   point_type_definition_id int [pk, increment, note: '點數類型主鍵']
-  type_name nvarchar(50) [ not null, note: '程式用代碼，例如：recharge, mission, shopping']
+  type_name nvarchar(50) [ not null, check:`[type_name] IN ('mission','entrust_mission','entrust_mission_point_reserve','point_recharge','order','system')` , note: '程式用代碼，例如：recharge, mission, shopping']
   display_name nvarchar(100) [not null, note: '前台顯示名稱，例如：儲值點數、任務獎勵']
   description nvarchar(100) [note: '後台管理員看的詳細說明']
   is_active bit [not null, default: 1]

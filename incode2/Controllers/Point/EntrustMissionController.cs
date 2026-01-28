@@ -47,7 +47,7 @@ namespace incode2.Controllers.Point
         // GET: EntrustMission/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username");
             return View();
         }
 
@@ -64,7 +64,7 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", entrustMission.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
             return View(entrustMission);
         }
 
@@ -81,7 +81,7 @@ namespace incode2.Controllers.Point
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", entrustMission.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
             return View(entrustMission);
         }
 
@@ -117,7 +117,7 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", entrustMission.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
             return View(entrustMission);
         }
 

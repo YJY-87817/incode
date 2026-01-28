@@ -19,6 +19,8 @@ public partial class PointLog
 
     public int ChangeAmount { get; set; }
 
+    public int BalanceAfter { get; set; }
+
     public string Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
