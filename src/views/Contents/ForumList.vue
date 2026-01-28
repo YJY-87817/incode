@@ -132,57 +132,33 @@ export default {
 import { ref, computed, onMounted } from "vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 import apiClient from "@/api/request.js";
-
-// 取得不含 /api 的基底網址
-const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
-
-const toAbsoluteUrl = (url) => {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
-  return `${apiBaseUrl}/${url}`;
-};
-
-// 從內容中提取圖片
-const parseBodyContent = (body) => {
-  const raw = body || "";
-  // 改進的正則：匹配完整的 http/https 圖片 URL
-  const imagePattern = /https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
-  const matches = raw.match(imagePattern) || [];
-  const uniqueImages = Array.from(new Set(matches));
-
-  const imageUrls = uniqueImages
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map(toAbsoluteUrl);
-
-  const textContent = raw
-    .replace(/https?:\/\/[^\s()[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
-  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
-
-  return {
-    textContent: displayText,
-    imageUrls,
-  };
-};
+import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
+import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
 
 const topics = ref([]);
 
 const fetchTopics = async () => {
   try {
     const data = await apiClient.get("/ContentApi");
-    topics.value = data.items.map((item) => {
-      const { textContent, imageUrls } = parseBodyContent(item.body);
-      return {
-        id: item.contentId,
-        title: item.title,
-        excerpt: textContent,
-        imageUrls: imageUrls,
-        author: item.username,
-      };
-    });
+    const items = data.items || [];
+    const normalizedItems = await Promise.all(
+      items.map(async (item) => {
+        const bodyHtml = await fetchBodyHtml(item.body);
+        const { textContent, imageUrls } = normalizeRichContent(
+          bodyHtml,
+          toAbsoluteUrl
+        );
+        const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
+        return {
+          id: item.contentId,
+          title: item.title,
+          excerpt: displayText,
+          imageUrls,
+          author: item.username,
+        };
+      })
+    );
+    topics.value = normalizedItems;
   } catch (error) {
     console.error("Failed to fetch topics:", error);
   }

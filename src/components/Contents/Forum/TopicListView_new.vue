@@ -304,7 +304,10 @@ const handleTopicInteractionError = (data) => {
 
         <!-- 內容 -->
         <div class="thread-content mb-3">
-          <p class="mb-3">{{ forumStore.threadDetail.content }}</p>
+          <div
+            class="mb-3 rich-content"
+            v-html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
+          ></div>
 
           <!-- 圖片 -->
           <div

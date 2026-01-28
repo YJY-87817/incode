@@ -215,12 +215,11 @@ const submitQuickReply = async () => {
             />
           </div>
 
-          <p
-            class="card-text"
+          <div
+            class="card-text rich-content"
             style="white-space: pre-wrap; word-break: break-word"
-          >
-            {{ forumStore.threadDetail.content }}
-          </p>
+            v-html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
+          ></div>
 
           <!-- 帖文圖片 -->
           <div

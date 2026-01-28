@@ -165,15 +165,7 @@ import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import { CONTENT_TYPES } from "@/stores/forumStore.js";
 import { uploadImage } from "@/api/imageapi.js";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
-
-const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
-
-const toAbsoluteUrl = (url) => {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
-  return `${apiBaseUrl}/${url}`;
-};
+import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
 
 const normalizeContent = (body) => normalizeRichContent(body, toAbsoluteUrl);
 // 視窗寬度響應式變數
@@ -208,8 +200,9 @@ const fetchThread = async () => {
 
     const detail = detailRes?.contentId ? detailRes : detailRes?.data;
     if (detail && detail.contentId) {
+      const detailBodyHtml = await fetchBodyHtml(detail.body);
       const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
-        detail.body
+        detailBodyHtml
       );
       thread.value = {
         id: detail.contentId,
@@ -226,22 +219,25 @@ const fetchThread = async () => {
 
     // Process comments from the new API endpoint
     const commentsData = commentsRes?.comments || [];
-    const commentItems = commentsData.map((comment) => {
-      const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
-        comment.body
-      );
-      return {
-        id: comment.contentId,
-        author: comment.username,
-        createdAt: comment.createdAt,
-        contentHtml: sanitizedHtml,
-        contentText: textContent,
-        imageUrls,
-        type: CONTENT_TYPES.COMMENT,
-        parentContentId: comment.parentContentId,
-        replies: [],
-      };
-    });
+    const commentItems = await Promise.all(
+      commentsData.map(async (comment) => {
+        const commentHtml = await fetchBodyHtml(comment.body);
+        const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
+          commentHtml
+        );
+        return {
+          id: comment.contentId,
+          author: comment.username,
+          createdAt: comment.createdAt,
+          contentHtml: sanitizedHtml,
+          contentText: textContent,
+          imageUrls,
+          type: CONTENT_TYPES.COMMENT,
+          parentContentId: comment.parentContentId,
+          replies: [],
+        };
+      })
+    );
 
     // For now, keep the existing logic for replies (replies to the main thread)
     // This fetches replies separately since the new comments API might not include them
@@ -250,24 +246,27 @@ const fetchThread = async () => {
     });
     const replyItems = Array.isArray(repliesRes?.items) ? repliesRes.items : [];
 
-    const normalizedReplies = replyItems
-      .filter((i) => i.type === CONTENT_TYPES.REPLY)
-      .map((i) => {
-        const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
-          i.body
-        );
-        return {
-          id: i.contentId,
-          author: i.username,
-          createdAt: i.createdAt,
-          contentHtml: sanitizedHtml,
-          contentText: textContent,
-          imageUrls,
-          type: i.type,
-          parentContentId: i.parentContentId,
-          replies: [],
-        };
-      });
+    const normalizedReplies = await Promise.all(
+      replyItems
+        .filter((i) => i.type === CONTENT_TYPES.REPLY)
+        .map(async (i) => {
+          const replyHtml = await fetchBodyHtml(i.body);
+          const { sanitizedHtml, textContent, imageUrls } = normalizeContent(
+            replyHtml
+          );
+          return {
+            id: i.contentId,
+            author: i.username,
+            createdAt: i.createdAt,
+            contentHtml: sanitizedHtml,
+            contentText: textContent,
+            imageUrls,
+            type: i.type,
+            parentContentId: i.parentContentId,
+            replies: [],
+          };
+        })
+    );
 
     const sortByDate = (list) => {
       list.sort(

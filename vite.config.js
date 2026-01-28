@@ -7,7 +7,7 @@ import fs from "fs";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-    resolve: {
+  resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
@@ -19,6 +19,23 @@ export default defineConfig({
     },
     port: 5173,
     host: "0.0.0.0",
+    proxy: {
+      "/api": {
+        target: "https://localhost:7190",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/contents": {
+        target: "https://localhost:7190",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/img": {
+        target: "https://localhost:7190",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 
   css: {

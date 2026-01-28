@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/api/request.js'
 import contentInteractionApi from '@/api/contentInteractionApi.js'
-import { parseBodyContent, calculateReplyStats } from '@/components/Contents/Forum/forumUtils'
+import { calculateReplyStats } from '@/components/Contents/Forum/forumUtils'
+import { normalizeRichContent } from '@/utils/sanitizeHtml.js'
+import { fetchBodyHtml, toAbsoluteUrl } from '@/utils/contentBody.js'
 
 // Content types according to database schema
 export const CONTENT_TYPES = {
@@ -39,6 +41,8 @@ export const useForumStore = defineStore('forum', {
       author: '',
       createdAt: '',
       content: '',
+      contentHtml: '',
+      contentText: '',
       imageUrls: [],
       categoryId: null,
       type: null,
@@ -158,8 +162,21 @@ export const useForumStore = defineStore('forum', {
         const allContentData = await apiClient.get('/ContentApi', { params: allContentParams })
         const allContents = allContentData.items || []
 
+        const contentsWithHtml = await Promise.all(
+          allContents.map(async (item) => {
+            const bodyHtml = await fetchBodyHtml(item.body)
+            const { textContent, imageUrls } = normalizeRichContent(bodyHtml, toAbsoluteUrl)
+            return {
+              ...item,
+              bodyHtml,
+              bodyText: textContent,
+              bodyImages: imageUrls,
+            }
+          })
+        )
+
         // 2. 過濾 type=1(貼文) 和 type=2(回文)
-        let listContents = allContents
+        let listContents = contentsWithHtml
           .filter(c => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY)
 
         // 3. 搜尋過濾 (搜尋 title 和 body)
@@ -167,7 +184,7 @@ export const useForumStore = defineStore('forum', {
           const keyword = this.searchKeyword.trim().toLowerCase()
           listContents = listContents.filter(c => {
             const titleMatch = c.title?.toLowerCase().includes(keyword)
-            const bodyMatch = c.body?.toLowerCase().includes(keyword)
+            const bodyMatch = c.bodyText?.toLowerCase().includes(keyword)
             return titleMatch || bodyMatch
           })
         }
@@ -192,8 +209,8 @@ export const useForumStore = defineStore('forum', {
 
         // 5. 組合顯示資料
         this.topics = pageItems.map(item => {
-          const { textContent, imageUrls } = parseBodyContent(item.body)
-          const replyStats = calculateReplyStats(item.contentId, allContents)
+          const { textContent, imageUrls } = normalizeRichContent(item.bodyHtml, toAbsoluteUrl)
+          const replyStats = calculateReplyStats(item.contentId, contentsWithHtml)
 
           return {
             id: item.contentId,
@@ -245,13 +262,19 @@ export const useForumStore = defineStore('forum', {
         // 處理主題詳情
         const detail = detailRes?.contentId ? detailRes : detailRes?.data
         if (detail && detail.contentId) {
-          const { textContent, imageUrls } = parseBodyContent(detail.body)
+          const detailBodyHtml = await fetchBodyHtml(detail.body)
+          const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
+            detailBodyHtml,
+            toAbsoluteUrl
+          )
           this.threadDetail = {
             id: detail.contentId,
             title: detail.title,
             author: detail.username,
             createdAt: detail.createdAt,
             content: textContent,
+            contentHtml: sanitizedHtml,
+            contentText: textContent,
             imageUrls,
             categoryId: detail.categoryId,
             type: detail.type,
@@ -260,19 +283,27 @@ export const useForumStore = defineStore('forum', {
 
         // 處理留言
         const commentsData = commentsRes?.comments || []
-        this.threadComments = commentsData.map(comment => {
-          const { textContent, imageUrls } = parseBodyContent(comment.body)
-          return {
-            id: comment.contentId,
-            author: comment.username,
-            createdAt: comment.createdAt,
-            content: textContent,
-            imageUrls,
-            type: CONTENT_TYPES.COMMENT,
-            parentContentId: comment.parentContentId,
-            replies: [],
-          }
-        })
+        this.threadComments = await Promise.all(
+          commentsData.map(async (comment) => {
+            const commentHtml = await fetchBodyHtml(comment.body)
+            const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
+              commentHtml,
+              toAbsoluteUrl
+            )
+            return {
+              id: comment.contentId,
+              author: comment.username,
+              createdAt: comment.createdAt,
+              content: textContent,
+              contentHtml: sanitizedHtml,
+              contentText: textContent,
+              imageUrls,
+              type: CONTENT_TYPES.COMMENT,
+              parentContentId: comment.parentContentId,
+              replies: [],
+            }
+          })
+        )
 
         // 獲取回文
         const repliesRes = await apiClient.get('/ContentApi', {
@@ -280,22 +311,28 @@ export const useForumStore = defineStore('forum', {
         })
         const replyItems = Array.isArray(repliesRes?.items) ? repliesRes.items : []
 
-        this.threadPosts = replyItems
-          .filter(i => i.type === CONTENT_TYPES.REPLY)
-          .map(i => {
-            const { textContent, imageUrls } = parseBodyContent(i.body)
+        const replyList = replyItems.filter(i => i.type === CONTENT_TYPES.REPLY)
+        this.threadPosts = (await Promise.all(
+          replyList.map(async (i) => {
+            const replyHtml = await fetchBodyHtml(i.body)
+            const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
+              replyHtml,
+              toAbsoluteUrl
+            )
             return {
               id: i.contentId,
               author: i.username,
               createdAt: i.createdAt,
               content: textContent,
+              contentHtml: sanitizedHtml,
+              contentText: textContent,
               imageUrls,
               type: i.type,
               parentContentId: i.parentContentId,
               replies: [],
             }
           })
-          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        )).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
 
         this.threadComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
         this.threadCurrentPage = 1
@@ -317,6 +354,8 @@ export const useForumStore = defineStore('forum', {
         author: '',
         createdAt: '',
         content: '',
+        contentHtml: '',
+        contentText: '',
         imageUrls: [],
         categoryId: null,
         type: null,
