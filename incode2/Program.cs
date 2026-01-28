@@ -145,41 +145,49 @@ else
   app.UseHsts();
 }
 
+app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
+
 //以下tim的
 // 在 app.UseStaticFiles(); 之前添加
 app.UseStaticFiles(new StaticFileOptions
 {
   OnPrepareResponse = ctx =>
   {
-    // 為圖片文件添加 CORS headers
-    if (ctx.File.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-        ctx.File.Name.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-        ctx.File.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-        ctx.File.Name.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) ||
-        ctx.File.Name.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
+    var origin = ctx.Context.Request.Headers["Origin"].ToString();
+    var allowed = new[]
     {
-      ctx.Context.Response.Headers.Add("Access-Control-Allow-Origin", "https://localhost:5173");
-      ctx.Context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+      "https://localhost:5173",
+      "https://localhost:5174",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:8080",
+      "http://localhost:3000",
+      "http://localhost:7190",
+      "http://localhost:3001"
+    };
+
+    var ext = Path.GetExtension(ctx.File.Name);
+    var isAllowed = allowed.Contains(origin);
+    var isStatic = ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".html";
+
+    if (isAllowed && isStatic)
+    {
+      ctx.Context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+      ctx.Context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+      ctx.Context.Response.Headers["Vary"] = "Origin";
     }
   }
 });
 //以上tim的
-
-app.UseHttpsRedirection();
-app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
-app.UseStaticFiles(); // 如果有靜態文件
-app.UseRouting();
 app.UseAuthentication(); //  Cookie)
 app.UseAuthorization();  //  Role)
 // https://localhost:xxxx/img/
 app.MapStaticAssets();
-// 
-
-//
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 //lin
 app.MapRazorPages()
    .WithStaticAssets();
