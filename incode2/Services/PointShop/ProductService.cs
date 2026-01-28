@@ -27,6 +27,7 @@ namespace incode2.Services.PointShop
                     Name = e.Name,
                     Description = e.Description,
                     ImageName = e.ImageName,
+                    Series = e.Series,
                     Type = e.Type,
                     IsPhysical = e.IsPhysical,
                     Point = e.Point,

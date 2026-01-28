@@ -7,13 +7,6 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="@Url.Action("Index")">商品列表</a></li>
-                    <li class="breadcrumb-item active">修改商品</li>
-                </ol>
-            </nav>
-
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-warning py-3">
                     <h4 class="mb-0 fs-5 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>商品修改</h4>
@@ -48,24 +41,24 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold text-primary">更換圖片</label>
-                                        <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
-                                        <small class="text-muted">若不更換請留空</small>
+                                        <label asp-for="Series" class="form-label fw-bold">系列</label>
+                                        <input asp-for="Series" class="form-control" required>
                                     </div>
+
                                 </div>
 
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
                                         <label asp-for="Point" class="form-label fw-bold text-danger">所需點數</label>
                                         <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-coin text-warning"></i></span>
+                                            <span class="input-group-text">P</span>
                                             <input asp-for="Point" type="number" class="form-control" min="0">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="Stock" class="form-label fw-bold text-success">庫存數量</label>
                                         <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                                            <span class="input-group-text">件</span>
                                             <input asp-for="Stock" type="number" class="form-control" min="0">
                                         </div>
                                     </div>
@@ -97,6 +90,11 @@
                                         <img id="imagePreview" class="img-fluid rounded d-none" style="max-height: 230px; object-fit: contain;" />
                                         <div id="noImageText" class="py-5 text-muted"><i class="bi bi-image display-4"></i><p>暫無圖片</p></div>
                                     }
+                                </div>
+                                <div class=" mb-3">
+                                    <label class="form-label fw-bold text-primary">更換圖片</label>
+                                    <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
+                                    <small class="text-muted">若不更換請留空</small>
                                 </div>
 
                                 <div class="mt-4 px-4 text-start">
