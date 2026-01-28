@@ -42,39 +42,43 @@ namespace incode2.ApiController.user
                 .ToListAsync();
         }
 
-        // GET: api/User/profile?id=123
-        // 如果網址有帶 ?id=123 -> 回傳該 ID 的資料 (看別人)
-        // 如果網址沒帶 id      -> 回傳當前登入者的資料 (看自己)
+        // GET: api/User/profile??username=test2CQ
         [HttpGet("profile")]
-        public async Task<ActionResult<UserDto>> GetProfile([FromQuery] int? id)
+        public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
-            // 1. 決定要查詢的目標 ID
-            // 邏輯：如果參數 id 有值，就用參數 id；如果沒值，就抓 Token 裡的當前用戶 ID
-            int targetId = id ?? User.GetId();
+            User user = null; // 定義一個變數來存「找到的使用者」
 
-            if (targetId == 0)
+            if (!string.IsNullOrEmpty(username))
             {
-                return BadRequest("無法確認查詢對象");
+                // 情境 A: 有傳 username -> 查詢該 username 的資料
+                user = await _context.User
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Username == username);
+            }
+            else
+            {
+                // 情境 B: 沒傳 username -> 查詢當前登入者 (查自己)
+                int currentUserId = User.GetId();
+                user = await _context.User
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
             }
 
-            var user = await _context.User
-                .Include(u => u.Role)
-                .Where(u => u.UserId == targetId) 
-                .Select(u => new UserDto
-                {
-                    UserId = u.UserId,
-                    Username = u.Username,
-                    ImageUrl = u.ImageUrl,
-                    Role = u.Role.RoleName ?? "Member"
-                })
-                .FirstOrDefaultAsync();
-
+            // 檢查是否找到資料
             if (user == null)
             {
                 return NotFound("找不到該會員資料");
             }
 
-            return Ok(user);
+            // 轉換成 DTO 回傳
+            return Ok(new UserDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Username = user.Username,
+                ImageUrl = user.ImageUrl,
+                Role = user.Role.RoleName ?? "Member"
+            });
         }
 
         // PUT: api/User/5
