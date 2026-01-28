@@ -5,7 +5,7 @@
     :class="{ 'html-iframe--inline': inline }"
     :style="iframeStyle"
     :srcdoc="srcdoc"
-    :sandbox="sandbox"
+    :sandbox="effectiveSandbox"
     loading="lazy"
     @load="handleLoad"
   ></iframe>
@@ -42,6 +42,10 @@ const props = defineProps({
   lineHeight: {
     type: String,
     default: "",
+  },
+  allowScripts: {
+    type: Boolean,
+    default: false,
   },
   sandbox: {
     type: String,
@@ -91,6 +95,18 @@ const baseCss = computed(() => {
   `;
 });
 
+const stripScripts = (html) => {
+  if (!html) return "";
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  doc.querySelectorAll("script").forEach((node) => node.remove());
+  return doc.body.innerHTML;
+};
+
+const bodyHtml = computed(() =>
+  props.allowScripts ? props.html || "" : stripScripts(props.html || "")
+);
+
 const srcdoc = computed(() => {
   const faLink = props.includeFontAwesome
     ? '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />'
@@ -107,7 +123,7 @@ const srcdoc = computed(() => {
     ${materialLink}
     <style>${baseCss.value}</style>
   </head>
-  <body>${props.html || ""}</body>
+  <body>${bodyHtml.value}</body>
 </html>`;
 });
 
@@ -149,6 +165,13 @@ const iframeStyle = computed(() => {
     verticalAlign: props.inline ? "middle" : "initial",
   };
   return style;
+});
+
+const effectiveSandbox = computed(() => {
+  if (!props.allowScripts) return props.sandbox;
+  if (!props.sandbox) return "allow-scripts";
+  if (props.sandbox.includes("allow-scripts")) return props.sandbox;
+  return `${props.sandbox} allow-scripts`;
 });
 </script>
 

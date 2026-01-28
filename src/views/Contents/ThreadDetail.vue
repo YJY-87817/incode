@@ -27,6 +27,7 @@ export default {
           :html="thread.contentHtml"
           :min-height="120"
           text-color="#432f28"
+          :allow-scripts="true"
         />
       </div>
     </div>
