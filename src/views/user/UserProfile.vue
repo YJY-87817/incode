@@ -1,13 +1,35 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useUserStore } from "@/stores/user/userStore";
+import { ref, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
+import { useUserStore } from "@/stores/user/user";
 
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
 const userStore = useUserStore();
-const router = useRouter();
+const route = useRoute();
+
+const loadData = async () => {
+  const targetUsername = route.params.username; // 從網址取得 username
+  if (targetUsername) {
+    await Promise.all([
+      userStore.fetchUserProfile(targetUsername),
+      userStore.fetchFollowingList(),
+    ]);
+  }
+};
+
+// 處理按鈕點擊
+const handleFollowToggle = async () => {
+  const targetId = userStore.userProfile.id;
+  if (!targetId) return;
+
+  if (userStore.isFollowingCurrentUser) {
+    await userStore.unfollowUser(targetId);
+  } else {
+    await userStore.followUser(targetId);
+  }
+};
 
 // 模擬文章資料
 const items = ref([
@@ -46,10 +68,15 @@ const items = ref([
 ]);
 
 onMounted(() => {
-  const body = document.getElementsByTagName("body")[0];
-  body.classList.add("bg-grey-lighten-5"); // 加上全頁背景色
-  userStore.fetchUserProfile();
+  loadData();
 });
+// 監聽 username 的變化
+watch(
+  () => route.params.username,
+  () => {
+    loadData();
+  },
+);
 </script>
 
 <template>
@@ -82,15 +109,43 @@ onMounted(() => {
                 Brooke
               </h1>
               <v-spacer></v-spacer>
-              <v-btn
-                color="#145369"
-                variant="flat"
-                rounded="pill"
-                class="px-4 text-body-1 text-color font-weight-bold"
-                prepend-icon="mdi-plus"
-              >
-                追蹤
-              </v-btn>
+              <div>
+                <v-btn
+                  v-if="userStore.isLoading"
+                  disabled
+                  rounded="pill"
+                  variant="tonal"
+                  class="px-4"
+                >
+                  <v-progress-circular
+                    size="20"
+                    width="2"
+                    indeterminate
+                  ></v-progress-circular>
+                </v-btn>
+                <v-btn
+                  v-else-if="userStore.isFollowingCurrentUser"
+                  color="grey-lighten-2"
+                  variant="flat"
+                  rounded="pill"
+                  class="px-4 text-body-1 font-weight-bold text-grey-darken-3"
+                  prepend-icon="mdi-check"
+                  @click="handleFollowToggle"
+                >
+                  已追蹤
+                </v-btn>
+                <v-btn
+                  v-else
+                  color="#145369"
+                  variant="flat"
+                  rounded="pill"
+                  class="px-4 text-body-1 text-white font-weight-bold"
+                  prepend-icon="mdi-plus"
+                  @click="handleFollowToggle"
+                >
+                  追蹤
+                </v-btn>
+              </div>
             </v-row>
             <v-row>
               <div

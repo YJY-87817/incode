@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink } from "vue-router";
-import { ref, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import { useAuthStore } from "@/stores/user/auth";
@@ -12,11 +12,19 @@ import DownArrWhite from "@/assets/img/down-arrow-white.svg";
 const CartNow = useCartStore();
 const authStore = useAuthStore();
 
-const menuItems = [
+const menuItems = computed(() => [
   {
     title: "會員中心",
     icon: "mdi-account-circle-outline",
     to: { name: "UserIndex" },
+  },
+  {
+    title: "我的首頁",
+    icon: "mdi-face-man-profile",
+    to: {
+      name: "UserProfile",
+      params: { username: authStore.user?.username || "" },
+    },
   },
   {
     title: "我的任務",
@@ -33,7 +41,7 @@ const menuItems = [
     icon: "mdi-cart-outline",
     to: { name: "Order" },
   },
-];
+]);
 
 const handleLogout = async () => {
   await authStore.logout();
