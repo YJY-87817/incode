@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import ShippedDetail from "@/views/PointShop/components/ShippedDetail.vue";
-import { getOrderDetails } from "@/views/PointShop/services/PointShopApi";
+import { getOrderDetails, putCancelOrder } from "@/views/PointShop/services/PointShopApi";
 
 // 引入 SweetAlert2 的套件
 import CartSwal from 'sweetalert2';
@@ -38,7 +38,7 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
-const canerlOrder = () => {
+const cancelOrder = (orderId) => {
 
   CartSwal.fire({
     title: "確定要取消嗎?",
@@ -49,13 +49,14 @@ const canerlOrder = () => {
     cancelButtonColor: "#d33",
     confirmButtonText: "是, 我要取消!",
     cancelButtonText: "返回",
-  }).then((result) => {
+  }).then(async (result) => {
     if (result.isConfirmed) {
       CartSwal.fire({
         title: "取消成功!",
         text: "您的訂單已取消",
         icon: "success"
       });
+      await putCancelOrder(orderId);
     }
   });
 };
@@ -149,9 +150,19 @@ const canerlOrder = () => {
               </div>
             </div>
 
-            <div class="order-actions">
-              <button class="btn btn-outline-danger btn-sm action-btn" @click="canerlOrder">
+            <div v-if="order.status == '已取消'" class="order-actions">
+              <button class="btn btn-outline-danger btn-sm action-btn" disabled>
+                <i class="bi bi-x-circle me-1"></i>訂單已取消
+              </button>
+            </div>
+            <div v-else-if="order.status == '待處理'" class="order-actions">
+              <button class="btn btn-outline-danger btn-sm action-btn" @click="cancelOrder(order.orderId)">
                 <i class="bi bi-x-circle me-1"></i>取消訂單
+              </button>
+            </div>
+            <div v-else class="order-actions">
+              <button class="btn btn-outline-danger btn-sm action-btn" disabled>
+                <i class="bi bi-x-circle me-1"></i>訂單已受理
               </button>
             </div>
           </div>

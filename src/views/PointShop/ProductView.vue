@@ -2,8 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
-import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
-import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
+
 // 套版範例
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";

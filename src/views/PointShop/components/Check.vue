@@ -1,4 +1,8 @@
 <script setup>
+import { useCartStore } from "@/views/PointShop/services/cartStore";
+import { postCreateOrder } from "@/views/PointShop/services/PointShopApi";
+const CartNow = useCartStore();
+
 
 </script>
 
@@ -13,7 +17,7 @@
     <div class="card-body px-4">
       <div class="mb-3">
         <label class="form-label text-secondary small fw-bold">收件人姓名</label>
-        <input type="text" class="form-control" placeholder="請輸入真實姓名">
+        <input type="text" class="form-control" placeholder="請輸入收件人姓名">
       </div>
       <div class="mb-3">
         <label class="form-label text-secondary small fw-bold">聯絡電話</label>
@@ -21,7 +25,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label text-secondary small fw-bold">寄送地址</label>
-        <input type="text" class="form-control" placeholder="請輸入詳細地址">
+        <input type="text" class="form-control" placeholder="請輸入收件地址">
       </div>
       <div class="mb-3">
         <label class="form-label text-secondary small fw-bold">備註事項</label>
@@ -31,7 +35,7 @@
 
     <div class="card-footer bg-white border-top-0 pb-4 px-4">
       <button class="btn w-100 py-2 fw-bold shadow-sm" style="background-color: #145369; color: white;">
-        <i class="bi bi-check2-circle me-1"></i> 確認結帳
+        確認結帳
       </button>
     </div>
   </div>

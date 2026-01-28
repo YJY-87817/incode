@@ -1,13 +1,9 @@
 <script setup>
-import { ref, computed } from "vue";
-import axios from "axios";
-import { useCartStore } from "@/views/PointShop/services/cartStore";
 import CheckoutItem from "@/views/PointShop/components/Checkitem.vue";
-import CheckoutPoint from "@/views/PointShop/components/CheckPoint.vue";
+import CheckoutPoint from "@/views/PointShop/components/Check.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
-const CartNow = useCartStore();
 </script>
 
 <template>

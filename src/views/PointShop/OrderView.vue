@@ -9,8 +9,8 @@ import OrderList from "@/views/PointShop/components/OrderList.vue";
 <template>
   <DefaultNavbar light />
 
-  <div class="min-vh-100 pb-5 ">
-    <div class="container py-5">
+  <div class="min-vh-100 pb-5">
+    <div class="container pt-5 mb-5">
       <div class="col-12 mb-4">
         <div class="card border-0 shadow-sm" style="background-color: #86B0BD;">
           <div class="card-body p-4">
