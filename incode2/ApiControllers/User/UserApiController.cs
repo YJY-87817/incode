@@ -42,58 +42,36 @@ namespace incode2.ApiController.user
                 .ToListAsync();
         }
 
-        // GET: api/User/5
-        // 取得特定使用者資料
-        //管理者或本人
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<UserDto>> GetUser(int id)
+        // GET: api/User/profile?id=123
+        // 如果網址有帶 ?id=123 -> 回傳該 ID 的資料 (看別人)
+        // 如果網址沒帶 id      -> 回傳當前登入者的資料 (看自己)
+        [HttpGet("profile")]
+        public async Task<ActionResult<UserDto>> GetProfile([FromQuery] int? id)
         {
-            var user = await _context.User
-                .Include(u => u.Role)
-                .Where(u => u.UserId == id)
-                .Select(u => new UserDto // 同樣轉成 DTO
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    Username = u.Username,
-                    ImageUrl = u.ImageUrl,
-                    Role = u.Role.RoleName ?? "Member"
-                })
-                .FirstOrDefaultAsync();
+            // 1. 決定要查詢的目標 ID
+            // 邏輯：如果參數 id 有值，就用參數 id；如果沒值，就抓 Token 裡的當前用戶 ID
+            int targetId = id ?? User.GetId();
 
-            if (user == null)
+            if (targetId == 0)
             {
-                return NotFound();
+                return BadRequest("無法確認查詢對象");
             }
 
-            return user;
-        }
-
-        // GET: api/User/profile
-        [HttpGet("profile")]
-        public async Task<ActionResult<UserDto>> GetProfile()
-        {
-            // 1. 利用擴充方法取得當前登入者的 ID
-            int userId = User.GetId();
-
-            // 2. 去資料庫查詢完整資料，並轉換成 UserDto (不包含密碼)
             var user = await _context.User
-                .Include(u => u.Role) // 關聯角色表，為了拿到 RoleName
-                .Where(u => u.UserId == userId)
+                .Include(u => u.Role)
+                .Where(u => u.UserId == targetId) 
                 .Select(u => new UserDto
                 {
                     UserId = u.UserId,
-                    Email = u.Email,
                     Username = u.Username,
                     ImageUrl = u.ImageUrl,
-                    // 如果 Role 是 null 就給預設值 "Member"
                     Role = u.Role.RoleName ?? "Member"
                 })
                 .FirstOrDefaultAsync();
 
             if (user == null)
             {
-                return NotFound("找不到會員資料");
+                return NotFound("找不到該會員資料");
             }
 
             return Ok(user);
