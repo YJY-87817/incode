@@ -15,6 +15,7 @@ const newTopicState = reactive({
 });
 
 const categorySearch = ref("");
+const showCategoryDropdown = ref(false);
 const isCreatingCategory = ref(false);
 
 const filteredCategories = computed(() => {
@@ -27,8 +28,11 @@ const filteredCategories = computed(() => {
 });
 
 const categorySuggestions = computed(() => {
-  if (!categorySearch.value.trim()) return [];
-  return filteredCategories.value.slice(0, 8);
+  const input = categorySearch.value.trim();
+  if (!input) {
+    return (forumStore.categories || []).slice(0, 12);
+  }
+  return filteredCategories.value.slice(0, 12);
 });
 
 const fetchTopics = (categoryId = null) => {
@@ -94,6 +98,13 @@ watch(
     newTopicState.categoryId = match ? match.id : null;
   }
 );
+
+const selectCategoryFromDropdown = (category) => {
+  if (!category) return;
+  categorySearch.value = category.name || "";
+  newTopicState.categoryId = category.id;
+  showCategoryDropdown.value = false;
+};
 
 const createCategoryFromSearch = async () => {
   const name = categorySearch.value.trim();
@@ -207,6 +218,8 @@ const closeNewTopic = () => {
                 class="form-control"
                 list="category-options"
                 placeholder="輸入或搜尋分類..."
+                @focus="showCategoryDropdown = true"
+                @blur="setTimeout(() => (showCategoryDropdown = false), 150)"
                 @keyup.enter.prevent="
                   categorySuggestions.length === 0
                     ? createCategoryFromSearch()
@@ -220,6 +233,27 @@ const closeNewTopic = () => {
                   :value="cat.name"
                 />
               </datalist>
+
+              <div
+                v-if="showCategoryDropdown"
+                class="category-dropdown border rounded mt-2"
+              >
+                <button
+                  v-for="cat in categorySuggestions"
+                  :key="cat.id"
+                  type="button"
+                  class="dropdown-item w-100 text-start"
+                  @mousedown.prevent="selectCategoryFromDropdown(cat)"
+                >
+                  {{ cat.name }}
+                </button>
+                <div
+                  v-if="categorySuggestions.length === 0"
+                  class="text-muted small px-3 py-2"
+                >
+                  沒有符合的分類
+                </div>
+              </div>
 
               <div class="d-flex justify-content-between align-items-center mt-2">
                 <small class="text-muted">
@@ -359,5 +393,24 @@ const closeNewTopic = () => {
 .form-select:focus {
   border-color: #86b0bd;
   box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
+}
+
+.category-dropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
+  border-color: #d1d3d4 !important;
+}
+
+.dropdown-item {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: #145369;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 240, 221, 0.7);
 }
 </style>
