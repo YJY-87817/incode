@@ -13,6 +13,25 @@ export const CONTENT_TYPES = {
   COMMENT_REPLY: 4   // 留言回覆
 }
 
+const normalizeCategory = (raw, fallbackName = '') => {
+  if (!raw) return null
+  const source = raw?.data ?? raw
+  if (Array.isArray(source)) return null
+
+  const id = source.id ?? source.content_category_id ?? source.categoryId ?? source.category_id
+  const name = source.name ?? source.categoryName ?? source.category_name ?? fallbackName
+
+  if (!id && !name) return null
+
+  return {
+    id,
+    name,
+    description: source.description ?? null,
+    topicCount: source.topicCount ?? source.topic_count ?? 0,
+    postCount: source.postCount ?? source.post_count ?? 0,
+  }
+}
+
 export const useForumStore = defineStore('forum', {
   state: () => ({
     // ========== 全局狀態 ==========
@@ -145,6 +164,31 @@ export const useForumStore = defineStore('forum', {
       this.newTopic.categoryId = this.selectedCategory
       this.pagination.currentPage = 1
       this.fetchTopics()
+    },
+
+    async createCategory(categoryName) {
+      const name = String(categoryName ?? '').trim()
+      if (!name) {
+        throw new Error('分類名稱不可為空')
+      }
+
+      try {
+        const payload = {
+          name,
+          description: null,
+          isActive: 1,
+        }
+        const created = await apiClient.post('/CategoryApi', payload)
+        const normalized = normalizeCategory(created, name)
+
+        await this.fetchCategories()
+
+        if (normalized?.id) return normalized
+        return this.categories.find(c => c.name === name) || null
+      } catch (error) {
+        console.error('新增分類失敗:', error)
+        throw error
+      }
     },
 
     // ========== 主題列表 ==========

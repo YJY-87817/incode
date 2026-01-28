@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, watch, ref } from "vue";
+import { reactive, onMounted, watch, ref, computed } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
@@ -11,20 +11,20 @@ const newTopicState = reactive({
   body: "",
   categoryId: null,
   parentContentId: null,
-  categories: [],
   topics: [],
 });
 
-const fetchCategories = () => {
-  apiClient
-    .get("/CategoryApi")
-    .then((data) => {
-      newTopicState.categories = data;
-    })
-    .catch((error) => {
-      console.error("載入分類失敗:", error);
-    });
-};
+const categorySearch = ref("");
+const isCreatingCategory = ref(false);
+
+const filteredCategories = computed(() => {
+  const keyword = categorySearch.value.trim().toLowerCase();
+  const categories = forumStore.categories || [];
+  if (!keyword) return categories;
+  return categories.filter((cat) =>
+    String(cat.name || "").toLowerCase().includes(keyword)
+  );
+});
 
 const fetchTopics = (categoryId = null) => {
   const params = {};
@@ -43,7 +43,9 @@ const fetchTopics = (categoryId = null) => {
 };
 
 onMounted(() => {
-  fetchCategories();
+  if (!forumStore.categories?.length) {
+    forumStore.fetchCategories();
+  }
   // 同步 store 中選中的分類
   if (forumStore.selectedCategory) {
     newTopicState.categoryId = forumStore.selectedCategory;
@@ -71,6 +73,37 @@ watch(
     }
   }
 );
+
+const createCategoryFromSearch = async () => {
+  const name = categorySearch.value.trim();
+  if (!name || isCreatingCategory.value) return;
+
+  const existing = (forumStore.categories || []).find(
+    (cat) => String(cat.name || "").toLowerCase() === name.toLowerCase()
+  );
+  if (existing) {
+    newTopicState.categoryId = existing.id;
+    return;
+  }
+
+  try {
+    isCreatingCategory.value = true;
+    const created = await forumStore.createCategory(name);
+    if (created?.id) {
+      newTopicState.categoryId = created.id;
+    } else {
+      const fallback = (forumStore.categories || []).find(
+        (cat) => cat.name === name
+      );
+      if (fallback) newTopicState.categoryId = fallback.id;
+    }
+  } catch (error) {
+    console.error("新增分類失敗:", error);
+    alert("新增分類失敗，請稍後再試");
+  } finally {
+    isCreatingCategory.value = false;
+  }
+};
 
 const submitNewTopic = () => {
   console.log(
@@ -147,11 +180,33 @@ const closeNewTopic = () => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
+              <label class="form-label">搜尋分類</label>
+              <input
+                v-model="categorySearch"
+                class="form-control"
+                placeholder="輸入關鍵字搜尋分類"
+              />
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <small class="text-muted">
+                  找到 {{ filteredCategories.length }} 個分類
+                </small>
+                <button
+                  v-if="categorySearch && filteredCategories.length === 0"
+                  type="button"
+                  class="btn btn-sm btn-forum-secondary"
+                  :disabled="isCreatingCategory"
+                  @click="createCategoryFromSearch"
+                >
+                  {{ isCreatingCategory ? "建立中..." : "建立新分類" }}
+                </button>
+              </div>
+            </div>
+            <div class="mb-3">
               <label class="form-label">分類</label>
               <select v-model="newTopicState.categoryId" class="form-select">
                 <option :value="null" disabled>請選擇分類</option>
                 <option
-                  v-for="cat in newTopicState.categories"
+                  v-for="cat in filteredCategories"
                   :key="cat.id"
                   :value="cat.id"
                 >
