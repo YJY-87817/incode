@@ -47,7 +47,7 @@ namespace incode2.Controllers.Point
         // GET: PointRecharge/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username");
             return View();
         }
 
@@ -64,7 +64,7 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
             return View(pointRecharge);
         }
 
@@ -81,7 +81,7 @@ namespace incode2.Controllers.Point
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
             return View(pointRecharge);
         }
 
@@ -117,7 +117,7 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
             return View(pointRecharge);
         }
 

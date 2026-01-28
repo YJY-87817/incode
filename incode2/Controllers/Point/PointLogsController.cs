@@ -55,15 +55,16 @@ namespace incode2.Controllers.Point
         public IActionResult Create()
         {
             ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "DisplayName");
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username");
 
             var sourceTypes = new List<SelectListItem>
             {
                new SelectListItem { Value = "mission", Text = "平台任務獎勵" },
                new SelectListItem { Value = "entrust_mission", Text = "委託任務獎勵" },
-               new SelectListItem { Value = "deposit", Text = "點數儲值" },
+               new SelectListItem { Value = "entrust_mission_point_reserve", Text = "委託預扣點數" },
+               new SelectListItem { Value = "point_recharge", Text = "點數儲值" },
                new SelectListItem { Value = "order", Text = "商品購買" },
-               //new SelectListItem { Value = "entrust", Text = "委託扣除儲值" }
+               new SelectListItem { Value = "system", Text = "系統調整" }
             };
             ViewBag.SourceTypes = sourceTypes;
 
@@ -84,7 +85,7 @@ namespace incode2.Controllers.Point
                 return RedirectToAction(nameof(Index));
             }
             ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "DisplayName", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointLog.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointLog.UserId);
             return View(pointLog);
         }
 
@@ -102,7 +103,7 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
             ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "DisplayName", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointLog.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointLog.UserId);
             return View(pointLog);
         }
 
@@ -139,7 +140,7 @@ namespace incode2.Controllers.Point
                 return RedirectToAction(nameof(Index));
             }
             ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "DisplayName", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", pointLog.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointLog.UserId);
             return View(pointLog);
         }
 
