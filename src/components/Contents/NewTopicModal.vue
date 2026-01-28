@@ -290,13 +290,6 @@ const closeNewTopic = () => {
               </div>
 
               <div class="d-flex justify-content-between align-items-center mt-2">
-                <small class="text-muted">
-                  {{
-                    categorySearch.trim()
-                      ? `找到 ${filteredCategories.length} 個分類`
-                      : `共 ${forumStore.categories?.length || 0} 個分類`
-                  }}
-                </small>
                 <button
                   v-if="categorySearch && filteredCategories.length === 0"
                   type="button"
@@ -304,8 +297,15 @@ const closeNewTopic = () => {
                   :disabled="isCreatingCategory"
                   @click="createCategoryFromSearch"
                 >
-                  {{ isCreatingCategory ? "建立中..." : "自動建立分類" }}
+                  {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
                 </button>
+                <small class="text-muted">
+                  {{
+                    categorySearch.trim()
+                      ? `找到 ${filteredCategories.length} 個分類`
+                      : `共 ${forumStore.categories?.length || 0} 個分類`
+                  }}
+                </small>
               </div>
               <small class="text-muted d-block mt-1">
                 選擇或輸入分類名稱，找不到時可直接建立
@@ -357,11 +357,11 @@ const closeNewTopic = () => {
 
   <div
     v-if="showCreateCategoryModal"
-    class="custom-modal-backdrop"
+    class="create-category-backdrop"
     @click.self="closeCreateCategoryModal"
   >
-    <div class="modal-dialog">
-      <div class="modal-content">
+    <div class="create-category-dialog">
+      <div class="create-category-content">
         <form @submit.prevent="submitCreateCategory">
           <div
             class="modal-header d-flex justify-content-between align-items-center mb-3"
@@ -457,6 +457,39 @@ const closeNewTopic = () => {
   border: 1px solid #d1d3d4;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.create-category-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(67, 47, 40, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.create-category-dialog {
+  background: #fff;
+  border-radius: 0.3rem;
+  width: min(520px, 92%);
+  padding: 0.75rem 1rem;
+  position: relative;
+  z-index: 2100;
+  border: 1px solid #d1d3d4;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.create-category-content .form-control,
+.create-category-content textarea.form-control {
+  font-size: 0.95rem;
+}
+
+.create-category-content textarea.form-control {
+  min-height: 100px;
 }
 
 .modal-header {
