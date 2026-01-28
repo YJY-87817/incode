@@ -17,6 +17,8 @@ public partial class Product
 
     public string Type { get; set; }
 
+    public string Series { get; set; }
+
     public bool IsPhysical { get; set; }
 
     public int Point { get; set; }
