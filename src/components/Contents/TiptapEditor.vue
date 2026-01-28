@@ -433,7 +433,7 @@ onBeforeUnmount(() => {
   </div>
 
   <!-- 圖片裁剪器彈窗 -->
-  <div v-if="showCropper" class="cropper-modal" @click.self="closeCropper">
+  <div v-if="showCropper" class="cropper-dialog" @click.self="closeCropper">
     <div class="cropper-container">
       <div class="cropper-header">
         <h5>裁剪圖片</h5>
@@ -595,15 +595,21 @@ onBeforeUnmount(() => {
 }
 
 /* 裁剪器模態框樣式 */
-.cropper-modal {
+.cropper-dialog {
   position: fixed;
   inset: 0;
-  /* background: rgba(0, 0, 0, 0.75); */
-  /* backdrop-filter: blur(4px); */
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+}
+
+/* Cropper.js 遮罩（裁切區外的深色層） */
+:deep(.cropper-modal) {
+  background-color: rgba(0, 0, 0, 0.25);
+  opacity: 1;
 }
 
 .cropper-container {
