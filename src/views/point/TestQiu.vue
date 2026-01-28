@@ -12,7 +12,7 @@ onMounted(() => store.fetchLogs());
 </script>
 
 <template>
-  <NavbarDefault class="custom-navbar" />
+  <NavbarDefault style="background-color: #fff0dd" />
   <div class="container py-5">
     <div class="row g-4">
       <div class="col-lg-3">
@@ -28,10 +28,3 @@ onMounted(() => store.fetchLogs());
   </div>
   <FooterCentered />
 </template>
-
-<style scoped>
-.custom-navbar {
-  background-color: #86b0bd; /* 通常導覽列改背景色比較多 */
-  color: black;
-}
-</style>

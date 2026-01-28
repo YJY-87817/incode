@@ -45,13 +45,14 @@ const store = useUserPointStore();
       <select
         class="form-select form-select-sm rounded-pill px-3 shadow-sm"
         v-model="store.filterType"
-        style="width: 150px"
+        style="width: 160px; min-width: 140px"
       >
-        <option>全部類型</option>
+        <option value="全部類型">全部類型</option>
         <option value="平台任務">平台任務</option>
-        <option value="商品兌換">商品兌換</option>
-        <option value="系統贈送">系統贈送</option>
-        <option value="退款/修正">退款/修正</option>
+        <option value="委託任務">委託任務</option>
+        <option value="商城商品兌換">商城商品兌換</option>
+        <option value="點數儲值">點數儲值</option>
+        <option value="系統調整">系統調整</option>
       </select>
     </div>
   </div>

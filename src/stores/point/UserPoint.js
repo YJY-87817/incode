@@ -21,17 +21,24 @@ export const useUserPointStore = defineStore("userPoint", {
   getters: {
     // 核心邏輯：根據搜尋框與選單過濾資料
     filteredLogs: (state) => {
-      return state.rawLogs.filter((log) => {
-        const matchesSearch =
-          state.searchQuery === "" ||
-          log.item.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-          log.date.includes(state.searchQuery);
+      let result = state.rawLogs;
 
-        const matchesFilter =
-          state.filterType === "全部類型" || log.category === state.filterType;
+      if (state.searchQuery.trim()) {
+        const q = state.searchQuery.trim().toLowerCase();
+        result = result.filter(
+          (log) =>
+            log.item?.toLowerCase().includes(q) ||
+            log.date?.includes(q) ||
+            log.rawType?.toLowerCase().includes(q) ||
+            log.displayName?.toLowerCase().includes(q),
+        );
+      }
 
-        return matchesSearch && matchesFilter;
-      });
+      if (state.filterType !== "全部類型") {
+        result = result.filter((log) => log.category === state.filterType);
+      }
+
+      return result;
     },
 
     // 計算累計獲得
@@ -47,98 +54,69 @@ export const useUserPointStore = defineStore("userPoint", {
         .filter((log) => log.points < 0)
         .reduce((sum, log) => sum + Math.abs(log.points), 0);
     },
+
+    currentBalance: (state) =>
+      state.rawLogs.length > 0 ? (state.rawLogs[0].balance ?? 0) : 0,
   },
 
   actions: {
-    // 模擬從後端抓取資料
     async fetchLogs() {
       this.isLoading = true;
       try {
         const response = await service.get("/api/PointLogApi/user/my-logs");
+        const apiData = response.data?.items ?? response.data;
 
-        // 注意：axios 回傳的資料是在 .data 屬性裡
-        const apiData = response.data;
+        this.rawLogs = apiData.map((pl) => ({
+          id: pl.pointLogId,
+          date: new Date(pl.createdAt).toLocaleString("zh-TW", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          item: pl.displayName || "系統調整",
+          category: this.mapCategory(pl.sourceType),
+          points: pl.changeAmount,
+          balance: pl.balanceAfter,
+          status: pl.status === "success" ? "已完成" : "處理中",
+          rawType: pl.sourceType,
+        }));
 
-        // 定義類別對照表 (可以寫在外面或 Store 裡)
-        const typeMap = {
-          recharge: "帳戶儲值",
-          task: "平台任務",
-          exchange: "商品兌換",
-          refund: "退款修正",
-        };
-
-        this.rawLogs = apiData.map((pl) => {
-          return {
-            id: pl.pointLogId,
-            date: new Date(pl.createdAt).toLocaleString("zh-TW", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            /// 1. 這裡直接使用後端已經根據 SourceType 查表解算出來的名稱
-            item: pl.displayName || "系統調整",
-
-            // 2. 修正：類別轉換應該根據 sourceType (如 mission, recharge)
-            category: this.mapCategory(pl.sourceType),
-
-            points: pl.changeAmount,
-
-            // 3. 核心：C 方案的精髓，不進行前端計算，直接顯示快照餘額
-            balance: pl.balanceAfter,
-
-            status: pl.status === "success" ? "已完成" : "處理中",
-
-            // 4. 多傳一個原始類型，方便給 Badge 顏色判斷使用
-            rawType: pl.sourceType,
-          };
-        });
+        // 確保最新在最上面
+        this.rawLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
       } catch (error) {
-        console.error("API 抓取失敗，改用預設資料:", error);
-        alert("API 抓取失敗，改用預設資料");
-        //如果 API 沒開，可以用這組假資料測試畫面
+        console.error("載入失敗:", error);
+        // 假資料（更新為 2026 年範例）
         this.rawLogs = [
           {
             id: 1,
-            date: "2024/05/15 10:30",
-            item: "每日登入簽到",
-            category: "平台任務",
-            points: 100,
-            balance: 1100,
+            date: "2026/01/28 12:42",
+            item: "[預扣] 電影字幕校對",
+            category: "委託任務",
+            points: -222,
+            balance: 578,
+            rawType: "entrust_mission_point_reserve",
           },
           {
             id: 2,
-            date: "2024/05/14 18:45",
-            item: "購買電影兌換",
-            category: "商品兌換",
-            points: -200,
-            balance: 900,
+            date: "2026/01/28 12:38",
+            item: "商城商品兌換",
+            category: "商城商品兌換",
+            points: -500,
+            balance: 800,
+            rawType: "order",
           },
           {
             id: 3,
-            date: "2024/05/13 09:15",
-            item: "完成新手教學",
-            category: "平台任務",
-            points: 50,
-            balance: 950,
-          },
-          {
-            id: 4,
-            date: "2024/05/12 14:20",
-            item: "活動獎勵",
-            category: "系統贈送",
-            points: 150,
-            balance: 1100,
-          },
-          {
-            id: 5,
-            date: "2024/05/11 11:30",
-            item: "商品退款",
-            category: "退款/修正",
-            points: 200,
+            date: "2026/01/28 12:38",
+            item: "點數儲值",
+            category: "點數儲值",
+            points: 1000,
             balance: 1300,
+            rawType: "deposit",
           },
+          // ... 其他
         ];
       } finally {
         this.isLoading = false;
@@ -147,27 +125,22 @@ export const useUserPointStore = defineStore("userPoint", {
     // 輔助方法：統一後端標籤轉中文
     mapCategory(type) {
       const map = {
-        // 任務類
         mission: "平台任務",
         entrust_mission: "委託任務",
-        entrust_mission_point_reserve: "(預扣)委託任務", // ← 重要！預扣也算委託任務類別
-
-        // 儲值 / 充值類
-        recharge: "點數儲值",
+        entrust_mission_point_reserve: "委託任務", // 放在一起
         point_recharge: "點數儲值",
-        deposit: "點數儲值", // ← 新增或替換
-
-        // 消耗類
+        deposit: "點數儲值",
         order: "商城商品兌換",
-        exchange: "商品兌換", // 如果有舊資料用這個
-
-        // 其他
         system: "系統調整",
-        refund: "退款修正",
-
-        // 如果有更多 sourceType，可繼續加
+        refund: "退款/修正",
       };
-      return map[type] || "其他調整"; // 最後 fallback 改成更中性一點，避免誤導
+      return map[type] || "其他調整";
+    },
+
+    // 可選：清除搜尋與篩選狀態
+    resetFilters() {
+      this.searchQuery = "";
+      this.filterType = "全部類型";
     },
   },
 });

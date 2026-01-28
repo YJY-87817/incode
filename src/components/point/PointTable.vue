@@ -26,14 +26,15 @@ const totalPages = computed(() =>
   Math.ceil(store.filteredLogs.length / itemsPerPage),
 );
 
-const getBadgeClass = (cat) => {
+const getBadgeClass = (category) => {
   const map = {
     平台任務: "bg-success-subtle text-success",
-    商品兌換: "bg-primary-subtle text-primary",
-    帳戶儲值: "bg-info-subtle text-info", // 配合 typeMap 的名稱
-    退款修正: "bg-warning-subtle text-warning",
+    委託任務: "bg-success-subtle text-success",
+    商城商品兌換: "bg-primary-subtle text-primary",
+    點數儲值: "bg-info-subtle text-info",
+    系統調整: "bg-secondary-subtle text-secondary",
   };
-  return map[cat] || "bg-info-subtle text-info";
+  return map[category] || "bg-info-subtle text-info";
 };
 </script>
 
@@ -79,10 +80,12 @@ const getBadgeClass = (cat) => {
               class="text-center fw-bold"
               :class="log.points > 0 ? 'text-success' : 'text-danger'"
             >
-              {{ log.points > 0 ? "+" : "" }}{{ log.points }}
+              {{ log.points > 0 ? "+" : "" }}{{ log.points.toLocaleString()
+              }}<i class="bi bi-coin fs-6 ms-1 text-warning"></i>
             </td>
             <td class="text-end pe-4 text-secondary fw-medium">
-              {{ log.balance }}
+              {{ log.balance.toLocaleString()
+              }}<i class="bi bi-coin fs-6 ms-1 text-warning"></i>
             </td>
           </tr>
         </tbody>
