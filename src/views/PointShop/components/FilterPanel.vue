@@ -64,11 +64,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="card shadow-sm border-0 sticky-top mb-5" style="top: 80px">
+  <div class="card shadow-sm border-0 sticky-top mb-5" style="top: 80px ">
+
     <div ref="filterHeaderRef"
       class="card-header text-white d-flex justify-content-between align-items-center collapsed"
       data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse"
-      style="cursor: pointer; background-color: #f0f2f5">
+      style="cursor: pointer; background-color: #86B0BD">
       <h6 class="mb-0"><i class="bi bi-funnel"></i> 篩選商品</h6>
       <i class="bi bi-chevron-down transition-icon"></i>
     </div>

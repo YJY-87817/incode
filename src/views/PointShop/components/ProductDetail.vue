@@ -1,6 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useCartStore } from "@/views/PointShop/services/cartStore";
+import CartSwal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+
 // 直接接收路由參數作為 props
 const props = defineProps({
     id: String,
@@ -32,7 +35,13 @@ const handleAddToCart = () => {
         count++;
     }
     // 可以在這裡添加提示訊息
-    alert(`已將 ${product.value.name} * ${count} 加入購物車！`);
+    CartSwal.fire({
+        title: '成功！',
+        text: `${count}件${product.value.name}已成功加入購物車`,
+        icon: 'success',
+        confirmButtonText: '確定',
+        confirmButtonColor: '#145369'
+    });
 };
 
 </script>
@@ -59,8 +68,8 @@ const handleAddToCart = () => {
                     </div>
 
                     <div>
-                        <span class="badge rounded-pill bg-primary bg-opacity-10 mb-2">{{
-                            product.type
+                        <span class="badge rounded-pill mb-2"
+                            style="background-color: rgba(134, 176, 189, 0.1); color: #86B0BD;">{{ product.type
                             }}</span>
                         <h2 class="card-title fw-bold text-body-highlight mb-3" :title="product.name">{{ product.name }}
                         </h2>
@@ -68,9 +77,7 @@ const handleAddToCart = () => {
 
                     <div class="mt-auto">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-primary fw-bold fs-4">
-                                {{ product.point }} P
-                            </span>
+                            <span class="fw-bold fs-4" style="color: #86B0BD;">{{ product.point }} P</span>
                             <span class="badge rounded-pill bg-light text-dark border">
                                 庫存: {{ product.stock }}
                             </span>
@@ -91,7 +98,7 @@ const handleAddToCart = () => {
 
                         <button @click="handleAddToCart" :disabled="product.stock <= 0"
                             class="btn btn-lg w-100 fw-bold transition rounded-pill shadow-sm"
-                            :class="product.stock > 0 ? 'btn-outline-primary' : 'btn-secondary'">
+                            :class="product.stock > 0 ? 'btn-custom-solid' : 'btn-secondary'">
                             <i class="fas fa-shopping-cart me-2"></i>{{ product.stock > 0 ? "加入購物車" : "已售完" }}
                         </button>
                     </div>
@@ -103,7 +110,7 @@ const handleAddToCart = () => {
             <div class="row">
                 <div class="col-12">
                     <h5 class="mb-3 fw-bold d-flex align-items-center">
-                        <span class="far fa-file-alt me-2 text-primary"></span>商品詳情
+                        <span class="far fa-file-alt me-2" style="color: #86B0BD;"></span>商品詳情
                     </h5>
                     <div class="lh-lg">
                         <p>{{ product.description }}</p>
@@ -112,8 +119,27 @@ const handleAddToCart = () => {
             </div>
         </div>
         <div v-else class="text-center p-5">
-            <div class="spinner-border text-primary" role="status"></div>
+            <div class="spinner-border" style="color: #86B0BD;" role="status"></div>
             <p class="mt-2">正在讀取商品資訊，請稍候...</p>
         </div>
     </div>
 </template>
+
+<style scoped>
+.product-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.btn-custom-solid {
+    background-color: #145369;
+    border-color: #145369;
+    color: white;
+}
+
+.btn-custom-solid:hover {
+    background-color: #104255;
+    border-color: #104255;
+}
+</style>

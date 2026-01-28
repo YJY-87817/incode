@@ -20,17 +20,18 @@ const decrease = (item) => {
     <div class="card shadow-sm border-0 rounded-4">
       <div class="card-header bg-white border-bottom-0 pt-4 px-4">
         <h4 class="fw-bold text-dark mb-0">
-          <i class="bi bi-cart3 me-2 text-primary"></i>購物清單
+          <i class="bi bi-cart3 me-2" style="color: #86B0BD;"></i>購物清單
         </h4>
       </div>
 
       <div class="card-body px-4">
         <div v-if="CartNow.cartItems.length > 0" class="d-flex flex-column gap-3">
           <!-- 購物車清單範例 -->
-          <div v-for="item in CartNow.cartItems" :key="item.productId" class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
+          <div v-for="item in CartNow.cartItems" :key="item.productId"
+            class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
 
             <div class="d-flex align-items-center flex-grow-1">
-              <img :src="`https://localhost:7190/img/product/${item.imageName|| 'NoImage.png'}`"
+              <img :src="`https://localhost:7190/img/product/${item.imageName || 'NoImage.png'}`"
                 class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
               <div class="ms-3">
                 <h6 class="fw-bold mb-0 text-dark">{{ item.name }}</h6>
@@ -44,16 +45,19 @@ const decrease = (item) => {
               </div>
               <div class="text-end" style="min-width: 80px;">
                 <small class="text-secondary d-block">小計</small>
-                <span class="text-primary fw-bold">{{ item.point * item.quantity }} p</span>
+                <span class="fw-bold" style="color: #86B0BD;">{{ item.point * item.quantity }} p</span>
               </div>
             </div>
 
             <div class="ms-3 border-start ps-3 py-1">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="increase(item)">+</button>
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;" @click="decrease(item)">−</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;"
+                  @click="increase(item)">+</button>
+                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;"
+                  @click="decrease(item)">−</button>
                 <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
-                  <i class="bi bi-trash" style="font-size: 0.875rem;" @click="CartNow.removeFromCart(item.productId)"></i>
+                  <i class="bi bi-trash" style="font-size: 0.875rem;"
+                    @click="CartNow.removeFromCart(item.productId)"></i>
                 </button>
               </div>
             </div>
@@ -68,7 +72,7 @@ const decrease = (item) => {
         <hr class="text-muted opacity-25">
         <div class="d-flex justify-content-end align-items-baseline gap-2">
           <span class="text-secondary small">共 {{ CartNow.totalItems }} 項商品，總計：</span>
-          <span class="fs-4 fw-bold text-primary">{{ CartNow.totalPoints }} P</span>
+          <span class="fs-4 fw-bold" style="color: #86B0BD;">{{ CartNow.totalPoints }} P</span>
         </div>
       </div>
 

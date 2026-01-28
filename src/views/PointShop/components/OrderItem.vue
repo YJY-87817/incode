@@ -3,6 +3,10 @@ import { ref, onMounted } from "vue";
 import ShippedDetail from "@/views/PointShop/components/ShippedDetail.vue";
 import { getOrderDetails } from "@/views/PointShop/services/PointShopApi";
 
+// 引入 SweetAlert2 的套件
+import CartSwal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+
 const props = defineProps({
   order: { type: Object, required: true },
 });
@@ -22,7 +26,7 @@ onMounted(async () => {
 const getStatusBadgeClass = (status) => {
   switch (status) {
     case "已完成":
-      return "bg-primary";
+      return "bg-completed";
     case "待出貨":
       return "bg-warning text-dark";
     case "已出貨":
@@ -33,6 +37,30 @@ const getStatusBadgeClass = (status) => {
       return "bg-secondary";
   }
 };
+
+const canerlOrder = () => {
+
+  CartSwal.fire({
+    title: "確定要取消嗎?",
+    text: "取消後商品須重新以點數兌換!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "是, 我要取消!",
+    cancelButtonText: "返回",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      CartSwal.fire({
+        title: "取消成功!",
+        text: "您的訂單已取消",
+        icon: "success"
+      });
+    }
+  });
+};
+
+
 </script>
 
 <template>
@@ -67,7 +95,7 @@ const getStatusBadgeClass = (status) => {
       <div class="accordion-body">
         <div class="order-detail-container">
           <div v-if="loading" class="loading-detail">
-            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <div class="spinner-border spinner-border-sm me-2" style="color: #86B0BD" role="status">
               <span class="visually-hidden">載入中...</span>
             </div>
             <span>載入訂單明細中...</span>
@@ -122,7 +150,7 @@ const getStatusBadgeClass = (status) => {
             </div>
 
             <div class="order-actions">
-              <button class="btn btn-outline-danger btn-sm action-btn">
+              <button class="btn btn-outline-danger btn-sm action-btn" @click="canerlOrder">
                 <i class="bi bi-x-circle me-1"></i>取消訂單
               </button>
             </div>
@@ -189,7 +217,7 @@ const getStatusBadgeClass = (status) => {
 
 .order-icon {
   font-size: 1.25rem;
-  color: #0d6efd;
+  color: #86B0BD;
 }
 
 .order-id {
@@ -216,7 +244,7 @@ const getStatusBadgeClass = (status) => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #0d6efd;
+  color: #86B0BD;
   font-weight: 600;
 }
 
@@ -239,6 +267,11 @@ const getStatusBadgeClass = (status) => {
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.bg-completed {
+  background-color: #86B0BD;
+  color: white;
 }
 
 .accordion-body {
@@ -286,7 +319,7 @@ const getStatusBadgeClass = (status) => {
 }
 
 .section-header i {
-  color: #0d6efd;
+  color: #86B0BD;
   font-size: 1.1rem;
 }
 
@@ -354,7 +387,7 @@ const getStatusBadgeClass = (status) => {
 }
 
 .meta-item i {
-  color: #0d6efd;
+  color: #86B0BD;
 }
 
 .order-remark {
@@ -369,7 +402,7 @@ const getStatusBadgeClass = (status) => {
 }
 
 .order-remark i {
-  color: #0d6efd;
+  color: #86B0BD;
   margin-top: 0.15rem;
 }
 
