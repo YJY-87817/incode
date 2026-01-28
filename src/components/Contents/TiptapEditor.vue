@@ -323,11 +323,34 @@ const insertCroppedImage = async () => {
 
     // 如果有選中的圖片位置，則替換該圖片，否則插入新圖片
     if (selectedImagePos.value !== null) {
-      // 選中圖片節點並替換
-      editor.value.commands.setNodeSelection(selectedImagePos.value);
-      editor.value.commands.deleteSelection();
-      editor.value.commands.setImage({ src });
-      console.log("[TiptapEditor] 已替換現有圖片");
+      const doc = editor.value.view.state.doc;
+      let pos = selectedImagePos.value;
+      let node = doc.nodeAt(pos);
+
+      if (!node || node.type.name !== "image") {
+        const resolved = doc.resolve(pos);
+        if (resolved.nodeAfter && resolved.nodeAfter.type.name === "image") {
+          node = resolved.nodeAfter;
+          pos = resolved.pos;
+        } else if (
+          resolved.nodeBefore &&
+          resolved.nodeBefore.type.name === "image"
+        ) {
+          node = resolved.nodeBefore;
+          pos = resolved.pos - resolved.nodeBefore.nodeSize;
+        }
+      }
+
+      if (node && node.type.name === "image") {
+        editor.value.commands.insertContentAt(
+          { from: pos, to: pos + node.nodeSize },
+          { type: "image", attrs: { src } }
+        );
+        console.log("[TiptapEditor] 已替換現有圖片");
+      } else {
+        editor.value.commands.setImage({ src });
+        console.log("[TiptapEditor] 已插入新圖片");
+      }
     } else {
       // 插入新圖片
       editor.value.commands.setImage({ src });
