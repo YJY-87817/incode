@@ -2,16 +2,19 @@
 using incode2.Models;
 using incode2.Partials;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace incode2.Services.Contents
 {
   public class ContentService : IContentService
   {
     private readonly incodedatabaseContext _context;
+    private readonly IWebHostEnvironment _environment;
 
-    public ContentService(incodedatabaseContext context)
+    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment)
     {
       _context = context;
+      _environment = environment;
     }
 
     public async Task<object> GetContents(int? categoryId, int page, int pageSize)
@@ -95,13 +98,15 @@ namespace incode2.Services.Contents
         }
       }
 
+      var bodyUri = await SaveContentBodyAsync(dto.Body);
+
       var content = new Content
       {
         UserId = dto.UserId,
         CategoryId = categoryId,
         ParentContentId = dto.ParentContentId,
         Title = dto.Title,
-        Body = dto.Body,
+        Body = bodyUri,
         Type = dto.Type,
         CreatedAt = DateTime.Now,
         UpdatedAt = DateTime.Now,
@@ -135,8 +140,10 @@ namespace incode2.Services.Contents
       };
       _context.ContentHistory.Add(history);
 
+      var bodyUri = await SaveContentBodyAsync(dto.Body);
+
       content.Title = dto.Title;
-      content.Body = dto.Body;
+      content.Body = bodyUri;
       content.UpdatedAt = DateTime.Now;
 
       await _context.SaveChangesAsync();
@@ -182,6 +189,25 @@ namespace incode2.Services.Contents
         Ishidden = c.IsActive == 2 ? true : false
       })
       .ToListAsync();
+    }
+
+    private async Task<string> SaveContentBodyAsync(string htmlBody)
+    {
+      var webRootPath = _environment.WebRootPath;
+      if (string.IsNullOrWhiteSpace(webRootPath))
+      {
+        webRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
+      }
+
+      var contentsPath = Path.Combine(webRootPath, "contents");
+      Directory.CreateDirectory(contentsPath);
+
+      var fileName = $"content-{Guid.NewGuid():N}.html";
+      var filePath = Path.Combine(contentsPath, fileName);
+
+      await File.WriteAllTextAsync(filePath, htmlBody ?? string.Empty, Encoding.UTF8);
+
+      return $"/contents/{fileName}";
     }
   }
 }
