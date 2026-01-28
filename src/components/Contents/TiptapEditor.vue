@@ -169,49 +169,52 @@ const insertImage = async (event) => {
 
     console.log("[TiptapEditor] insertImage - 收到的 URLs:", urlList);
 
-    urlList.forEach((url) => {
-      if (!url) {
-        console.warn("[TiptapEditor] insertImage - URL 為空");
-        return;
-      }
+    const validUrls = urlList.filter(Boolean);
+    if (!validUrls.length) {
+      console.warn("[TiptapEditor] insertImage - 所有 URL 皆為空");
+      return;
+    }
 
+    const content = validUrls.flatMap((url, index) => {
       console.log("[TiptapEditor] insertImage - 插入圖片:", url);
-
-      try {
-        // 使用 chain 來執行命令序列
-        const result = currentEditor
-          .chain()
-          .focus()
-          .setImage({ src: url })
-          .run();
-
-        console.log("[TiptapEditor] insertImage - setImage 執行結果:", result);
-
-        // 驗證圖片是否已插入
-        if (result) {
-          setTimeout(() => {
-            const html = currentEditor.getHTML();
-            console.log(
-              "[TiptapEditor] insertImage - 插入後的編輯器 HTML:",
-              html
-            );
-
-            // 檢查是否包含圖片標籤
-            if (html.includes("<img")) {
-              console.log(
-                "[TiptapEditor] insertImage - ✓ 圖片已成功插入到編輯器"
-              );
-            } else {
-              console.warn(
-                "[TiptapEditor] insertImage - ✗ 圖片插入後未找到 <img 標籤"
-              );
-            }
-          }, 50);
-        }
-      } catch (err) {
-        console.error("[TiptapEditor] insertImage - 插入圖片失敗:", err);
+      const nodes = [{ type: "image", attrs: { src: url } }];
+      if (index < validUrls.length - 1) {
+        nodes.push({ type: "paragraph" });
       }
+      return nodes;
     });
+
+    try {
+      const result = currentEditor
+        .chain()
+        .focus()
+        .insertContent(content)
+        .run();
+
+      console.log("[TiptapEditor] insertImage - insertContent 執行結果:", result);
+
+      if (result) {
+        setTimeout(() => {
+          const html = currentEditor.getHTML();
+          console.log(
+            "[TiptapEditor] insertImage - 插入後的編輯器 HTML:",
+            html
+          );
+
+          if (html.includes("<img")) {
+            console.log(
+              "[TiptapEditor] insertImage - ✓ 圖片已成功插入到編輯器"
+            );
+          } else {
+            console.warn(
+              "[TiptapEditor] insertImage - ✗ 圖片插入後未找到 <img 標籤"
+            );
+          }
+        }, 50);
+      }
+    } catch (err) {
+      console.error("[TiptapEditor] insertImage - 插入圖片失敗:", err);
+    }
   } catch (error) {
     console.error("[TiptapEditor] insertImage - 上傳失敗:", error);
     console.error("[TiptapEditor] insertImage - 錯誤詳情:", {
