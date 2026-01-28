@@ -15,6 +15,19 @@ const store = useUserPointStore();
     <h6 class="text-uppercase text-muted small fw-bold mb-3">帳戶點數總覽</h6>
 
     <div
+      class="card shadow-sm border-0 rounded-4 p-3 mb-3 text-center stat-card"
+      style="background-color: #86b0bd; min-height: 110px"
+    >
+      <div class="d-flex align-items-center justify-content-center mb-2">
+        <i class="bi bi-wallet2 fs-4 me-2 text-white"></i>
+        <div class="text-white fw-bold small text-uppercase">目前可用點數</div>
+      </div>
+      <div class="fw-bold text-white display-5 lh-1">
+        {{ store.currentBalance.toLocaleString() }}
+      </div>
+    </div>
+
+    <div
       class="card shadow-sm border-0 rounded-4 p-3 bg-success-subtle mb-3 text-center stat-card"
       style="min-height: 110px"
     >
@@ -37,19 +50,6 @@ const store = useUserPointStore();
       </div>
       <div class="fw-bold text-danger display-5 lh-1">
         -{{ store.totalSpent.toLocaleString() }}
-      </div>
-    </div>
-
-    <div
-      class="card shadow-sm border-0 rounded-4 p-3 mb-3 text-center stat-card"
-      style="background-color: #86b0bd; min-height: 110px"
-    >
-      <div class="d-flex align-items-center justify-content-center mb-2">
-        <i class="bi bi-wallet2 fs-4 me-2 text-white"></i>
-        <div class="text-white fw-bold small text-uppercase">目前可用點數</div>
-      </div>
-      <div class="fw-bold text-white display-5 lh-1">
-        {{ store.currentBalance.toLocaleString() }}
       </div>
     </div>
   </div>
