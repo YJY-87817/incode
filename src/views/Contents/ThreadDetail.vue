@@ -22,7 +22,15 @@ export default {
           <span>·</span>
           <span>{{ thread.createdAt }}</span>
         </p>
-        <div class="card-text rich-content" v-html="thread.contentHtml"></div>
+        <iframe
+          ref="contentFrame"
+          class="card-text rich-content-frame"
+          :srcdoc="iframeSrcdoc"
+          :style="{ height: iframeHeight + 'px' }"
+          sandbox="allow-same-origin"
+          loading="lazy"
+          @load="handleIframeLoad"
+        ></iframe>
       </div>
     </div>
 
@@ -157,7 +165,15 @@ export default {
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onUnmounted,
+  watch,
+  nextTick,
+} from "vue";
 import apiClient from "@/api/request.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
 import { useRoute } from "vue-router";
@@ -170,6 +186,10 @@ import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
 const normalizeContent = (body) => normalizeRichContent(body, toAbsoluteUrl);
 // 視窗寬度響應式變數
 const windowWidth = ref(window.innerWidth);
+
+const contentFrame = ref(null);
+const iframeHeight = ref(120);
+let frameResizeObserver = null;
 
 const updateWindowWidth = () => {
   windowWidth.value = window.innerWidth;
@@ -186,6 +206,34 @@ const thread = ref({
   contentHtml: "",
   contentText: "",
   imageUrls: [],
+});
+
+const iframeSrcdoc = computed(() => {
+  const html = thread.value?.contentHtml || "";
+  return `<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>
+        :root { color-scheme: light; }
+        body {
+          margin: 0;
+          padding: 0;
+          color: #432f28;
+          word-break: break-word;
+          font-family: inherit;
+          font-size: 1rem;
+          line-height: 1.5;
+          background: transparent;
+        }
+        img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
+        p { margin: 0 0 0.5rem 0; }
+        a { color: inherit; }
+      </style>
+    </head>
+    <body>${html}</body>
+  </html>`;
 });
 
 const allPosts = ref([]);
@@ -291,7 +339,41 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateWindowWidth);
+  if (frameResizeObserver) {
+    frameResizeObserver.disconnect();
+    frameResizeObserver = null;
+  }
 });
+
+const updateIframeHeight = () => {
+  const frame = contentFrame.value;
+  const body = frame?.contentDocument?.body;
+  if (!body) return;
+  iframeHeight.value = Math.max(body.scrollHeight, 120);
+};
+
+const handleIframeLoad = () => {
+  updateIframeHeight();
+  const frame = contentFrame.value;
+  const body = frame?.contentDocument?.body;
+  if (!body || typeof ResizeObserver === "undefined") return;
+
+  if (frameResizeObserver) {
+    frameResizeObserver.disconnect();
+  }
+  frameResizeObserver = new ResizeObserver(() => {
+    updateIframeHeight();
+  });
+  frameResizeObserver.observe(body);
+};
+
+watch(
+  () => thread.value.contentHtml,
+  async () => {
+    await nextTick();
+    updateIframeHeight();
+  }
+);
 
 const currentPage = ref(1);
 const itemsPerPage = 5;
@@ -464,20 +546,12 @@ async function submitContent() {
   color: #432f28;
 }
 
-.rich-content {
-  color: #432f28;
-  word-break: break-word;
-}
-
-.rich-content img {
-  max-width: 100%;
-  height: auto;
+.rich-content-frame {
+  width: 100%;
+  border: 0;
   display: block;
-  margin: 0.5rem 0;
-}
-
-.rich-content p {
-  margin-bottom: 0.5rem;
+  min-height: 120px;
+  background: transparent;
 }
 
 .thread-detail textarea {
