@@ -264,19 +264,38 @@ const closeNewTopic = () => {
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">分類</label>
-                <input
-                  v-model="categorySearch"
-                  class="form-control"
-                  list="category-options"
-                  placeholder="輸入或搜尋分類..."
-                  @focus="showCategoryDropdown = true"
-                  @blur="hideCategoryDropdown"
-                  @keyup.enter.prevent="
-                    categorySuggestions.length === 0
-                      ? createCategoryFromSearch()
-                      : null
-                  "
-                />
+                <div class="category-input-wrapper">
+                  <input
+                    v-model="categorySearch"
+                    class="form-control category-input"
+                    list="category-options"
+                    placeholder="輸入或搜尋分類..."
+                    @focus="showCategoryDropdown = true"
+                    @blur="hideCategoryDropdown"
+                    @keyup.enter.prevent="
+                      categorySuggestions.length === 0
+                        ? createCategoryFromSearch()
+                        : null
+                    "
+                  />
+                  <button
+                    v-if="categorySearch"
+                    type="button"
+                    class="category-input-clear"
+                    aria-label="清除分類輸入"
+                    @mousedown.prevent
+                    @click="categorySearch = ''"
+                  >
+                    ×
+                  </button>
+                  <span
+                    class="category-input-dropdown"
+                    aria-hidden="true"
+                    @mousedown.prevent="showCategoryDropdown = true"
+                  >
+                    ▾
+                  </span>
+                </div>
                 <datalist id="category-options">
                   <option
                     v-for="cat in categorySuggestions"
@@ -593,6 +612,42 @@ const closeNewTopic = () => {
 .form-select {
   border: 1px solid #d1d3d4;
   padding-left: 0.75rem;
+}
+
+.category-input-wrapper {
+  position: relative;
+}
+
+.category-input {
+  padding-right: 3.5rem;
+}
+
+.category-input-clear {
+  position: absolute;
+  top: 50%;
+  right: 2rem;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #9aa0a6;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.category-input-clear:hover {
+  color: #145369;
+}
+
+.category-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  color: #9aa0a6;
+  font-size: 0.9rem;
+  pointer-events: auto;
 }
 
 .form-control:focus,
