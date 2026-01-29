@@ -228,6 +228,7 @@ const submitQuickReply = async () => {
             text-color="#432f28"
             :extra-css="'body { white-space: pre-wrap; } img { width: 30%; max-width: 30%; height: auto; object-fit: contain; }'"
           />
+          <!-- 改圖片大小在上面這裡 -->
 
           <!-- 帖文圖片 -->
           <div
