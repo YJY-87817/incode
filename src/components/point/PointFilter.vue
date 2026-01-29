@@ -10,7 +10,9 @@ const store = useUserPointStore();
 </script>
 
 <template>
-  <div class="card-header bg-white border-0 px-4 py-3">
+  <div
+    class="card-header bg-white border border-bottom-0 border-primary px-4 py-3"
+  >
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h5 class="mb-0 fw-semibold">
         <i class="ni ni-credit-card me-2 text-primary"></i>點數收支明細
@@ -32,8 +34,10 @@ const store = useUserPointStore();
 
     <div class="d-flex gap-2">
       <div class="input-group flex-grow-1">
-        <span class="input-group-text bg-white border-end-0 rounded-start-pill">
-          <i class="ni ni-zoom-split-in text-muted"></i>
+        <span
+          class="input-group-text bg-white border-end-0 rounded-start-pill d-flex align-items-center"
+        >
+          <i class="bi bi-search"></i>
         </span>
         <input
           type="text"

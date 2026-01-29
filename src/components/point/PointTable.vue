@@ -39,7 +39,7 @@ const getBadgeClass = (category) => {
 </script>
 
 <template>
-  <div class="card-body p-0">
+  <div class="card-body p-0 border border-top-0 border-primary">
     <div v-if="store.isLoading" class="text-center py-5">
       <div
         class="spinner-border text-primary"
@@ -55,7 +55,7 @@ const getBadgeClass = (category) => {
 
     <div v-else class="table-responsive">
       <table class="table table-hover align-middle mb-0 table-borderless">
-        <thead class="bg-light text-secondary small">
+        <thead class="bg-info text-dark small">
           <tr>
             <th class="ps-4">日期 / 項目</th>
             <th>類別</th>
