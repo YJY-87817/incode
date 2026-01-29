@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import axios from "axios";
 
 export const useAuthStore = defineStore("auth", () => {
@@ -7,6 +7,18 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref(null);
   const isAuthenticated = ref(false);
   const isLoading = ref(false);
+const updateUserInfo = (newData) => {
+    if (user.value) {
+      // 保留原本的 id, role 等不變，只覆蓋傳進來的新值 (例如 username, avatar)
+      user.value = {
+        ...user.value,
+        ...newData
+      };
+    }
+  };
+const userAvatar = computed(() => {
+    return user.value?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
+  });
 
 async function login(payload) {
     isLoading.value = true;
@@ -61,12 +73,15 @@ if (response.status === 200) {// 因為後端會回傳 user 物件，直接存�
     try {      
       const res = await axios.get("/AuthApi/check"); 
       if (res.status === 200 && res.data.isLoggedIn) {       
+      const profileRes = await axios.get(`/User/profile?t=${new Date().getTime()}`);
+      const profileData = profileRes.data;
       user.value = {
-        id: res.data.userId,       
-        username: res.data.username,
-        role: res.data.role,
-        avatar: res.data.avatar ||'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' //改成替代圖片
-      };      
+        // 使用 profile API 回傳的最新資料
+        id: profileData.userId || profileData.UserId,
+        username: profileData.username || profileData.Username, 
+        role: res.data.role, 
+        avatar: profileData.imageUrl || profileData.ImageUrl
+      };
       isAuthenticated.value = true;
     } else {
       user.value = null;
@@ -85,7 +100,8 @@ if (response.status === 200) {// 因為後端會回傳 user 物件，直接存�
     login,
     register,
     logout,
-    checkAuth
+    checkAuth,
+    updateUserInfo
   };
 }, {
     persist: true // 保持登入

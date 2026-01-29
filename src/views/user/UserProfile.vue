@@ -1,30 +1,39 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useUserStore } from "@/stores/user/user";
-
+import { useAuthStore } from "@/stores/user/auth";
+import { storeToRefs } from "pinia";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
+const authStore = useAuthStore();
 const userStore = useUserStore();
 const route = useRoute();
+const { userProfile, displayAvatar, isFollowingCurrentUser, isLoading } =
+  storeToRefs(userStore);
+
+const isSelf = computed(() => {
+  const currentUserId = authStore.user?.id;
+  const profileUserId = userProfile.value?.id;
+  if (!currentUserId || !profileUserId) return false;
+  return String(currentUserId) === String(profileUserId);
+});
 
 const loadData = async () => {
   const targetUsername = route.params.username; // 從網址取得 username
-  if (targetUsername) {
-    await Promise.all([
-      userStore.fetchUserProfile(targetUsername),
-      userStore.fetchFollowingList(),
-    ]);
-  }
+  await Promise.all([
+    userStore.fetchUserProfile(targetUsername), // 這裡會處理 API
+    userStore.fetchFollowingList(),
+  ]);
 };
 
 // 處理按鈕點擊
 const handleFollowToggle = async () => {
-  const targetId = userStore.userProfile.id;
-  if (!targetId) return;
+  const targetId = userProfile.value.id;
+  if (!targetId || targetId === 0) return;
 
-  if (userStore.isFollowingCurrentUser) {
+  if (isFollowingCurrentUser.value) {
     await userStore.unfollowUser(targetId);
   } else {
     await userStore.followUser(targetId);
@@ -67,15 +76,12 @@ const items = ref([
   },
 ]);
 
-onMounted(() => {
-  loadData();
-});
-// 監聽 username 的變化
 watch(
   () => route.params.username,
   () => {
     loadData();
   },
+  { immediate: true }, // 這一行讓它在組件掛載時立即執行一次
 );
 </script>
 
@@ -97,7 +103,7 @@ watch(
               class="border border-4 border-white elevation-3 bg-white"
             >
               <v-img
-                src="https://cdn.vuetifyjs.com/images/john.jpg"
+                :src="userStore.displayAvatar"
                 alt="User Avatar"
                 cover
               ></v-img>
@@ -106,12 +112,12 @@ watch(
           <div class="text-center text-md-left flex-grow-1 mb-4 mb-md-0">
             <v-row>
               <h1 class="text-h4 font-weight-bold text-grey-darken-3 mb-1 ml-6">
-                Brooke
+                {{ userStore.userProfile.username }}
               </h1>
               <v-spacer></v-spacer>
               <div>
                 <v-btn
-                  v-if="userStore.isLoading"
+                  v-if="isLoading"
                   disabled
                   rounded="pill"
                   variant="tonal"
@@ -122,6 +128,17 @@ watch(
                     width="2"
                     indeterminate
                   ></v-progress-circular>
+                </v-btn>
+                <v-btn
+                  v-else-if="isSelf"
+                  color="grey-darken-3"
+                  variant="outlined"
+                  rounded="pill"
+                  class="px-4 text-body-1 font-weight-bold"
+                  prepend-icon="mdi-pencil"
+                  :to="{ name: 'UserIndex' }"
+                >
+                  編輯資料
                 </v-btn>
                 <v-btn
                   v-else-if="userStore.isFollowingCurrentUser"
@@ -152,33 +169,33 @@ watch(
                 class="d-flex justify-center justify-md-start gap-4 mt-3 ml-8"
               >
                 <div class="text-center mr-4">
-                  <span class="text-h6 font-weight-bold text-grey-darken-3"
-                    >1,423</span
-                  >
+                  <span class="text-h6 font-weight-bold text-grey-darken-3">{{
+                    userStore.userProfile.articleCount
+                  }}</span>
                   <span class="text-caption text-white ml-1">文章</span>
                 </div>
                 <div class="text-center mr-4">
-                  <span class="text-h6 font-weight-bold text-grey-darken-3"
-                    >9</span
-                  >
+                  <span class="text-h6 font-weight-bold text-grey-darken-3">{{
+                    userStore.userProfile.missionCount
+                  }}</span>
                   <span class="text-caption text-white ml-1">任務</span>
                 </div>
                 <div class="text-center mr-4">
-                  <span class="text-h6 font-weight-bold text-grey-darken-3"
-                    >9</span
-                  >
+                  <span class="text-h6 font-weight-bold text-grey-darken-3">{{
+                    userStore.userProfile.points
+                  }}</span>
                   <span class="text-caption text-white ml-1">點數</span>
                 </div>
                 <div class="text-center mr-4">
-                  <span class="text-h6 font-weight-bold text-grey-darken-3"
-                    >168</span
-                  >
+                  <span class="text-h6 font-weight-bold text-grey-darken-3">{{
+                    userStore.userProfile.followers
+                  }}</span>
                   <span class="text-caption text-white ml-1">關注</span>
                 </div>
                 <div class="text-center">
-                  <span class="text-h6 font-weight-bold text-grey-darken-3"
-                    >1,034</span
-                  >
+                  <span class="text-h6 font-weight-bold text-grey-darken-3">{{
+                    userStore.userProfile.following
+                  }}</span>
                   <span class="text-caption text-white ml-1">粉絲</span>
                 </div>
               </div>
@@ -191,7 +208,7 @@ watch(
         <div class="d-flex justify-space-between align-end mb-4 px-2">
           <div>
             <h2 class="text-h5 font-weight-bold text-grey-darken-3">
-              Brooke 的討論區
+              {{ userStore.userProfile.username }} 的討論區
             </h2>
             <p class="text-caption text-grey">最新發佈的文章與動態</p>
           </div>
@@ -307,17 +324,3 @@ watch(
 
   <DefaultFooter />
 </template>
-
-<style scoped>
-.gap-4 {
-  gap: 24px;
-}
-
-.text-truncate-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-</style>

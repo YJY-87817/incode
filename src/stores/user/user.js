@@ -9,6 +9,12 @@ export const useUserStore = defineStore("user", () => {
     id: 0, 
     name: "載入中...",
     imageUrl: ""
+    //  預設統計數據，避免畫面報錯
+    // articleCount: 0,
+    // missionCount: 0,
+    // points: 0,
+    // followers: 0,
+    // following: 0
   }); 
   const followingList = ref([]); //關注 追蹤
 const followersList = ref([]); //粉絲
@@ -22,23 +28,47 @@ const followingCount = computed(() => followingList.value.length);
   const fetchUserProfile = async (username) => {
     isLoading.value = true;
     try {
-        let url = '/User/profile';
+        let url = '/User/profile';        
+        const timestamp = new Date().getTime();
         
-        // 如果有傳入 username，就加上參數 ?username=Brooke  沒傳自動判斷為查自己
         if (username) {
-            url += `?username=${username}`;
+            url += `?username=${username}&t=${timestamp}`;
+        } else {
+            url += `?t=${timestamp}`;
         }
+
         const response = await axios.get(url);
         const data = response.data;
 
         userProfile.value = {
-            id: data.userId, 
-            name: data.username,
-            imageUrl: data.imageUrl || ""
-        };
+          id: data.userId || data.UserId || data.id || 0,
+      username: data.username || data.Username || "載入中...",
+      email: data.email || data.Email || "",
+      phone: data.phone || data.Phone || "",
+      address: data.address || data.Address || "",
+      imageUrl: data.imageUrl || data.ImageUrl || "",
+      birthday:
+        data.birthday || data.Birthday
+          ? (data.birthday || data.Birthday).split("T")[0]
+          : "",
+
+      // 統計數據 (若後端有回傳)
+      // articleCount: data.articleCount || data.ArticleCount || 0,
+      // missionCount: data.missionCount || data.MissionCount || 0,
+      // points:       data.points       || data.Points       || 0,
+      // followers:    data.followers    || data.Followers    || 0,
+      // following:    data.following    || data.Following    || 0,
+    };
         
     } catch (error) {
         console.error(error);
+        if (error.response && error.response.status === 404) {
+            userProfile.value = { 
+                ...userProfile.value, 
+                name: "查無此使用者", 
+                id: 0 
+            };
+        }
     } finally {
         isLoading.value = false;
     }

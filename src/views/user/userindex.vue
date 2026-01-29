@@ -3,32 +3,20 @@ import { onMounted, onUnmounted, ref, shallowRef } from "vue";
 import { useRouter } from "vue-router";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+import { useUserStore } from "@/stores/user/user";
 import { useAuthStore } from "@/stores/user/auth";
+import { storeToRefs } from "pinia";
 import axios from "axios";
 
 // 引入 Store
+const userStore = useUserStore();
 const authStore = useAuthStore();
 const router = useRouter();
+const { userProfile } = storeToRefs(userStore);
 
 // 狀態控制
 const dialog = shallowRef(false);
-const activeTab = ref(null); // 控制下方
 const isLoading = ref(false);
-
-const userProfile = ref({
-  username: "載入中...",
-  email: "",
-  phone: "",
-  address: "",
-  imageUrl: "", // 頭像 URL
-  birthday: "",
-  // 統計數據 (假設後端有回傳，若無則需另外呼叫 API)
-  // articleCount: 0,
-  // missionCount: 0,
-  // points: 0,
-  // followers: 0,
-  // following: 0,
-});
 
 // 3. 編輯表單用的資料 (避免直接修改顯示資料)
 const editForm = ref({
@@ -78,40 +66,6 @@ const notifications = ref([
   },
 ]);
 
-const fetchUserProfile = async () => {
-  try {
-    const response = await axios.get(`/User/profile?t=${new Date().getTime()}`);
-    const data = response.data;
-    console.log("後端回傳的原始資料:", data);
-
-    // 邏輯：先找小寫的 username，沒有的話找大寫的 Username，再沒有就給空字串
-    userProfile.value = {
-      username: data.username || data.Username || "載入中...",
-      email: data.email || data.Email || "",
-      phone: data.phone || data.Phone || "",
-      address: data.address || data.Address || "",
-      imageUrl: data.imageUrl || data.ImageUrl || "",
-      birthday:
-        data.birthday || data.Birthday
-          ? (data.birthday || data.Birthday).split("T")[0]
-          : "",
-
-      // 統計數據 (若後端有回傳)
-      // articleCount: data.articleCount || data.ArticleCount || 0,
-      // missionCount: data.missionCount || data.MissionCount || 0,
-      // points:       data.points       || data.Points       || 0,
-      // followers:    data.followers    || data.Followers    || 0,
-      // following:    data.following    || data.Following    || 0,
-    };
-  } catch (error) {
-    console.error("載入失敗", error);
-    if (error.response?.status === 401) {
-      // alert("請重新登入");
-      // router.push('/login');
-    }
-  }
-};
-
 // 開啟編輯視窗時，把現有資料複製進表單
 const openEditDialog = () => {
   editForm.value = {
@@ -145,6 +99,10 @@ const handleUpdate = async () => {
     userProfile.value.address = editForm.value.address;
     userProfile.value.birthday = payload.birthday;
 
+    authStore.updateUserInfo({
+      username: editForm.value.username,
+    });
+
     dialog.value = false;
   } catch (error) {
     console.error("更新失敗", error);
@@ -158,7 +116,7 @@ const handleUpdate = async () => {
 onMounted(() => {
   const body = document.getElementsByTagName("body")[0];
   body.classList.add("bg-grey-lighten-5"); // 全局背景色
-  fetchUserProfile();
+  userStore.fetchUserProfile();
 });
 
 onUnmounted(() => {
@@ -209,13 +167,13 @@ onUnmounted(() => {
               </div>
               <div class="d-flex flex-column justify-center w-100">
                 <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
-                  {{ userProfile.username }}
+                  {{ userStore.userProfile.username }}
                 </h2>
                 <div class="d-flex flex-wrap align-center gap-4 mt-2">
                   <div class="text-center mr-4">
                     <span
                       class="text-h10 font-weight-bold text-grey-darken-3"
-                      >{{ userProfile.articleCount }}</span
+                      >{{ userStore.userProfile.articleCount }}</span
                     >
                     <span class="text-caption text-white ml-1">文章</span>
                   </div>
@@ -223,7 +181,7 @@ onUnmounted(() => {
                   <div class="text-center mr-4">
                     <span
                       class="text-h10 font-weight-bold text-grey-darken-3"
-                      >{{ userProfile.missionCount }}</span
+                      >{{ userStore.userProfile.missionCount }}</span
                     >
                     <span class="text-caption text-white ml-1">任務</span>
                   </div>
@@ -231,7 +189,7 @@ onUnmounted(() => {
                   <div class="text-center mr-4">
                     <span
                       class="text-h10 font-weight-bold text-grey-darken-3"
-                      >{{ userProfile.points }}</span
+                      >{{ userStore.userProfile.points }}</span
                     >
                     <span class="text-caption text-white ml-1">點數</span>
                   </div>
@@ -239,7 +197,7 @@ onUnmounted(() => {
                   <div class="text-center mr-4">
                     <span
                       class="text-h10 font-weight-bold text-grey-darken-3"
-                      >{{ userProfile.followers }}</span
+                      >{{ userStore.userProfile.followers }}</span
                     >
                     <span class="text-caption text-white ml-1">關注</span>
                   </div>
@@ -247,7 +205,7 @@ onUnmounted(() => {
                   <div class="text-center">
                     <span
                       class="text-h10 font-weight-bold text-grey-darken-3"
-                      >{{ userProfile.following }}</span
+                      >{{ userStore.userProfile.following }}</span
                     >
                     <span class="text-caption text-white ml-1">粉絲</span>
                   </div>
@@ -260,14 +218,14 @@ onUnmounted(() => {
                 <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
                 <span class="text-grey-darken-1">Email：</span>
                 <span class="font-weight-medium ml-1">{{
-                  userProfile.email
+                  userStore.userProfile.email
                 }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
                 <span class="text-grey-darken-1">手機：</span>
                 <span class="font-weight-medium ml-1">{{
-                  userProfile.phone || "未設定"
+                  userStore.userProfile.phone || "未設定"
                 }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
@@ -276,7 +234,7 @@ onUnmounted(() => {
                 >
                 <span class="text-grey-darken-1">地址：</span>
                 <span class="font-weight-medium ml-1">{{
-                  userProfile.address || "未設定"
+                  userStore.userProfile.address || "未設定"
                 }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
@@ -285,7 +243,7 @@ onUnmounted(() => {
                 >
                 <span class="text-grey-darken-1">生日：</span>
                 <span class="font-weight-medium ml-1">{{
-                  userProfile.birthday || "未設定"
+                  userStore.userProfile.birthday || "未設定"
                 }}</span>
               </v-col>
             </v-row>

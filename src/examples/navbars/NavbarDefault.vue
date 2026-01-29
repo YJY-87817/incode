@@ -1148,20 +1148,8 @@ watch(
                 "
               >
                 <img
-                  v-if="authStore.user?.avatar"
-                  :src="authStore.user.avatar"
+                  :src="authStore.userAvatar"
                   alt="Avatar"
-                  style="
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    display: block;
-                  "
-                />
-                <img
-                  v-else
-                  src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"
-                  alt="Default"
                   style="
                     width: 100%;
                     height: 100%;
