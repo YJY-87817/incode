@@ -221,9 +221,9 @@ export const useForumStore = defineStore('forum', {
           })
         )
 
-        // 2. 過濾 type=1(貼文) 和 type=2(回文)
+        // 2. 過濾 type=1(貼文) - 只顯示主貼文，回文應在貼文詳情頁面顯示
         let listContents = contentsWithHtml
-          .filter(c => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY)
+          .filter(c => c.type === CONTENT_TYPES.POST)
 
         // 3. 搜尋過濾 (搜尋 title 和 body)
         if (this.searchKeyword.trim()) {
@@ -327,37 +327,46 @@ export const useForumStore = defineStore('forum', {
           }
         }
 
-        // 處理留言
+        // 處理留言 - 只保留 COMMENT 類型（不包含其他類型）
         const commentsData = commentsRes?.comments || []
         this.threadComments = await Promise.all(
-          commentsData.map(async (comment) => {
-            const commentHtml = await fetchBodyHtml(comment.body)
-            const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
-              commentHtml,
-              toAbsoluteUrl
-            )
-            return {
-              id: comment.contentId,
-              author: comment.username,
-              createdAt: comment.createdAt,
-              content: textContent,
-              contentHtml: sanitizedHtml,
-              contentText: textContent,
-              imageUrls,
-              type: CONTENT_TYPES.COMMENT,
-              parentContentId: comment.parentContentId,
-              replies: [],
-            }
-          })
+          commentsData
+            .filter(c => c.type === CONTENT_TYPES.COMMENT || !c.type) // 信任 API 返回的類型，或默認為 COMMENT
+            .map(async (comment) => {
+              const commentHtml = await fetchBodyHtml(comment.body)
+              const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
+                commentHtml,
+                toAbsoluteUrl
+              )
+              return {
+                id: comment.contentId,
+                author: comment.username,
+                createdAt: comment.createdAt,
+                content: textContent,
+                contentHtml: sanitizedHtml,
+                contentText: textContent,
+                imageUrls,
+                type: CONTENT_TYPES.COMMENT,
+                parentContentId: comment.parentContentId,
+                replies: [],
+              }
+            })
         )
 
-        // 獲取回文
+        // 獲取回文 - 只取 type === REPLY 的內容（不包含 COMMENT 或 COMMENT_REPLY）
         const repliesRes = await apiClient.get('/ContentApi', {
           params: { parentContentId: threadId },
         })
-        const replyItems = Array.isArray(repliesRes?.items) ? repliesRes.items : []
+        // API 可能返回 { items: [...] } 或直接返回數組
+        const replyItems = Array.isArray(repliesRes?.items)
+          ? repliesRes.items
+          : (Array.isArray(repliesRes) ? repliesRes : [])
 
-        const replyList = replyItems.filter(i => i.type === CONTENT_TYPES.REPLY)
+        // 只過濾出回文類型，排除留言和留言回覆，並且排除已經在留言中出現過的ID
+        const commentIds = new Set(this.threadComments.map(c => c.id))
+        const replyList = replyItems.filter(i =>
+          i.type === CONTENT_TYPES.REPLY && !commentIds.has(i.contentId)
+        )
         this.threadPosts = (await Promise.all(
           replyList.map(async (i) => {
             const replyHtml = await fetchBodyHtml(i.body)
