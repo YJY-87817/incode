@@ -45,11 +45,11 @@ namespace incode2.ApiControllers
 
 
         // 取得ShippedDetailId的訂單資料
-        // GET: api/OrderApi/shippeddetail/{OrderdetailId}
-        [HttpGet("shippeddetail/{OrderdetailId}")]
-        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int orderDetailId)
+        // GET: api/OrderApi/shippeddetail/{OrderId}
+        [HttpGet("shippeddetail/{OrderId}")]
+        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int OrderId)
         {
-            return await _orderService.GetShippedDetailAsync(orderDetailId);
+            return await _orderService.GetShippedDetailAsync(OrderId);
         }
 
 

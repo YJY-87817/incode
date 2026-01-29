@@ -30,7 +30,7 @@ namespace incode2.Dtos.PointShop
 
     public class NewShippedRequest
     { 
-        public int OrderdetailId { get; set; }
+        public int OrderId { get; set; }
 
         public string RecipientName { get; set; }
 

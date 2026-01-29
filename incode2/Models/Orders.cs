@@ -23,5 +23,7 @@ public partial class Orders
 
     public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
 
+    public virtual ICollection<ShippedDetail> ShippedDetail { get; set; } = new List<ShippedDetail>();
+
     public virtual User User { get; set; }
 }

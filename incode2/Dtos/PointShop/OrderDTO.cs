@@ -51,11 +51,7 @@ namespace incode2.Dtos.PointShop
 
         public bool IsCompleted { get; set; }
 
-        public int OrderdetailId { get; set; }
-
-        public int ProductId { get; set; }
-
-        public string ProductName { get; set; }
+        public int OrderId { get; set; }
 
         private string RecName { get; set; }
 

@@ -73,12 +73,12 @@ namespace incode2.Services.PointShop
         }
 
         // 取得ShippedDetailId的訂單資料
-        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetailAsync(int orderDetailId)
+        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetailAsync(int orderId)
         {
             try
             {
                 var results = await _context.ShippedDetail
-                    .Where(e => e.OrderdetailId == orderDetailId)
+                    .Where(e => e.OrderId == orderId)
                     .Select(e => new ShippedDTO
                     {
                         ShippedDate = e.ShippedDate,
@@ -86,14 +86,12 @@ namespace incode2.Services.PointShop
                         IsCompleted = e.IsCompleted,
                         IsFailed = e.IsFailed,
                         Remark = e.Remark,
-                        OrderdetailId = e.OrderdetailId,
-                        ProductId = e.Orderdetail.ProductId,
-                        ProductName = e.Orderdetail.Product.Name
+                        OrderId = e.OrderId,
                     })
                     .ToListAsync();
 
                 if (results == null || !results.Any())
-                    return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"找不到訂單明細ID為 {orderDetailId} 的出貨資料", 404);
+                    return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"找不到訂單明細ID為 {orderId} 的出貨資料", 404);
 
                 return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
             }
@@ -188,9 +186,9 @@ namespace incode2.Services.PointShop
                 return ResultDTO<int>.Failure("無效的請求數據");
 
             // 檢驗ID是否存在
-            var orderdetail = await _context.Orderdetail.FindAsync(shipped.OrderdetailId);
-            if (orderdetail == null)
-                return ResultDTO<int>.Failure($"找不到該訂單細項{shipped.OrderdetailId}");
+            var orders = await _context.Orders.FindAsync(shipped.OrderId);
+            if (orders == null)
+                return ResultDTO<int>.Failure($"找不到訂單ID為{shipped.OrderId}的資料");
 
             // 檢查寄送資料
             if (string.IsNullOrWhiteSpace(shipped.RecipientName) || 
@@ -205,7 +203,7 @@ namespace incode2.Services.PointShop
                 // 建立寄送資料
                 var newShipped = new ShippedDetail
                 {
-                    OrderdetailId = shipped.OrderdetailId,
+                    OrderId = shipped.OrderId,
                     RecipientName = shipped.RecipientName,
                     RecipientAddress = shipped.RecipientAddress,
                     RecipientPhone = shipped.RecipientPhone,

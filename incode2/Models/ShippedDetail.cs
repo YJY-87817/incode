@@ -9,7 +9,7 @@ public partial class ShippedDetail
 {
     public int ShippedDetailId { get; set; }
 
-    public int OrderdetailId { get; set; }
+    public int OrderId { get; set; }
 
     public string RecipientName { get; set; }
 
@@ -27,5 +27,5 @@ public partial class ShippedDetail
 
     public bool IsCompleted { get; set; }
 
-    public virtual Orderdetail Orderdetail { get; set; }
+    public virtual Orders Order { get; set; }
 }
