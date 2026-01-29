@@ -242,250 +242,257 @@ const closeNewTopic = () => {
 </script>
 
 <template>
-  <div
-    v-if="forumStore.showNewTopicModal"
-    class="custom-modal-backdrop"
-    @click.self="closeNewTopic"
-  >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form @submit.prevent="submitNewTopic">
-          <div
-            class="modal-header d-flex justify-content-between align-items-center mb-3"
-          >
-            <h5 class="modal-title mb-0">發表新主題</h5>
-            <button
-              type="button"
-              class="btn-close"
-              @click="closeNewTopic"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">分類</label>
-              <input
-                v-model="categorySearch"
-                class="form-control"
-                list="category-options"
-                placeholder="輸入或搜尋分類..."
-                @focus="showCategoryDropdown = true"
-                @blur="hideCategoryDropdown"
-                @keyup.enter.prevent="
-                  categorySuggestions.length === 0
-                    ? createCategoryFromSearch()
-                    : null
-                "
-              />
-              <datalist id="category-options">
-                <option
-                  v-for="cat in categorySuggestions"
-                  :key="cat.id"
-                  :value="cat.name"
+  <Teleport to="body">
+    <div
+      v-if="forumStore.showNewTopicModal"
+      class="custom-modal-backdrop"
+      @click.self="closeNewTopic"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form @submit.prevent="submitNewTopic">
+            <div
+              class="modal-header d-flex justify-content-between align-items-center mb-3"
+            >
+              <h5 class="modal-title mb-0">發表新主題</h5>
+              <button
+                type="button"
+                class="btn-close"
+                @click="closeNewTopic"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">分類</label>
+                <input
+                  v-model="categorySearch"
+                  class="form-control"
+                  list="category-options"
+                  placeholder="輸入或搜尋分類..."
+                  @focus="showCategoryDropdown = true"
+                  @blur="hideCategoryDropdown"
+                  @keyup.enter.prevent="
+                    categorySuggestions.length === 0
+                      ? createCategoryFromSearch()
+                      : null
+                  "
                 />
-              </datalist>
+                <datalist id="category-options">
+                  <option
+                    v-for="cat in categorySuggestions"
+                    :key="cat.id"
+                    :value="cat.name"
+                  />
+                </datalist>
 
-              <div
-                v-if="showCategoryDropdown"
-                class="category-dropdown border rounded mt-2"
-              >
-                <button
-                  v-for="cat in categorySuggestions"
-                  :key="cat.id"
-                  type="button"
-                  class="dropdown-item w-100 text-start"
-                  @mousedown.prevent="selectCategoryFromDropdown(cat)"
-                >
-                  {{ cat.name }}
-                </button>
                 <div
-                  v-if="categorySuggestions.length === 0"
-                  class="text-muted small px-3 py-2"
+                  v-if="showCategoryDropdown"
+                  class="category-dropdown border rounded mt-2"
                 >
-                  沒有符合的分類
+                  <button
+                    v-for="cat in categorySuggestions"
+                    :key="cat.id"
+                    type="button"
+                    class="dropdown-item w-100 text-start"
+                    @mousedown.prevent="selectCategoryFromDropdown(cat)"
+                  >
+                    {{ cat.name }}
+                  </button>
+                  <div
+                    v-if="categorySuggestions.length === 0"
+                    class="text-muted small px-3 py-2"
+                  >
+                    沒有符合的分類
+                  </div>
                 </div>
-              </div>
 
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <button
-                  v-if="categorySearch && filteredCategories.length === 0"
-                  type="button"
-                  class="btn btn-sm btn-forum-secondary"
-                  :disabled="isCreatingCategory"
-                  @click="createCategoryFromSearch"
+                <div
+                  class="d-flex justify-content-between align-items-center mt-2"
                 >
-                  {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
-                </button>
-                <small class="text-muted">
-                  {{
-                    categorySearch.trim()
-                      ? `找到 ${filteredCategories.length} 個分類`
-                      : `共 ${forumStore.categories?.length || 0} 個分類`
-                  }}
+                  <button
+                    v-if="categorySearch && filteredCategories.length === 0"
+                    type="button"
+                    class="btn btn-sm btn-forum-secondary"
+                    :disabled="isCreatingCategory"
+                    @click="createCategoryFromSearch"
+                  >
+                    {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
+                  </button>
+                  <small class="text-muted">
+                    {{
+                      categorySearch.trim()
+                        ? `找到 ${filteredCategories.length} 個分類`
+                        : `共 ${forumStore.categories?.length || 0} 個分類`
+                    }}
+                  </small>
+                </div>
+                <small class="text-muted d-block mt-1">
+                  選擇或輸入分類名稱，找不到時可直接建立
                 </small>
               </div>
-              <small class="text-muted d-block mt-1">
-                選擇或輸入分類名稱，找不到時可直接建立
-              </small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">回覆至（可選）</label>
-              <select
-                v-model="newTopicState.parentContentId"
-                class="form-select"
-                :disabled="!newTopicState.categoryId"
-              >
-                <option :value="null">無（發表新主題）</option>
-                <option
-                  v-for="topic in newTopicState.topics"
-                  :key="topic.id"
-                  :value="topic.id"
+              <div class="mb-3">
+                <label class="form-label">回覆至（可選）</label>
+                <select
+                  v-model="newTopicState.parentContentId"
+                  class="form-select"
+                  :disabled="!newTopicState.categoryId"
                 >
-                  {{ topic.title }}
-                </option>
-              </select>
+                  <option :value="null">無（發表新主題）</option>
+                  <option
+                    v-for="topic in newTopicState.topics"
+                    :key="topic.id"
+                    :value="topic.id"
+                  >
+                    {{ topic.title }}
+                  </option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">標題</label>
+                <input
+                  v-model="newTopicState.title"
+                  class="form-control"
+                  autofocus
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">內容</label>
+                <TiptapEditor
+                  v-model="newTopicState.body"
+                  placeholder="請輸入貼文內容..."
+                />
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label">標題</label>
-              <input
-                v-model="newTopicState.title"
-                class="form-control"
-                autofocus
-              />
+            <div class="modal-footer d-flex justify-content-end">
+              <button
+                class="btn btn-forum-secondary me-2"
+                @click="closeNewTopic"
+              >
+                取消
+              </button>
+              <button type="submit" class="btn btn-forum-primary">發表</button>
             </div>
-            <div class="mb-3">
-              <label class="form-label">內容</label>
-              <TiptapEditor
-                v-model="newTopicState.body"
-                placeholder="請輸入貼文內容..."
-              />
-            </div>
-          </div>
-          <div class="modal-footer d-flex justify-content-end">
-            <button class="btn btn-forum-secondary me-2" @click="closeNewTopic">
-              取消
-            </button>
-            <button type="submit" class="btn btn-forum-primary">發表</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div
-    v-if="showCreateCategoryModal"
-    class="create-category-backdrop"
-    @click.self="closeCreateCategoryModal"
-  >
-    <div class="create-category-dialog">
-      <div class="create-category-content">
-        <form @submit.prevent="submitCreateCategory">
+    <div
+      v-if="showCreateCategoryModal"
+      class="create-category-backdrop"
+      @click.self="closeCreateCategoryModal"
+    >
+      <div class="create-category-dialog">
+        <div class="create-category-content">
+          <form @submit.prevent="submitCreateCategory">
+            <div
+              class="modal-header d-flex justify-content-between align-items-center mb-3"
+            >
+              <h5 class="modal-title mb-0">新增分類</h5>
+              <button
+                type="button"
+                class="btn-close"
+                @click="closeCreateCategoryModal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">分類名稱</label>
+                <input v-model="newCategoryName" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">描述</label>
+                <textarea
+                  v-model="newCategoryDescription"
+                  class="form-control"
+                  rows="3"
+                  placeholder="請輸入分類描述"
+                ></textarea>
+              </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-end">
+              <button
+                type="button"
+                class="btn btn-forum-secondary me-2"
+                @click="closeCreateCategoryModal"
+              >
+                取消
+              </button>
+              <button type="submit" class="btn btn-forum-primary">
+                送出
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showCategoryDescriptionModal"
+      class="create-category-backdrop"
+      @click.self="closeCategoryDescriptionModal"
+    >
+      <div class="create-category-dialog">
+        <div class="create-category-content">
           <div
             class="modal-header d-flex justify-content-between align-items-center mb-3"
           >
-            <h5 class="modal-title mb-0">新增分類</h5>
+            <h5 class="modal-title mb-0">提醒</h5>
             <button
               type="button"
               class="btn-close"
-              @click="closeCreateCategoryModal"
+              @click="closeCategoryDescriptionModal"
             ></button>
           </div>
           <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">分類名稱</label>
-              <input v-model="newCategoryName" class="form-control" />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">描述</label>
-              <textarea
-                v-model="newCategoryDescription"
-                class="form-control"
-                rows="3"
-                placeholder="請輸入分類描述"
-              ></textarea>
-            </div>
+            <p class="mb-0">分類描述為必填，請先填寫描述。</p>
           </div>
           <div class="modal-footer d-flex justify-content-end">
             <button
               type="button"
-              class="btn btn-forum-secondary me-2"
-              @click="closeCreateCategoryModal"
+              class="btn btn-forum-primary"
+              @click="closeCategoryDescriptionModal"
             >
-              取消
-            </button>
-            <button type="submit" class="btn btn-forum-primary">
-              送出
+              我知道了
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div
-    v-if="showCategoryDescriptionModal"
-    class="create-category-backdrop"
-    @click.self="closeCategoryDescriptionModal"
-  >
-    <div class="create-category-dialog">
-      <div class="create-category-content">
-        <div
-          class="modal-header d-flex justify-content-between align-items-center mb-3"
-        >
-          <h5 class="modal-title mb-0">提醒</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="closeCategoryDescriptionModal"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">分類描述為必填，請先填寫描述。</p>
-        </div>
-        <div class="modal-footer d-flex justify-content-end">
-          <button
-            type="button"
-            class="btn btn-forum-primary"
-            @click="closeCategoryDescriptionModal"
+    <div
+      v-if="showCategoryNameModal"
+      class="create-category-backdrop"
+      @click.self="closeCategoryNameModal"
+    >
+      <div class="create-category-dialog">
+        <div class="create-category-content">
+          <div
+            class="modal-header d-flex justify-content-between align-items-center mb-3"
           >
-            我知道了
-          </button>
+            <h5 class="modal-title mb-0">提醒</h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="closeCategoryNameModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">分類名稱為必填，請先填寫名稱。</p>
+          </div>
+          <div class="modal-footer d-flex justify-content-end">
+            <button
+              type="button"
+              class="btn btn-forum-primary"
+              @click="closeCategoryNameModal"
+            >
+              我知道了
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <div
-    v-if="showCategoryNameModal"
-    class="create-category-backdrop"
-    @click.self="closeCategoryNameModal"
-  >
-    <div class="create-category-dialog">
-      <div class="create-category-content">
-        <div
-          class="modal-header d-flex justify-content-between align-items-center mb-3"
-        >
-          <h5 class="modal-title mb-0">提醒</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="closeCategoryNameModal"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">分類名稱為必填，請先填寫名稱。</p>
-        </div>
-        <div class="modal-footer d-flex justify-content-end">
-          <button
-            type="button"
-            class="btn btn-forum-primary"
-            @click="closeCategoryNameModal"
-          >
-            我知道了
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
