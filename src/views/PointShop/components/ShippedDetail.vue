@@ -1,128 +1,112 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { getShippedDetails } from "@/views/PointShop/services/PointShopApi";
 
 const props = defineProps({
   orderId: Number,
 });
 
-const open = ref(false);
 const loading = ref(false);
 const shipped = ref([]);
 const error = ref(null);
 
-const toggle = async () => {
-  open.value = !open.value;
-  if (open.value && shipped.value.length === 0) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const res = await getShippedDetails(props.orderId);
-      if (res.data.ok) {
-        shipped.value = res.data.data || [];
-      } else {
-        error.value = res.data.message || "還沒有寄送資料會盡快安排處裡";
-        shipped.value = [];
-      }
-    } catch (err) {
-      error.value = "載入出貨資料失敗，請稍後重試";
+onMounted(async () => {
+  try {
+    const res = await getShippedDetails(props.orderId);
+    if (res.data.ok) {
+      shipped.value = res.data.data || [];
+    } else {
+      error.value = res.data.message || "還沒有寄送資料會盡快安排處裡";
       shipped.value = [];
-    } finally {
-      loading.value = false;
     }
+  } catch (err) {
+    error.value = "載入出貨資料失敗，請稍後重試";
+    shipped.value = [];
+  } finally {
+    loading.value = false;
   }
-};
+}
+);
 </script>
 
 <template>
-  <div class="shipped-detail-wrapper">
-    <button @click="toggle" :class="['toggle-btn', open ? 'active' : '']">
-      <i :class="open ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
-      <span>{{ open ? "隱藏" : "查看" }} 出貨資訊</span>
-    </button>
+  <div v-if="loading" class="loading-state">
+    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+      <span class="visually-hidden">載入中...</span>
+    </div>
+    <span>載入出貨資料...</span>
+  </div>
 
-    <transition name="slide-fade">
-      <div v-if="open" class="shipped-content">
-        <div v-if="loading" class="loading-state">
-          <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
-            <span class="visually-hidden">載入中...</span>
-          </div>
-          <span>載入出貨資料...</span>
-        </div>
+  <div v-else-if="error" class="error-state">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span>{{ error }}</span>
+  </div>
 
-        <div v-else-if="error" class="error-state">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          <span>{{ error }}</span>
-        </div>
+  <div v-else-if="shipped.length === 0" class="empty-state">
+    <i class="bi bi-inbox"></i>
+    <span>尚無出貨資料</span>
+  </div>
 
-        <div v-else-if="shipped.length === 0" class="empty-state">
-          <i class="bi bi-inbox"></i>
-          <span>尚無出貨資料</span>
-        </div>
-
-        <div v-else class="shipped-cards">
-          <div v-for="ship in shipped" :key="ship.shippedDate" class="shipped-card">
-            <div class="card-header-section">
-              <div class="product-name-badge">
-                <i class="bi bi-box-seam me-1"></i>
-                <span>{{ ship.productName }}</span>
-              </div>
-            </div>
-
-            <div class="card-body-section">
-              <div class="info-grid">
-                <div class="info-item">
-                  <div class="info-label">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>出貨日期</span>
-                  </div>
-                  <div class="info-value">
-                    {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
-                  </div>
-                </div>
-
-                <div class="info-item">
-                  <div class="info-label">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>預計到貨</span>
-                  </div>
-                  <div class="info-value" :class="{ 'text-muted': !ship.arrivalDate }">
-                    {{
-                      ship.arrivalDate
-                        ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
-                        : "尚未到貨"
-                    }}
-                  </div>
-                </div>
-              </div>
-
-              <div class="status-section">
-                <div class="status-label">運送狀態</div>
-                <div class="status-badges">
-                  <span v-if="ship.isCompleted" class="status-badge status-completed">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>已完成</span>
-                  </span>
-                  <span v-else-if="ship.isFailed" class="status-badge status-failed">
-                    <i class="bi bi-x-circle-fill"></i>
-                    <span>失敗</span>
-                  </span>
-                  <span v-else class="status-badge status-shipping">
-                    <i class="bi bi-truck"></i>
-                    <span>運送中</span>
-                  </span>
-                </div>
-              </div>
-
-              <div v-if="ship.remark" class="remark-section">
-                <i class="bi bi-info-circle-fill"></i>
-                <span>{{ ship.remark }}</span>
-              </div>
-            </div>
-          </div>
+  <div v-else class="shipped-cards">
+    <div v-for="ship in shipped" :key="ship.shippedDate" class="shipped-card">
+      <div class="card-header-section">
+        <div class="product-name-badge">
+          <i class="bi bi-box-seam me-1"></i>
+          <span>{{ ship.productName }}</span>
         </div>
       </div>
-    </transition>
+
+      <div class="card-body-section">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">
+              <i class="bi bi-calendar-event"></i>
+              <span>出貨日期</span>
+            </div>
+            <div class="info-value">
+              {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-label">
+              <i class="bi bi-calendar-check"></i>
+              <span>預計到貨</span>
+            </div>
+            <div class="info-value" :class="{ 'text-muted': !ship.arrivalDate }">
+              {{
+                ship.arrivalDate
+                  ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
+                  : "尚未到貨"
+              }}
+            </div>
+          </div>
+        </div>
+
+        <div class="status-section">
+          <div class="status-label">運送狀態</div>
+          <div class="status-badges">
+            <span v-if="ship.isCompleted" class="status-badge status-completed">
+              <i class="bi bi-check-circle-fill"></i>
+              <span>已完成</span>
+            </span>
+            <span v-else-if="ship.isFailed" class="status-badge status-failed">
+              <i class="bi bi-x-circle-fill"></i>
+              <span>失敗</span>
+            </span>
+            <span v-else class="status-badge status-shipping">
+              <i class="bi bi-truck"></i>
+              <span>運送中</span>
+            </span>
+          </div>
+        </div>
+
+        <div v-if="ship.remark" class="remark-section">
+          <i class="bi bi-info-circle-fill"></i>
+          <span>{{ ship.remark }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
