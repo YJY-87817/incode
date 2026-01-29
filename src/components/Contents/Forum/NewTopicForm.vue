@@ -1,54 +1,130 @@
 <!-- NewTopicForm.vue -->
 <!-- 
-  新主題發表表單組件
+  新主題發表表單組件 (Pinia版)
   職責: 管理新主題的標題、內容、分類、圖片上傳和提交
   使用 Pinia Store，不使用 props/emit
 -->
 
 <script setup>
-import { computed, watch, onMounted } from "vue";
-import { uploadImage } from "@/api/imageapi.js";
+import { computed, onMounted, ref, watch } from "vue";
 import { useForumStore } from "@/stores/forumStore";
+import { uploadImage } from "@/api/imageapi.js";
+import { appendUrls } from "./forumUtils";
 
 const forumStore = useForumStore();
 
-// 初始化時同步 store 的選中分類
+const parentCategoryId = ref(null);
+const selectedSubCategoryId = ref(null);
+const hasSyncedCategory = ref(false);
+
+const getCategoryIdValue = (cat) =>
+  cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const toCategoryKey = (value) =>
+  value === null || value === undefined ? null : String(value);
+
+const rootCategories = computed(() => {
+  const categories = forumStore.categories || [];
+  return categories.filter((cat) => !getParentCategoryIdValue(cat));
+});
+
+const childCategories = computed(() => {
+  if (!parentCategoryId.value) return [];
+  const parentKey = toCategoryKey(parentCategoryId.value);
+  return (forumStore.categories || []).filter(
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+  );
+});
+
+const effectiveCategoryId = computed(
+  () => selectedSubCategoryId.value ?? parentCategoryId.value ?? null
+);
+
+const syncCategorySelection = (categoryId) => {
+  if (!categoryId) {
+    parentCategoryId.value = null;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const categories = forumStore.categories || [];
+  const targetKey = toCategoryKey(categoryId);
+  const target = categories.find(
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+  );
+
+  if (!target) {
+    parentCategoryId.value = categoryId;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const parentId = getParentCategoryIdValue(target);
+  if (parentId) {
+    parentCategoryId.value = parentId;
+    selectedSubCategoryId.value = getCategoryIdValue(target);
+  } else {
+    parentCategoryId.value = getCategoryIdValue(target);
+    selectedSubCategoryId.value = null;
+  }
+};
+
 onMounted(() => {
-  if (forumStore.selectedCategory && !forumStore.newTopic.categoryId) {
-    forumStore.newTopic.categoryId = forumStore.selectedCategory;
+  const initialCategory = forumStore.newTopic.categoryId ?? forumStore.selectedCategory;
+  if (initialCategory) {
+    syncCategorySelection(initialCategory);
+    hasSyncedCategory.value = true;
   }
 });
 
-// 監聽 store 的 selectedCategory 變化並同步到表單
 watch(
-  () => forumStore.selectedCategory,
-  (newCategory) => {
-    if (newCategory) {
-      forumStore.newTopic.categoryId = newCategory;
+  () => forumStore.categories,
+  (categories) => {
+    if (!categories?.length || hasSyncedCategory.value) return;
+    const initialCategory =
+      forumStore.newTopic.categoryId ?? forumStore.selectedCategory;
+    if (initialCategory) {
+      syncCategorySelection(initialCategory);
+      hasSyncedCategory.value = true;
     }
+  }
+);
+
+watch(
+  () => parentCategoryId.value,
+  () => {
+    selectedSubCategoryId.value = null;
+  }
+);
+
+watch(
+  () => effectiveCategoryId.value,
+  (value) => {
+    forumStore.newTopic.categoryId = value;
   }
 );
 
 /**
  * 處理圖片上傳
- * 將上傳的圖片URL附加到內容中
  */
 const handleImageUpload = async (event) => {
   const files = event.target?.files;
   if (!files || !files.length) return;
 
   forumStore.isUploadingNewTopicImages = true;
-  
   try {
     const uploaded = await uploadImage(files);
-    const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
-    const chunk = urls.filter(Boolean).join("\n");
-
-    if (chunk) {
-      forumStore.newTopic.body = [forumStore.newTopic.body.trim(), chunk]
-        .filter(Boolean)
-        .join("\n");
-    }
+    forumStore.newTopic.body = appendUrls(forumStore.newTopic.body, uploaded);
   } catch (error) {
     console.error("圖片上傳失敗:", error);
     alert("圖片上傳失敗，請稍後再試");
@@ -56,35 +132,6 @@ const handleImageUpload = async (event) => {
     forumStore.isUploadingNewTopicImages = false;
     if (event.target) event.target.value = "";
   }
-};
-
-/**
- * 驗證表單
- */
-const isFormValid = computed(() => {
-  return (
-    forumStore.newTopic.title.trim() &&
-    forumStore.newTopic.body.trim() &&
-    forumStore.newTopic.categoryId
-  );
-});
-
-/**
- * 提交表單
- */
-const handleSubmit = () => {
-  if (!isFormValid.value) {
-    alert("請填寫所有必填欄位");
-    return;
-  }
-  forumStore.submitNewTopic();
-};
-
-/**
- * 取消編輯
- */
-const handleCancel = () => {
-  forumStore.cancelNewTopic();
 };
 </script>
 
@@ -101,20 +148,34 @@ const handleCancel = () => {
           <i class="fas fa-folder-open"></i> 分類
           <span class="text-danger">*</span>
         </label>
-        <select
-          v-model="forumStore.newTopic.categoryId"
-          class="form-select"
-        >
+        <select v-model="parentCategoryId" class="form-select">
           <option :value="null" disabled>選擇分類</option>
           <option
-            v-for="category in forumStore.categories"
-            :key="category.id"
-            :value="category.id"
+            v-for="category in rootCategories"
+            :key="getCategoryIdValue(category)"
+            :value="getCategoryIdValue(category)"
           >
-            {{ category.name }}
+            {{ getCategoryName(category) }}
           </option>
         </select>
         <small class="text-muted">選擇合適的分類便於他人找到你的主題</small>
+      </div>
+
+      <div v-if="childCategories.length" class="mb-3">
+        <label class="form-label small text-muted">
+          <i class="fas fa-sitemap"></i> 子分類
+        </label>
+        <select v-model="selectedSubCategoryId" class="form-select">
+          <option :value="null">請選擇子分類（可選）</option>
+          <option
+            v-for="child in childCategories"
+            :key="getCategoryIdValue(child)"
+            :value="getCategoryIdValue(child)"
+          >
+            {{ getCategoryName(child) }}
+          </option>
+        </select>
+        <small class="text-muted">若有子分類，建議選擇更精確的分類</small>
       </div>
 
       <!-- 標題輸入 -->
@@ -161,7 +222,10 @@ const handleCancel = () => {
             @change="handleImageUpload"
             :disabled="forumStore.isUploadingNewTopicImages"
           />
-          <small v-if="forumStore.isUploadingNewTopicImages" class="text-warning">
+          <small
+            v-if="forumStore.isUploadingNewTopicImages"
+            class="text-warning"
+          >
             <i class="fas fa-spinner fa-spin"></i> 上傳中...
           </small>
           <small v-else class="text-muted">
@@ -176,8 +240,13 @@ const handleCancel = () => {
       <div class="d-flex flex-wrap gap-2">
         <button
           class="btn btn-forum-primary"
-          @click="handleSubmit"
-          :disabled="forumStore.isSubmittingNewTopic || !isFormValid"
+          @click="forumStore.submitNewTopic()"
+          :disabled="
+            forumStore.isSubmittingNewTopic ||
+            !forumStore.newTopic.title.trim() ||
+            !forumStore.newTopic.body.trim() ||
+            !effectiveCategoryId
+          "
         >
           <i class="fas fa-paper-plane me-2"></i>
           {{ forumStore.isSubmittingNewTopic ? "發送中..." : "發表" }}
@@ -185,7 +254,7 @@ const handleCancel = () => {
         <button
           class="btn btn-forum-secondary"
           type="button"
-          @click="handleCancel"
+          @click="forumStore.cancelNewTopic()"
           :disabled="forumStore.isSubmittingNewTopic"
         >
           取消
