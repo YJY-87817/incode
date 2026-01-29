@@ -205,7 +205,7 @@ namespace incode2.Services.Contents
       var fileName = $"content-{Guid.NewGuid():N}.html";
       var filePath = Path.Combine(contentsPath, fileName);
 
-      await File.WriteAllTextAsync(filePath, htmlBody ?? string.Empty, Encoding.UTF8);
+      await File.WriteAllTextAsync(filePath, htmlBody ?? string.Empty, new UTF8Encoding(false));
 
       return $"/contents/{fileName}";
     }
