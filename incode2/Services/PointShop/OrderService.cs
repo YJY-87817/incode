@@ -17,7 +17,6 @@ namespace incode2.Services.PointShop
         // 取得UserId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrderAsync(int userId)
         {
-
             try
             {
                 var orders = await _context.Orders
@@ -30,7 +29,7 @@ namespace incode2.Services.PointShop
                         OrderDate = e.OrderDate,
                         Status = e.Status,
                         OrderId = e.OrderId
-                    })
+                    }).OrderByDescending(e => e.OrderId)
                     .ToListAsync();
 
                 return ResultDTO<IEnumerable<OrderDTO>>.Success(orders);
