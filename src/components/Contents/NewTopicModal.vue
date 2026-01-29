@@ -563,17 +563,7 @@ const resetNewTopicDraft = () => {
                   >
                     {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
                   </button>
-                  <small class="text-muted">
-                    {{
-                      categorySearch.trim()
-                        ? `找到 ${filteredCategories.length} 個分類`
-                        : `共 ${forumStore.categories?.length || 0} 個分類`
-                    }}
-                  </small>
                 </div>
-                <small class="text-muted d-block mt-1">
-                  選擇或輸入分類名稱，找不到時可直接建立
-                </small>
               </div>
               <div v-if="childCategories.length" class="mb-3">
                 <label class="form-label">子分類</label>
@@ -632,21 +622,6 @@ const resetNewTopicDraft = () => {
                     沒有符合的子分類
                   </div>
                 </div>
-
-                <div
-                  class="d-flex justify-content-between align-items-center mt-2"
-                >
-                  <small class="text-muted">
-                    {{
-                      subCategorySearch.trim()
-                        ? `找到 ${filteredSubCategories.length} 個子分類`
-                        : `共 ${childCategories.length} 個子分類`
-                    }}
-                  </small>
-                </div>
-                <small class="text-muted d-block mt-1">
-                  若該分類有子分類，建議再選擇更精確的分類
-                </small>
               </div>
               <div class="mb-3">
                 <label class="form-label">回覆至（可選）</label>
