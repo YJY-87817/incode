@@ -7,14 +7,14 @@ import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 const forumStore = useForumStore();
 
 const newTopicState = reactive({
-  title: "",
-  body: "",
-  categoryId: null,
-  parentContentId: null,
+  title: forumStore.newTopic.title || "",
+  body: forumStore.newTopic.body || "",
+  categoryId: forumStore.newTopic.categoryId ?? null,
+  parentContentId: forumStore.newTopic.parentContentId ?? null,
   topics: [],
 });
 
-const categorySearch = ref("");
+const categorySearch = ref(forumStore.newTopic.categorySearch || "");
 const showCategoryDropdown = ref(false);
 const isCreatingCategory = ref(false);
 const showCreateCategoryModal = ref(false);
@@ -64,7 +64,44 @@ onMounted(() => {
   if (forumStore.selectedCategory) {
     newTopicState.categoryId = forumStore.selectedCategory;
   }
+
+  if (!categorySearch.value && newTopicState.categoryId) {
+    const match = (forumStore.categories || []).find(
+      (cat) => cat.id === newTopicState.categoryId
+    );
+    if (match?.name) {
+      categorySearch.value = match.name;
+    }
+  }
 });
+
+watch(
+  () => newTopicState.title,
+  (value) => {
+    forumStore.newTopic.title = value;
+  }
+);
+
+watch(
+  () => newTopicState.body,
+  (value) => {
+    forumStore.newTopic.body = value;
+  }
+);
+
+watch(
+  () => newTopicState.categoryId,
+  (value) => {
+    forumStore.newTopic.categoryId = value;
+  }
+);
+
+watch(
+  () => newTopicState.parentContentId,
+  (value) => {
+    forumStore.newTopic.parentContentId = value;
+  }
+);
 
 // 監聽 store 的 selectedCategory 變化
 watch(
@@ -72,6 +109,26 @@ watch(
   (newCategory) => {
     if (newCategory) {
       newTopicState.categoryId = newCategory;
+      const match = (forumStore.categories || []).find(
+        (cat) => cat.id === newCategory
+      );
+      if (match?.name) {
+        categorySearch.value = match.name;
+      }
+    }
+  }
+);
+
+watch(
+  () => forumStore.categories,
+  (categories) => {
+    if (!categorySearch.value && newTopicState.categoryId) {
+      const match = (categories || []).find(
+        (cat) => cat.id === newTopicState.categoryId
+      );
+      if (match?.name) {
+        categorySearch.value = match.name;
+      }
     }
   }
 );
@@ -91,6 +148,7 @@ watch(
 watch(
   () => categorySearch.value,
   (value) => {
+    forumStore.newTopic.categorySearch = value;
     const input = String(value || "").trim();
     if (!input) {
       newTopicState.categoryId = null;
@@ -224,6 +282,7 @@ const submitNewTopic = () => {
       // 直接刷新主題列表而不是只觸發信號
       forumStore.pagination.currentPage = 1;
       forumStore.fetchTopics();
+      resetNewTopicDraft();
       closeNewTopic();
     })
     .catch((error) => {
@@ -233,11 +292,20 @@ const submitNewTopic = () => {
 };
 
 const closeNewTopic = () => {
+  forumStore.toggleNewTopicModal(false);
+};
+
+const resetNewTopicDraft = () => {
   newTopicState.title = "";
   newTopicState.body = "";
   newTopicState.categoryId = null;
   newTopicState.parentContentId = null;
-  forumStore.toggleNewTopicModal(false);
+  categorySearch.value = "";
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = null;
+  forumStore.newTopic.parentContentId = null;
+  forumStore.newTopic.categorySearch = "";
 };
 </script>
 

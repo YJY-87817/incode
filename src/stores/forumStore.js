@@ -77,6 +77,8 @@ export const useForumStore = defineStore('forum', {
       title: '',
       body: '',
       categoryId: null,
+      parentContentId: null,
+      categorySearch: '',
     },
     isSubmittingNewTopic: false,
     isUploadingNewTopicImages: false,
