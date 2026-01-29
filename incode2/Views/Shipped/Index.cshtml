@@ -25,6 +25,7 @@
                 <table class="table table-bordered table-striped table-hover align-middle">
                     <thead class="table-light">
                         <tr class="text-center">
+                            <th style="width:110px">寄送ID</th>
                             <th style="width:110px">訂單ID</th>
                             <th>姓名</th>
                             <th>地址</th>
@@ -41,6 +42,7 @@
                         @foreach (var item in Model)
                         {
                             <tr>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.ShippedDetailId)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.OrderId)</td>
                                 <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
                                 <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>

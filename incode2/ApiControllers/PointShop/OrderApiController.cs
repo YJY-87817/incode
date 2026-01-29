@@ -62,16 +62,6 @@ namespace incode2.ApiControllers
             return await _orderService.CreateOrderAsync(order);
         }
 
-
-        // 新增寄送資料
-        // POST: api/OrderApi/ShippedPost
-        [HttpPost("ShippedPost")]
-        public async Task<ResultDTO<int>> CreateShipped([FromBody] NewShippedRequest shipped)
-        {
-            return await _orderService.CreateShippedAsync(shipped);
-        }
-
-
         // 修改寄送資料
         // PUT: api/OrderApi/ShippedPut/{ShippedDetailId}
         [HttpPut("ShippedPut/{ShippedDetailId}")]
