@@ -21,11 +21,11 @@ import MaterialButton from "@/components/MaterialButton.vue";
         </button>
         <div class="collapse navbar-collapse" id="navbar-header-2">
           <ul class="navbar-nav mx-auto">
-            <li class="nav-item"><RouterLink class="nav-link text-white" to="#"> Home </RouterLink></li>
+            <li class="nav-item"><router-link class="nav-link text-white" to="#"> Home </router-link></li>
             <li class="nav-item">
-              <RouterLink class="nav-link text-white" to="#">About Us</RouterLink></li>
+              <router-link class="nav-link text-white" to="#">About Us</router-link></li>
             <li class="nav-item">
-              <RouterLink class="nav-link text-white" to="#">Contact Us</RouterLink></li>
+              <router-link class="nav-link text-white" to="#">Contact Us</router-link></li>
           </ul>
           <ul class="nav navbar-nav">
             <li class="nav-item">

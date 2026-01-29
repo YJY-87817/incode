@@ -149,7 +149,7 @@ onMounted(() => {
 
         <hr />
 
-        <button @click="handleResetFilters" class="btn btn-outline-secondary w-100">
+        <button @click="handleResetFilters" class="btn btn-custom-primary w-100">
           <i class="bi bi-arrow-counterclockwise"></i> 重設篩選
         </button>
       </div>
@@ -185,5 +185,17 @@ onMounted(() => {
 /* 加上過渡動畫效果 */
 .bi-chevron-down {
   transition: transform 0.3s ease;
+}
+
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
+}
+
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
 }
 </style>

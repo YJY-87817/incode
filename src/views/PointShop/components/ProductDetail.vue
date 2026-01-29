@@ -98,7 +98,7 @@ const handleAddToCart = () => {
 
                         <button @click="handleAddToCart" :disabled="product.stock <= 0"
                             class="btn btn-lg w-100 fw-bold transition rounded-pill shadow-sm"
-                            :class="product.stock > 0 ? 'btn-custom-solid' : 'btn-secondary'">
+                            :class="product.stock > 0 ? 'btn-custom-primary' : 'btn-secondary'">
                             <i class="fas fa-shopping-cart me-2"></i>{{ product.stock > 0 ? "加入購物車" : "已售完" }}
                         </button>
                     </div>
@@ -132,14 +132,15 @@ const handleAddToCart = () => {
     object-fit: contain;
 }
 
-.btn-custom-solid {
-    background-color: #145369;
-    border-color: #145369;
-    color: white;
+.btn-custom-primary {
+    color: #145369;
+    background-color: transparent;
+    border: 1px solid #145369 !important;
 }
 
-.btn-custom-solid:hover {
-    background-color: #104255;
-    border-color: #104255;
+.btn-custom-primary:hover {
+    color: #fff;
+    background-color: #145369;
+    border-color: #145369;
 }
 </style>

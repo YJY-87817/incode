@@ -51,11 +51,11 @@ const decrease = (item) => {
 
             <div class="ms-3 border-start ps-3 py-1">
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;"
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;"
                   @click="increase(item)">+</button>
-                <button class="btn btn-sm btn-outline-secondary" style="font-size: 0.875rem;"
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;"
                   @click="decrease(item)">−</button>
-                <button class="btn btn-sm btn-outline-danger ms-1" style="font-size: 0.875rem;">
+                <button class="btn btn-sm btn-custom-primary ms-1" style="font-size: 0.875rem;">
                   <i class="bi bi-trash" style="font-size: 0.875rem;"
                     @click="CartNow.removeFromCart(item.productId)"></i>
                 </button>
@@ -66,6 +66,9 @@ const decrease = (item) => {
 
         <div v-else class="text-center text-muted my-5">
           目前沒有任何商品在購物車
+          <div class="mt-1">
+            <router-link :to="{ name: 'PointShop' }" class="btn btn-custom-primary">去逛逛</router-link>
+          </div>
         </div>
       </div>
       <div class="card-footer bg-white border-top-0 pb-4 px-4 text-end">
@@ -95,5 +98,17 @@ const decrease = (item) => {
 
 .object-fit-cover {
   object-fit: cover;
+}
+
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
+}
+
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
 }
 </style>

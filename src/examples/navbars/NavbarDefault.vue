@@ -1,5 +1,4 @@
 <script setup>
-import { RouterLink } from "vue-router";
 import { ref, watch } from "vue";
 
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
@@ -129,20 +128,20 @@ watch(
       ? 'container'
       : 'container-fluid px-0'
       ">
-      <RouterLink class="navbar-brand d-none d-md-block" :class="[
+      <router-link class="navbar-brand d-none d-md-block" :class="[
         (props.transparent && textDark.value) || !props.transparent
           ? 'text-dark font-weight-bolder ms-sm-3'
           : 'text-white font-weight-bolder ms-sm-3',
       ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
         <i class="fas fa-hat-cowboy-side"></i>
         incode影庫
-      </RouterLink>
-      <RouterLink class="navbar-brand d-block d-md-none" :class="props.transparent || props.dark
+      </router-link>
+      <router-link class="navbar-brand d-block d-md-none" :class="props.transparent || props.dark
         ? 'text-white'
         : 'font-weight-bolder ms-sm-3'
         " to="/" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
         Material Design
-      </RouterLink>
+      </router-link>
       <button class="navbar-toggler shadow-none ms-2" type="button" data-bs-toggle="collapse"
         data-bs-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon mt-2">
@@ -169,36 +168,36 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
+                      <router-link :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
                         <span>討論區</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
                         <span>預設首頁</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
                         <span>下載TMDB海報</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
                         <span>上傳圖測試</span>
-                      </RouterLink>
+                      </router-link>
                     </div>
                   </div>
                 </div>
               </div>
               <!-- 響應式討論區 -->
               <div class="d-lg-none">
-                <RouterLink :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
+                <router-link :to="{ name: 'forum' }" class="dropdown-item border-radius-md">
                   <span>討論區</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'presentation' }" class="dropdown-item border-radius-md">
                   <span>預設首頁</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'tmdb' }" class="dropdown-item border-radius-md">
                   <span>下載TMDB海報</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'imagetest' }" class="dropdown-item border-radius-md">
                   <span>上傳圖測試</span>
-                </RouterLink>
+                </router-link>
               </div>
             </div>
           </li>
@@ -219,42 +218,42 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <RouterLink :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
+                      <router-link :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
                         <span>TestQiu</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
                         <span>我的點數明細</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
                         <span>我的任務進度</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'mission' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'mission' }" class="dropdown-item border-radius-md">
                         <span>任務大廳</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
                         <span>點數儲值</span>
-                      </RouterLink>
+                      </router-link>
                     </div>
                   </div>
                 </div>
               </div>
               <!-- 響應式任務 -->
               <div class="d-lg-none">
-                <RouterLink :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
+                <router-link :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
                   <span>TestQiu</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
                   <span>我的點數明細</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
                   <span>我的任務進度</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'mission' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'mission' }" class="dropdown-item border-radius-md">
                   <span>任務大廳</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
                   <span>點數儲值</span>
-                </RouterLink>
+                </router-link>
               </div>
             </div>
           </li>
@@ -276,15 +275,15 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+                      <router-link :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
                         <span>點數商城</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
                         <span>我的訂單</span>
-                      </RouterLink>
-                      <RouterLink :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
+                      </router-link>
+                      <router-link :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
                         <span>前往結帳</span>
-                      </RouterLink>
+                      </router-link>
 
                     </div>
                   </div>
@@ -303,15 +302,15 @@ watch(
                     {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
                   </span>
                 </button>
-                <RouterLink :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
+                <router-link :to="{ name: 'PointShop' }" class="dropdown-item border-radius-md">
                   <span>點數商城</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'Order' }" class="dropdown-item border-radius-md">
                   <span>我的訂單</span>
-                </RouterLink>
-                <RouterLink :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
+                </router-link>
+                <router-link :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
                   <span>前往結帳</span>
-                </RouterLink>
+                </router-link>
               </div>
             </div>
           </li>
@@ -337,12 +336,12 @@ watch(
                     </div>
                   </a>
                   <div class="dropdown-menu mt-0 py-3 px-2 mt-3">
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-headers' }">
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-headers' }">
                       Page Headers
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-features' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-features' }">
                       Features
-                    </RouterLink>
+                    </router-link>
                   </div>
                 </li>
                 <li class="nav-item dropdown dropdown-hover dropdown-subitem list-group-item border-0 p-0">
@@ -361,16 +360,16 @@ watch(
                     </div>
                   </a>
                   <div class="dropdown-menu mt-0 py-3 px-2 mt-3">
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navbars' }">
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navbars' }">
                       Navbars
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navtabs' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navtabs' }">
                       Nav Tabs
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1"
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1"
                       :to="{ name: 'navigation-pagination' }">
                       Pagination
-                    </RouterLink>
+                    </router-link>
                   </div>
                 </li>
                 <li class="nav-item dropdown dropdown-hover dropdown-subitem list-group-item border-0 p-0">
@@ -389,12 +388,12 @@ watch(
                     </div>
                   </a>
                   <div class="dropdown-menu mt-0 py-3 px-2 mt-3">
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-inputs' }">
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-inputs' }">
                       Inputs
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-forms' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-forms' }">
                       Forms
-                    </RouterLink>
+                    </router-link>
                   </div>
                 </li>
                 <li class="nav-item dropdown dropdown-hover dropdown-subitem list-group-item border-0 p-0">
@@ -413,15 +412,15 @@ watch(
                     </div>
                   </a>
                   <div class="dropdown-menu mt-0 py-3 px-2 mt-3">
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-alerts' }">
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-alerts' }">
                       Alerts
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-modals' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-modals' }">
                       Modals
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-tooltips-popovers' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-tooltips-popovers' }">
                       Tooltips & Popovers
-                    </RouterLink>
+                    </router-link>
                   </div>
                 </li>
                 <li class="nav-item dropdown dropdown-hover dropdown-subitem list-group-item border-0 p-0">
@@ -440,33 +439,33 @@ watch(
                     </div>
                   </a>
                   <div class="dropdown-menu mt-0 py-3 px-2 mt-3">
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-avatars' }">
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-avatars' }">
                       Avatars
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-badges' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-badges' }">
                       Badges
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-breadcrumbs' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-breadcrumbs' }">
                       Breadcrumbs
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-buttons' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-buttons' }">
                       Buttons
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-button-groups' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-button-groups' }">
                       Button Groups
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-dropdowns' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-dropdowns' }">
                       Dropdowns
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-progress-bars' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-progress-bars' }">
                       Progress Bars
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-toggles' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-toggles' }">
                       Toggles
-                    </RouterLink>
-                    <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-typography' }">
+                    </router-link>
+                    <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-typography' }">
                       Typography
-                    </RouterLink>
+                    </router-link>
                   </div>
                 </li>
               </ul>
@@ -483,12 +482,12 @@ watch(
                     </div>
                   </div>
                 </div>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-headers' }">
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-headers' }">
                   Page Headers
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-features' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'page-features' }">
                   Features
-                </RouterLink>
+                </router-link>
                 <div class="d-flex mb-2 mt-3">
                   <div class="w-100 d-flex align-items-center justify-content-between">
                     <div>
@@ -499,15 +498,15 @@ watch(
                     </div>
                   </div>
                 </div>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navbars' }">
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navbars' }">
                   Navbars
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navtabs' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-navtabs' }">
                   Nav Tabs
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-pagination' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'navigation-pagination' }">
                   Pagination
-                </RouterLink>
+                </router-link>
                 <div class="d-flex mb-2 mt-3">
                   <div class="w-100 d-flex align-items-center justify-content-between">
                     <div>
@@ -518,12 +517,12 @@ watch(
                     </div>
                   </div>
                 </div>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-inputs' }">
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-inputs' }">
                   Inputs
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-forms' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'inputareas-forms' }">
                   Forms
-                </RouterLink>
+                </router-link>
                 <div class="d-flex mb-2 mt-3">
                   <div class="w-100 d-flex align-items-center justify-content-between">
                     <div>
@@ -534,15 +533,15 @@ watch(
                     </div>
                   </div>
                 </div>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-alerts' }">
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-alerts' }">
                   Alerts
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-modals' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-modals' }">
                   Modals
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-tooltips-popovers' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'ac-tooltips-popovers' }">
                   Tooltips & Popovers
-                </RouterLink>
+                </router-link>
                 <div class="d-flex mb-2 mt-3">
                   <div class="w-100 d-flex align-items-center justify-content-between">
                     <div>
@@ -553,33 +552,33 @@ watch(
                     </div>
                   </div>
                 </div>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-avatars' }">
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-avatars' }">
                   Avatars
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-badges' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-badges' }">
                   Badges
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-breadcrumbs' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-breadcrumbs' }">
                   Breadcrumbs
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-buttons' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-buttons' }">
                   Buttons
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-button-groups' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-button-groups' }">
                   Button Groups
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-dropdowns' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-dropdowns' }">
                   Dropdowns
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-progress-bars' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-progress-bars' }">
                   Progress Bars
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-toggles' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-toggles' }">
                   Toggles
-                </RouterLink>
-                <RouterLink class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-typography' }">
+                </router-link>
+                <router-link class="dropdown-item ps-3 border-radius-md mb-1" :to="{ name: 'el-typography' }">
                   Typography
-                </RouterLink>
+                </router-link>
               </div>
             </div>
           </div>
@@ -706,10 +705,10 @@ watch(
           </li>
           <!-- owen -->
           <li class="nav-link ps-2 d-flex cursor-pointer align-items-center">
-            <RouterLink :to="{ name: 'UserIndex' }" class="dropdown-item border-radius-md">
+            <router-link :to="{ name: 'UserIndex' }" class="dropdown-item border-radius-md">
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
                 person</i>會員中心
-            </RouterLink>
+            </router-link>
           </li>
           <!-- 下拉選單 <v-menu v-if="authStore.isLoggedIn" min-width="200px" rounded="xl" offset="10"
             transition="slide-y-transition">
@@ -744,9 +743,9 @@ watch(
 </v-card>
 </v-menu> -->
           <li class="nav-item">
-            <RouterLink v-if="!authStore.isLoggedIn" to="/login" class="btn btn-sm bg-gradient-success mb-0">
+            <router-link v-if="!authStore.isLoggedIn" to="/login" class="btn btn-sm bg-gradient-success mb-0">
               登入會員
-            </RouterLink>
+            </router-link>
 
             <button v-else class="btn btn-sm bg-gradient-danger mb-0" @click="authStore.logout()">
               登出

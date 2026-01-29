@@ -61,9 +61,9 @@ onMounted(async () => {
             </div>
             <h4 class="fw-bold text-dark mb-2">目前沒有任何訂單</h4>
             <p class="text-muted mb-4">您還沒有兌換任何商品，快去商店逛逛吧！</p>
-            <RouterLink :to="{ name: 'PointShop' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
+            <router-link :to="{ name: 'PointShop' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
               <i class="bi bi-cart-plus me-2"></i>前往購物
-            </RouterLink>
+            </router-link>
           </div>
 
           <!-- Orders List -->

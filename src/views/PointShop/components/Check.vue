@@ -34,9 +34,23 @@ const CartNow = useCartStore();
     </div>
 
     <div class="card-footer bg-white border-top-0 pb-4 px-4">
-      <button class="btn w-100 py-2 fw-bold shadow-sm" style="background-color: #145369; color: white;">
+      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm">
         確認結帳
       </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
+}
+
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
+}
+</style>
