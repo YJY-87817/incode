@@ -174,6 +174,7 @@ import { CONTENT_TYPES } from "@/stores/forumStore.js";
 import { uploadImage } from "@/api/imageapi.js";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
+import { appendUrls } from "@/components/Contents/Forum/forumUtils";
 
 const normalizeContent = (body) => normalizeRichContent(body, toAbsoluteUrl);
 // 視窗寬度響應式變數
@@ -337,13 +338,6 @@ const drafts = reactive({
 });
 const isSubmitting = ref(false);
 const isUploadingImages = ref(false);
-
-const appendUrls = (original, urls) => {
-  const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join("\n");
-  if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join("\n");
-};
 
 const composerConfig = {
   reply: {

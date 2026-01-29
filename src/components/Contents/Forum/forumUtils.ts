@@ -2,42 +2,12 @@
  * forumUtils.ts
  * 
  * 論壇工具函數模組
- * 提供：日期格式化、內容解析、API基底URL處理等通用函數
+ * 提供：日期格式化、內容解析、URL處理等通用函數
  * 
  * 這些函數供forum.vue及其子組件使用，獨立為模組便於測試和重用
  */
 
-import apiClient from '@/api/request.js';
-
-/**
- * 取得不含 /api 的基底網址
- * 將後端回傳的相對路徑轉為完整網址
- * 
- * @returns {string} API基底URL
- */
-export const getApiBaseUrl = () => {
-  return (apiClient.defaults?.baseURL || '').replace(/\/api$/, '');
-};
-
-/**
- * 轉換為絕對URL
- * 支援完整URL、相對路徑、不含domain的路徑三種格式
- * 
- * @param {string} url - 要轉換的URL
- * @returns {string} 完整的絕對URL
- * 
- * @example
- * toAbsoluteUrl('http://example.com/image.jpg') // 返回原URL
- * toAbsoluteUrl('/uploads/image.jpg') // 返回 baseUrl + /uploads/image.jpg
- * toAbsoluteUrl('uploads/image.jpg') // 返回 baseUrl/uploads/image.jpg
- */
-export const toAbsoluteUrl = (url: string): string => {
-  if (!url) return '';
-  if (/^https?:\/\//i.test(url)) return url;
-  const baseUrl = getApiBaseUrl();
-  if (url.startsWith('/')) return `${baseUrl}${url}`;
-  return `${baseUrl}/${url}`;
-};
+import { toAbsoluteUrl } from '@/utils/contentBody.js';
 
 /**
  * 解析貼文內容，提取文字和圖片URLs

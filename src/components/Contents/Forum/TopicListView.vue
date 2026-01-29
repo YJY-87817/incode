@@ -13,7 +13,7 @@ import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
-import { formatDate, formatTimeAgo } from "./forumUtils";
+import { appendUrls, formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
 
@@ -87,13 +87,6 @@ const nextThreadPage = () => {
 /**
  * 留言/回文輸入框相關
  */
-const appendUrls = (original, urls) => {
-  const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join("\n");
-  if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join("\n");
-};
-
 const resetQuickReply = () => {
   quickReplyContent.value = "";
   quickReplyMode.value = "comment";

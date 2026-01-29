@@ -97,6 +97,8 @@ import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
+import { toAbsoluteUrl } from "@/utils/contentBody.js";
+import { appendUrls } from "@/components/Contents/Forum/forumUtils";
 
 const forumStore = useForumStore();
 
@@ -119,26 +121,10 @@ const props = defineProps({
   },
 });
 
-const apiBaseUrl = (apiClient.defaults?.baseURL || "").replace(/\/api$/, "");
-
-const toAbsoluteUrl = (url) => {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${apiBaseUrl}${url}`;
-  return `${apiBaseUrl}/${url}`;
-};
-
 const showReply = ref(false);
 const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isUploadingImages = ref(false);
-
-const appendUrls = (original, urls) => {
-  const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join("\n");
-  if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join("\n");
-};
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
