@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import { useAuthStore } from "@/stores/user/auth";
+import axios from "axios";
 
 // 引入 Store
 const authStore = useAuthStore();
@@ -11,11 +12,33 @@ const router = useRouter();
 
 // 狀態控制
 const dialog = shallowRef(false);
-const activeTab = ref(null); // 控制下方 Tab
+const activeTab = ref(null); // 控制下方
+const isLoading = ref(false);
 
-// 表單資料
-const name = ref("暱稱name");
-const email = ref("email@example.com");
+const userProfile = ref({
+  username: "載入中...",
+  email: "",
+  phone: "",
+  address: "",
+  imageUrl: "", // 頭像 URL
+  birthday: "",
+  // 統計數據 (假設後端有回傳，若無則需另外呼叫 API)
+  // articleCount: 0,
+  // missionCount: 0,
+  // points: 0,
+  // followers: 0,
+  // following: 0,
+});
+
+// 3. 編輯表單用的資料 (避免直接修改顯示資料)
+const editForm = ref({
+  username: "",
+  email: "",
+  phone: "",
+  address: "",
+  ageRange: "", // 假設這是前端特有或對應後端某欄位
+});
+
 const formValid = ref(false);
 
 // 驗證規則
@@ -55,10 +78,87 @@ const notifications = ref([
   },
 ]);
 
+const fetchUserProfile = async () => {
+  try {
+    const response = await axios.get(`/User/profile?t=${new Date().getTime()}`);
+    const data = response.data;
+    console.log("後端回傳的原始資料:", data);
+
+    // 邏輯：先找小寫的 username，沒有的話找大寫的 Username，再沒有就給空字串
+    userProfile.value = {
+      username: data.username || data.Username || "載入中...",
+      email: data.email || data.Email || "",
+      phone: data.phone || data.Phone || "",
+      address: data.address || data.Address || "",
+      imageUrl: data.imageUrl || data.ImageUrl || "",
+      birthday:
+        data.birthday || data.Birthday
+          ? (data.birthday || data.Birthday).split("T")[0]
+          : "",
+
+      // 統計數據 (若後端有回傳)
+      // articleCount: data.articleCount || data.ArticleCount || 0,
+      // missionCount: data.missionCount || data.MissionCount || 0,
+      // points:       data.points       || data.Points       || 0,
+      // followers:    data.followers    || data.Followers    || 0,
+      // following:    data.following    || data.Following    || 0,
+    };
+  } catch (error) {
+    console.error("載入失敗", error);
+    if (error.response?.status === 401) {
+      // alert("請重新登入");
+      // router.push('/login');
+    }
+  }
+};
+
+// 開啟編輯視窗時，把現有資料複製進表單
+const openEditDialog = () => {
+  editForm.value = {
+    username: userProfile.value.username,
+    email: userProfile.value.email,
+    phone: userProfile.value.phone,
+    address: userProfile.value.address,
+    birthday: userProfile.value.birthday
+      ? userProfile.value.birthday.split("T")[0]
+      : null,
+  };
+  dialog.value = true;
+};
+
+// 5. 送出更新
+const handleUpdate = async () => {
+  if (!formValid.value) return;
+  isLoading.value = true;
+  try {
+    const payload = { ...editForm.value };
+    if (!payload.birthday || payload.birthday.trim() === "") {
+      // 如果是空字串、undefined，轉成 null (讓後端知道這是空值)
+      payload.birthday = null;
+    } else if (payload.birthday.includes("T")) {
+      payload.birthday = payload.birthday.split("T")[0];
+    }
+    await axios.put("/User/profile", payload);
+    userProfile.value.username = editForm.value.username;
+    userProfile.value.email = editForm.value.email;
+    userProfile.value.phone = editForm.value.phone;
+    userProfile.value.address = editForm.value.address;
+    userProfile.value.birthday = payload.birthday;
+
+    dialog.value = false;
+  } catch (error) {
+    console.error("更新失敗", error);
+    alert("更新失敗，請稍後再試");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 // Hooks
 onMounted(() => {
   const body = document.getElementsByTagName("body")[0];
   body.classList.add("bg-grey-lighten-5"); // 全局背景色
+  fetchUserProfile();
 });
 
 onUnmounted(() => {
@@ -76,7 +176,6 @@ onUnmounted(() => {
     >
       <div class="text-center mb-3">
         <h1 class="text-h3 font-weight-bold text-grey-darken-4">會員中心</h1>
-        <p class="text-subtitle-1 text-grey-darken-1">Welcome back, User</p>
       </div>
 
       <v-row>
@@ -110,40 +209,45 @@ onUnmounted(() => {
               </div>
               <div class="d-flex flex-column justify-center w-100">
                 <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
-                  暱稱 Name
+                  {{ userProfile.username }}
                 </h2>
                 <div class="d-flex flex-wrap align-center gap-4 mt-2">
                   <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3"
-                      >1,423</span
+                    <span
+                      class="text-h10 font-weight-bold text-grey-darken-3"
+                      >{{ userProfile.articleCount }}</span
                     >
                     <span class="text-caption text-white ml-1">文章</span>
                   </div>
 
                   <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3"
-                      >9</span
+                    <span
+                      class="text-h10 font-weight-bold text-grey-darken-3"
+                      >{{ userProfile.missionCount }}</span
                     >
                     <span class="text-caption text-white ml-1">任務</span>
                   </div>
 
                   <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3"
-                      >9</span
+                    <span
+                      class="text-h10 font-weight-bold text-grey-darken-3"
+                      >{{ userProfile.points }}</span
                     >
                     <span class="text-caption text-white ml-1">點數</span>
                   </div>
 
                   <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3"
-                      >168</span
+                    <span
+                      class="text-h10 font-weight-bold text-grey-darken-3"
+                      >{{ userProfile.followers }}</span
                     >
                     <span class="text-caption text-white ml-1">關注</span>
                   </div>
 
                   <div class="text-center">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3"
-                      >1,034</span
+                    <span
+                      class="text-h10 font-weight-bold text-grey-darken-3"
+                      >{{ userProfile.following }}</span
                     >
                     <span class="text-caption text-white ml-1">粉絲</span>
                   </div>
@@ -155,44 +259,49 @@ onUnmounted(() => {
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
                 <span class="text-grey-darken-1">Email：</span>
-                <span class="font-weight-medium ml-1">email@example.com</span>
+                <span class="font-weight-medium ml-1">{{
+                  userProfile.email
+                }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
                 <span class="text-grey-darken-1">手機：</span>
-                <span class="font-weight-medium ml-1">0912-345-678</span>
+                <span class="font-weight-medium ml-1">{{
+                  userProfile.phone || "未設定"
+                }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3"
                   >mdi-map-marker-outline</v-icon
                 >
                 <span class="text-grey-darken-1">地址：</span>
-                <span class="font-weight-medium ml-1">台北市信義區</span>
+                <span class="font-weight-medium ml-1">{{
+                  userProfile.address || "未設定"
+                }}</span>
               </v-col>
               <v-col cols="12" sm="6" class="d-flex align-center py-2">
                 <v-icon color="grey" class="mr-3"
                   >mdi-cake-variant-outline</v-icon
                 >
                 <span class="text-grey-darken-1">生日：</span>
-                <span class="font-weight-medium ml-1">1995-01-01</span>
+                <span class="font-weight-medium ml-1">{{
+                  userProfile.birthday || "未設定"
+                }}</span>
               </v-col>
             </v-row>
             <div class="mt-2 mb-2 d-flex justify-content-end">
+              <v-btn
+                prepend-icon="mdi-pencil-outline"
+                variant="flat"
+                color="#145369"
+                class="text-white"
+                rounded="pill"
+                size="small"
+                @click="openEditDialog"
+              >
+                編輯資料
+              </v-btn>
               <v-dialog v-model="dialog" max-width="600">
-                <template v-slot:activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    prepend-icon="mdi-pencil-outline"
-                    variant="flat"
-                    color="#145369"
-                    class="text-white"
-                    rounded="pill"
-                    size="small"
-                  >
-                    編輯資料
-                  </v-btn>
-                </template>
-
                 <v-card rounded="xl" class="pa-6">
                   <div class="d-flex justify-space-between align-center mb-6">
                     <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
@@ -207,7 +316,7 @@ onUnmounted(() => {
                     <v-row dense>
                       <v-col cols="12" sm="6">
                         <v-text-field
-                          v-model="name"
+                          v-model="editForm.username"
                           label="暱稱"
                           variant="outlined"
                           density="comfortable"
@@ -216,7 +325,7 @@ onUnmounted(() => {
                       </v-col>
                       <v-col cols="12" sm="6">
                         <v-text-field
-                          v-model="email"
+                          v-model="editForm.email"
                           label="Email"
                           variant="outlined"
                           density="comfortable"
@@ -225,22 +334,25 @@ onUnmounted(() => {
                       </v-col>
                       <v-col cols="12" sm="6">
                         <v-text-field
+                          v-model="editForm.phone"
                           label="手機"
                           variant="outlined"
                           density="comfortable"
                         ></v-text-field>
                       </v-col>
-                      <v-col cols="12" sm="6"
-                        ><!--改生日 -->
-                        <v-select
-                          label="年齡"
-                          :items="['0-17', '18-29', '30-54', '54+']"
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="editForm.birthday"
+                          label="生日"
+                          type="date"
                           variant="outlined"
                           density="comfortable"
-                        ></v-select>
+                          :active="true"
+                        ></v-text-field>
                       </v-col>
                       <v-col cols="12">
                         <v-text-field
+                          v-model="editForm.address"
                           label="地址"
                           variant="outlined"
                           density="comfortable"
@@ -251,15 +363,40 @@ onUnmounted(() => {
 
                   <v-card-actions class="pa-0 mt-4">
                     <v-spacer></v-spacer>
-                    <v-btn variant="text" color="grey" @click="dialog = false"
-                      >取消</v-btn
+                    <v-hover v-slot="{ isHovering, props }">
+                      <v-btn
+                        variant="flat"
+                        v-bind="props"
+                        class="text-body-1 font-weight-bold mb-4"
+                        :loading="isLoading"
+                        :color="isHovering ? '#FFFFFF' : '#145369'"
+                        :style="{
+                          color: isHovering
+                            ? '#145369 !important'
+                            : '#FFFFFF !important',
+                          border: '1px solid #145369',
+                        }"
+                        @click="dialog = false"
+                        >取消</v-btn
+                      ></v-hover
                     >
-                    <v-btn
-                      color="primary"
-                      variant="flat"
-                      :disabled="!formValid"
-                      @click="dialog = false"
-                      >保存變更</v-btn
+                    <v-hover v-slot="{ isHovering, props }">
+                      <v-btn
+                        v-bind="props"
+                        variant="flat"
+                        class="text-body-1 font-weight-bold mb-4"
+                        :loading="isLoading"
+                        :color="isHovering ? '#FFFFFF' : '#145369'"
+                        :style="{
+                          color: isHovering
+                            ? '#145369 !important'
+                            : '#FFFFFF !important',
+                          border: '1px solid #145369',
+                        }"
+                        :disabled="!formValid"
+                        @click="handleUpdate"
+                        >保存變更</v-btn
+                      ></v-hover
                     >
                   </v-card-actions>
                 </v-card>
