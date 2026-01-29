@@ -42,7 +42,7 @@ namespace incode2.ApiController.user
                 .ToListAsync();
         }
 
-        // GET: api/User/profile??username=test2CQ
+        // GET: api/User/profile??username={test2CQ}
         [HttpGet("profile")]
         public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
@@ -77,29 +77,29 @@ namespace incode2.ApiController.user
                 Email = user.Email,
                 Username = user.Username,
                 ImageUrl = user.ImageUrl,
-                Role = user.Role.RoleName ?? "Member"
+                Role = user.Role.RoleName ?? "Member",
+                Phone = user.Phone,
+                Address = user.Address,
+                Birthday = user.Birthday,
             });
         }
 
-        // PUT: api/User/5
-        // 修改資料 (只允許修改 UpdateUserDto 裡定義的欄位)
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, UpdateUserDto dto)
+        // PUT: api/User/profile
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserDto dto)
         {
             // 1. 安全檢查：確保登入者只能改自己的資料 (除非是管理員)
             int currentUserId = User.GetId();
-            if (id != currentUserId)
-            {
-                // 這裡也可以判斷如果 User.IsInRole("Admin") 則允許修改
-                return Forbid();
-            }   
-
-            var user = await _context.User.FindAsync(id);
-            if (user == null) return NotFound();
+            var user = await _context.User.FindAsync(currentUserId);
+            if (user == null) return NotFound("找不到使用者");
 
             // 1. Username 比較特別，通常資料庫不允許為 null，且不能是空字串
             if (!string.IsNullOrWhiteSpace(dto.Username))
             {
+                if (await _context.User.AnyAsync(u => u.Username == dto.Username && u.UserId != currentUserId))
+                {
+                    return BadRequest("此暱稱已被使用");
+                }
                 user.Username = dto.Username;
             }
 
@@ -117,11 +117,10 @@ namespace incode2.ApiController.user
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(id)) return NotFound();
-                else throw;
+                throw;
             }
 
-            return NoContent();
+            return Ok(new { message = "更新成功", user = user });
         }        
 
         // DELETE: api/User/5
