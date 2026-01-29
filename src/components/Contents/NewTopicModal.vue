@@ -27,6 +27,7 @@ const newCategoryDescription = ref("");
 const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showPublishSuccessModal = ref(false);
+const showTitleBodyRequiredModal = ref(false);
 
 const NO_REPLY_LABEL = "無(發表新主題)";
 
@@ -490,6 +491,10 @@ const closePublishSuccessModal = () => {
   showPublishSuccessModal.value = false;
 };
 
+const closeTitleBodyRequiredModal = () => {
+  showTitleBodyRequiredModal.value = false;
+};
+
 const submitNewTopic = () => {
   console.log(
     "[NewTopicModal] submitNewTopic - 當前 body:",
@@ -497,7 +502,7 @@ const submitNewTopic = () => {
   );
 
   if (!newTopicState.title || !newTopicState.body) {
-    alert("請填寫標題與內容");
+    showTitleBodyRequiredModal.value = true;
     return;
   }
 
@@ -966,6 +971,39 @@ const resetNewTopicDraft = () => {
               type="button"
               class="btn btn-forum-primary"
               @click="closePublishSuccessModal"
+            >
+              我知道了
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showTitleBodyRequiredModal"
+      class="create-category-backdrop"
+      @click.self="closeTitleBodyRequiredModal"
+    >
+      <div class="create-category-dialog">
+        <div class="create-category-content">
+          <div
+            class="modal-header d-flex justify-content-between align-items-center mb-3"
+          >
+            <h5 class="modal-title mb-0">提醒</h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="closeTitleBodyRequiredModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">請填寫標題與內容</p>
+          </div>
+          <div class="modal-footer d-flex justify-content-end">
+            <button
+              type="button"
+              class="btn btn-forum-primary"
+              @click="closeTitleBodyRequiredModal"
             >
               我知道了
             </button>
