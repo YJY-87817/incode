@@ -149,6 +149,10 @@ namespace incode2.ApiControllers.user
         {
             // 清除 Cookie
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (Request.Cookies[".AspNetCore.Cookies"] != null)
+            {
+                Response.Cookies.Delete(".AspNetCore.Cookies");
+            }
             return Ok(new { message = "已登出" });
         }
 
