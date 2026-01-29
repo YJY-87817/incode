@@ -22,6 +22,4 @@ public partial class Orderdetail
     public virtual Orders Order { get; set; }
 
     public virtual Product Product { get; set; }
-
-    public virtual ICollection<ShippedDetail> ShippedDetail { get; set; } = new List<ShippedDetail>();
 }

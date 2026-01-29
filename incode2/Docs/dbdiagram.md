@@ -312,7 +312,7 @@ table orderdetail {
 // 寄送Detail
 table shipped_detail{
   shipped_detail_id INT [pk, increment, note: 'ID (主鍵)']
-  orderdetail_id INT [not null, ref:> orderdetail.orderdetail_id , note: 'CONSTRAINT FK_shippeddetail_orderdetail']
+  order_id INT [not null, ref:> orders.order_id , note: 'CONSTRAINT FK_shippeddetail_orders']
   recipient_name NVARCHAR(50) [not null, note: '收件人姓名']
   recipient_address NVARCHAR(50) [not null, note: '收件人地址']
   recipient_phone NVARCHAR(50) [not null, note: '收件人電話']
