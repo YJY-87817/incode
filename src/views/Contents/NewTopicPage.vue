@@ -285,13 +285,13 @@ const cancelNewTopic = () => {
               </div>
 
               <div class="mb-4">
-                <label class="form-label fw-bold">回覆至（可選）</label>
+                <label class="form-label fw-bold">回覆至(可選)</label>
                 <select
                   v-model="newTopicState.parentContentId"
                   class="form-select"
                   :disabled="!effectiveCategoryId"
                 >
-                  <option :value="null">無（發表新主題）</option>
+                  <option :value="null">無(發表新主題)</option>
                   <option
                     v-for="topic in newTopicState.topics"
                     :key="topic.id"

@@ -641,12 +641,12 @@ const resetNewTopicDraft = () => {
                   :class="childCategories.length ? 'col-12 col-md-4' : 'col-12 col-md-6'"
                 >
                   <div class="mb-3">
-                    <label class="form-label">回覆至（可選）</label>
+                    <label class="form-label">回覆至(可選)</label>
                     <select
                       v-model="newTopicState.parentContentId"
                       class="form-select"
                     >
-                      <option :value="null">無（發表新主題）</option>
+                      <option :value="null">無(發表新主題)</option>
                       <option
                         v-for="topic in newTopicState.topics"
                         :key="topic.id"
