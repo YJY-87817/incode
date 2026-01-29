@@ -601,6 +601,7 @@ const resetNewTopicDraft = () => {
                         placeholder="輸入或搜尋分類..."
                         @focus="showCategoryDropdown = true"
                         @blur="hideCategoryDropdown"
+                        @keydown.enter.prevent
                         @keyup.enter.prevent="
                           categorySuggestions.length === 0
                             ? createCategoryFromSearch()
@@ -680,6 +681,7 @@ const resetNewTopicDraft = () => {
                         placeholder="輸入或搜尋子分類..."
                         @focus="showSubCategoryDropdown = true"
                         @blur="hideSubCategoryDropdown"
+                        @keydown.enter.prevent
                       />
                       <button
                         v-if="subCategorySearch"
@@ -743,6 +745,7 @@ const resetNewTopicDraft = () => {
                         placeholder="輸入或搜尋主題..."
                         @focus="showReplyDropdown = true"
                         @blur="hideReplyDropdown"
+                        @keydown.enter.prevent
                       />
                       <button
                         v-if="replySearch"
@@ -806,6 +809,7 @@ const resetNewTopicDraft = () => {
                   v-model="newTopicState.title"
                   class="form-control"
                   autofocus
+                  @keydown.enter.prevent
                 />
               </div>
               <div class="mb-3">
