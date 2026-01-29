@@ -28,7 +28,7 @@
           :html="safeContent"
           :min-height="60"
           text-color="#145369"
-          :extra-css="'body { white-space: pre-wrap; }'"
+          :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
         />
 
         <!-- 回覆輸入框 -->

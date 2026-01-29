@@ -27,6 +27,7 @@ export default {
           :html="thread.contentHtml"
           :min-height="120"
           text-color="#432f28"
+          :extra-css="'img { max-width: 100%; max-height: 360px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 260px; } }'"
           :allow-scripts="true"
         />
       </div>
