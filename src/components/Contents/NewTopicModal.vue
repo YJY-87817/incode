@@ -18,6 +18,8 @@ const categorySearch = ref(forumStore.newTopic.categorySearch || "");
 const showCategoryDropdown = ref(false);
 const subCategorySearch = ref("");
 const showSubCategoryDropdown = ref(false);
+const replySearch = ref("");
+const showReplyDropdown = ref(false);
 const isCreatingCategory = ref(false);
 const showCreateCategoryModal = ref(false);
 const newCategoryName = ref("");
@@ -25,6 +27,8 @@ const newCategoryDescription = ref("");
 const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showPublishSuccessModal = ref(false);
+
+const NO_REPLY_LABEL = "無(發表新主題)";
 
 const getCategoryIdValue = (cat) =>
   cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
@@ -38,6 +42,8 @@ const getParentCategoryIdValue = (cat) =>
 
 const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const getTopicTitle = (topic) => topic?.title ?? topic?.name ?? "";
 
 const toCategoryKey = (value) =>
   value === null || value === undefined ? null : String(value);
@@ -89,6 +95,23 @@ const subCategorySuggestions = computed(() => {
     return childCategories.value.slice(0, 12);
   }
   return filteredSubCategories.value.slice(0, 12);
+});
+
+const filteredReplyTopics = computed(() => {
+  const keyword = replySearch.value.trim().toLowerCase();
+  const topics = newTopicState.topics || [];
+  if (!keyword) return topics;
+  return topics.filter((topic) =>
+    String(getTopicTitle(topic) || "").toLowerCase().includes(keyword)
+  );
+});
+
+const replySuggestions = computed(() => {
+  const input = replySearch.value.trim();
+  if (!input) {
+    return (newTopicState.topics || []).slice(0, 12);
+  }
+  return filteredReplyTopics.value.slice(0, 12);
 });
 
 const effectiveCategoryId = computed(
@@ -203,6 +226,34 @@ watch(
   () => newTopicState.parentContentId,
   (value) => {
     forumStore.newTopic.parentContentId = value;
+    if (!value) {
+      replySearch.value = "";
+      return;
+    }
+    const match = (newTopicState.topics || []).find(
+      (topic) => String(topic.id) === String(value)
+    );
+    if (match) {
+      replySearch.value = getTopicTitle(match) || "";
+    }
+  }
+);
+
+watch(
+  () => replySearch.value,
+  (value) => {
+    const input = String(value || "").trim();
+    if (!input || input === NO_REPLY_LABEL) {
+      newTopicState.parentContentId = null;
+      return;
+    }
+
+    const match = (newTopicState.topics || []).find(
+      (topic) =>
+        String(getTopicTitle(topic) || "").toLowerCase() ===
+        input.toLowerCase()
+    );
+    newTopicState.parentContentId = match ? match.id : null;
   }
 );
 
@@ -274,10 +325,29 @@ watch(
   () => effectiveCategoryId.value,
   (newCat) => {
     newTopicState.parentContentId = null;
+    replySearch.value = "";
     if (newCat) {
       fetchTopics(newCat);
     } else {
       newTopicState.topics = [];
+    }
+  }
+);
+
+watch(
+  () => newTopicState.topics,
+  (topics) => {
+    if (!newTopicState.parentContentId) return;
+    const match = (topics || []).find(
+      (topic) => String(topic.id) === String(newTopicState.parentContentId)
+    );
+    if (!match) {
+      newTopicState.parentContentId = null;
+      replySearch.value = "";
+      return;
+    }
+    if (!replySearch.value) {
+      replySearch.value = getTopicTitle(match) || "";
     }
   }
 );
@@ -315,6 +385,18 @@ const selectSubCategoryFromDropdown = (category) => {
   showSubCategoryDropdown.value = false;
 };
 
+const selectReplyFromDropdown = (topic) => {
+  if (!topic) {
+    replySearch.value = "";
+    newTopicState.parentContentId = null;
+    showReplyDropdown.value = false;
+    return;
+  }
+  replySearch.value = getTopicTitle(topic) || "";
+  newTopicState.parentContentId = topic.id;
+  showReplyDropdown.value = false;
+};
+
 const hideCategoryDropdown = () => {
   setTimeout(() => {
     showCategoryDropdown.value = false;
@@ -324,6 +406,12 @@ const hideCategoryDropdown = () => {
 const hideSubCategoryDropdown = () => {
   setTimeout(() => {
     showSubCategoryDropdown.value = false;
+  }, 150);
+};
+
+const hideReplyDropdown = () => {
+  setTimeout(() => {
+    showReplyDropdown.value = false;
   }, 150);
 };
 
@@ -642,19 +730,68 @@ const resetNewTopicDraft = () => {
                 >
                   <div class="mb-3">
                     <label class="form-label">回覆至(可選)</label>
-                    <select
-                      v-model="newTopicState.parentContentId"
-                      class="form-select"
-                    >
-                      <option :value="null">無(發表新主題)</option>
-                      <option
-                        v-for="topic in newTopicState.topics"
-                        :key="topic.id"
-                        :value="topic.id"
+                    <div class="category-input-wrapper">
+                      <input
+                        v-model="replySearch"
+                        class="form-control category-input"
+                        list="reply-options"
+                        placeholder="輸入或搜尋主題..."
+                        @focus="showReplyDropdown = true"
+                        @blur="hideReplyDropdown"
+                      />
+                      <button
+                        v-if="replySearch"
+                        type="button"
+                        class="category-input-clear"
+                        aria-label="清除回覆輸入"
+                        @mousedown.prevent
+                        @click="replySearch = ''"
                       >
-                        {{ topic.title }}
-                      </option>
-                    </select>
+                        ×
+                      </button>
+                      <span
+                        class="category-input-dropdown"
+                        aria-hidden="true"
+                        @mousedown.prevent="showReplyDropdown = true"
+                      >
+                        ▾
+                      </span>
+                    </div>
+                    <datalist id="reply-options">
+                      <option
+                        v-for="topic in replySuggestions"
+                        :key="topic.id"
+                        :value="getTopicTitle(topic)"
+                      />
+                    </datalist>
+
+                    <div
+                      v-if="showReplyDropdown"
+                      class="category-dropdown border rounded mt-2"
+                    >
+                      <button
+                        type="button"
+                        class="dropdown-item w-100 text-start"
+                        @mousedown.prevent="selectReplyFromDropdown(null)"
+                      >
+                        {{ NO_REPLY_LABEL }}
+                      </button>
+                      <button
+                        v-for="topic in replySuggestions"
+                        :key="topic.id"
+                        type="button"
+                        class="dropdown-item w-100 text-start"
+                        @mousedown.prevent="selectReplyFromDropdown(topic)"
+                      >
+                        {{ getTopicTitle(topic) }}
+                      </button>
+                      <div
+                        v-if="replySuggestions.length === 0"
+                        class="text-muted small px-3 py-2"
+                      >
+                        沒有符合的主題
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
