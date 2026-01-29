@@ -21,9 +21,11 @@ const showSubCategoryDropdown = ref(false);
 const replySearch = ref("");
 const showReplyDropdown = ref(false);
 const isCreatingCategory = ref(false);
+const isCreatingSubCategory = ref(false);
 const showCreateCategoryModal = ref(false);
 const newCategoryName = ref("");
 const newCategoryDescription = ref("");
+const createCategoryParentId = ref(null);
 const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showPublishSuccessModal = ref(false);
@@ -53,6 +55,8 @@ const rootCategories = computed(() => {
   const categories = forumStore.categories || [];
   return categories.filter((cat) => !getParentCategoryIdValue(cat));
 });
+
+const showSubCategoryColumn = computed(() => Boolean(newTopicState.categoryId));
 
 const filteredCategories = computed(() => {
   const keyword = categorySearch.value.trim().toLowerCase();
@@ -431,6 +435,27 @@ const createCategoryFromSearch = async () => {
 
   newCategoryName.value = name;
   newCategoryDescription.value = "";
+  createCategoryParentId.value = null;
+  showCreateCategoryModal.value = true;
+};
+
+const createSubCategoryFromSearch = async () => {
+  const parentId = newTopicState.categoryId;
+  const name = subCategorySearch.value.trim();
+  if (!parentId || !name || isCreatingSubCategory.value) return;
+
+  const existing = childCategories.value.find(
+    (cat) =>
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
+  );
+  if (existing) {
+    selectedSubCategoryId.value = getCategoryIdValue(existing);
+    return;
+  }
+
+  newCategoryName.value = name;
+  newCategoryDescription.value = "";
+  createCategoryParentId.value = parentId;
   showCreateCategoryModal.value = true;
 };
 
@@ -448,13 +473,33 @@ const submitCreateCategory = async () => {
   }
 
   try {
-    isCreatingCategory.value = true;
+    const parentId = createCategoryParentId.value ?? null;
+    if (parentId) {
+      isCreatingSubCategory.value = true;
+    } else {
+      isCreatingCategory.value = true;
+    }
+
     const created = await forumStore.createCategory(
       name,
       description,
-      null
+      parentId
     );
-    if (created?.id) {
+
+    if (parentId) {
+      if (created?.id) {
+        selectedSubCategoryId.value = created.id;
+        subCategorySearch.value = created.name || name;
+      } else {
+        const fallback = childCategories.value.find(
+          (cat) => cat.name === name
+        );
+        if (fallback) {
+          selectedSubCategoryId.value = fallback.id;
+          subCategorySearch.value = fallback.name || name;
+        }
+      }
+    } else if (created?.id) {
       newTopicState.categoryId = created.id;
       categorySearch.value = created.name || name;
     } else {
@@ -466,17 +511,20 @@ const submitCreateCategory = async () => {
         categorySearch.value = fallback.name || name;
       }
     }
+
     showCreateCategoryModal.value = false;
   } catch (error) {
     console.error("新增分類失敗:", error);
     alert("新增分類失敗，請稍後再試");
   } finally {
     isCreatingCategory.value = false;
+    isCreatingSubCategory.value = false;
   }
 };
 
 const closeCreateCategoryModal = () => {
   showCreateCategoryModal.value = false;
+  createCategoryParentId.value = null;
 };
 
 const closeCategoryDescriptionModal = () => {
@@ -584,7 +632,7 @@ const resetNewTopicDraft = () => {
               <div class="row g-3">
                 <div
                   :class="
-                    childCategories.length
+                    showSubCategoryColumn
                       ? 'col-12 col-md-4'
                       : effectiveCategoryId && newTopicState.topics.length
                       ? 'col-12 col-md-6'
@@ -670,7 +718,7 @@ const resetNewTopicDraft = () => {
                     </div>
                   </div>
                 </div>
-                <div v-if="childCategories.length" class="col-12 col-md-4">
+                <div v-if="showSubCategoryColumn" class="col-12 col-md-4">
                   <div class="mb-3">
                     <label class="form-label">子分類</label>
                     <div class="category-input-wrapper">
@@ -729,11 +777,32 @@ const resetNewTopicDraft = () => {
                         沒有符合的子分類
                       </div>
                     </div>
+
+                    <div
+                      class="d-flex justify-content-between align-items-center mt-2"
+                    >
+                      <button
+                        v-if="
+                          childCategories.length === 0 ||
+                          filteredSubCategories.length === 0
+                        "
+                        type="button"
+                        class="btn btn-sm btn-forum-secondary"
+                        :disabled="isCreatingSubCategory || !subCategorySearch"
+                        @click="createSubCategoryFromSearch"
+                      >
+                        {{
+                          isCreatingSubCategory
+                            ? "建立中..."
+                            : "手動新增分類"
+                        }}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div
                   v-if="effectiveCategoryId && newTopicState.topics.length"
-                  :class="childCategories.length ? 'col-12 col-md-4' : 'col-12 col-md-6'"
+                  :class="showSubCategoryColumn ? 'col-12 col-md-4' : 'col-12 col-md-6'"
                 >
                   <div class="mb-3">
                     <label class="form-label">回覆至(可選)</label>
@@ -845,7 +914,9 @@ const resetNewTopicDraft = () => {
             <div
               class="modal-header d-flex justify-content-between align-items-center mb-3"
             >
-              <h5 class="modal-title mb-0">新增分類</h5>
+              <h5 class="modal-title mb-0">
+                {{ createCategoryParentId ? "新增子分類" : "新增分類" }}
+              </h5>
               <button
                 type="button"
                 class="btn-close"
