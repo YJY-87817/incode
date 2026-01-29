@@ -27,77 +27,80 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="loading" class="loading-state">
+  <div v-if="loading" class="d-flex justify-content-center align-items-center py-4 bg-light rounded text-muted">
     <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
       <span class="visually-hidden">載入中...</span>
     </div>
-    <span>載入出貨資料...</span>
+    <span class="small">載入出貨資料...</span>
   </div>
 
-  <div v-else-if="error" class="error-state">
-    <i class="bi bi-exclamation-triangle-fill"></i>
-    <span>{{ error }}</span>
+  <div v-else-if="error" class="alert alert-warning d-flex align-items-center mb-0" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div>{{ error }}</div>
   </div>
 
-  <div v-else-if="shipped.length === 0" class="empty-state">
-    <i class="bi bi-inbox"></i>
-    <span>尚無出貨資料</span>
+  <div v-else-if="shipped.length === 0"
+    class="d-flex flex-column align-items-center justify-content-center py-4 bg-light rounded text-muted border border-dashed">
+    <i class="bi bi-inbox fs-1 mb-2 text-secondary opacity-50"></i>
+    <span class="small">尚無出貨資料</span>
   </div>
 
-  <div v-else class="shipped-cards">
-    <div v-for="ship in shipped" :key="ship.shippedDate" class="shipped-card">
+  <div v-else class="vstack gap-3">
+    <div v-for="ship in shipped" :key="ship.shippedDate" class="card border border-light-subtle shadow-sm h-100">
 
-      <div class="card-body-section">
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="info-label">
-              <i class="bi bi-calendar-event"></i>
-              <span>出貨日期</span>
-            </div>
-            <div class="info-value" :class="{ 'text-muted': !ship.shippedDate }">
-              {{
-                ship.shippedDate
-                  ? new Date(ship.shippedDate).toLocaleDateString("zh-TW")
-                  : "尚未出貨"
-              }}
+      <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <div class="d-flex flex-column">
+              <span class="text-secondary small d-flex align-items-center mb-1">
+                <i class="bi bi-calendar-event me-1 text-primary"></i>
+                出貨日期
+              </span>
+              <span class="fw-medium" :class="ship.shippedDate ? 'text-dark' : 'text-muted fst-italic'">
+                {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleDateString("zh-TW") : "尚未出貨" }}
+              </span>
             </div>
           </div>
 
-          <div class="info-item">
-            <div class="info-label">
-              <i class="bi bi-calendar-check"></i>
-              <span>預計到貨</span>
-            </div>
-            <div class="info-value" :class="{ 'text-muted': !ship.arrivalDate }">
-              {{
-                ship.arrivalDate
-                  ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW")
-                  : "尚未到貨"
-              }}
+          <div class="col-6">
+            <div class="d-flex flex-column">
+              <span class="text-secondary small d-flex align-items-center mb-1">
+                <i class="bi bi-calendar-check me-1 text-primary"></i>
+                預計到貨
+              </span>
+              <span class="fw-medium" :class="ship.arrivalDate ? 'text-dark' : 'text-muted fst-italic'">
+                {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW") : "尚未到貨" }}
+              </span>
             </div>
           </div>
         </div>
 
-        <div class="status-section">
-          <div class="status-label">運送狀態</div>
-          <div class="status-badges">
-            <span v-if="ship.isCompleted" class="status-badge status-completed">
-              <i class="bi bi-check-circle-fill"></i>
-              <span>已完成</span>
+        <div class="border-top pt-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-secondary small fw-medium">運送狀態</span>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <span v-if="ship.isCompleted"
+              class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2 d-flex align-items-center">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              已完成
             </span>
-            <span v-else-if="ship.isFailed" class="status-badge status-failed">
-              <i class="bi bi-x-circle-fill"></i>
-              <span>失敗</span>
+            <span v-else-if="ship.isFailed"
+              class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-flex align-items-center">
+              <i class="bi bi-x-circle-fill me-1"></i>
+              失敗
             </span>
-            <span v-else class="status-badge status-shipping">
-              <i class="bi bi-truck"></i>
-              <span>運送中</span>
+            <span v-else
+              class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 d-flex align-items-center">
+              <i class="bi bi-truck me-1"></i>
+              運送中
             </span>
           </div>
         </div>
 
-        <div v-if="ship.remark" class="remark-section">
-          <i class="bi bi-info-circle-fill"></i>
+        <div v-if="ship.remark"
+          class="mt-3 p-3 bg-light-subtle rounded border border-light d-flex align-items-start small text-secondary">
+          <i class="bi bi-info-circle-fill me-2 text-info mt-1"></i>
           <span>{{ ship.remark }}</span>
         </div>
       </div>
@@ -106,284 +109,17 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.shipped-detail-wrapper {
-  width: 100%;
+.border-dashed {
+  border-style: dashed !important;
 }
 
-.toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
-  color: #495057;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Card hover effect */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.toggle-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-  color: #212529;
-}
-
-.toggle-btn.active {
-  background: #e7f3ff;
-  border-color: #0d6efd;
-  color: #0d6efd;
-}
-
-.toggle-btn i {
-  font-size: 0.85rem;
-  transition: transform 0.2s ease;
-}
-
-.toggle-btn.active i {
-  transform: rotate(180deg);
-}
-
-.shipped-content {
-  margin-top: 1rem;
-  animation: fadeIn 0.3s ease-in;
-}
-
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1.5rem;
-  background: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.error-state {
-  background: #fff3cd;
-  border-color: #ffc107;
-  color: #856404;
-}
-
-.error-state i {
-  color: #ffc107;
-  font-size: 1.1rem;
-}
-
-.empty-state {
-  background: #f8f9fa;
-  color: #adb5bd;
-}
-
-.empty-state i {
-  font-size: 1.5rem;
-}
-
-.shipped-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.shipped-card {
-  background: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.shipped-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.card:hover {
   transform: translateY(-2px);
-  border-color: #0d6efd;
-}
-
-.card-header-section {
-  padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border-bottom: 1px solid #e9ecef;
-}
-
-.product-name-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.4rem 0.75rem;
-  background: #e7f3ff;
-  border-radius: 0.5rem;
-  color: #0d6efd;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.product-name-badge i {
-  font-size: 0.9rem;
-}
-
-.card-body-section {
-  padding: 1.25rem;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.info-label i {
-  color: #0d6efd;
-  font-size: 0.9rem;
-}
-
-.info-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #212529;
-}
-
-.status-section {
-  padding-top: 1.25rem;
-  border-top: 1px solid #f1f3f5;
-}
-
-.status-label {
-  font-size: 0.8rem;
-  color: #6c757d;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
-
-.status-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.status-badge i {
-  font-size: 0.9rem;
-}
-
-.status-completed {
-  background: #d1e7dd;
-  color: #0f5132;
-}
-
-.status-completed i {
-  color: #198754;
-}
-
-.status-failed {
-  background: #f8d7da;
-  color: #842029;
-}
-
-.status-failed i {
-  color: #dc3545;
-}
-
-.status-shipping {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-shipping i {
-  color: #ffc107;
-}
-
-.remark-section {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  color: #495057;
-  line-height: 1.5;
-}
-
-.remark-section i {
-  color: #0d6efd;
-  margin-top: 0.15rem;
-  flex-shrink: 0;
-}
-
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
-}
-
-.slide-fade-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.slide-fade-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .card-body-section {
-    padding: 1rem;
-  }
-
-  .card-header-section {
-    padding: 0.875rem 1rem;
-  }
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
 }
 </style>

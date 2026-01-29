@@ -18,124 +18,81 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-header p-4 " style=" background-color: #86B0BD;">
-      <h5 class=" fw-bold mb-1">
-        <i class="bi bi-bag-check me-2"></i>訂單查詢
-      </h5>
-    </div>
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="card shadow-lg border-0 rounded-4">
 
-    <div v-if="loading" class="loading-container">
-      <div class="spinner-wrapper">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">載入中...</span>
+        <!-- Card Header with Gradient -->
+        <div class="card-header p-4"
+          style="background: linear-gradient(87deg, #86B0BD 0%, #6da1b3 100%); border-radius: 1rem 1rem 0 0;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-white">
+              <h5 class="mb-0 text-white font-weight-bold d-flex align-items-center">
+                <i class="bi bi-bag-check-fill me-2 fs-5"></i>
+                訂單查詢
+              </h5>
+              <small class="opacity-75 ms-1">查看您的歷史購物記錄</small>
+            </div>
+            <div v-if="!loading && orders.length > 0">
+              <span class="badge bg-white text-dark rounded-pill px-3 py-2 shadow-sm d-flex align-items-center">
+                <i class="bi bi-receipt me-1"></i> 共 {{ orders.length }} 筆
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-      <h5 class="loading-text">正在取得您的訂單資訊...</h5>
-    </div>
 
-    <div v-else-if="orders.length === 0" class="empty-container">
-      <div class="empty-icon">
-        <i class="bi bi-inbox"></i>
-      </div>
-      <h4 class="empty-title">目前沒有任何訂單</h4>
-      <p class="empty-description">開始購物來累積您的訂單吧！</p>
-      <RouterLink :to="{ name: 'PointShop' }">
-        <button class="btn btn-lg empty-action" style="background-color: #145369; color: white;">
-          <i class="bi bi-cart-plus me-2"></i>前往購物
-        </button>
-      </RouterLink>
-    </div>
+        <div class="card-body p-4 bg-light-subtle rounded-bottom-4">
 
-    <div v-else class="orders-wrapper">
-      <div class="order-stats m-4 text-end">
-        <span class="stat-badge">
-          共 {{ orders.length }} 筆訂單
-        </span>
-      </div>
+          <!-- Loading State -->
+          <div v-if="loading" class="text-center py-5">
+            <div class="spinner-border text-info mb-3" style="width: 3rem; height: 3rem;" role="status">
+              <span class="visually-hidden">載入中...</span>
+            </div>
+            <h5 class="text-secondary fw-normal">正在取得您的訂單資訊...</h5>
+          </div>
 
+          <!-- Empty State -->
+          <div v-else-if="orders.length === 0" class="text-center py-5">
+            <div class="mb-4">
+              <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-inner"
+                style="width: 100px; height: 100px;">
+                <i class="bi bi-cart-x text-secondary" style="font-size: 3rem;"></i>
+              </div>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">目前沒有任何訂單</h4>
+            <p class="text-muted mb-4">您還沒有兌換任何商品，快去商店逛逛吧！</p>
+            <RouterLink :to="{ name: 'PointShop' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
+              <i class="bi bi-cart-plus me-2"></i>前往購物
+            </RouterLink>
+          </div>
 
-      <div class="accordion" id="orderAccordion">
-        <OrderItem v-for="order in orders" :key="order.orderId" :order="order" />
+          <!-- Orders List -->
+          <div v-else class="orders-wrapper">
+            <div class="accordion d-flex flex-column gap-3" id="orderAccordion">
+              <OrderItem v-for="order in orders" :key="order.orderId" :order="order" />
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.order-subtitle {
-  color: #6c757d;
-  font-size: 1rem;
-  margin: 0;
-}
-
-.loading-container {
-  text-align: center;
-  padding: 4rem 2rem;
-}
-
-.spinner-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-}
-
-.spinner-wrapper .spinner-border {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-width: 0.3rem;
-}
-
-.loading-text {
-  color: #6c757d;
-  font-weight: 500;
-  font-size: 1.1rem;
-}
-
-.empty-container {
-  text-align: center;
-  padding: 4rem 2rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border-radius: 1rem;
-  border: 2px dashed #dee2e6;
-}
-
-.empty-icon {
-  font-size: 5rem;
-  color: #adb5bd;
-  margin-bottom: 1.5rem;
-}
-
-.empty-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 0.5rem;
-}
-
-.empty-description {
-  color: #6c757d;
-  font-size: 1rem;
-  margin-bottom: 2rem;
-}
-
-.empty-action {
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+/* Custom animations & refinements */
+.card {
   transition: all 0.3s ease;
 }
 
-.empty-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(13, 110, 253, 0.3);
+/* Empty state styling enhancement */
+.shadow-inner {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 }
 
 .orders-wrapper {
-  animation: fadeIn 0.5s ease-in;
+  animation: fadeIn 0.5s ease-in-out;
 }
-
 
 @keyframes fadeIn {
   from {
@@ -149,7 +106,14 @@ onMounted(async () => {
   }
 }
 
-.order-subtitle {
-  font-size: 0.9rem;
+/* Ensure accordion items (OrderItem) have spacing */
+.accordion {
+  padding: 0.5rem 0;
+}
+
+/* Loading spinner size adjustment if needed override */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
 }
 </style>
