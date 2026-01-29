@@ -10,7 +10,7 @@ import { onMounted, onUnmounted, watch } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
 import NewTopicForm from "@/components/Contents/Forum/NewTopicForm.vue";
-import TopicListView from "@/components/Contents/Forum/TopicListView_new.vue";
+import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
 
 const forumStore = useForumStore();
 
