@@ -3,7 +3,9 @@
   import { useRouter } from "vue-router";
   import axios from "axios";
   import { useAuthStore } from "@/stores/user/auth";
+  import { useAlertStore } from "@/stores/alert";
 
+  const alertStore = useAlertStore();
   const router = useRouter();
   const authStore = useAuthStore();
 
@@ -47,6 +49,17 @@
   const handleFileChange = (files) => {
     if (files && files.length > 0) {
       const file = files[0]; // Vuetify 3 的 file-input 回傳的是陣列
+      if (file.size > 2 * 1024 * 1024) {
+        alertStore.open({
+          type: 'warning',
+          title: '檔案過大',
+          text: '請選擇小於 2MB 的圖片'
+        });
+        // 清空選擇
+        selectedFile.value = null;
+        previewUrl.value = null;
+        return;
+      }
       selectedFile.value = file;
       // 建立預覽網址
       previewUrl.value = URL.createObjectURL(file);
@@ -59,12 +72,13 @@
 
   // 模擬上傳圖片 (或是您的實際邏輯)
   const uploadImage = async () => {
-    if (!selectedFile.value) return;
+    if (!selectedFile.value) alertStore.open({ type: 'info', text: '請先選擇一張圖片' });
+    return;
     isUploading.value = true;
     // 這裡放入您的上傳 API 邏輯
     setTimeout(() => {
       isUploading.value = false;
-      alert("圖片已選擇 (需串接API)");
+      alertStore.showSuccess("圖片上傳成功！");
     }, 1000);
   };
 
@@ -79,8 +93,9 @@
         showWelcomeDialog.value = true;
       }
     } catch (error) {
-      console.error("註冊失敗", error);
-      alert("註冊發生錯誤");
+      //console.error("註冊失敗", error);
+      const errorMsg = error.response?.data?.message || "註冊發生錯誤，請稍後再試";
+      alertStore.showError(errorMsg);
     }
   };
 </script>
@@ -195,9 +210,15 @@
     </v-row>
     <v-dialog v-model="showWelcomeDialog" max-width="500" persistent>
       <v-card rounded="xl" class="text-center pa-6">
-        <v-icon size="60" color="success" class="mb-4">mdi-check-circle</v-icon>
-        <h2 class="text-h5 font-weight-bold mb-2">歡迎加入 Incode!</h2>
-        <p class="text-body-2 text-grey mb-6">
+        <div class="d-flex align-center justify-center mb-2">
+          <v-icon size="60" color="success" class="ml-4">
+            mdi-check-circle
+          </v-icon>
+          <h2 class="text-h5 font-weight-bold">
+            歡迎加入 Incode!
+          </h2>
+        </div>
+        <p class="text-body-2 text-grey mb-4">
           您的帳號已建立成功，現在您可以開始探索論壇或執行任務了。
         </p>
 
@@ -205,8 +226,6 @@
           <div class="btn-grid-container">
             <v-btn class="custom-hover-btn" rounded="lg" block to="/">前往首頁</v-btn>
             <v-btn class="custom-hover-btn" rounded="lg" block to="/userindex">前往會員中心</v-btn>
-            <v-btn class="custom-hover-btn" rounded="lg" block to="/forum">前往討論區</v-btn>
-            <v-btn class="custom-hover-btn" rounded="lg" block to="/mytask">前往任務區</v-btn>
           </div>
         </div>
       </v-card>

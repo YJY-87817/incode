@@ -2,7 +2,9 @@
   import { ref } from "vue";
   import { useRouter } from "vue-router";
   import { useAuthStore } from "@/stores/user/auth";
+  import { useAlertStore } from "@/stores/alert";
 
+  const alertStore = useAlertStore();
   const router = useRouter();
   const authStore = useAuthStore();
   const isLoading = ref(false);
@@ -31,19 +33,22 @@
         password: password.value,
         rememberMe: rememberMe.value,
       };
-      console.log("正在嘗試登入...", loginData);
+      //console.log("正在嘗試登入...", loginData);
       const success = await authStore.login(loginData);
       if (success) {
-        console.log("準備跳轉頁面...");
+        alertStore.showSuccess("登入成功，歡迎回來！");
+        //console.log("準備跳轉頁面...");
         await router.push("/userindex");
       }
     } catch (error) {
-      console.error("登入失敗:", error);
+      //console.error("登入失敗:", error);
+      let msg = "";
       if (error.response && error.response.data) {
-        errorMessage.value = error.response.data.message || "帳號或密碼錯誤";
+        msg = error.response.data.message || "帳號或密碼錯誤";
       } else {
-        errorMessage.value = "伺服器無回應，請稍後再試";
+        msg = "伺服器無回應，請稍後再試";
       }
+      alertStore.showError(msg);
     } finally {
       isLoading.value = false;
     }
