@@ -79,10 +79,8 @@ watch(
         <CategoryFilter />
         <!-- 搜尋欄 -->
         <ForumSearchBar />
-
         <!-- 新主題改為使用彈出視窗 -->
         <NewTopicModal />
-
         <TopicListView />
       </div>
 
