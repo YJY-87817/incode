@@ -5,6 +5,8 @@ import Underline from "@tiptap/extension-underline";
 import ImageExtension from "@tiptap/extension-image";
 import YouTube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Extension } from "@tiptap/core";
+import { NodeSelection, TextSelection } from "prosemirror-state";
 import { ref, watch, nextTick, onBeforeUnmount } from "vue";
 import { uploadImage } from "@/api/imageapi.js";
 import Cropper from "cropperjs";
@@ -28,6 +30,35 @@ const cropImageEl = ref(null);
 const selectedImageNode = ref(null);
 const selectedImagePos = ref(null);
 
+const PreserveImageOnShiftEnter = Extension.create({
+  name: "preserveImageOnShiftEnter",
+  addKeyboardShortcuts() {
+    return {
+      "Shift-Enter": () => {
+        const { state, dispatch } = this.editor.view;
+        const { selection } = state;
+
+        if (
+          selection instanceof NodeSelection &&
+          selection.node?.type?.name === "image"
+        ) {
+          const paragraph = state.schema.nodes.paragraph;
+          if (!paragraph) return false;
+
+          const insertPos = selection.to;
+          const tr = state.tr.insert(insertPos, paragraph.create());
+          tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+          dispatch(tr);
+          this.editor.view.focus();
+          return true;
+        }
+
+        return false;
+      },
+    };
+  },
+});
+
 const editor = useEditor({
   content: props.modelValue || "",
   extensions: [
@@ -37,6 +68,7 @@ const editor = useEditor({
       codeBlock: false,
       horizontalRule: false,
     }),
+    PreserveImageOnShiftEnter,
     Underline,
     ImageExtension.configure({
       allowBase64: true,
