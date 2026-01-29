@@ -1,25 +1,6 @@
-<!-- 
-  forum.vue - 論壇主頁面
-  
-  職責：
-  - 協調各個子組件 (Header, Filter, Form, List)
-  - 管理全局論壇狀態 (分類、主題、分頁、詳情頁)
-  - 處理API調用和資料更新
-  - 監聽Pinia store變化並刷新列表
-  
-  子組件結構：
-  - ForumHeader: 標題和統計
-  - CategoryFilter: 分類篩選區
-  - NewTopicForm: 新主題表單
-  - TopicListView: 主題列表+詳情視圖
-  - ThreadPost: 回覆內容組件
-  
-  功能模組：
-  - forumUtils: 日期格式化、URL處理、內容解析等通用函數
--->
-
 <script setup>
 import { onMounted, onUnmounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import { useForumStore } from "@/stores/forumStore";
 
 // 組件導入
@@ -31,6 +12,13 @@ import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
+const route = useRoute();
+
+const resolveThreadId = (rawId) => {
+  if (rawId === undefined || rawId === null || rawId === "") return null;
+  const numericId = Number(rawId);
+  return Number.isNaN(numericId) ? rawId : numericId;
+};
 
 /**
  * 同步視窗寬度到 store (供子組件使用)
@@ -45,8 +33,6 @@ const updateWindowWidth = () => {
 onMounted(() => {
   updateWindowWidth();
   window.addEventListener("resize", updateWindowWidth);
-  // 每次進入論壇頁面時，關閉任何已開啟的帖文，回到總覽
-  forumStore.closeThread();
   forumStore.fetchCategories();
   forumStore.fetchTopics();
 });
@@ -63,6 +49,19 @@ watch(
   () => {
     forumStore.fetchTopics();
   }
+);
+
+watch(
+  () => route.params.id,
+  (threadId) => {
+    const resolvedId = resolveThreadId(threadId);
+    if (resolvedId) {
+      forumStore.openThread(resolvedId);
+    } else {
+      forumStore.closeThread();
+    }
+  },
+  { immediate: true }
 );
 </script>
 

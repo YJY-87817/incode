@@ -181,6 +181,12 @@ const router = createRouter({
       name: "forum",
       component: () => import("@/views/Contents/forum.vue"),
     },
+    // 單一content的路由
+    {
+      path: "/forum/:id",
+      name: "forum-thread",
+      component: () => import("@/views/Contents/forum.vue"),
+    },
     {
       path: "/test",
       name: "test",

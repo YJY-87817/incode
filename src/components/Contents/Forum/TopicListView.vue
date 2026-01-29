@@ -7,6 +7,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -16,6 +17,16 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { appendUrls, formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
+const router = useRouter();
+
+const goToThread = (threadId) => {
+  if (!threadId) return;
+  router.push({ name: "forum-thread", params: { id: threadId } });
+};
+
+const goToList = () => {
+  router.push({ name: "forum" });
+};
 
 const threadHasInlineImages = computed(() => {
   const html = forumStore.threadDetail?.contentHtml || "";
@@ -186,7 +197,7 @@ const submitQuickReply = async () => {
         <div class="p-3 border-bottom">
           <button
             class="btn btn-sm btn-forum-secondary"
-            @click="forumStore.closeThread()"
+            @click="goToList"
           >
             <i class="fas fa-arrow-left me-2"></i>
             返回列表
@@ -447,7 +458,7 @@ const submitQuickReply = async () => {
                 v-for="topic in forumStore.topics"
                 :key="topic.id"
                 class="forum-row"
-                @click="forumStore.openThread(topic.id)"
+                @click="goToThread(topic.id)"
               >
                 <!-- 主題欄 -->
                 <td class="p-3 py-md-3">
