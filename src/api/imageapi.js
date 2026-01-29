@@ -1,14 +1,5 @@
 import apiClient from '@/api/request'
-
-// 取得不含 /api 的基底網址，方便把後端回傳的相對路徑轉為完整網址
-const apiBaseUrl = (apiClient.defaults?.baseURL || '').replace(/\/api$/, '')
-
-const toAbsoluteUrl = (url) => {
-  if (!url) return ''
-  if (/^https?:\/\//i.test(url)) return url
-  if (url.startsWith('/')) return `${apiBaseUrl}${url}`
-  return `${apiBaseUrl}/${url}`
-}
+import { toAbsoluteUrl } from '@/utils/contentBody.js'
 
 const normalizeResponseUrls = (response) => {
   if (!response) return []
@@ -19,7 +10,7 @@ const normalizeResponseUrls = (response) => {
   // 3. { data: { urls: [...] } }
   // 4. { data: [...] }
   let urls = []
-  
+
   if (Array.isArray(response)) {
     urls = response
   } else if (response.urls && Array.isArray(response.urls)) {
@@ -64,7 +55,7 @@ export const uploadImage = async (files) => {
     console.log('圖片上傳回應:', response)
     const normalizedUrls = normalizeResponseUrls(response)
     console.log('正規化後的 URLs:', normalizedUrls)
-    
+
     if (normalizedUrls.length === 0) {
       throw new Error('後端未回傳圖片網址，回應:', JSON.stringify(response))
     }
@@ -98,8 +89,8 @@ export const deleteImage = async (fileNameOrUrl) => {
 
   try {
     // 如果是完整 URL，只取檔名部分
-    const fileName = typeof fileNameOrUrl === 'string' 
-      ? fileNameOrUrl.split('/').pop() 
+    const fileName = typeof fileNameOrUrl === 'string'
+      ? fileNameOrUrl.split('/').pop()
       : fileNameOrUrl
 
     await apiClient.delete('/image', {

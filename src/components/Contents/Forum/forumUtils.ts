@@ -28,12 +28,12 @@ import { toAbsoluteUrl } from '@/utils/contentBody.js';
  */
 export const parseBodyContent = (body: string): { textContent: string; imageUrls: string[] } => {
   const raw = body || '';
-  
+
   // 正則：完整的 http/https 圖片 URL
   // 支援的格式：.png, .jpe?g, .gif, .webp, .bmp
   const imagePattern = /https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
   const matches = raw.match(imagePattern) || [];
-  
+
   // 去重：保留唯一的圖片URL
   const uniqueImages = Array.from(new Set(matches));
   const imageUrls = uniqueImages
@@ -46,7 +46,7 @@ export const parseBodyContent = (body: string): { textContent: string; imageUrls
     .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, '')
     .replace(/\n{2,}/g, '\n')
     .trim();
-  
+
   // 若無文字但有圖片，顯示提示
   const displayText = textContent || (imageUrls.length ? '(已附圖片)' : '');
 
