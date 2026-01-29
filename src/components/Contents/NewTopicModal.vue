@@ -489,7 +489,13 @@ const resetNewTopicDraft = () => {
             </div>
             <div class="modal-body">
               <div class="row g-3">
-                <div :class="childCategories.length ? 'col-12 col-md-6' : 'col-12'">
+                <div
+                  :class="
+                    childCategories.length
+                      ? 'col-12 col-md-4'
+                      : 'col-12 col-md-6'
+                  "
+                >
                   <div class="mb-3">
                     <label class="form-label">分類</label>
                     <div class="category-input-wrapper">
@@ -568,7 +574,7 @@ const resetNewTopicDraft = () => {
                     </div>
                   </div>
                 </div>
-                <div v-if="childCategories.length" class="col-12 col-md-6">
+                <div v-if="childCategories.length" class="col-12 col-md-4">
                   <div class="mb-3">
                     <label class="form-label">子分類</label>
                     <div class="category-input-wrapper">
@@ -628,23 +634,31 @@ const resetNewTopicDraft = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">回覆至（可選）</label>
-                <select
-                  v-model="newTopicState.parentContentId"
-                  class="form-select"
-                  :disabled="!effectiveCategoryId"
+                <div
+                  v-if="effectiveCategoryId && newTopicState.topics.length"
+                  :class="
+                    childCategories.length
+                      ? 'col-12 col-md-4'
+                      : 'col-12 col-md-6'
+                  "
                 >
-                  <option :value="null">無（發表新主題）</option>
-                  <option
-                    v-for="topic in newTopicState.topics"
-                    :key="topic.id"
-                    :value="topic.id"
-                  >
-                    {{ topic.title }}
-                  </option>
-                </select>
+                  <div class="mb-3">
+                    <label class="form-label">回覆至（可選）</label>
+                    <select
+                      v-model="newTopicState.parentContentId"
+                      class="form-select"
+                    >
+                      <option :value="null">無（發表新主題）</option>
+                      <option
+                        v-for="topic in newTopicState.topics"
+                        :key="topic.id"
+                        :value="topic.id"
+                      >
+                        {{ topic.title }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div class="mb-3">
                 <label class="form-label">標題</label>
