@@ -16,6 +16,8 @@ const newTopicState = reactive({
 
 const categorySearch = ref(forumStore.newTopic.categorySearch || "");
 const showCategoryDropdown = ref(false);
+const subCategorySearch = ref("");
+const showSubCategoryDropdown = ref(false);
 const isCreatingCategory = ref(false);
 const showCreateCategoryModal = ref(false);
 const newCategoryName = ref("");
@@ -70,6 +72,23 @@ const childCategories = computed(() => {
   return (forumStore.categories || []).filter(
     (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
   );
+});
+
+const filteredSubCategories = computed(() => {
+  const keyword = subCategorySearch.value.trim().toLowerCase();
+  const categories = childCategories.value;
+  if (!keyword) return categories;
+  return categories.filter((cat) =>
+    String(getCategoryName(cat) || "").toLowerCase().includes(keyword)
+  );
+});
+
+const subCategorySuggestions = computed(() => {
+  const input = subCategorySearch.value.trim();
+  if (!input) {
+    return childCategories.value.slice(0, 12);
+  }
+  return filteredSubCategories.value.slice(0, 12);
 });
 
 const effectiveCategoryId = computed(
@@ -169,6 +188,7 @@ watch(
   () => newTopicState.categoryId,
   (value) => {
     selectedSubCategoryId.value = null;
+    subCategorySearch.value = "";
   }
 );
 
@@ -216,6 +236,41 @@ watch(
 );
 
 watch(
+  () => selectedSubCategoryId.value,
+  (value) => {
+    if (!value) {
+      subCategorySearch.value = "";
+      return;
+    }
+    const match = childCategories.value.find(
+      (cat) =>
+        toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value)
+    );
+    if (match) {
+      subCategorySearch.value = getCategoryName(match) || "";
+    }
+  }
+);
+
+watch(
+  () => subCategorySearch.value,
+  (value) => {
+    const input = String(value || "").trim();
+    if (!input) {
+      selectedSubCategoryId.value = null;
+      return;
+    }
+
+    const match = childCategories.value.find(
+      (cat) =>
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase()
+    );
+    selectedSubCategoryId.value = match ? getCategoryIdValue(match) : null;
+  }
+);
+
+watch(
   () => effectiveCategoryId.value,
   (newCat) => {
     newTopicState.parentContentId = null;
@@ -253,9 +308,22 @@ const selectCategoryFromDropdown = (category) => {
   showCategoryDropdown.value = false;
 };
 
+const selectSubCategoryFromDropdown = (category) => {
+  if (!category) return;
+  subCategorySearch.value = getCategoryName(category) || "";
+  selectedSubCategoryId.value = getCategoryIdValue(category);
+  showSubCategoryDropdown.value = false;
+};
+
 const hideCategoryDropdown = () => {
   setTimeout(() => {
     showCategoryDropdown.value = false;
+  }, 150);
+};
+
+const hideSubCategoryDropdown = () => {
+  setTimeout(() => {
+    showSubCategoryDropdown.value = false;
   }, 150);
 };
 
@@ -509,16 +577,73 @@ const resetNewTopicDraft = () => {
               </div>
               <div v-if="childCategories.length" class="mb-3">
                 <label class="form-label">子分類</label>
-                <select v-model="selectedSubCategoryId" class="form-select">
-                  <option :value="null">請選擇子分類（可選）</option>
+                <div class="category-input-wrapper">
+                  <input
+                    v-model="subCategorySearch"
+                    class="form-control category-input"
+                    list="subcategory-options"
+                    placeholder="輸入或搜尋子分類..."
+                    @focus="showSubCategoryDropdown = true"
+                    @blur="hideSubCategoryDropdown"
+                  />
+                  <button
+                    v-if="subCategorySearch"
+                    type="button"
+                    class="category-input-clear"
+                    aria-label="清除子分類輸入"
+                    @mousedown.prevent
+                    @click="subCategorySearch = ''"
+                  >
+                    ×
+                  </button>
+                  <span
+                    class="category-input-dropdown"
+                    aria-hidden="true"
+                    @mousedown.prevent="showSubCategoryDropdown = true"
+                  >
+                    ▾
+                  </span>
+                </div>
+                <datalist id="subcategory-options">
                   <option
-                    v-for="child in childCategories"
+                    v-for="child in subCategorySuggestions"
                     :key="getCategoryIdValue(child)"
-                    :value="getCategoryIdValue(child)"
+                    :value="getCategoryName(child)"
+                  />
+                </datalist>
+
+                <div
+                  v-if="showSubCategoryDropdown"
+                  class="category-dropdown border rounded mt-2"
+                >
+                  <button
+                    v-for="child in subCategorySuggestions"
+                    :key="getCategoryIdValue(child)"
+                    type="button"
+                    class="dropdown-item w-100 text-start"
+                    @mousedown.prevent="selectSubCategoryFromDropdown(child)"
                   >
                     {{ getCategoryName(child) }}
-                  </option>
-                </select>
+                  </button>
+                  <div
+                    v-if="subCategorySuggestions.length === 0"
+                    class="text-muted small px-3 py-2"
+                  >
+                    沒有符合的子分類
+                  </div>
+                </div>
+
+                <div
+                  class="d-flex justify-content-between align-items-center mt-2"
+                >
+                  <small class="text-muted">
+                    {{
+                      subCategorySearch.trim()
+                        ? `找到 ${filteredSubCategories.length} 個子分類`
+                        : `共 ${childCategories.length} 個子分類`
+                    }}
+                  </small>
+                </div>
                 <small class="text-muted d-block mt-1">
                   若該分類有子分類，建議再選擇更精確的分類
                 </small>
