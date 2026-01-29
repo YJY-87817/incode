@@ -488,138 +488,144 @@ const resetNewTopicDraft = () => {
               ></button>
             </div>
             <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">分類</label>
-                <div class="category-input-wrapper">
-                  <input
-                    v-model="categorySearch"
-                    class="form-control category-input"
-                    list="category-options"
-                    placeholder="輸入或搜尋分類..."
-                    @focus="showCategoryDropdown = true"
-                    @blur="hideCategoryDropdown"
-                    @keyup.enter.prevent="
-                      categorySuggestions.length === 0
-                        ? createCategoryFromSearch()
-                        : null
-                    "
-                  />
-                  <button
-                    v-if="categorySearch"
-                    type="button"
-                    class="category-input-clear"
-                    aria-label="清除分類輸入"
-                    @mousedown.prevent
-                    @click="categorySearch = ''"
-                  >
-                    ×
-                  </button>
-                  <span
-                    class="category-input-dropdown"
-                    aria-hidden="true"
-                    @mousedown.prevent="showCategoryDropdown = true"
-                  >
-                    ▾
-                  </span>
-                </div>
-                <datalist id="category-options">
-                  <option
-                    v-for="cat in categorySuggestions"
-                    :key="getCategoryIdValue(cat)"
-                    :value="getCategoryName(cat)"
-                  />
-                </datalist>
+              <div class="row g-3">
+                <div :class="childCategories.length ? 'col-12 col-md-6' : 'col-12'">
+                  <div class="mb-3">
+                    <label class="form-label">分類</label>
+                    <div class="category-input-wrapper">
+                      <input
+                        v-model="categorySearch"
+                        class="form-control category-input"
+                        list="category-options"
+                        placeholder="輸入或搜尋分類..."
+                        @focus="showCategoryDropdown = true"
+                        @blur="hideCategoryDropdown"
+                        @keyup.enter.prevent="
+                          categorySuggestions.length === 0
+                            ? createCategoryFromSearch()
+                            : null
+                        "
+                      />
+                      <button
+                        v-if="categorySearch"
+                        type="button"
+                        class="category-input-clear"
+                        aria-label="清除分類輸入"
+                        @mousedown.prevent
+                        @click="categorySearch = ''"
+                      >
+                        ×
+                      </button>
+                      <span
+                        class="category-input-dropdown"
+                        aria-hidden="true"
+                        @mousedown.prevent="showCategoryDropdown = true"
+                      >
+                        ▾
+                      </span>
+                    </div>
+                    <datalist id="category-options">
+                      <option
+                        v-for="cat in categorySuggestions"
+                        :key="getCategoryIdValue(cat)"
+                        :value="getCategoryName(cat)"
+                      />
+                    </datalist>
 
-                <div
-                  v-if="showCategoryDropdown"
-                  class="category-dropdown border rounded mt-2"
-                >
-                  <button
-                    v-for="cat in categorySuggestions"
-                    :key="getCategoryIdValue(cat)"
-                    type="button"
-                    class="dropdown-item w-100 text-start"
-                    @mousedown.prevent="selectCategoryFromDropdown(cat)"
-                  >
-                    {{ getCategoryName(cat) }}
-                  </button>
-                  <div
-                    v-if="categorySuggestions.length === 0"
-                    class="text-muted small px-3 py-2"
-                  >
-                    沒有符合的分類
+                    <div
+                      v-if="showCategoryDropdown"
+                      class="category-dropdown border rounded mt-2"
+                    >
+                      <button
+                        v-for="cat in categorySuggestions"
+                        :key="getCategoryIdValue(cat)"
+                        type="button"
+                        class="dropdown-item w-100 text-start"
+                        @mousedown.prevent="selectCategoryFromDropdown(cat)"
+                      >
+                        {{ getCategoryName(cat) }}
+                      </button>
+                      <div
+                        v-if="categorySuggestions.length === 0"
+                        class="text-muted small px-3 py-2"
+                      >
+                        沒有符合的分類
+                      </div>
+                    </div>
+
+                    <div
+                      class="d-flex justify-content-between align-items-center mt-2"
+                    >
+                      <button
+                        v-if="categorySearch && filteredCategories.length === 0"
+                        type="button"
+                        class="btn btn-sm btn-forum-secondary"
+                        :disabled="isCreatingCategory"
+                        @click="createCategoryFromSearch"
+                      >
+                        {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
+                      </button>
+                    </div>
                   </div>
                 </div>
+                <div v-if="childCategories.length" class="col-12 col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">子分類</label>
+                    <div class="category-input-wrapper">
+                      <input
+                        v-model="subCategorySearch"
+                        class="form-control category-input"
+                        list="subcategory-options"
+                        placeholder="輸入或搜尋子分類..."
+                        @focus="showSubCategoryDropdown = true"
+                        @blur="hideSubCategoryDropdown"
+                      />
+                      <button
+                        v-if="subCategorySearch"
+                        type="button"
+                        class="category-input-clear"
+                        aria-label="清除子分類輸入"
+                        @mousedown.prevent
+                        @click="subCategorySearch = ''"
+                      >
+                        ×
+                      </button>
+                      <span
+                        class="category-input-dropdown"
+                        aria-hidden="true"
+                        @mousedown.prevent="showSubCategoryDropdown = true"
+                      >
+                        ▾
+                      </span>
+                    </div>
+                    <datalist id="subcategory-options">
+                      <option
+                        v-for="child in subCategorySuggestions"
+                        :key="getCategoryIdValue(child)"
+                        :value="getCategoryName(child)"
+                      />
+                    </datalist>
 
-                <div
-                  class="d-flex justify-content-between align-items-center mt-2"
-                >
-                  <button
-                    v-if="categorySearch && filteredCategories.length === 0"
-                    type="button"
-                    class="btn btn-sm btn-forum-secondary"
-                    :disabled="isCreatingCategory"
-                    @click="createCategoryFromSearch"
-                  >
-                    {{ isCreatingCategory ? "建立中..." : "手動新增分類" }}
-                  </button>
-                </div>
-              </div>
-              <div v-if="childCategories.length" class="mb-3">
-                <label class="form-label">子分類</label>
-                <div class="category-input-wrapper">
-                  <input
-                    v-model="subCategorySearch"
-                    class="form-control category-input"
-                    list="subcategory-options"
-                    placeholder="輸入或搜尋子分類..."
-                    @focus="showSubCategoryDropdown = true"
-                    @blur="hideSubCategoryDropdown"
-                  />
-                  <button
-                    v-if="subCategorySearch"
-                    type="button"
-                    class="category-input-clear"
-                    aria-label="清除子分類輸入"
-                    @mousedown.prevent
-                    @click="subCategorySearch = ''"
-                  >
-                    ×
-                  </button>
-                  <span
-                    class="category-input-dropdown"
-                    aria-hidden="true"
-                    @mousedown.prevent="showSubCategoryDropdown = true"
-                  >
-                    ▾
-                  </span>
-                </div>
-                <datalist id="subcategory-options">
-                  <option
-                    v-for="child in subCategorySuggestions"
-                    :key="getCategoryIdValue(child)"
-                    :value="getCategoryName(child)"
-                  />
-                </datalist>
-
-                <div
-                  v-if="showSubCategoryDropdown"
-                  class="category-dropdown border rounded mt-2"
-                >
-                  <button
-                    v-for="child in subCategorySuggestions"
-                    :key="getCategoryIdValue(child)"
-                    type="button"
-                    class="dropdown-item w-100 text-start"
-                    @mousedown.prevent="selectSubCategoryFromDropdown(child)"
-                  >
-                    {{ getCategoryName(child) }}
-                  </button>
-                  <div
-                    v-if="subCategorySuggestions.length === 0"
-                    class="text-muted small px-3 py-2"
-                  >
-                    沒有符合的子分類
+                    <div
+                      v-if="showSubCategoryDropdown"
+                      class="category-dropdown border rounded mt-2"
+                    >
+                      <button
+                        v-for="child in subCategorySuggestions"
+                        :key="getCategoryIdValue(child)"
+                        type="button"
+                        class="dropdown-item w-100 text-start"
+                        @mousedown.prevent="selectSubCategoryFromDropdown(child)"
+                      >
+                        {{ getCategoryName(child) }}
+                      </button>
+                      <div
+                        v-if="subCategorySuggestions.length === 0"
+                        class="text-muted small px-3 py-2"
+                      >
+                        沒有符合的子分類
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
