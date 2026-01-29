@@ -34,6 +34,10 @@ namespace incode2.Services.PointShop
                     Stock = e.Stock,
                 })
                 .ToListAsync();
+                if (products == null || !products.Any())
+                {
+                    return ResultDTO<IEnumerable<ProductDTO>>.Success(products,"目前沒有商品",204);
+                }
 
                 return ResultDTO<IEnumerable<ProductDTO>>.Success(products);
             }

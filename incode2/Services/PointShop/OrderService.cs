@@ -62,7 +62,7 @@ namespace incode2.Services.PointShop
                     .ToListAsync();
 
                 if (details == null || !details.Any())
-                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"找不到訂單編號為 {orderId} 的資料明細", 404);
+                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details, $"找不到訂單編號為 {orderId} 的資料明細", 204);
 
                 return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details);
             }
@@ -91,7 +91,7 @@ namespace incode2.Services.PointShop
                     .ToListAsync();
 
                 if (results == null || !results.Any())
-                    return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"找不到訂單明細ID為 {orderId} 的出貨資料", 404);
+                    return ResultDTO<IEnumerable<ShippedDTO>>.Success(results,$"找不到訂單編號為{orderId}的寄送資料", 204);
 
                 return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
             }
@@ -128,7 +128,15 @@ namespace incode2.Services.PointShop
                     return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足");
             }
 
+            // 計算總點數
+            int totalPoints = order.Items.Sum(item => item.Quantity * productDict[item.ProductId].Point);
+
+            //// 檢查使用者點數是否足夠
+            //if (user.Point < totalPoints)
+            //    return ResultDTO<int>.Failure($"點數不足,需要 {totalPoints} 點,目前只有 {user.Point} 點");
+
             // 交易建立訂單與明細
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 建立訂單主檔
@@ -136,12 +144,10 @@ namespace incode2.Services.PointShop
                 {
                     UserId = order.UserId,
                     Remark = order.Remark ?? "",
-                    Status = "代處理",
+                    Status = "待處理",
                     OrderDate = DateTime.Now,
-                    TotalPoint = 0,
+                    TotalPoint = totalPoints,
                 };
-
-                int totalPoints = 0;
 
                 // 處理明細與庫存扣除
                 foreach (var item in order.Items)
@@ -161,66 +167,34 @@ namespace incode2.Services.PointShop
 
                     // 扣除庫存
                     prod.Stock -= item.Quantity;
-
-                    totalPoints += item.Quantity * prod.Point;
                 }
 
-                newOrder.TotalPoint = totalPoints;
                 _context.Orders.Add(newOrder);
+                await _context.SaveChangesAsync(); // 先儲存以取得 OrderId
 
-                await _context.SaveChangesAsync();
-
-                return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
-        }
-
-        // 新增寄送資料
-        public async Task<ResultDTO<int>> CreateShippedAsync(NewShippedRequest shipped)
-        {
-            // 檢驗是否空
-            if (shipped == null)
-                return ResultDTO<int>.Failure("無效的請求數據");
-
-            // 檢驗ID是否存在
-            var orders = await _context.Orders.FindAsync(shipped.OrderId);
-            if (orders == null)
-                return ResultDTO<int>.Failure($"找不到訂單ID為{shipped.OrderId}的資料");
-
-            // 檢查寄送資料
-            if (string.IsNullOrWhiteSpace(shipped.RecipientName) || 
-                string.IsNullOrWhiteSpace(shipped.RecipientPhone) || 
-                string.IsNullOrWhiteSpace(shipped.RecipientAddress))
-                return ResultDTO<int>.Failure($"寄送資料不完整");
-
-            // 存入資料
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
                 // 建立寄送資料
-                var newShipped = new ShippedDetail
+                var recipient = new ShippedDetail
                 {
-                    OrderId = shipped.OrderId,
-                    RecipientName = shipped.RecipientName,
-                    RecipientAddress = shipped.RecipientAddress,
-                    RecipientPhone = shipped.RecipientPhone,
+                    OrderId = newOrder.OrderId, // 設定外鍵
+                    RecipientName = order.Recipient.RecipientName,
+                    RecipientPhone = order.Recipient.RecipientPhone,
+                    RecipientAddress = order.Recipient.RecipientAddress,
                     IsFailed = false,
-                    Remark = shipped.Remark ?? "",
                     IsCompleted = false,
+                    Remark = order.Remark ?? "",
                     ShippedDate = null,
                     ArrivalDate = null,
                 };
 
-                _context.ShippedDetail.Add(newShipped);
+                _context.ShippedDetail.Add(recipient);
+
+                //// 扣除使用者點數
+                //user.Point -= totalPoints;
 
                 await _context.SaveChangesAsync();
-
                 await transaction.CommitAsync();
 
-                return ResultDTO<int>.Success(newShipped.ShippedDetailId, "寄送資料建立成功");
+                return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
             }
             catch (Exception ex)
             {

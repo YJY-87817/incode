@@ -9,7 +9,6 @@ namespace incode2.Services.PointShop
         Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetailAsync(int orderId);
         Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetailAsync(int orderId);
         Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order);
-        Task<ResultDTO<int>> CreateShippedAsync(NewShippedRequest shipped);
         Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped);
         Task<ResultDTO<int>> EditOrderAsync(int orderId, OrderRequest order);
         Task<ResultDTO<int>> CancelOrderAsync(int orderId);
