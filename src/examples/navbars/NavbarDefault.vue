@@ -689,12 +689,11 @@ watch(
         <ul class="navbar-nav ms-auto ms-2">
           <!--手機版登入 -->
           <!-- 購物車 -->
-          <li class="nav-item dropdown dropdown-hover">
+          <li class="nav-item dropdown dropdown-hover d-none d-lg-block">
             <button class="d-flex align-items-center position-relative" data-bs-toggle="offcanvas"
               data-bs-target="#cartOffcanvas" style="background: none; border: none; cursor: pointer; padding: 0.5rem;">
               <div class="position-relative d-inline-block">
                 <i class="bi bi-cart-dash" style="font-size: 1.2rem; line-height: 1;"></i>
-
                 <span v-if="CartNow.totalItems > 0"
                   class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
                   style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">

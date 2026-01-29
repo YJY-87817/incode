@@ -8,12 +8,18 @@ const orders = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  try {
-    const res = await getOrdersByUser();
-    orders.value = res.data.data;
-  } finally {
-    loading.value = false;
-  }
+  await getOrdersByUser().then(res => {
+    orders.value = res.data.data
+    loading.value = false
+    login.value = true;
+  }).catch(error => {
+    loading.value = false
+    if (error.response && error.response.status === 401) {
+      orders.value = []
+    } else {
+      console.log("取得訂單資料失敗:", error);
+    }
+  });
 });
 </script>
 
@@ -65,6 +71,14 @@ onMounted(async () => {
               <i class="bi bi-cart-plus me-2"></i>前往購物
             </router-link>
           </div>
+
+          <!-- <div v-else-if="login == false" class="text-center py-5">
+            <h4 class="fw-bold text-dark mb-2">目前還沒有登入</h4>
+            <p class="text-muted mb-4">您還沒有登入系統，前往登入！</p>
+            <router-link :to="{ name: 'Login' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
+              <i class="bi bi-cart-plus me-2"></i>前往登入
+            </router-link>
+          </div> -->
 
           <!-- Orders List -->
           <div v-else class="orders-wrapper">

@@ -56,7 +56,7 @@ onMounted(async () => {
                 <i class="bi bi-calendar-event me-1 text-primary"></i>
                 出貨日期
               </span>
-              <span class="fw-medium" :class="ship.shippedDate ? 'text-dark' : 'text-muted fst-italic'">
+              <span class="fw-medium" :class="ship.shippedDate ? 'text-dark' : 'text-muted'">
                 {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleDateString("zh-TW") : "尚未出貨" }}
               </span>
             </div>
@@ -68,7 +68,7 @@ onMounted(async () => {
                 <i class="bi bi-calendar-check me-1 text-primary"></i>
                 預計到貨
               </span>
-              <span class="fw-medium" :class="ship.arrivalDate ? 'text-dark' : 'text-muted fst-italic'">
+              <span class="fw-medium" :class="ship.arrivalDate ? 'text-dark' : 'text-muted'">
                 {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW") : "尚未到貨" }}
               </span>
             </div>
@@ -93,7 +93,7 @@ onMounted(async () => {
             <span v-else
               class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 d-flex align-items-center">
               <i class="bi bi-truck me-1"></i>
-              運送中
+              處理中
             </span>
           </div>
         </div>
@@ -111,15 +111,5 @@ onMounted(async () => {
 <style scoped>
 .border-dashed {
   border-style: dashed !important;
-}
-
-/* Card hover effect */
-.card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
 }
 </style>

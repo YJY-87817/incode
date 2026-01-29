@@ -14,4 +14,9 @@ export const putCancelOrder = (orderId) =>
 export const getProducts = () => axios.get("/ProductApi");
 
 export const postCreateOrder = (neworder) =>
-  axios.post(`/OrderApi/createOrder`, neworder);
+  axios.post(`/OrderApi/OrderPost`, neworder, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+  );

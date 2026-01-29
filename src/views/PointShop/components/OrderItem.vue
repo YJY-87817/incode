@@ -49,13 +49,13 @@ const cancelOrder = (orderId) => {
     confirmButtonText: "是, 我要取消!",
     cancelButtonText: "返回",
   }).then(async (result) => {
+    await putCancelOrder(orderId);
     if (result.isConfirmed) {
       CartSwal.fire({
         title: "取消成功!",
         text: "您的訂單已取消",
         icon: "success"
       });
-      await putCancelOrder(orderId);
     }
   });
 };
@@ -114,7 +114,7 @@ const cancelOrder = (orderId) => {
         <div v-else class="p-4">
           <div class="row g-4">
             <!-- Products Section -->
-            <div class="col-lg-7">
+            <div class="col-lg-6">
               <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 py-3">
                   <h6 class="mb-0 fw-bold d-flex align-items-center">
@@ -153,7 +153,7 @@ const cancelOrder = (orderId) => {
             </div>
 
             <!-- Shipping Section -->
-            <div class="col-lg-5">
+            <div class="col-lg-6">
               <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 py-3">
                   <h6 class="mb-0 fw-bold d-flex align-items-center">

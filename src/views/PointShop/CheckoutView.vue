@@ -20,10 +20,10 @@ import DefaultFooter from "@/examples/footers/FooterCentered.vue";
       </div>
 
       <div class="row">
-        <div class="col-md-8">
+        <div class="col-12 mb-4 col-md-8">
           <CheckoutItem></CheckoutItem>
         </div>
-        <div class="col-md-4">
+        <div class="col-12 mb-4 col-md-4">
           <CheckoutPoint></CheckoutPoint>
         </div>
       </div>
