@@ -17,6 +17,11 @@ import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
 
+const threadHasInlineImages = computed(() => {
+  const html = forumStore.threadDetail?.contentHtml || "";
+  return /<img\b/i.test(html);
+});
+
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
 const quickReplyContent = ref("");
@@ -226,7 +231,7 @@ const submitQuickReply = async () => {
 
           <!-- 帖文圖片 -->
           <div
-            v-if="forumStore.threadDetail.imageUrls && forumStore.threadDetail.imageUrls.length"
+            v-if="!threadHasInlineImages && forumStore.threadDetail.imageUrls && forumStore.threadDetail.imageUrls.length"
             class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
           >
             <img

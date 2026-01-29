@@ -19,6 +19,7 @@ export function normalizeRichContent(html, normalizeUrl) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(clean, "text/html");
   const images = [];
+  const seenImages = new Set();
 
   doc.querySelectorAll("img").forEach((img) => {
     const original = img.getAttribute("src") || "";
@@ -27,8 +28,13 @@ export function normalizeRichContent(html, normalizeUrl) {
       : original;
 
     if (normalized) {
+      if (seenImages.has(normalized)) {
+        img.remove();
+        return;
+      }
       img.setAttribute("src", normalized);
       images.push(normalized);
+      seenImages.add(normalized);
     } else {
       img.removeAttribute("src");
     }
