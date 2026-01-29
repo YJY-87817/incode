@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { getShippedDetails } from "@/views/PointShop/services/PointShopApi";
 
 const props = defineProps({
-  orderDetailId: Number,
+  orderId: Number,
 });
 
 const open = ref(false);
@@ -17,7 +17,7 @@ const toggle = async () => {
     loading.value = true;
     error.value = null;
     try {
-      const res = await getShippedDetails(props.orderDetailId);
+      const res = await getShippedDetails(props.orderId);
       if (res.data.ok) {
         shipped.value = res.data.data || [];
       } else {
@@ -387,6 +387,7 @@ const toggle = async () => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }

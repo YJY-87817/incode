@@ -5,8 +5,8 @@ export const getOrdersByUser = () => axios.get(`/OrderApi/order`);
 export const getOrderDetails = (orderId) =>
   axios.get(`/OrderApi/orderdetail/${orderId}`);
 
-export const getShippedDetails = (orderDetailId) =>
-  axios.get(`/OrderApi/shippeddetail/${orderDetailId}`);
+export const getShippedDetails = (orderId) =>
+  axios.get(`/OrderApi/shippeddetail/${orderId}`);
 
 export const putCancelOrder = (orderId) =>
   axios.put(`/OrderApi/CancelOrder/${orderId}`);

@@ -143,9 +143,7 @@ const cancelOrder = (orderId) => {
                   <h6 class="section-title">配送資訊</h6>
                 </div>
                 <div class="shipping-list">
-                  <div v-for="detail in details" :key="detail.orderdetailId" class="shipping-item">
-                    <ShippedDetail :orderDetailId="detail.orderdetailId" />
-                  </div>
+                  <ShippedDetail :orderId="order.orderId" />
                 </div>
               </div>
             </div>
