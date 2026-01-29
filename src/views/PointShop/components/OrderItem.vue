@@ -65,7 +65,7 @@ const cancelOrder = (orderId) => {
 </script>
 
 <template>
-  <div class="order-item-card">
+  <div class="order-item-card mx-2">
     <h2 class="accordion-header">
       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
         :data-bs-target="'#order-' + order.orderId">
@@ -148,19 +148,19 @@ const cancelOrder = (orderId) => {
               </div>
             </div>
 
-            <div v-if="order.status == '已取消'" class="order-actions">
-              <button class="btn btn-outline-danger btn-sm action-btn" disabled>
-                <i class="bi bi-x-circle me-1"></i>訂單已取消
+            <div v-if="order.status == '取消'" class="order-actions">
+              <button class="btn btn-outline-secondary btn-sm action-btn" disabled>
+                訂單已取消
               </button>
             </div>
             <div v-else-if="order.status == '待處理'" class="order-actions">
               <button class="btn btn-outline-danger btn-sm action-btn" @click="cancelOrder(order.orderId)">
-                <i class="bi bi-x-circle me-1"></i>取消訂單
+                取消訂單
               </button>
             </div>
             <div v-else class="order-actions">
-              <button class="btn btn-outline-danger btn-sm action-btn" disabled>
-                <i class="bi bi-x-circle me-1"></i>訂單已受理
+              <button class="btn btn-outline-secondary btn-sm action-btn" disabled>
+                訂單已受理
               </button>
             </div>
           </div>

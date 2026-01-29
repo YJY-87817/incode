@@ -18,11 +18,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="order-list-container card shadow-sm border-0 rounded-4">
-    <div class="text-center">
-      <h2 class="order-title">
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-header p-4 " style=" background-color: #86B0BD;">
+      <h5 class=" fw-bold mb-1">
         <i class="bi bi-bag-check me-2"></i>訂單查詢
-      </h2>
+      </h5>
     </div>
 
     <div v-if="loading" class="loading-container">
@@ -48,12 +48,13 @@ onMounted(async () => {
     </div>
 
     <div v-else class="orders-wrapper">
-      <div class="order-stats mb-4">
+      <div class="order-stats m-4 text-end">
         <span class="stat-badge">
-          <i class="bi bi-list-ul me-1"></i>
           共 {{ orders.length }} 筆訂單
         </span>
       </div>
+
+
       <div class="accordion" id="orderAccordion">
         <OrderItem v-for="order in orders" :key="order.orderId" :order="order" />
       </div>
@@ -62,25 +63,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.order-list-container {
-  padding: 2rem;
-  margin: 0 auto;
-}
-
-
-.order-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #212529;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-}
-
-.order-title i {
-  color: #0d6efd;
-}
-
 .order-subtitle {
   color: #6c757d;
   font-size: 1rem;
@@ -154,26 +136,6 @@ onMounted(async () => {
   animation: fadeIn 0.5s ease-in;
 }
 
-.order-stats {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.stat-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-  color: #495057;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border: 1px solid #dee2e6;
-}
-
-.stat-badge i {
-  color: #0d6efd;
-}
 
 @keyframes fadeIn {
   from {
@@ -187,17 +149,7 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 768px) {
-  .order-list-container {
-    padding: 1rem;
-  }
-
-  .order-title {
-    font-size: 1.5rem;
-  }
-
-  .order-subtitle {
-    font-size: 0.9rem;
-  }
+.order-subtitle {
+  font-size: 0.9rem;
 }
 </style>

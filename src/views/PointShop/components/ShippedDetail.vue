@@ -15,9 +15,6 @@ onMounted(async () => {
     const res = await getShippedDetails(props.orderId);
     if (res.data.ok) {
       shipped.value = res.data.data || [];
-    } else {
-      error.value = res.data.message || "還沒有寄送資料會盡快安排處裡";
-      shipped.value = [];
     }
   } catch (err) {
     error.value = "載入出貨資料失敗，請稍後重試";
@@ -49,12 +46,6 @@ onMounted(async () => {
 
   <div v-else class="shipped-cards">
     <div v-for="ship in shipped" :key="ship.shippedDate" class="shipped-card">
-      <div class="card-header-section">
-        <div class="product-name-badge">
-          <i class="bi bi-box-seam me-1"></i>
-          <span>{{ ship.productName }}</span>
-        </div>
-      </div>
 
       <div class="card-body-section">
         <div class="info-grid">
@@ -63,8 +54,12 @@ onMounted(async () => {
               <i class="bi bi-calendar-event"></i>
               <span>出貨日期</span>
             </div>
-            <div class="info-value">
-              {{ new Date(ship.shippedDate).toLocaleDateString("zh-TW") }}
+            <div class="info-value" :class="{ 'text-muted': !ship.shippedDate }">
+              {{
+                ship.shippedDate
+                  ? new Date(ship.shippedDate).toLocaleDateString("zh-TW")
+                  : "尚未出貨"
+              }}
             </div>
           </div>
 
