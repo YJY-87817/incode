@@ -24,22 +24,57 @@ const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showPublishSuccessModal = ref(false);
 
+const getCategoryIdValue = (cat) =>
+  cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const toCategoryKey = (value) =>
+  value === null || value === undefined ? null : String(value);
+
+const rootCategories = computed(() => {
+  const categories = forumStore.categories || [];
+  return categories.filter((cat) => !getParentCategoryIdValue(cat));
+});
+
 const filteredCategories = computed(() => {
   const keyword = categorySearch.value.trim().toLowerCase();
-  const categories = forumStore.categories || [];
+  const categories = rootCategories.value;
   if (!keyword) return categories;
   return categories.filter((cat) =>
-    String(cat.name || "").toLowerCase().includes(keyword)
+    String(getCategoryName(cat) || "").toLowerCase().includes(keyword)
   );
 });
 
 const categorySuggestions = computed(() => {
   const input = categorySearch.value.trim();
   if (!input) {
-    return (forumStore.categories || []).slice(0, 12);
+    return rootCategories.value.slice(0, 12);
   }
   return filteredCategories.value.slice(0, 12);
 });
+
+const selectedSubCategoryId = ref(null);
+
+const childCategories = computed(() => {
+  if (!newTopicState.categoryId) return [];
+  const parentKey = toCategoryKey(newTopicState.categoryId);
+  return (forumStore.categories || []).filter(
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+  );
+});
+
+const effectiveCategoryId = computed(
+  () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null
+);
 
 const fetchTopics = (categoryId = null) => {
   const params = {};
@@ -57,21 +92,61 @@ const fetchTopics = (categoryId = null) => {
     });
 };
 
+const syncCategorySelection = (categoryId) => {
+  if (!categoryId) {
+    newTopicState.categoryId = null;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const categories = forumStore.categories || [];
+  const targetKey = toCategoryKey(categoryId);
+  const target = categories.find(
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+  );
+
+  if (!target) {
+    newTopicState.categoryId = categoryId;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const parentId = getParentCategoryIdValue(target);
+  if (parentId) {
+    newTopicState.categoryId = parentId;
+    selectedSubCategoryId.value = getCategoryIdValue(target);
+  } else {
+    newTopicState.categoryId = getCategoryIdValue(target);
+    selectedSubCategoryId.value = null;
+  }
+
+  const parentMatch = categories.find(
+    (cat) =>
+      toCategoryKey(getCategoryIdValue(cat)) ===
+      toCategoryKey(newTopicState.categoryId)
+  );
+  if (parentMatch?.name) {
+    categorySearch.value = getCategoryName(parentMatch);
+  }
+};
+
 onMounted(() => {
   if (!forumStore.categories?.length) {
     forumStore.fetchCategories();
   }
   // 同步 store 中選中的分類
   if (forumStore.selectedCategory) {
-    newTopicState.categoryId = forumStore.selectedCategory;
+    syncCategorySelection(forumStore.selectedCategory);
   }
 
   if (!categorySearch.value && newTopicState.categoryId) {
     const match = (forumStore.categories || []).find(
-      (cat) => cat.id === newTopicState.categoryId
+      (cat) =>
+        toCategoryKey(getCategoryIdValue(cat)) ===
+        toCategoryKey(newTopicState.categoryId)
     );
     if (match?.name) {
-      categorySearch.value = match.name;
+      categorySearch.value = getCategoryName(match);
     }
   }
 });
@@ -93,6 +168,13 @@ watch(
 watch(
   () => newTopicState.categoryId,
   (value) => {
+    selectedSubCategoryId.value = null;
+  }
+);
+
+watch(
+  () => effectiveCategoryId.value,
+  (value) => {
     forumStore.newTopic.categoryId = value;
   }
 );
@@ -109,13 +191,7 @@ watch(
   () => forumStore.selectedCategory,
   (newCategory) => {
     if (newCategory) {
-      newTopicState.categoryId = newCategory;
-      const match = (forumStore.categories || []).find(
-        (cat) => cat.id === newCategory
-      );
-      if (match?.name) {
-        categorySearch.value = match.name;
-      }
+      syncCategorySelection(newCategory);
     }
   }
 );
@@ -123,19 +199,24 @@ watch(
 watch(
   () => forumStore.categories,
   (categories) => {
-    if (!categorySearch.value && newTopicState.categoryId) {
+    if (!categories?.length) return;
+    if (forumStore.newTopic.categoryId) {
+      syncCategorySelection(forumStore.newTopic.categoryId);
+    } else if (!categorySearch.value && newTopicState.categoryId) {
       const match = (categories || []).find(
-        (cat) => cat.id === newTopicState.categoryId
+        (cat) =>
+          toCategoryKey(getCategoryIdValue(cat)) ===
+          toCategoryKey(newTopicState.categoryId)
       );
       if (match?.name) {
-        categorySearch.value = match.name;
+        categorySearch.value = getCategoryName(match);
       }
     }
   }
 );
 
 watch(
-  () => newTopicState.categoryId,
+  () => effectiveCategoryId.value,
   (newCat) => {
     newTopicState.parentContentId = null;
     if (newCat) {
@@ -156,17 +237,19 @@ watch(
       return;
     }
 
-    const match = (forumStore.categories || []).find(
-      (cat) => String(cat.name || "").toLowerCase() === input.toLowerCase()
+    const match = rootCategories.value.find(
+      (cat) =>
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase()
     );
-    newTopicState.categoryId = match ? match.id : null;
+    newTopicState.categoryId = match ? getCategoryIdValue(match) : null;
   }
 );
 
 const selectCategoryFromDropdown = (category) => {
   if (!category) return;
-  categorySearch.value = category.name || "";
-  newTopicState.categoryId = category.id;
+  categorySearch.value = getCategoryName(category) || "";
+  newTopicState.categoryId = getCategoryIdValue(category);
   showCategoryDropdown.value = false;
 };
 
@@ -181,10 +264,11 @@ const createCategoryFromSearch = async () => {
   if (!name || isCreatingCategory.value) return;
 
   const existing = (forumStore.categories || []).find(
-    (cat) => String(cat.name || "").toLowerCase() === name.toLowerCase()
+    (cat) =>
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
   );
   if (existing) {
-    newTopicState.categoryId = existing.id;
+    newTopicState.categoryId = getCategoryIdValue(existing);
     return;
   }
 
@@ -263,7 +347,7 @@ const submitNewTopic = () => {
 
   // 若有 parentContentId，不需檢查 categoryId（會使用 parent 的 category）
   // 若無 parentContentId，需檢查 categoryId
-  if (!newTopicState.parentContentId && !newTopicState.categoryId) {
+  if (!newTopicState.parentContentId && !effectiveCategoryId.value) {
     alert("請選擇分類");
     return;
   }
@@ -271,7 +355,7 @@ const submitNewTopic = () => {
   const isReply = Boolean(newTopicState.parentContentId);
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: newTopicState.categoryId,
+    categoryId: effectiveCategoryId.value,
     parentContentId: newTopicState.parentContentId,
     title: newTopicState.title,
     body: newTopicState.body,
@@ -305,6 +389,7 @@ const resetNewTopicDraft = () => {
   newTopicState.body = "";
   newTopicState.categoryId = null;
   newTopicState.parentContentId = null;
+  selectedSubCategoryId.value = null;
   categorySearch.value = "";
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
@@ -372,8 +457,8 @@ const resetNewTopicDraft = () => {
                 <datalist id="category-options">
                   <option
                     v-for="cat in categorySuggestions"
-                    :key="cat.id"
-                    :value="cat.name"
+                    :key="getCategoryIdValue(cat)"
+                    :value="getCategoryName(cat)"
                   />
                 </datalist>
 
@@ -383,12 +468,12 @@ const resetNewTopicDraft = () => {
                 >
                   <button
                     v-for="cat in categorySuggestions"
-                    :key="cat.id"
+                    :key="getCategoryIdValue(cat)"
                     type="button"
                     class="dropdown-item w-100 text-start"
                     @mousedown.prevent="selectCategoryFromDropdown(cat)"
                   >
-                    {{ cat.name }}
+                    {{ getCategoryName(cat) }}
                   </button>
                   <div
                     v-if="categorySuggestions.length === 0"
@@ -422,12 +507,28 @@ const resetNewTopicDraft = () => {
                   選擇或輸入分類名稱，找不到時可直接建立
                 </small>
               </div>
+              <div v-if="childCategories.length" class="mb-3">
+                <label class="form-label">子分類</label>
+                <select v-model="selectedSubCategoryId" class="form-select">
+                  <option :value="null">請選擇子分類（可選）</option>
+                  <option
+                    v-for="child in childCategories"
+                    :key="getCategoryIdValue(child)"
+                    :value="getCategoryIdValue(child)"
+                  >
+                    {{ getCategoryName(child) }}
+                  </option>
+                </select>
+                <small class="text-muted d-block mt-1">
+                  若該分類有子分類，建議再選擇更精確的分類
+                </small>
+              </div>
               <div class="mb-3">
                 <label class="form-label">回覆至（可選）</label>
                 <select
                   v-model="newTopicState.parentContentId"
                   class="form-select"
-                  :disabled="!newTopicState.categoryId"
+                  :disabled="!effectiveCategoryId"
                 >
                   <option :value="null">無（發表新主題）</option>
                   <option

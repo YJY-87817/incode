@@ -6,11 +6,113 @@
 -->
 
 <script setup>
+import { computed, onMounted, ref, watch } from "vue";
 import { useForumStore } from "@/stores/forumStore";
 import { uploadImage } from "@/api/imageapi.js";
 import { appendUrls } from "./forumUtils";
 
 const forumStore = useForumStore();
+
+const parentCategoryId = ref(null);
+const selectedSubCategoryId = ref(null);
+const hasSyncedCategory = ref(false);
+
+const getCategoryIdValue = (cat) =>
+  cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const toCategoryKey = (value) =>
+  value === null || value === undefined ? null : String(value);
+
+const rootCategories = computed(() => {
+  const categories = forumStore.categories || [];
+  return categories.filter((cat) => !getParentCategoryIdValue(cat));
+});
+
+const childCategories = computed(() => {
+  if (!parentCategoryId.value) return [];
+  const parentKey = toCategoryKey(parentCategoryId.value);
+  return (forumStore.categories || []).filter(
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+  );
+});
+
+const effectiveCategoryId = computed(
+  () => selectedSubCategoryId.value ?? parentCategoryId.value ?? null
+);
+
+const syncCategorySelection = (categoryId) => {
+  if (!categoryId) {
+    parentCategoryId.value = null;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const categories = forumStore.categories || [];
+  const targetKey = toCategoryKey(categoryId);
+  const target = categories.find(
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+  );
+
+  if (!target) {
+    parentCategoryId.value = categoryId;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const parentId = getParentCategoryIdValue(target);
+  if (parentId) {
+    parentCategoryId.value = parentId;
+    selectedSubCategoryId.value = getCategoryIdValue(target);
+  } else {
+    parentCategoryId.value = getCategoryIdValue(target);
+    selectedSubCategoryId.value = null;
+  }
+};
+
+onMounted(() => {
+  const initialCategory = forumStore.newTopic.categoryId ?? forumStore.selectedCategory;
+  if (initialCategory) {
+    syncCategorySelection(initialCategory);
+    hasSyncedCategory.value = true;
+  }
+});
+
+watch(
+  () => forumStore.categories,
+  (categories) => {
+    if (!categories?.length || hasSyncedCategory.value) return;
+    const initialCategory =
+      forumStore.newTopic.categoryId ?? forumStore.selectedCategory;
+    if (initialCategory) {
+      syncCategorySelection(initialCategory);
+      hasSyncedCategory.value = true;
+    }
+  }
+);
+
+watch(
+  () => parentCategoryId.value,
+  () => {
+    selectedSubCategoryId.value = null;
+  }
+);
+
+watch(
+  () => effectiveCategoryId.value,
+  (value) => {
+    forumStore.newTopic.categoryId = value;
+  }
+);
 
 /**
  * 處理圖片上傳
@@ -46,17 +148,34 @@ const handleImageUpload = async (event) => {
           <i class="fas fa-folder-open"></i> 分類
           <span class="text-danger">*</span>
         </label>
-        <select v-model="forumStore.newTopic.categoryId" class="form-select">
+        <select v-model="parentCategoryId" class="form-select">
           <option :value="null" disabled>選擇分類</option>
           <option
-            v-for="category in forumStore.categories"
-            :key="category.id"
-            :value="category.id"
+            v-for="category in rootCategories"
+            :key="getCategoryIdValue(category)"
+            :value="getCategoryIdValue(category)"
           >
-            {{ category.name }}
+            {{ getCategoryName(category) }}
           </option>
         </select>
         <small class="text-muted">選擇合適的分類便於他人找到你的主題</small>
+      </div>
+
+      <div v-if="childCategories.length" class="mb-3">
+        <label class="form-label small text-muted">
+          <i class="fas fa-sitemap"></i> 子分類
+        </label>
+        <select v-model="selectedSubCategoryId" class="form-select">
+          <option :value="null">請選擇子分類（可選）</option>
+          <option
+            v-for="child in childCategories"
+            :key="getCategoryIdValue(child)"
+            :value="getCategoryIdValue(child)"
+          >
+            {{ getCategoryName(child) }}
+          </option>
+        </select>
+        <small class="text-muted">若有子分類，建議選擇更精確的分類</small>
       </div>
 
       <!-- 標題輸入 -->
@@ -126,7 +245,7 @@ const handleImageUpload = async (event) => {
             forumStore.isSubmittingNewTopic ||
             !forumStore.newTopic.title.trim() ||
             !forumStore.newTopic.body.trim() ||
-            !forumStore.newTopic.categoryId
+            !effectiveCategoryId
           "
         >
           <i class="fas fa-paper-plane me-2"></i>

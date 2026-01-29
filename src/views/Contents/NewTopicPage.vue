@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, watch, ref } from "vue";
+import { reactive, onMounted, watch, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
@@ -19,6 +19,8 @@ const newTopicState = reactive({
 });
 
 const isUploadingImages = ref(false);
+const parentCategoryId = ref(null);
+const selectedSubCategoryId = ref(null);
 
 const appendUrls = (original, urls) => {
   const list = Array.isArray(urls) ? urls : [urls];
@@ -48,6 +50,9 @@ const fetchCategories = () => {
     .get("/CategoryApi")
     .then((data) => {
       newTopicState.categories = data;
+      if (!parentCategoryId.value && newTopicState.categoryId) {
+        syncCategorySelection(newTopicState.categoryId);
+      }
     })
     .catch((error) => {
       console.error("載入分類失敗:", error);
@@ -74,9 +79,79 @@ onMounted(() => {
   fetchCategories();
 });
 
+const getCategoryIdValue = (cat) =>
+  cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const toCategoryKey = (value) =>
+  value === null || value === undefined ? null : String(value);
+
+const rootCategories = computed(() => {
+  const categories = newTopicState.categories || [];
+  return categories.filter((cat) => !getParentCategoryIdValue(cat));
+});
+
+const childCategories = computed(() => {
+  if (!parentCategoryId.value) return [];
+  const parentKey = toCategoryKey(parentCategoryId.value);
+  return (newTopicState.categories || []).filter(
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+  );
+});
+
+const effectiveCategoryId = computed(
+  () => selectedSubCategoryId.value ?? parentCategoryId.value ?? null
+);
+
+const syncCategorySelection = (categoryId) => {
+  if (!categoryId) {
+    parentCategoryId.value = null;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const categories = newTopicState.categories || [];
+  const targetKey = toCategoryKey(categoryId);
+  const target = categories.find(
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+  );
+
+  if (!target) {
+    parentCategoryId.value = categoryId;
+    selectedSubCategoryId.value = null;
+    return;
+  }
+
+  const parentId = getParentCategoryIdValue(target);
+  if (parentId) {
+    parentCategoryId.value = parentId;
+    selectedSubCategoryId.value = getCategoryIdValue(target);
+  } else {
+    parentCategoryId.value = getCategoryIdValue(target);
+    selectedSubCategoryId.value = null;
+  }
+};
+
 watch(
-  () => newTopicState.categoryId,
+  () => parentCategoryId.value,
+  () => {
+    selectedSubCategoryId.value = null;
+  }
+);
+
+watch(
+  () => effectiveCategoryId.value,
   (newCat) => {
+    newTopicState.categoryId = newCat;
     newTopicState.parentContentId = null;
     if (newCat) {
       fetchTopics(newCat);
@@ -91,7 +166,7 @@ const submitNewTopic = () => {
     alert("請填寫標題與內容");
     return;
   }
-  if (!newTopicState.categoryId) {
+  if (!effectiveCategoryId.value) {
     alert("請選擇分類");
     return;
   }
@@ -99,7 +174,7 @@ const submitNewTopic = () => {
   const isReply = Boolean(newTopicState.parentContentId);
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: newTopicState.categoryId,
+    categoryId: effectiveCategoryId.value,
     parentContentId: newTopicState.parentContentId,
     title: newTopicState.title,
     body: newTopicState.body,
@@ -181,16 +256,30 @@ const cancelNewTopic = () => {
                   >分類 <span class="text-danger">*</span></label
                 >
                 <select
-                  v-model="newTopicState.categoryId"
+                  v-model="parentCategoryId"
                   class="form-select form-select-lg"
                 >
                   <option :value="null" disabled>請選擇分類</option>
                   <option
-                    v-for="cat in newTopicState.categories"
-                    :key="cat.id"
-                    :value="cat.id"
+                    v-for="cat in rootCategories"
+                    :key="getCategoryIdValue(cat)"
+                    :value="getCategoryIdValue(cat)"
                   >
-                    {{ cat.name }}
+                    {{ getCategoryName(cat) }}
+                  </option>
+                </select>
+              </div>
+
+              <div v-if="childCategories.length" class="mb-4">
+                <label class="form-label fw-bold">子分類</label>
+                <select v-model="selectedSubCategoryId" class="form-select">
+                  <option :value="null">請選擇子分類（可選）</option>
+                  <option
+                    v-for="child in childCategories"
+                    :key="getCategoryIdValue(child)"
+                    :value="getCategoryIdValue(child)"
+                  >
+                    {{ getCategoryName(child) }}
                   </option>
                 </select>
               </div>
@@ -200,7 +289,7 @@ const cancelNewTopic = () => {
                 <select
                   v-model="newTopicState.parentContentId"
                   class="form-select"
-                  :disabled="!newTopicState.categoryId"
+                  :disabled="!effectiveCategoryId"
                 >
                   <option :value="null">無（發表新主題）</option>
                   <option
