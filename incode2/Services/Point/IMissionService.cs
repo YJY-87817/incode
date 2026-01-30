@@ -5,7 +5,7 @@ namespace incode2.Services.Point
 {
     public interface IMissionService
     {
-        Task<IEnumerable<MissionDTO>> GetAllMissionsAsync();
+        Task<IEnumerable<MissionDTO>> GetAllMissionAsync();
         Task<MissionDTO> GetMissionByIdAsync(int id);
         Task<ResultDTO> CreateMissionAsync(MissionDTO dto);
         Task<ResultDTO> UpdateMissionAsync(int id, MissionDTO dto);

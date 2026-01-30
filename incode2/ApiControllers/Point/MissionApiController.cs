@@ -1,13 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.DTO;
+using incode2.Dtos;
+using incode2.Extensions;
+using incode2.Models;
+using incode2.Services.Point;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
-using incode2.DTO;
-using incode2.Dtos;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace incode2.ApiControllers.Point
 {
@@ -16,30 +19,24 @@ namespace incode2.ApiControllers.Point
     public class MissionApiController : ControllerBase
     {
         private readonly incodedatabaseContext _context;
+        private readonly IMissionService _missionService;
 
-        public MissionApiController(incodedatabaseContext context)
+        public MissionApiController(incodedatabaseContext context , IMissionService missionService)
         {
             _context = context;
+            _missionService = missionService;
         }
 
         // GET: api/MissionApi
         [HttpGet]
-        public async Task<IEnumerable<MissionDTO>> GetMission()
+        //[Authorize]
+        public async Task<ActionResult<IEnumerable<MissionDTO>>> GetMission()
         {
-            return _context.Mission.Select(m=>new MissionDTO
-            {
-                MissionId = m.MissionId,
-                MissionName = m.MissionName,
-                MissionDetail = m.MissionDetail,
-                TargetType = m.TargetType,
-                TargetCount = m.TargetCount,
-                RewardPoints = m.RewardPoints,
-                RewardExp = m.RewardExp,
-                ResetType = m.ResetType,
-                IsActive = m.IsActive,
-                CreatedAt = m.CreatedAt
-            });
+            var mission = await _missionService.GetAllMissionAsync();
+            return Ok(mission);
         }
+
+
 
         // GET: api/MissionApi/5
         [HttpGet("{id}")]
@@ -75,7 +72,6 @@ namespace incode2.ApiControllers.Point
             Mission m = await _context.Mission.FindAsync(id);
             if (m != null)
             {
-                m.MissionId = MDTO.MissionId;
                 m.MissionName = MDTO.MissionName;
                 m.MissionDetail = MDTO.MissionDetail;
                 m.TargetType = MDTO.TargetType;

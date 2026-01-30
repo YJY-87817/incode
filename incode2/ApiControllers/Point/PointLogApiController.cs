@@ -28,22 +28,22 @@ namespace incode2.ApiControllers.Point
             _pointLogService = pointLogService;
         }
 
-        // GET: api/PointLogApi
-        //[HttpGet]
-        //public async Task<IEnumerable<PointLogDTO>> GetPointLog()
-        //{
-        //    return _context.PointLog.Select(pl=>new PointLogDTO
-        //    {
-        //        PointLogId=pl.PointLogId,
-        //        UserId=pl.UserId,
-        //        SourceType=pl.SourceType,
-        //        SourceId=pl.SourceId,
-        //        PointTypeDefinitionId=pl.PointTypeDefinitionId,
-        //        ChangeAmount =pl.ChangeAmount,
-        //        Status=pl.Status,
-        //        CreatedAt =pl.CreatedAt
-        //    });
-        //}
+        //GET: api/PointLogApi
+       [HttpGet]
+        public async Task<IEnumerable<PointLogDTO>> GetPointLog()
+        {
+            return _context.PointLog.Select(pl => new PointLogDTO
+            {
+                PointLogId = pl.PointLogId,
+                UserId = pl.UserId,
+                SourceType = pl.SourceType,
+                SourceId = pl.SourceId,
+                PointTypeDefinitionId = pl.PointTypeDefinitionId,
+                ChangeAmount = pl.ChangeAmount,
+                Status = pl.Status,
+                CreatedAt = pl.CreatedAt
+            });
+        }
 
         //GET: api/PointLogApi/5
         //[HttpGet("{id}")]
