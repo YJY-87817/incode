@@ -9,12 +9,11 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
-import { uploadImage } from "@/api/imageapi.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
-import { appendUrls, formatDate, formatTimeAgo } from "./forumUtils";
+import { formatDate, formatTimeAgo } from "./forumUtils";
 
 const forumStore = useForumStore();
 const router = useRouter();
@@ -36,13 +35,7 @@ const threadHasInlineImages = computed(() => {
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
 const quickReplyContent = ref("");
-const quickReplyMode = ref("comment"); // comment | reply
 const isSubmittingQuickReply = ref(false);
-const isUploadingQuickReplyImages = ref(false);
-
-const quickReplyLabel = computed(() =>
-  quickReplyMode.value === "comment" ? "留言" : "回文"
-);
 
 // 展開回文子留言的狀態
 const expandedReplies = ref(new Set());
@@ -113,29 +106,12 @@ const nextThreadPage = () => {
  */
 const resetQuickReply = () => {
   quickReplyContent.value = "";
-  quickReplyMode.value = "comment";
 };
 
 const toggleQuickReply = () => {
   showQuickReply.value = !showQuickReply.value;
   if (!showQuickReply.value) {
     resetQuickReply();
-  }
-};
-
-const handleQuickReplyImages = async (event) => {
-  const files = event.target?.files;
-  if (!files || !files.length) return;
-  isUploadingQuickReplyImages.value = true;
-  try {
-    const uploaded = await uploadImage(files);
-    quickReplyContent.value = appendUrls(quickReplyContent.value, uploaded);
-  } catch (error) {
-    console.error("留言/回文圖片上傳失敗:", error);
-    alert("圖片上傳失敗，請稍後再試");
-  } finally {
-    isUploadingQuickReplyImages.value = false;
-    if (event.target) event.target.value = "";
   }
 };
 
@@ -153,25 +129,24 @@ const submitQuickReply = async () => {
   if (isSubmittingQuickReply.value) return;
   isSubmittingQuickReply.value = true;
 
-  const isComment = quickReplyMode.value === "comment";
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
-    title: `${isComment ? "留言" : "Re"}: ${forumStore.threadDetail.title}`,
+    title: `留言: ${forumStore.threadDetail.title}`,
     body: quickReplyContent.value.trim(),
-    type: isComment ? CONTENT_TYPES.COMMENT : CONTENT_TYPES.REPLY,
+    type: CONTENT_TYPES.COMMENT,
   };
 
   try {
     await apiClient.post("/ContentApi", dto);
     alert("已送出！");
-    
+
     // 直接调用 store 重新获取详情
     if (forumStore.selectedThread) {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
-    
+
     resetQuickReply();
     showQuickReply.value = false;
   } catch (error) {
@@ -180,6 +155,23 @@ const submitQuickReply = async () => {
   } finally {
     isSubmittingQuickReply.value = false;
   }
+};
+
+const openDetailedComment = () => {
+  if (!forumStore.threadDetail?.id) return;
+
+  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+  const matchedCategory = (forumStore.categories || []).find(
+    (cat) => String(cat.id) === String(threadCategoryId)
+  );
+
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = threadCategoryId;
+  forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
+  forumStore.newTopic.categorySearch = matchedCategory?.name || "";
+  forumStore.selectedCategory = threadCategoryId;
+  forumStore.toggleNewTopicModal(true);
 };
 </script>
 
@@ -192,13 +184,12 @@ const submitQuickReply = async () => {
     >
       <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
       <div class="d-flex flex-wrap gap-2">
-        <span
-          class="badge bg-secondary"
-          v-if="forumStore.selectedCategoryName"
-        >
+        <span class="badge bg-secondary" v-if="forumStore.selectedCategoryName">
           {{ forumStore.selectedCategoryName }}
         </span>
-        <span class="badge bg-info"> 共 {{ forumStore.pagination.totalCount }} 筆 </span>
+        <span class="badge bg-info">
+          共 {{ forumStore.pagination.totalCount }} 筆
+        </span>
       </div>
     </div>
 
@@ -208,10 +199,7 @@ const submitQuickReply = async () => {
       <div v-if="forumStore.selectedThread">
         <!-- 返回按鈕 -->
         <div class="p-3 border-bottom">
-          <button
-            class="btn btn-sm btn-forum-secondary"
-            @click="goToList"
-          >
+          <button class="btn btn-sm btn-forum-secondary" @click="goToList">
             <i class="fas fa-arrow-left me-2"></i>
             返回列表
           </button>
@@ -222,7 +210,9 @@ const submitQuickReply = async () => {
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
-            <h3 class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0">
+            <h3
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0"
+            >
               {{ forumStore.threadDetail.title }}
             </h3>
 
@@ -245,7 +235,10 @@ const submitQuickReply = async () => {
 
           <HtmlIframe
             class="card-text rich-content"
-            :html="forumStore.threadDetail.contentHtml || forumStore.threadDetail.content"
+            :html="
+              forumStore.threadDetail.contentHtml ||
+              forumStore.threadDetail.content
+            "
             :min-height="120"
             text-color="#432f28"
             :extra-css="'body { white-space: pre-wrap; } img { width: 30%; max-width: 30%; height: auto; object-fit: contain; }'"
@@ -254,7 +247,11 @@ const submitQuickReply = async () => {
 
           <!-- 帖文圖片 -->
           <div
-            v-if="!threadHasInlineImages && forumStore.threadDetail.imageUrls && forumStore.threadDetail.imageUrls.length"
+            v-if="
+              !threadHasInlineImages &&
+              forumStore.threadDetail.imageUrls &&
+              forumStore.threadDetail.imageUrls.length
+            "
             class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
           >
             <img
@@ -271,7 +268,7 @@ const submitQuickReply = async () => {
         <!-- 回覆區域 -->
         <div class="p-3">
           <div class="mt-3 mt-md-5">
-            <h5 class="fs-5 fs-md-4 mb-3">💬 回覆 / 留言</h5>
+            <h5 class="fs-5 fs-md-4 mb-3">💬 留言</h5>
 
             <div
               class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
@@ -281,80 +278,47 @@ const submitQuickReply = async () => {
                 type="button"
                 @click="toggleQuickReply"
               >
-                <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
+                <i
+                  class="fas"
+                  :class="showQuickReply ? 'fa-times' : 'fa-pen'"
+                ></i>
                 <span class="ms-1">
-                  {{ showQuickReply ? "收起留言/回文" : "留言 / 回文" }}
+                  {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
                 </span>
               </button>
+              <button
+                class="btn btn-forum-secondary btn-sm"
+                type="button"
+                @click="openDetailedComment"
+              >
+                <i class="fas fa-feather-alt me-1"></i>
+                詳細留言
+              </button>
               <small class="text-muted" v-if="!showQuickReply">
-                開啟後可直接留言或回文，不需切換頁面
+                簡易留言僅文字；詳細留言會開啟編輯視窗
               </small>
             </div>
 
             <transition name="fade">
               <div v-show="showQuickReply" class="quick-reply-box">
-                <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
-                  <label class="mb-0 small text-muted">送出類型</label>
-                  <div class="btn-group btn-group-sm" role="group">
-                    <input
-                      type="radio"
-                      class="btn-check"
-                      name="quickReplyMode"
-                      id="quickReplyComment"
-                      value="comment"
-                      v-model="quickReplyMode"
-                    />
-                    <label class="btn btn-outline-dark" for="quickReplyComment">
-                      留言
-                    </label>
-
-                    <input
-                      type="radio"
-                      class="btn-check"
-                      name="quickReplyMode"
-                      id="quickReplyReply"
-                      value="reply"
-                      v-model="quickReplyMode"
-                    />
-                    <label class="btn btn-outline-dark" for="quickReplyReply">
-                      回文
-                    </label>
-                  </div>
-                  <small class="text-muted">
-                    目前為：{{ quickReplyLabel }}
-                  </small>
-                </div>
-
                 <textarea
                   v-model="quickReplyContent"
                   class="form-control"
                   rows="4"
-                  placeholder="直接輸入{{ quickReplyLabel }}內容，可貼上圖片網址或使用下方上傳"
+                  placeholder="請輸入簡易留言（純文字）"
                 ></textarea>
-
-                <div class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    class="form-control form-control-sm"
-                    @change="handleQuickReplyImages"
-                    :disabled="isUploadingQuickReplyImages"
-                  />
-                  <small class="text-muted">
-                    {{ isUploadingQuickReplyImages ? "上傳中..." : "上傳後自動附加圖片網址" }}
-                  </small>
-                </div>
 
                 <div class="d-flex flex-wrap gap-2 quick-reply-actions">
                   <button
                     class="btn btn-forum-primary btn-sm"
                     type="button"
                     @click="submitQuickReply"
-                    :disabled="isSubmittingQuickReply || !quickReplyContent.trim()"
+                    :disabled="
+                      isSubmittingQuickReply || !quickReplyContent.trim()
+                    "
                   >
                     <i class="fas fa-paper-plane me-1"></i>
-                    {{ isSubmittingQuickReply ? "送出中..." : "送出" }}
+                    {{ isSubmittingQuickReply ? "送出中..." : "送出簡易留言" }}
                   </button>
                   <button
                     class="btn btn-forum-secondary btn-sm"
@@ -384,28 +348,46 @@ const submitQuickReply = async () => {
             <!-- 回文分頁 (type=2) -->
             <div v-if="paginatedThreadPosts.length > 0" class="mb-4">
               <h6 class="fs-6 mb-2">💭 回文</h6>
-              <div v-for="post in paginatedThreadPosts" :key="post.id" class="mb-3">
+              <div
+                v-for="post in paginatedThreadPosts"
+                :key="post.id"
+                class="mb-3"
+              >
                 <ThreadPost
                   :post="post"
                   :category-id="forumStore.threadDetail.categoryId"
                   :hide-nested-replies="true"
                   :preview-only="true"
                 />
-                
+
                 <!-- 回文的子留言 -->
-                <div v-if="post.replies && post.replies.length > 0" class="ms-4 mt-2">
-                  <button 
+                <div
+                  v-if="post.replies && post.replies.length > 0"
+                  class="ms-4 mt-2"
+                >
+                  <button
                     class="btn btn-sm btn-outline-secondary mb-2"
                     @click="toggleReplyComments(post.id)"
                   >
-                    <i class="fas" :class="expandedReplies.has(post.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    <i
+                      class="fas"
+                      :class="
+                        expandedReplies.has(post.id)
+                          ? 'fa-chevron-up'
+                          : 'fa-chevron-down'
+                      "
+                    ></i>
                     <span class="ms-1">
-                      {{ expandedReplies.has(post.id) ? '收起' : '展開' }}留言 ({{ post.replies.length }})
+                      {{ expandedReplies.has(post.id) ? "收起" : "展開" }}留言
+                      ({{ post.replies.length }})
                     </span>
                   </button>
-                  
+
                   <transition name="fade">
-                    <div v-show="expandedReplies.has(post.id)" class="reply-comments">
+                    <div
+                      v-show="expandedReplies.has(post.id)"
+                      class="reply-comments"
+                    >
                       <ThreadPost
                         v-for="replyComment in post.replies"
                         :key="'reply-comment-' + replyComment.id"
@@ -447,7 +429,9 @@ const submitQuickReply = async () => {
                 </li>
                 <li
                   class="page-item"
-                  :class="{ disabled: forumStore.threadCurrentPage === threadTotalPages }"
+                  :class="{
+                    disabled: forumStore.threadCurrentPage === threadTotalPages,
+                  }"
                   @click="nextThreadPage"
                 >
                   <a class="page-link px-2 px-md-3" href="javascript:void(0)">
@@ -463,7 +447,10 @@ const submitQuickReply = async () => {
       <!-- 列表視圖 -->
       <div v-else>
         <!-- 載入中 -->
-        <div v-if="forumStore.isLoading && forumStore.topics.length === 0" class="text-center py-5">
+        <div
+          v-if="forumStore.isLoading && forumStore.topics.length === 0"
+          class="text-center py-5"
+        >
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">載入中...</span>
           </div>
@@ -680,7 +667,8 @@ const submitQuickReply = async () => {
           <!-- 省略號 -->
           <li
             v-if="
-              displayPages[displayPages.length - 1] < forumStore.pagination.totalPages - 1
+              displayPages[displayPages.length - 1] <
+              forumStore.pagination.totalPages - 1
             "
             class="page-item disabled d-none d-md-block"
           >
@@ -689,7 +677,10 @@ const submitQuickReply = async () => {
 
           <!-- 末頁 -->
           <li
-            v-if="displayPages[displayPages.length - 1] < forumStore.pagination.totalPages"
+            v-if="
+              displayPages[displayPages.length - 1] <
+              forumStore.pagination.totalPages
+            "
             class="page-item d-none d-md-block"
           >
             <a
@@ -705,7 +696,9 @@ const submitQuickReply = async () => {
           <li
             class="page-item"
             :class="{
-              disabled: forumStore.pagination.currentPage === forumStore.pagination.totalPages,
+              disabled:
+                forumStore.pagination.currentPage ===
+                forumStore.pagination.totalPages,
             }"
           >
             <a
@@ -729,7 +722,7 @@ const submitQuickReply = async () => {
 }
 
 .card-header {
-  background-color: #86B0BD !important;
+  background-color: #86b0bd !important;
   border-bottom-color: #d1d3d4;
 }
 
