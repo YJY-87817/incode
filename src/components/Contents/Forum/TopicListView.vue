@@ -372,6 +372,7 @@ const submitQuickReply = async () => {
                 :post="comment"
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="true"
+                :preview-only="true"
               />
             </div>
 
@@ -405,6 +406,7 @@ const submitQuickReply = async () => {
                         :post="replyComment"
                         :category-id="forumStore.threadDetail.categoryId"
                         :hide-nested-replies="true"
+                        :preview-only="true"
                       />
                     </div>
                   </transition>

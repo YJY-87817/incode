@@ -23,13 +23,43 @@
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
-        <HtmlIframe
-          class="card-text mt-2 rich-content"
-          :html="safeContent"
-          :min-height="60"
-          text-color="#145369"
-          :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
-        />
+        <div
+          class="mt-2"
+          @mouseenter="handlePreviewHover(true)"
+          @mouseleave="handlePreviewHover(false)"
+        >
+          <div
+            v-if="previewOnly && !isPreviewExpanded"
+            class="preview-content"
+            @click="togglePreview"
+          >
+            <p class="preview-text mb-2">
+              {{ previewText }}
+              <span v-if="isTruncated" class="text-muted">…</span>
+            </p>
+            <div v-if="previewImages.length" class="preview-images">
+              <img
+                v-for="(url, idx) in previewImages"
+                :key="url + idx"
+                :src="url"
+                alt="留言圖片"
+                class="preview-image-thumb"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <HtmlIframe
+            v-else
+            class="card-text rich-content"
+            :class="{ 'preview-expanded': previewOnly }"
+            :html="safeContent"
+            :min-height="60"
+            text-color="#145369"
+            :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
+            @click="handleExpandedClick"
+          />
+        </div>
 
         <!-- 回覆輸入框 -->
         <div v-if="showReply" class="mt-3 border-top pt-3">
@@ -119,12 +149,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  previewOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const showReply = ref(false);
 const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isUploadingImages = ref(false);
+const isPreviewExpanded = ref(false);
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -162,6 +197,36 @@ const contentSummary = computed(() => {
   const base = props.post.contentText ?? props.post.content ?? "";
   return typeof base === "string" ? base : String(base ?? "");
 });
+
+const previewText = computed(() => {
+  const base = contentSummary.value.trim();
+  if (!base) return "(無內容)";
+  return base.length > 50 ? base.slice(0, 50) : base;
+});
+
+const isTruncated = computed(() => contentSummary.value.trim().length > 50);
+
+const previewImages = computed(() => {
+  const images = props.post.imageUrls ?? [];
+  return Array.isArray(images) ? images.slice(0, 3) : [];
+});
+
+function handlePreviewHover(shouldExpand) {
+  if (!props.previewOnly) return;
+  isPreviewExpanded.value = shouldExpand;
+}
+
+function togglePreview() {
+  if (!props.previewOnly) return;
+  isPreviewExpanded.value = !isPreviewExpanded.value;
+}
+
+function handleExpandedClick(event) {
+  if (!props.previewOnly) return;
+  // 點擊完整內容時可收起
+  if (event?.target?.tagName === "A") return;
+  isPreviewExpanded.value = false;
+}
 
 function toggleReply() {
   showReply.value = !showReply.value;
@@ -304,6 +369,39 @@ function handleInteractionError(data) {
   height: auto;
   display: block;
   margin: 0.5rem 0;
+}
+
+.preview-content {
+  cursor: pointer;
+  background-color: rgba(255, 240, 221, 0.35);
+  border: 1px dashed #d1d3d4;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.preview-text {
+  color: #145369;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.preview-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.preview-image-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #d1d3d4;
+}
+
+.preview-expanded {
+  border-top: 1px dashed #d1d3d4;
+  padding-top: 0.75rem;
 }
 
 /* 巢狀回覆的樣式 */
