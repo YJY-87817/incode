@@ -20,9 +20,9 @@
                 />
               </div>
             </div>
-            <small 
+            <small
               class="text-muted post-time"
-              :class="{ 'clickable': post.type === 2 || post.type === 3 }"
+              :class="{ clickable: post.type === 2 || post.type === 3 }"
               @click="goToPostDetail"
             >
               {{ post.createdAt }}
@@ -35,11 +35,7 @@
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
-        <div
-          class="mt-2"
-          @mouseenter="handlePreviewHover(true)"
-          @mouseleave="handlePreviewHover(false)"
-        >
+        <div class="mt-2">
           <div
             v-if="previewOnly && !isPreviewExpanded"
             class="preview-content"
@@ -248,12 +244,6 @@ const previewToggleLabel = computed(() => {
   return "展開";
 });
 
-function handlePreviewHover(shouldExpand) {
-  if (!props.previewOnly) return;
-  if (isPreviewLocked.value) return;
-  isPreviewExpanded.value = shouldExpand;
-}
-
 function togglePreview() {
   if (!props.previewOnly) return;
   if (isPreviewLocked.value) {
@@ -264,7 +254,6 @@ function togglePreview() {
   isPreviewLocked.value = true;
   isPreviewExpanded.value = true;
 }
-
 
 function toggleReply() {
   showReply.value = !showReply.value;
@@ -335,7 +324,10 @@ function cancelReply() {
  */
 function goToPostDetail() {
   // 只有回文(type=2)或留言(type=3)可以跳轉
-  if (props.post.type === CONTENT_TYPES.REPLY || props.post.type === CONTENT_TYPES.COMMENT) {
+  if (
+    props.post.type === CONTENT_TYPES.REPLY ||
+    props.post.type === CONTENT_TYPES.COMMENT
+  ) {
     router.push({ name: "forum-thread", params: { id: props.post.id } });
   }
 }
