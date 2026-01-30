@@ -83,5 +83,80 @@ namespace incode2.ApiControllers.Content
         count = comments.Count
       });
     }
+
+    [HttpGet("user/{userId}/posts")]
+    public async Task<IActionResult> GetUserPosts(int userId)
+    {
+      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 1 });
+      return Ok(new
+      {
+        userId,
+        type = 1,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("user/{userId}/replies")]
+    public async Task<IActionResult> GetUserReplies(int userId)
+    {
+      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 2 });
+      return Ok(new
+      {
+        userId,
+        type = 2,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("user/{userId}/comments")]
+    public async Task<IActionResult> GetUserComments(int userId)
+    {
+      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 });
+      return Ok(new
+      {
+        userId,
+        type = new[] { 3, 4 },
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("user/{userId}/liked-contents")]
+    public async Task<IActionResult> GetUserLikedContents(int userId)
+    {
+      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+
+      var contents = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" });
+      return Ok(new
+      {
+        userId,
+        interactionCategoryId = 1,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("user/{userId}/bookmarked-contents")]
+    public async Task<IActionResult> GetUserBookmarkedContents(int userId)
+    {
+      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+
+      var contents = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" });
+      return Ok(new
+      {
+        userId,
+        interactionCategoryId = 2,
+        items = contents,
+        count = contents.Count
+      });
+    }
   }
 }
