@@ -34,7 +34,11 @@ const showTitleBodyRequiredModal = ref(false);
 const NO_REPLY_LABEL = "無(發表新主題)";
 
 const getCategoryIdValue = (cat) =>
-  cat?.id ?? cat?.content_category_id ?? cat?.categoryId ?? cat?.category_id ?? null;
+  cat?.id ??
+  cat?.content_category_id ??
+  cat?.categoryId ??
+  cat?.category_id ??
+  null;
 
 const getParentCategoryIdValue = (cat) =>
   cat?.parentCategoryId ??
@@ -63,7 +67,9 @@ const filteredCategories = computed(() => {
   const categories = rootCategories.value;
   if (!keyword) return categories;
   return categories.filter((cat) =>
-    String(getCategoryName(cat) || "").toLowerCase().includes(keyword)
+    String(getCategoryName(cat) || "")
+      .toLowerCase()
+      .includes(keyword)
   );
 });
 
@@ -90,7 +96,9 @@ const filteredSubCategories = computed(() => {
   const categories = childCategories.value;
   if (!keyword) return categories;
   return categories.filter((cat) =>
-    String(getCategoryName(cat) || "").toLowerCase().includes(keyword)
+    String(getCategoryName(cat) || "")
+      .toLowerCase()
+      .includes(keyword)
   );
 });
 
@@ -105,19 +113,25 @@ const subCategorySuggestions = computed(() => {
 const filteredReplyTopics = computed(() => {
   const keyword = replySearch.value.trim().toLowerCase();
   const topics = newTopicState.topics || [];
-  
+
   // 過濾主題
   let filtered = topics;
   if (keyword) {
     filtered = filtered.filter((topic) =>
-      String(getTopicTitle(topic) || "").toLowerCase().includes(keyword)
+      String(getTopicTitle(topic) || "")
+        .toLowerCase()
+        .includes(keyword)
     );
   }
-  
+
   // 按最新回文時間排序（有回文的優先，沒回文的按建立時間排序）
   return filtered.sort((a, b) => {
-    const aTime = a.lastReplyTime ? new Date(a.lastReplyTime).getTime() : new Date(a.createdAt).getTime();
-    const bTime = b.lastReplyTime ? new Date(b.lastReplyTime).getTime() : new Date(b.createdAt).getTime();
+    const aTime = a.lastReplyTime
+      ? new Date(a.lastReplyTime).getTime()
+      : new Date(a.createdAt).getTime();
+    const bTime = b.lastReplyTime
+      ? new Date(b.lastReplyTime).getTime()
+      : new Date(b.createdAt).getTime();
     return bTime - aTime; // 由新至舊
   });
 });
@@ -127,11 +141,17 @@ const replySuggestions = computed(() => {
   if (!input) {
     // 按最新回文時間排序
     const topics = (newTopicState.topics || []).slice();
-    return topics.sort((a, b) => {
-      const aTime = a.lastReplyTime ? new Date(a.lastReplyTime).getTime() : new Date(a.createdAt).getTime();
-      const bTime = b.lastReplyTime ? new Date(b.lastReplyTime).getTime() : new Date(b.createdAt).getTime();
-      return bTime - aTime; // 由新至舊
-    }).slice(0, 12);
+    return topics
+      .sort((a, b) => {
+        const aTime = a.lastReplyTime
+          ? new Date(a.lastReplyTime).getTime()
+          : new Date(a.createdAt).getTime();
+        const bTime = b.lastReplyTime
+          ? new Date(b.lastReplyTime).getTime()
+          : new Date(b.createdAt).getTime();
+        return bTime - aTime; // 由新至舊
+      })
+      .slice(0, 12);
   }
   return filteredReplyTopics.value.slice(0, 12);
 });
@@ -145,12 +165,12 @@ const fetchTopics = (categoryId = null) => {
   if (categoryId) params.categoryId = categoryId;
   // 獲取足夠的資料來計算回文統計
   params.pageSize = 9999;
-  
+
   apiClient
     .get("/ContentApi", { params })
     .then((data) => {
       const allItems = data.items || [];
-      
+
       // 計算每個貼文/回文的回文統計資訊
       newTopicState.topics = allItems.map((item) => {
         // 找出該貼文的所有回應
@@ -159,15 +179,16 @@ const fetchTopics = (categoryId = null) => {
             c.parentContentId === item.contentId &&
             (c.type === 2 || c.type === 3 || c.type === 4)
         );
-        
+
         let lastReplyTime = null;
         if (replies.length > 0) {
           const sortedReplies = replies.sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           lastReplyTime = sortedReplies[0].createdAt;
         }
-        
+
         return {
           id: item.contentId,
           title: item.title,
@@ -298,8 +319,7 @@ watch(
 
     const match = (newTopicState.topics || []).find(
       (topic) =>
-        String(getTopicTitle(topic) || "").toLowerCase() ===
-        input.toLowerCase()
+        String(getTopicTitle(topic) || "").toLowerCase() === input.toLowerCase()
     );
     newTopicState.parentContentId = match ? match.id : null;
   }
@@ -342,8 +362,7 @@ watch(
       return;
     }
     const match = childCategories.value.find(
-      (cat) =>
-        toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value)
+      (cat) => toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value)
     );
     if (match) {
       subCategorySearch.value = getCategoryName(match) || "";
@@ -362,8 +381,7 @@ watch(
 
     const match = childCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() ===
-        input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
     );
     selectedSubCategoryId.value = match ? getCategoryIdValue(match) : null;
   }
@@ -412,10 +430,57 @@ watch(
 
     const match = rootCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() ===
-        input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
     );
     newTopicState.categoryId = match ? getCategoryIdValue(match) : null;
+  }
+);
+
+// 監聽 modal 打開時同步分類選擇
+watch(
+  () => forumStore.showNewTopicModal,
+  (isOpen) => {
+    if (isOpen && forumStore.newTopic.categoryId) {
+      syncCategorySelection(forumStore.newTopic.categoryId);
+      if (forumStore.newTopic.categorySearch && !categorySearch.value) {
+        categorySearch.value = forumStore.newTopic.categorySearch;
+      }
+
+      // 如果有 parentContentId，需要確保主題列表已加載
+      if (forumStore.newTopic.parentContentId) {
+        const currentEffectiveId = effectiveCategoryId.value;
+        if (
+          currentEffectiveId &&
+          (!newTopicState.topics || newTopicState.topics.length === 0)
+        ) {
+          // 主題列表還未加載，觸發加載
+          fetchTopics(currentEffectiveId);
+        }
+      }
+    }
+  },
+  { immediate: false, flush: "post" }
+);
+
+// 監聽 newTopicState.topics 加載完成後，自動填充 replySearch
+watch(
+  () => newTopicState.topics,
+  () => {
+    if (forumStore.showNewTopicModal && forumStore.newTopic.parentContentId) {
+      const parentId = forumStore.newTopic.parentContentId;
+      const match = (newTopicState.topics || []).find(
+        (topic) => String(topic.id) === String(parentId)
+      );
+      if (match && !replySearch.value) {
+        console.log(
+          "[NewTopicModal] Auto-filling replySearch for parentId:",
+          parentId,
+          "match:",
+          match
+        );
+        replySearch.value = getTopicTitle(match) || "";
+      }
+    }
   }
 );
 
@@ -534,9 +599,7 @@ const submitCreateCategory = async () => {
         selectedSubCategoryId.value = created.id;
         subCategorySearch.value = created.name || name;
       } else {
-        const fallback = childCategories.value.find(
-          (cat) => cat.name === name
-        );
+        const fallback = childCategories.value.find((cat) => cat.name === name);
         if (fallback) {
           selectedSubCategoryId.value = fallback.id;
           subCategorySearch.value = fallback.name || name;
@@ -678,8 +741,8 @@ const resetNewTopicDraft = () => {
                     showSubCategoryColumn
                       ? 'col-12 col-md-4'
                       : effectiveCategoryId && newTopicState.topics.length
-                      ? 'col-12 col-md-6'
-                      : 'col-12'
+                        ? 'col-12 col-md-6'
+                        : 'col-12'
                   "
                 >
                   <div class="mb-3">
@@ -809,7 +872,9 @@ const resetNewTopicDraft = () => {
                         :key="getCategoryIdValue(child)"
                         type="button"
                         class="dropdown-item w-100 text-start"
-                        @mousedown.prevent="selectSubCategoryFromDropdown(child)"
+                        @mousedown.prevent="
+                          selectSubCategoryFromDropdown(child)
+                        "
                       >
                         {{ getCategoryName(child) }}
                       </button>
@@ -835,9 +900,7 @@ const resetNewTopicDraft = () => {
                         @click="createSubCategoryFromSearch"
                       >
                         {{
-                          isCreatingSubCategory
-                            ? "建立中..."
-                            : "手動新增分類"
+                          isCreatingSubCategory ? "建立中..." : "手動新增分類"
                         }}
                       </button>
                     </div>
@@ -845,7 +908,11 @@ const resetNewTopicDraft = () => {
                 </div>
                 <div
                   v-if="effectiveCategoryId && newTopicState.topics.length"
-                  :class="showSubCategoryColumn ? 'col-12 col-md-4' : 'col-12 col-md-6'"
+                  :class="
+                    showSubCategoryColumn
+                      ? 'col-12 col-md-4'
+                      : 'col-12 col-md-6'
+                  "
                 >
                   <div class="mb-3">
                     <label class="form-label">回覆至(可選)</label>
@@ -903,11 +970,23 @@ const resetNewTopicDraft = () => {
                         class="dropdown-item w-100 text-start reply-dropdown-item"
                         @mousedown.prevent="selectReplyFromDropdown(topic)"
                       >
-                        <div class="d-flex justify-content-between align-items-center w-100">
-                          <span class="reply-topic-title">{{ getTopicTitle(topic) }}</span>
+                        <div
+                          class="d-flex justify-content-between align-items-center w-100"
+                        >
+                          <span class="reply-topic-title">{{
+                            getTopicTitle(topic)
+                          }}</span>
                           <span class="reply-topic-badge">
-                            <span class="badge bg-primary me-2">{{ topic.replyCount }}</span>
-                            <small class="text-muted">{{ topic.lastReplyTime ? new Date(topic.lastReplyTime).toLocaleDateString('zh-TW') : '無回文' }}</small>
+                            <span class="badge bg-primary me-2">{{
+                              topic.replyCount
+                            }}</span>
+                            <small class="text-muted">{{
+                              topic.lastReplyTime
+                                ? new Date(
+                                    topic.lastReplyTime
+                                  ).toLocaleDateString("zh-TW")
+                                : "無回文"
+                            }}</small>
                           </span>
                         </div>
                       </button>
@@ -995,9 +1074,7 @@ const resetNewTopicDraft = () => {
               >
                 取消
               </button>
-              <button type="submit" class="btn btn-forum-primary">
-                送出
-              </button>
+              <button type="submit" class="btn btn-forum-primary">送出</button>
             </div>
           </form>
         </div>

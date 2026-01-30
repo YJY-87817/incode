@@ -312,12 +312,44 @@ export const useForumStore = defineStore('forum', {
 
         // 處理主題詳情
         const detail = detailRes?.contentId ? detailRes : detailRes?.data
+        console.log('[fetchThreadDetail] Raw detail response:', detail);
+        
         if (detail && detail.contentId) {
           const detailBodyHtml = await fetchBodyHtml(detail.body)
           const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
             detailBodyHtml,
             toAbsoluteUrl
           )
+          
+          // 嘗試多個可能的 categoryId 字段名
+          let categoryId = detail.categoryId ?? detail.category_id ?? detail.cateId ?? detail.cate_id ?? null;
+          
+          // 如果 detail 中沒有 categoryId，嘗試從主題列表中查找
+          if (!categoryId && this.topics && this.topics.length > 0) {
+            const matchedTopic = this.topics.find(t => String(t.id) === String(threadId));
+            if (matchedTopic) {
+              categoryId = matchedTopic.categoryId ?? matchedTopic.category_id ?? null;
+              console.log('[fetchThreadDetail] Found categoryId from topics list:', categoryId);
+            }
+          }
+          
+          // 如果仍然沒有，嘗試從 allContentsRes 中查找
+          if (!categoryId && allContentsRes?.items) {
+            const allItems = Array.isArray(allContentsRes.items) ? allContentsRes.items : [];
+            const matchedItem = allItems.find(i => String(i.contentId) === String(threadId));
+            if (matchedItem) {
+              categoryId = matchedItem.categoryId ?? matchedItem.category_id ?? null;
+              console.log('[fetchThreadDetail] Found categoryId from allContentsRes:', categoryId);
+            }
+          }
+          
+          console.log('[fetchThreadDetail] Final categoryId:', categoryId, 'from detail:', {
+            categoryId: detail.categoryId,
+            category_id: detail.category_id,
+            cateId: detail.cateId,
+            cate_id: detail.cate_id
+          });
+          
           this.threadDetail = {
             id: detail.contentId,
             title: detail.title,
@@ -327,7 +359,7 @@ export const useForumStore = defineStore('forum', {
             contentHtml: sanitizedHtml,
             contentText: textContent,
             imageUrls,
-            categoryId: detail.categoryId,
+            categoryId: categoryId,
             type: detail.type,
           }
         }

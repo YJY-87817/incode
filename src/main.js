@@ -45,4 +45,35 @@ app.use(router);
 app.use(materialKit);
 app.use(vuetify)
 app.use(createBootstrap());
-app.mount("#app");
+
+// 在 app 掛載前暴露 pinia 實例到 window，用於調試
+const appInstance = app.mount("#app");
+
+// 調試工具 - 檢查 Forum Store 和 Modal 狀態
+import { useForumStore } from './stores/forumStore';
+
+window.debugForum = () => {
+  const forumStore = useForumStore();
+  
+  console.log('=== Forum Store Debug ===');
+  console.log('showNewTopicModal:', forumStore.showNewTopicModal);
+  console.log('threadDetail:', forumStore.threadDetail);
+  console.log('newTopic:', forumStore.newTopic);
+  console.log('newTopic.categoryId:', forumStore.newTopic.categoryId);
+  console.log('newTopic.parentContentId:', forumStore.newTopic.parentContentId);
+  console.log('newTopic.categorySearch:', forumStore.newTopic.categorySearch);
+  console.log('selectedCategory:', forumStore.selectedCategory);
+  console.log('categories:', forumStore.categories);
+  console.log('===============');
+};
+
+window.checkReplyModal = () => {
+  console.log('=== Checking Reply Modal State ===');
+  window.debugForum();
+  const modalElement = document.querySelector('[v-if="forumStore.showNewTopicModal"]');
+  console.log('Modal element visible:', modalElement ? modalElement.offsetHeight > 0 : 'not found');
+  const replyInput = document.querySelector('input[placeholder="輸入或搜尋主題..."]');
+  console.log('Reply input found:', replyInput ? replyInput.value : 'not found');
+  const categoryInput = document.querySelector('input[placeholder="輸入或搜尋分類..."]');
+  console.log('Category input found:', categoryInput ? categoryInput.value : 'not found');
+};

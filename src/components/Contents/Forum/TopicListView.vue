@@ -157,20 +157,75 @@ const submitQuickReply = async () => {
   }
 };
 
+const getCategoryIdValue = (cat) =>
+  cat?.id ??
+  cat?.content_category_id ??
+  cat?.categoryId ??
+  cat?.category_id ??
+  null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
 const openDetailedComment = () => {
-  if (!forumStore.threadDetail?.id) return;
+  console.log("[openDetailedComment] threadDetail:", forumStore.threadDetail);
+
+  if (!forumStore.threadDetail?.id) {
+    console.error("[openDetailedComment] No threadDetail.id found");
+    return;
+  }
 
   const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-  const matchedCategory = (forumStore.categories || []).find(
-    (cat) => String(cat.id) === String(threadCategoryId)
+  console.log("[openDetailedComment] threadCategoryId:", threadCategoryId);
+
+  const categories = forumStore.categories || [];
+  console.log("[openDetailedComment] categories:", categories);
+
+  const matchedCategory = categories.find(
+    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
   );
+  console.log("[openDetailedComment] matchedCategory:", matchedCategory);
+
+  const parentCategoryId = matchedCategory
+    ? getParentCategoryIdValue(matchedCategory)
+    : null;
+  console.log("[openDetailedComment] parentCategoryId:", parentCategoryId);
+
+  const parentCategory = parentCategoryId
+    ? categories.find(
+        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+      )
+    : null;
+  console.log("[openDetailedComment] parentCategory:", parentCategory);
+
+  const categorySearchName = parentCategory
+    ? getCategoryName(parentCategory)
+    : matchedCategory
+      ? getCategoryName(matchedCategory)
+      : "";
+  console.log("[openDetailedComment] categorySearchName:", categorySearchName);
 
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = threadCategoryId;
   forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
-  forumStore.newTopic.categorySearch = matchedCategory?.name || "";
+  forumStore.newTopic.categorySearch = categorySearchName;
   forumStore.selectedCategory = threadCategoryId;
+
+  console.log("[openDetailedComment] Setting newTopic:", {
+    categoryId: threadCategoryId,
+    parentContentId: forumStore.threadDetail.id,
+    categorySearch: categorySearchName,
+    selectedCategory: threadCategoryId,
+  });
+
   forumStore.toggleNewTopicModal(true);
 };
 </script>
