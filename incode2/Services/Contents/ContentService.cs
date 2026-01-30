@@ -196,6 +196,111 @@ namespace incode2.Services.Contents
       .ToListAsync();
     }
 
+    public async Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types)
+    {
+      var typeList = types?.Distinct().ToList() ?? new List<int>();
+      if (typeList.Count == 0)
+      {
+        return new List<ContentDto>();
+      }
+
+      return await _context.Content
+        .Include(c => c.User)
+        .Include(c => c.Category)
+        .Where(c => c.UserId == userId && c.IsActive != 4 && typeList.Contains(c.Type))
+        .OrderByDescending(c => c.CreatedAt)
+        .Select(c => new ContentDto
+        {
+          ContentId = c.ContentId,
+          ParentContentId = c.ParentContentId,
+          UserId = c.UserId,
+          Username = c.User.Username,
+          CategoryId = c.CategoryId,
+          CategoryName = c.Category != null ? c.Category.CategoryName : null,
+          Title = c.Title,
+          Body = c.Body,
+          Type = c.Type,
+          CreatedAt = (DateTime)c.CreatedAt,
+          UpdatedAt = (DateTime)c.UpdatedAt,
+          Ishidden = c.IsActive == 2 ? true : false
+        })
+        .ToListAsync();
+    }
+
+    public async Task<List<ContentDto>> GetUserContents(int userId)
+    {
+      return await _context.Content
+        .Include(c => c.User)
+        .Include(c => c.Category)
+        .Where(c => c.UserId == userId && c.IsActive != 4)
+        .OrderByDescending(c => c.CreatedAt)
+        .Select(c => new ContentDto
+        {
+          ContentId = c.ContentId,
+          ParentContentId = c.ParentContentId,
+          UserId = c.UserId,
+          Username = c.User.Username,
+          CategoryId = c.CategoryId,
+          CategoryName = c.Category != null ? c.Category.CategoryName : null,
+          Title = c.Title,
+          Body = c.Body,
+          Type = c.Type,
+          CreatedAt = (DateTime)c.CreatedAt,
+          UpdatedAt = (DateTime)c.UpdatedAt,
+          Ishidden = c.IsActive == 2 ? true : false
+        })
+        .ToListAsync();
+    }
+
+    public async Task<List<ContentDto>> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames)
+    {
+      var resolvedCategoryId = interactionCategoryId;
+      if (!resolvedCategoryId.HasValue)
+      {
+        var normalizedNames = interactionCategoryNames
+          .Where(name => !string.IsNullOrWhiteSpace(name))
+          .Select(name => name.Trim().ToLowerInvariant())
+          .Distinct()
+          .ToList();
+
+        if (normalizedNames.Count > 0)
+        {
+          resolvedCategoryId = await _context.InteractionCategory
+            .Where(ic => normalizedNames.Contains(ic.Name.ToLower()))
+            .Select(ic => (int?)ic.InteractionCategoryId)
+            .FirstOrDefaultAsync();
+        }
+      }
+
+      if (!resolvedCategoryId.HasValue)
+      {
+        return new List<ContentDto>();
+      }
+
+      return await _context.Content
+        .Include(c => c.User)
+        .Include(c => c.Category)
+        .Where(c => c.IsActive != 4)
+        .Where(c => _context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId && ci.CategoryId == resolvedCategoryId.Value))
+        .OrderByDescending(c => c.CreatedAt)
+        .Select(c => new ContentDto
+        {
+          ContentId = c.ContentId,
+          ParentContentId = c.ParentContentId,
+          UserId = c.UserId,
+          Username = c.User.Username,
+          CategoryId = c.CategoryId,
+          CategoryName = c.Category != null ? c.Category.CategoryName : null,
+          Title = c.Title,
+          Body = c.Body,
+          Type = c.Type,
+          CreatedAt = (DateTime)c.CreatedAt,
+          UpdatedAt = (DateTime)c.UpdatedAt,
+          Ishidden = c.IsActive == 2 ? true : false
+        })
+        .ToListAsync();
+    }
+
     private async Task<string> SaveContentBodyAsync(string htmlBody)
     {
       var webRootPath = _environment.WebRootPath;
