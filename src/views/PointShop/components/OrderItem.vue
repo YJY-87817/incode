@@ -145,7 +145,7 @@ const cancelOrder = (orderId) => {
               </table>
             </div>
 
-            <div v-if="order.remark" class="alert alert-light mt-3 mb-0 border d-flex align-items-start small">
+            <div class="alert alert-light mt-3 mb-0 border d-flex align-items-start small">
               <i class="bi bi-chat-text-fill me-2 mt-1 text-secondary"></i>
               <div>
                 <strong class="text-dark">備註：</strong>
@@ -166,17 +166,22 @@ const cancelOrder = (orderId) => {
 
             <!-- Actions Footer (In column) -->
             <div class="mt-auto pt-3 border-top">
-              <div v-if="order.status == '取消'" class="d-grid">
-                <button class="btn btn-secondary disabled" disabled>訂單已取消</button>
+              <div v-if="order.status == '取消'" class="d-flex gap-2">
+                <button class="btn btn-secondary disabled flex-fill" disabled>訂單修改</button>
+                <button class="btn btn-secondary disabled flex-fill" disabled>訂單已取消</button>
               </div>
-              <div v-else-if="order.status == '待處理'" class="d-grid">
-                <button class="btn btn-outline-danger" @click="cancelOrder(order.orderId)">
+              <div v-else-if="order.status == '待處理'" class="d-flex gap-2">
+                <button class="btn btn-outline-danger flex-fill">
+                  訂單修改
+                </button>
+                <button class="btn btn-outline-danger flex-fill" @click="cancelOrder(order.orderId)">
                   取消訂單
                 </button>
               </div>
-              <div v-else class="d-grid">
+              <div v-else class="d-flex gap-2">
                 <!-- Placeholder for other statuses, usually no action needed -->
-                <button class="btn btn-success disabled" disabled>訂單已完成</button>
+                <button class="btn btn-success disabled flex-fill" disabled>訂單修改</button>
+                <button class="btn btn-success disabled flex-fill" disabled>訂單已完成</button>
               </div>
             </div>
           </div>

@@ -18,9 +18,17 @@ const decrease = (item) => {
 <template>
   <!-- 購物車按鈕 -->
 
-  <button class="btn position-fixed end-0 top-50 translate-middle-y me-3 d-md-none" data-bs-toggle="offcanvas"
-    data-bs-target="#cartOffcanvas">
-    <i class="bi bi-cart-dash-fill h1"></i>
+  <button
+    class="btn position-fixed end-0 top-50 translate-middle-y me-3 d-lg-none d-flex align-items-center position-relative"
+    data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+    <div class="position-relative d-inline-block">
+      <i class="bi bi-cart-dash-fill h1"></i>
+      <span v-if="CartNow.totalItems > 0"
+        class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+        style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
+        {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+      </span>
+    </div>
   </button>
 
   <!-- 左側購物車 -->

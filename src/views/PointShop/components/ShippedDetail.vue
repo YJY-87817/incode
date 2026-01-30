@@ -80,8 +80,8 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-if="ship.remark" class="alert alert-light mt-2 mb-0 p-2 small text-muted border">
-          <i class="bi bi-info-circle me-1"></i>
+        <div class="alert alert-light mt-2 mb-0 p-2 small text-muted border">
+          <i class="bi bi-info-circle me-1"></i>備註：
           {{ ship.remark }}
         </div>
       </div>
