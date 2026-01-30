@@ -86,42 +86,109 @@
 
         <!-- 回覆輸入框 -->
         <div v-if="showReply" class="mt-3 border-top pt-3">
-          <textarea
-            v-model="replyContent"
-            class="form-control"
-            rows="3"
-            placeholder="撰寫您的回覆..."
-          ></textarea>
           <div
-            class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2"
+            class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
           >
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              class="form-control form-control-sm"
-              @change="handleReplyImages"
-              :disabled="isUploadingImages"
-            />
-            <small class="text-muted">
-              上傳後會自動把圖片網址加入內容。{{
-                isUploadingImages ? "上傳中..." : ""
-              }}
-            </small>
-          </div>
-          <div class="d-flex gap-2 mt-2">
             <button
               class="btn btn-forum-primary btn-sm"
-              @click="submitReply"
-              :disabled="isSubmittingReply || !replyContent.trim()"
+              type="button"
+              @click="toggleQuickReply"
             >
-              <i class="fas fa-paper-plane me-1"></i>
-              {{ isSubmittingReply ? "發送中..." : "發送回覆" }}
+              <i
+                class="fas"
+                :class="isQuickReplyOpen ? 'fa-times' : 'fa-pen'"
+              ></i>
+              <span class="ms-1">
+                {{ isQuickReplyOpen ? "收起簡易留言" : "簡易留言" }}
+              </span>
             </button>
-            <button class="btn btn-forum-secondary btn-sm" @click="cancelReply">
-              取消
+            <button
+              class="btn btn-forum-secondary btn-sm"
+              type="button"
+              @click="openDetailedReply"
+            >
+              <i class="fas fa-feather-alt me-1"></i>
+              詳細留言
             </button>
+            <small class="text-muted" v-if="!replyMode">
+              簡易留言僅文字；詳細留言可附圖片
+            </small>
           </div>
+
+          <transition name="fade">
+            <div v-show="replyMode === 'quick'" class="quick-reply-box">
+              <textarea
+                v-model="replyContent"
+                class="form-control"
+                rows="4"
+                placeholder="請輸入簡易留言（純文字）"
+              ></textarea>
+
+              <div class="d-flex flex-wrap gap-2 quick-reply-actions">
+                <button
+                  class="btn btn-forum-primary btn-sm"
+                  type="button"
+                  @click="submitReply"
+                  :disabled="isSubmittingReply || !replyContent.trim()"
+                >
+                  <i class="fas fa-paper-plane me-1"></i>
+                  {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
+                </button>
+                <button
+                  class="btn btn-forum-secondary btn-sm"
+                  type="button"
+                  @click="cancelReply"
+                  :disabled="isSubmittingReply"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </transition>
+
+          <transition name="fade">
+            <div v-show="replyMode === 'detailed'" class="detailed-reply-box">
+              <textarea
+                v-model="replyContent"
+                class="form-control"
+                rows="4"
+                placeholder="撰寫您的回覆..."
+              ></textarea>
+              <div
+                class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="form-control form-control-sm"
+                  @change="handleReplyImages"
+                  :disabled="isUploadingImages"
+                />
+                <small class="text-muted">
+                  上傳後會自動把圖片網址加入內容。{{
+                    isUploadingImages ? "上傳中..." : ""
+                  }}
+                </small>
+              </div>
+              <div class="d-flex gap-2 mt-2">
+                <button
+                  class="btn btn-forum-primary btn-sm"
+                  @click="submitReply"
+                  :disabled="isSubmittingReply || !replyContent.trim()"
+                >
+                  <i class="fas fa-paper-plane me-1"></i>
+                  {{ isSubmittingReply ? "發送中..." : "發送回覆" }}
+                </button>
+                <button
+                  class="btn btn-forum-secondary btn-sm"
+                  @click="cancelReply"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
     </div>
@@ -186,6 +253,9 @@ const isSubmittingReply = ref(false);
 const isUploadingImages = ref(false);
 const isPreviewExpanded = ref(false);
 const isPreviewLocked = ref(false);
+const replyMode = ref(null);
+
+const isQuickReplyOpen = computed(() => replyMode.value === "quick");
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -259,7 +329,25 @@ function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
     replyContent.value = "";
+    replyMode.value = null;
+    return;
   }
+  replyMode.value = null;
+}
+
+function toggleQuickReply() {
+  if (!showReply.value) {
+    showReply.value = true;
+  }
+
+  replyMode.value = replyMode.value === "quick" ? null : "quick";
+}
+
+function openDetailedReply() {
+  if (!showReply.value) {
+    showReply.value = true;
+  }
+  replyMode.value = "detailed";
 }
 
 async function handleReplyImages(event) {
@@ -317,6 +405,7 @@ async function submitReply() {
 function cancelReply() {
   showReply.value = false;
   replyContent.value = "";
+  replyMode.value = null;
 }
 
 /**
@@ -418,6 +507,22 @@ function handleInteractionError(data) {
   min-height: 28px;
   display: inline-flex;
   align-items: center;
+}
+
+.quick-reply-toggle .btn {
+  min-width: 120px;
+}
+
+.quick-reply-box,
+.detailed-reply-box {
+  background: rgba(255, 240, 221, 0.5);
+  border: 1px solid #d1d3d4;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.quick-reply-actions .btn {
+  min-width: 100px;
 }
 
 .thread-post .card {
