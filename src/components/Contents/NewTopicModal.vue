@@ -105,16 +105,33 @@ const subCategorySuggestions = computed(() => {
 const filteredReplyTopics = computed(() => {
   const keyword = replySearch.value.trim().toLowerCase();
   const topics = newTopicState.topics || [];
-  if (!keyword) return topics;
-  return topics.filter((topic) =>
-    String(getTopicTitle(topic) || "").toLowerCase().includes(keyword)
-  );
+  
+  // 過濾主題
+  let filtered = topics;
+  if (keyword) {
+    filtered = filtered.filter((topic) =>
+      String(getTopicTitle(topic) || "").toLowerCase().includes(keyword)
+    );
+  }
+  
+  // 按最新回文時間排序（有回文的優先，沒回文的按建立時間排序）
+  return filtered.sort((a, b) => {
+    const aTime = a.lastReplyTime ? new Date(a.lastReplyTime).getTime() : new Date(a.createdAt).getTime();
+    const bTime = b.lastReplyTime ? new Date(b.lastReplyTime).getTime() : new Date(b.createdAt).getTime();
+    return bTime - aTime; // 由新至舊
+  });
 });
 
 const replySuggestions = computed(() => {
   const input = replySearch.value.trim();
   if (!input) {
-    return (newTopicState.topics || []).slice(0, 12);
+    // 按最新回文時間排序
+    const topics = (newTopicState.topics || []).slice();
+    return topics.sort((a, b) => {
+      const aTime = a.lastReplyTime ? new Date(a.lastReplyTime).getTime() : new Date(a.createdAt).getTime();
+      const bTime = b.lastReplyTime ? new Date(b.lastReplyTime).getTime() : new Date(b.createdAt).getTime();
+      return bTime - aTime; // 由新至舊
+    }).slice(0, 12);
   }
   return filteredReplyTopics.value.slice(0, 12);
 });
@@ -126,13 +143,39 @@ const effectiveCategoryId = computed(
 const fetchTopics = (categoryId = null) => {
   const params = {};
   if (categoryId) params.categoryId = categoryId;
+  // 獲取足夠的資料來計算回文統計
+  params.pageSize = 9999;
+  
   apiClient
     .get("/ContentApi", { params })
     .then((data) => {
-      newTopicState.topics = data.items.map((item) => ({
-        id: item.contentId,
-        title: item.title,
-      }));
+      const allItems = data.items || [];
+      
+      // 計算每個貼文/回文的回文統計資訊
+      newTopicState.topics = allItems.map((item) => {
+        // 找出該貼文的所有回應
+        const replies = allItems.filter(
+          (c) =>
+            c.parentContentId === item.contentId &&
+            (c.type === 2 || c.type === 3 || c.type === 4)
+        );
+        
+        let lastReplyTime = null;
+        if (replies.length > 0) {
+          const sortedReplies = replies.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          lastReplyTime = sortedReplies[0].createdAt;
+        }
+        
+        return {
+          id: item.contentId,
+          title: item.title,
+          replyCount: replies.length,
+          lastReplyTime: lastReplyTime,
+          createdAt: item.createdAt,
+        };
+      });
     })
     .catch((error) => {
       console.error("載入主題失敗:", error);
@@ -857,10 +900,16 @@ const resetNewTopicDraft = () => {
                         v-for="topic in replySuggestions"
                         :key="topic.id"
                         type="button"
-                        class="dropdown-item w-100 text-start"
+                        class="dropdown-item w-100 text-start reply-dropdown-item"
                         @mousedown.prevent="selectReplyFromDropdown(topic)"
                       >
-                        {{ getTopicTitle(topic) }}
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                          <span class="reply-topic-title">{{ getTopicTitle(topic) }}</span>
+                          <span class="reply-topic-badge">
+                            <span class="badge bg-primary me-2">{{ topic.replyCount }}</span>
+                            <small class="text-muted">{{ topic.lastReplyTime ? new Date(topic.lastReplyTime).toLocaleDateString('zh-TW') : '無回文' }}</small>
+                          </span>
+                        </div>
                       </button>
                       <div
                         v-if="replySuggestions.length === 0"
@@ -1248,5 +1297,31 @@ const resetNewTopicDraft = () => {
 
 .dropdown-item:hover {
   background: rgba(255, 240, 221, 0.7);
+}
+
+.reply-dropdown-item {
+  padding: 0.25rem 0.75rem !important;
+}
+
+.reply-topic-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.reply-topic-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.reply-topic-badge .badge {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
 }
 </style>
