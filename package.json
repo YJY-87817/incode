@@ -36,6 +36,7 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "prismjs": "1.30.0",
+    "sweetalert2": "^11.26.17",
     "typed.js": "2.1.0",
     "vue": "^3.5.27",
     "vue-clipboard3": "2.0.0",
