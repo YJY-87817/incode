@@ -221,9 +221,9 @@ export const useForumStore = defineStore('forum', {
           })
         )
 
-        // 2. 過濾 type=1(貼文) - 只顯示主貼文，回文應在貼文詳情頁面顯示
+        // 2. 過濾 type=1(貼文) 和 type=2(回文) - 只顯示主貼文和回文，留言應在貼文詳情頁面顯示
         let listContents = contentsWithHtml
-          .filter(c => c.type === CONTENT_TYPES.POST)
+          .filter(c => c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY)
 
         // 3. 搜尋過濾 (搜尋 title 和 body)
         if (this.searchKeyword.trim()) {
