@@ -222,7 +222,7 @@ const submitQuickReply = async () => {
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
-            <h3 class="card-title fs-4 fs-md-3 text-break mb-0">
+            <h3 class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0">
               {{ forumStore.threadDetail.title }}
             </h3>
 
@@ -796,9 +796,11 @@ const submitQuickReply = async () => {
 
 /* 主題標題 */
 .topic-title-link {
-  color: #145369;
+  color: #0f3c4d;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-size: 1.05rem;
   transition: color 0.2s ease;
 }
 
@@ -817,9 +819,17 @@ const submitQuickReply = async () => {
 
 /* 互動按鈕容器樣式 */
 .interaction-container {
-  display: block;
+  display: inline-flex;
+  align-items: center;
   position: relative;
   z-index: 10;
+}
+
+.thread-detail-title {
+  font-weight: 700;
+  color: #0f3c4d;
+  letter-spacing: 0.2px;
+  font-size: 1.35rem;
 }
 
 .quick-reply-toggle .btn {

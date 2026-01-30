@@ -8,7 +8,7 @@
               class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1"
             >
               <div class="d-flex align-items-center gap-2">
-                <h6 class="card-title mb-0">{{ post.author }}</h6>
+                <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
                 <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
               </div>
               <div class="interaction-container" @click.stop>
@@ -22,7 +22,10 @@
             </div>
             <small class="text-muted">{{ post.createdAt }}</small>
           </div>
-          <button class="btn btn-sm btn-forum-secondary" @click="toggleReply">
+          <button
+            class="btn btn-sm btn-forum-secondary thread-reply-btn"
+            @click="toggleReply"
+          >
             <i class="fas fa-reply me-1"></i>回覆
           </button>
         </div>
@@ -374,6 +377,20 @@ function handleInteractionError(data) {
 .card-title {
   font-weight: 600;
   color: #145369;
+}
+
+.post-author {
+  font-weight: 700;
+  color: #0f3c4d;
+  letter-spacing: 0.2px;
+  font-size: 1rem;
+}
+
+.thread-reply-btn {
+  height: 28px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .thread-post .card {
