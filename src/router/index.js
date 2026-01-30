@@ -193,11 +193,6 @@ const router = createRouter({
       component: () => import("@/views/Contents/test.vue"),
     },
     {
-      path: "/tmdb",
-      name: "tmdb",
-      component: () => import("@/views/Contents/tmdb.vue"),
-    },
-    {
       path: "/imagetest",
       name: "imagetest",
       component: () => import("@/components/Contents/ImageTest.vue"),

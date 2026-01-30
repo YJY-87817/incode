@@ -469,12 +469,6 @@ watch(
                         <span>預設首頁</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'tmdb' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>下載TMDB海報</span>
-                      </RouterLink>
-                      <RouterLink
                         :to="{ name: 'imagetest' }"
                         class="dropdown-item border-radius-md"
                       >
@@ -497,12 +491,6 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>預設首頁</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'tmdb' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>下載TMDB海報</span>
                 </RouterLink>
                 <RouterLink
                   :to="{ name: 'imagetest' }"
