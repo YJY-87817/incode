@@ -38,12 +38,17 @@ namespace incode2.Services.Contents
       .Select(c => new ContentDto
       {
         ContentId = c.ContentId,
+        ParentContentId = c.ParentContentId,  // 添加這一行
+        UserId = c.UserId,                     // 添加這一行
+        CategoryId = c.CategoryId,             // 添加這一行
         Title = c.Title,
         Body = c.Body,
         Type = c.Type,
         CreatedAt = (DateTime)c.CreatedAt,
+        UpdatedAt = (DateTime)c.UpdatedAt,     // 添加這一行
         Username = c.User.Username,
-        CategoryName = c.Category.CategoryName
+        CategoryName = c.Category.CategoryName,
+        Ishidden = c.IsActive == 2 ? true : false  // ⭐ 添加這一行（可選）
       })
       .ToListAsync();
 
