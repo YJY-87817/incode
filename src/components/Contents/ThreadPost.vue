@@ -49,16 +49,31 @@
             </div>
           </div>
 
-          <HtmlIframe
-            v-else
-            class="card-text rich-content"
-            :class="{ 'preview-expanded': previewOnly }"
-            :html="safeContent"
-            :min-height="60"
-            text-color="#145369"
-            :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
-            @click="handleExpandedClick"
-          />
+          <div v-else class="preview-iframe-wrapper">
+            <HtmlIframe
+              class="card-text rich-content"
+              :class="{ 'preview-expanded': previewOnly }"
+              :html="safeContent"
+              :min-height="60"
+              text-color="#145369"
+              :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
+            />
+            <div
+              v-if="previewOnly"
+              class="preview-click-layer"
+              @click.stop="togglePreview"
+            ></div>
+          </div>
+
+          <div v-if="previewOnly" class="preview-toggle">
+            <button
+              type="button"
+              class="btn btn-link p-0 preview-toggle-btn"
+              @click.stop="togglePreview"
+            >
+              {{ previewToggleLabel }}
+            </button>
+          </div>
         </div>
 
         <!-- 回覆輸入框 -->
@@ -160,6 +175,7 @@ const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isUploadingImages = ref(false);
 const isPreviewExpanded = ref(false);
+const isPreviewLocked = ref(false);
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -211,22 +227,30 @@ const previewImages = computed(() => {
   return Array.isArray(images) ? images.slice(0, 3) : [];
 });
 
+const previewToggleLabel = computed(() => {
+  if (!props.previewOnly) return "";
+  if (isPreviewLocked.value) return "收起";
+  if (isPreviewExpanded.value) return "固定展開";
+  return "展開";
+});
+
 function handlePreviewHover(shouldExpand) {
   if (!props.previewOnly) return;
+  if (isPreviewLocked.value) return;
   isPreviewExpanded.value = shouldExpand;
 }
 
 function togglePreview() {
   if (!props.previewOnly) return;
-  isPreviewExpanded.value = !isPreviewExpanded.value;
+  if (isPreviewLocked.value) {
+    isPreviewLocked.value = false;
+    isPreviewExpanded.value = false;
+    return;
+  }
+  isPreviewLocked.value = true;
+  isPreviewExpanded.value = true;
 }
 
-function handleExpandedClick(event) {
-  if (!props.previewOnly) return;
-  // 點擊完整內容時可收起
-  if (event?.target?.tagName === "A") return;
-  isPreviewExpanded.value = false;
-}
 
 function toggleReply() {
   showReply.value = !showReply.value;
@@ -402,6 +426,33 @@ function handleInteractionError(data) {
 .preview-expanded {
   border-top: 1px dashed #d1d3d4;
   padding-top: 0.75rem;
+}
+
+.preview-toggle {
+  margin-top: 0.35rem;
+}
+
+.preview-toggle-btn {
+  font-size: 0.85rem;
+  color: #145369;
+  text-decoration: none;
+}
+
+.preview-toggle-btn:hover {
+  text-decoration: underline;
+  color: #0f3c4d;
+}
+
+.preview-iframe-wrapper {
+  position: relative;
+}
+
+.preview-click-layer {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: transparent;
+  z-index: 2;
 }
 
 /* 巢狀回覆的樣式 */
