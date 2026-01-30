@@ -53,6 +53,21 @@ import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  /**
+   * 控制路由切換時的滾動行為
+   * @param {Object} to - 目標路由對象
+   * @param {Object} from - 來源路由對象
+   * @param {Object|null} savedPosition - 儲存的滾動位置（僅在使用瀏覽器前進/後退按鈕時存在）
+   * @returns {Object} 滾動位置對象，包含 left 和 top 屬性
+   * @description 如果存在儲存的位置則返回該位置，否則滾動到頁面頂部
+   */
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { left: 0, top: 0 };
+    }
+  },
   routes: [
     {
       // 首頁改成這個_tim

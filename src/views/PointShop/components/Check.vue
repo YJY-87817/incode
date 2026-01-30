@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import { postCreateOrder } from "@/views/PointShop/services/PointShopApi";
@@ -13,7 +13,46 @@ const phone = ref('');
 const address = ref('');
 const userid = ref(0);
 
+// 檢查是否有實體商品（isPhysical: true）
+const hasPhysicalProducts = computed(() => {
+  return CartNow.cartItems.some(item => item.isPhysical === true);
+});
+
+// 驗證寄送資訊
+const validateShippingInfo = () => {
+  if (!hasPhysicalProducts.value) {
+    return true; // 沒有實體商品，不需要驗證
+  }
+
+  const errors = [];
+  if (!name.value.trim()) {
+    errors.push('收件人姓名');
+  }
+  if (!phone.value.trim()) {
+    errors.push('聯絡電話');
+  }
+  if (!address.value.trim()) {
+    errors.push('寄送地址');
+  }
+
+  if (errors.length > 0) {
+    checkoutSwal.fire({
+      title: "必填欄位未完成",
+      text: `請填寫: ${errors.join('、')}`,
+      icon: "warning"
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const checkout = async () => {
+  // 驗證寄送資訊
+  if (!validateShippingInfo()) {
+    return;
+  }
+
   const Neworder = {
     "userId": userid.value,
     "remark": remark.value,
@@ -71,23 +110,32 @@ const checkout = async () => {
 
     <div class="card-body px-4">
       <div class="mb-3">
-        <label class="form-label  small fw-bold">收件人姓名</label>
-        <input type="text" class="form-control border p-2 " placeholder="請輸入收件人姓名" v-model="name">
+        <label class="form-label  small fw-bold">
+          收件人姓名
+          <span v-if="hasPhysicalProducts" class="text-danger">*</span>
+        </label>
+        <input type="text" class="form-control border p-2" placeholder="請輸入收件人姓名" v-model="name">
       </div>
       <div class="mb-3">
-        <label class="form-label  small fw-bold">聯絡電話</label>
-        <input type="tel" class="form-control border p-2 " placeholder="09xx-xxx-xxx" v-model="phone">
+        <label class="form-label  small fw-bold">
+          聯絡電話
+          <span v-if="hasPhysicalProducts" class="text-danger">*</span>
+        </label>
+        <input type="tel" class="form-control border p-2" placeholder="09xx-xxx-xxx" v-model="phone">
       </div>
       <div class="mb-3">
-        <label class="form-label  small fw-bold">寄送地址</label>
-        <input type="text" class="form-control border p-2 " placeholder="請輸入收件地址" v-model="address">
+        <label class="form-label  small fw-bold">
+          寄送地址
+          <span v-if="hasPhysicalProducts" class="text-danger">*</span>
+        </label>
+        <input type="text" class="form-control border p-2" placeholder="請輸入收件地址" v-model="address">
       </div>
-      <div class="mb-3">
+      <div class="mb-2">
         <label class="form-label  small fw-bold">備註事項</label>
         <textarea v-model="remark" class="form-control border p-2 " rows="3" placeholder="如有特殊需求請填寫"></textarea>
       </div>
+      <small v-if="hasPhysicalProducts" class="text-muted">標示 * 為必填欄位</small>
     </div>
-
     <div class="card-footer bg-white border-top-0 pb-4 px-4">
       <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm" @click="checkout">
         確認結帳

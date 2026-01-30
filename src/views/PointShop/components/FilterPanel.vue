@@ -73,7 +73,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="card shadow-sm border-0 mb-5 rounded" style="top: 80px ">
+  <div class="card shadow-sm border-0 mb-5 rounded sticky-top" style="top: 80px">
 
     <div ref="filterHeaderRef"
       class="card-header text-white d-flex justify-content-between align-items-center collapsed"
@@ -158,6 +158,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.sticky-top {
+  z-index: 10;
+}
+
 /* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */
 .card-header:not(.collapsed) .bi-chevron-down {
   transform: rotate(180deg);

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import CartSwal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -43,6 +43,11 @@ const handleAddToCart = () => {
         confirmButtonColor: '#145369'
     });
 };
+
+// 頁面掛載時滾動到上方
+onMounted(() => {
+    window.scrollTo(0, 0);
+});
 
 </script>
 
