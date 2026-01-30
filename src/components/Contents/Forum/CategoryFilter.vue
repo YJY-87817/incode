@@ -6,9 +6,20 @@
 -->
 
 <script setup>
+import { useRoute, useRouter } from "vue-router";
 import { useForumStore } from "@/stores/forumStore";
 
 const forumStore = useForumStore();
+const route = useRoute();
+const router = useRouter();
+
+const handleSelectCategory = (categoryId) => {
+  const isDetailPage = Boolean(route.params?.id);
+  forumStore.selectCategory(categoryId, { clearSearch: isDetailPage });
+  if (isDetailPage) {
+    router.push({ name: "forum" });
+  }
+};
 </script>
 
 <template>
@@ -56,12 +67,12 @@ const forumStore = useForumStore();
                 forumStore.selectedCategory === category.id,
               'border-light': forumStore.selectedCategory !== category.id,
             }"
-            @click="forumStore.selectCategory(category.id)"
+            @click="handleSelectCategory(category.id)"
             :title="category.description || category.name"
             role="button"
             tabindex="0"
-            @keydown.enter="forumStore.selectCategory(category.id)"
-            @keydown.space.prevent="forumStore.selectCategory(category.id)"
+            @keydown.enter="handleSelectCategory(category.id)"
+            @keydown.space.prevent="handleSelectCategory(category.id)"
           >
             <!-- 分類名稱 -->
             <h6 class="mb-2 fw-bold text-truncate">{{ category.name }}</h6>

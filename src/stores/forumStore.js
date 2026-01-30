@@ -160,11 +160,15 @@ export const useForumStore = defineStore('forum', {
       }
     },
 
-    selectCategory(categoryId) {
+    selectCategory(categoryId, options = {}) {
+      const { clearSearch = false } = options || {}
       this.selectedCategory = this.selectedCategory === categoryId ? null : categoryId
       // 同步更新新主題的分類
       this.newTopic.categoryId = this.selectedCategory
       this.pagination.currentPage = 1
+      if (clearSearch) {
+        this.searchKeyword = ''
+      }
       this.fetchTopics()
     },
 
