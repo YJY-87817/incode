@@ -267,7 +267,7 @@ onUnmounted(() => {
               </v-btn>
               <v-dialog v-model="dialog" max-width="600">
                 <v-card rounded="xl" class="pa-6">
-                  <div class="d-flex justify-space-between align-center mb-6">
+                  <div class="d-flex justify-space-between align-center mb-4">
                     <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
                     <v-btn
                       icon="mdi-close"

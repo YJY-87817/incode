@@ -1,19 +1,35 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useUserStore } from "@/stores/user/user";
-import { useAuthStore } from "@/stores/user/auth";
+import { useUserStore } from "@/stores/user/user.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 import { storeToRefs } from "pinia";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import { useAlertStore } from "@/stores/alert";
+import FollowListDialog from "@/views/user/components/FollowListDialog.vue";
 
 const alertStore = useAlertStore();
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const route = useRoute();
-const { userProfile, displayAvatar, isFollowingCurrentUser, isLoading } =
-  storeToRefs(userStore);
+const {
+  userProfile,
+  displayAvatar,
+  followersCount,
+  isFollowingCurrentUser,
+  isLoading,
+} = storeToRefs(userStore);
+
+const showFollowDialog = ref(false);
+const followDialogTab = ref("following");
+const openFollowDialog = (tab) => {
+  // 如果資料還在載入中，或是沒有 User ID，就不打開
+  if (isLoading.value || !userProfile.value.id) return;
+
+  followDialogTab.value = tab;
+  showFollowDialog.value = true;
+};
 
 const isSelf = computed(() => {
   const currentUserId = authStore.user?.id;
@@ -199,13 +215,19 @@ watch(
                   }}</span>
                   <span class="text-caption text-white ml-1">點數</span>
                 </div>
-                <div class="text-center mr-4">
+                <div
+                  class="text-center mr-4 cursor-pointer hover-opacity"
+                  @click="openFollowDialog('following')"
+                >
                   <span class="text-h6 font-weight-bold text-grey-darken-3">{{
                     userStore.userProfile.followers
                   }}</span>
                   <span class="text-caption text-white ml-1">關注</span>
                 </div>
-                <div class="text-center">
+                <div
+                  class="text-centercursor-pointer hover-opacity"
+                  @click="openFollowDialog('fans')"
+                >
                   <span class="text-h6 font-weight-bold text-grey-darken-3">{{
                     userStore.userProfile.following
                   }}</span>
@@ -334,6 +356,22 @@ watch(
       </v-container>
     </v-container>
   </div>
-
+  <FollowListDialog
+    v-if="userProfile.id"
+    v-model="showFollowDialog"
+    :user-id="userProfile.id"
+    :initial-tab="followDialogTab"
+  />
   <DefaultFooter />
 </template>
+
+<style scoped>
+/* [新增] 讓滑鼠移過去有互動感 */
+.cursor-pointer {
+  cursor: pointer;
+}
+.hover-opacity:hover {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+</style>
