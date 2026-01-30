@@ -86,6 +86,9 @@ namespace incode2.Services.PointShop
                         IsFailed = e.IsFailed,
                         Remark = e.Remark,
                         OrderId = e.OrderId,
+                        MaskedName = ShippedDTO.MaskName(e.RecipientName),
+                        MaskedPhone = ShippedDTO.MaskPhone(e.RecipientPhone),
+                        MaskedAddress = ShippedDTO.MaskAddress(e.RecipientAddress)
                     })
                     .ToListAsync();
 
