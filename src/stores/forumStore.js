@@ -354,8 +354,9 @@ export const useForumStore = defineStore('forum', {
         )
 
         // 獲取回文 - 只取 type === REPLY 的內容（不包含 COMMENT 或 COMMENT_REPLY）
+        const normalizedThreadId = Number(threadId)
         const repliesRes = await apiClient.get('/ContentApi', {
-          params: { parentContentId: threadId },
+          params: { parentContentId: normalizedThreadId },
         })
         // API 可能返回 { items: [...] } 或直接返回數組
         const replyItems = Array.isArray(repliesRes?.items)
@@ -365,7 +366,9 @@ export const useForumStore = defineStore('forum', {
         // 只過濾出回文類型，排除留言和留言回覆，並且排除已經在留言中出現過的ID
         const commentIds = new Set(this.threadComments.map(c => c.id))
         const replyList = replyItems.filter(i =>
-          i.type === CONTENT_TYPES.REPLY && !commentIds.has(i.contentId)
+          i.type === CONTENT_TYPES.REPLY &&
+          !commentIds.has(i.contentId) &&
+          Number(i.parentContentId) === normalizedThreadId
         )
         this.threadPosts = (await Promise.all(
           replyList.map(async (i) => {
