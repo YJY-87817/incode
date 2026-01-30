@@ -44,6 +44,19 @@ const quickReplyLabel = computed(() =>
   quickReplyMode.value === "comment" ? "留言" : "回文"
 );
 
+// 展開回文子留言的狀態
+const expandedReplies = ref(new Set());
+
+const toggleReplyComments = (replyId) => {
+  if (expandedReplies.value.has(replyId)) {
+    expandedReplies.value.delete(replyId);
+  } else {
+    expandedReplies.value.add(replyId);
+  }
+  // 觸發響應式更新
+  expandedReplies.value = new Set(expandedReplies.value);
+};
+
 /**
  * 處理主題互動成功
  */
@@ -350,9 +363,9 @@ const submitQuickReply = async () => {
               </div>
             </transition>
 
-            <!-- 所有留言 -->
+            <!-- 所有留言 (type=3) -->
             <div v-if="forumStore.threadComments.length > 0" class="mb-4">
-              <h6 class="fs-6 mb-2">📝 所有留言</h6>
+              <h6 class="fs-6 mb-2">📝 留言</h6>
               <ThreadPost
                 v-for="comment in forumStore.threadComments"
                 :key="'comment-' + comment.id"
@@ -362,15 +375,41 @@ const submitQuickReply = async () => {
               />
             </div>
 
-            <!-- 回文分頁 -->
+            <!-- 回文分頁 (type=2) -->
             <div v-if="paginatedThreadPosts.length > 0" class="mb-4">
               <h6 class="fs-6 mb-2">💭 回文</h6>
-              <ThreadPost
-                v-for="post in paginatedThreadPosts"
-                :key="post.id"
-                :post="post"
-                :category-id="forumStore.threadDetail.categoryId"
-              />
+              <div v-for="post in paginatedThreadPosts" :key="post.id" class="mb-3">
+                <ThreadPost
+                  :post="post"
+                  :category-id="forumStore.threadDetail.categoryId"
+                  :hide-nested-replies="true"
+                />
+                
+                <!-- 回文的子留言 -->
+                <div v-if="post.replies && post.replies.length > 0" class="ms-4 mt-2">
+                  <button 
+                    class="btn btn-sm btn-outline-secondary mb-2"
+                    @click="toggleReplyComments(post.id)"
+                  >
+                    <i class="fas" :class="expandedReplies.has(post.id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    <span class="ms-1">
+                      {{ expandedReplies.has(post.id) ? '收起' : '展開' }}留言 ({{ post.replies.length }})
+                    </span>
+                  </button>
+                  
+                  <transition name="fade">
+                    <div v-show="expandedReplies.has(post.id)" class="reply-comments">
+                      <ThreadPost
+                        v-for="replyComment in post.replies"
+                        :key="'reply-comment-' + replyComment.id"
+                        :post="replyComment"
+                        :category-id="forumStore.threadDetail.categoryId"
+                        :hide-nested-replies="true"
+                      />
+                    </div>
+                  </transition>
+                </div>
+              </div>
             </div>
 
             <!-- 分頁導航 -->
@@ -854,5 +893,13 @@ const submitQuickReply = async () => {
   .thread-detail-image {
     max-height: 300px;
   }
+}
+
+/* 回文子留言樣式 */
+.reply-comments {
+  border-left: 3px solid #86b0bd;
+  padding-left: 1rem;
+  background-color: rgba(255, 240, 221, 0.2);
+  border-radius: 4px;
 }
 </style>

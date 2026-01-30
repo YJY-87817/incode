@@ -370,6 +370,8 @@ export const useForumStore = defineStore('forum', {
           !commentIds.has(i.contentId) &&
           Number(i.parentContentId) === normalizedThreadId
         )
+
+        // 獲取所有回文的子留言
         this.threadPosts = (await Promise.all(
           replyList.map(async (i) => {
             const replyHtml = await fetchBodyHtml(i.body)
@@ -377,6 +379,44 @@ export const useForumStore = defineStore('forum', {
               replyHtml,
               toAbsoluteUrl
             )
+
+            // 為每個回文獲取其子留言 (type=3 且 parent_content_id 為該回文 ID)
+            let replyComments = []
+            try {
+              const replyCommentsRes = await apiClient.get('/ContentApi', {
+                params: { parentContentId: i.contentId },
+              })
+              const replyCommentItems = Array.isArray(replyCommentsRes?.items)
+                ? replyCommentsRes.items
+                : (Array.isArray(replyCommentsRes) ? replyCommentsRes : [])
+
+              // 只取留言類型 (type=3)
+              const replyCommentList = replyCommentItems.filter(rc => rc.type === CONTENT_TYPES.COMMENT)
+
+              replyComments = await Promise.all(
+                replyCommentList.map(async (rc) => {
+                  const rcHtml = await fetchBodyHtml(rc.body)
+                  const { sanitizedHtml: rcSanitizedHtml, textContent: rcTextContent, imageUrls: rcImageUrls } = normalizeRichContent(
+                    rcHtml,
+                    toAbsoluteUrl
+                  )
+                  return {
+                    id: rc.contentId,
+                    author: rc.username,
+                    createdAt: rc.createdAt,
+                    content: rcTextContent,
+                    contentHtml: rcSanitizedHtml,
+                    contentText: rcTextContent,
+                    imageUrls: rcImageUrls,
+                    type: CONTENT_TYPES.COMMENT,
+                    parentContentId: rc.parentContentId,
+                  }
+                })
+              )
+            } catch (error) {
+              console.error(`獲取回文 ${i.contentId} 的子留言失敗:`, error)
+            }
+
             return {
               id: i.contentId,
               author: i.username,
@@ -387,7 +427,7 @@ export const useForumStore = defineStore('forum', {
               imageUrls,
               type: i.type,
               parentContentId: i.parentContentId,
-              replies: [],
+              replies: replyComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
             }
           })
         )).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
