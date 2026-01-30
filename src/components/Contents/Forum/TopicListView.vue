@@ -71,6 +71,11 @@ const handleTopicInteractionError = (data) => {
  */
 const displayPages = computed(() => forumStore.displayPages);
 
+const sortOption = computed({
+  get: () => forumStore.sortOption,
+  set: (value) => forumStore.setSortOption(value),
+});
+
 /**
  * 執行線程分頁
  */
@@ -238,13 +243,24 @@ const openDetailedComment = () => {
       class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
     >
       <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
-      <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
         <span class="badge bg-secondary" v-if="forumStore.selectedCategoryName">
           {{ forumStore.selectedCategoryName }}
         </span>
         <span class="badge bg-info">
           共 {{ forumStore.pagination.totalCount }} 筆
         </span>
+        <div class="ms-sm-2">
+          <select
+            v-model="sortOption"
+            class="form-select form-select-sm"
+            aria-label="主題排序"
+          >
+            <option value="createdAt_desc">發佈時間（新→舊）</option>
+            <option value="lastReply_desc">最新回覆</option>
+            <option value="replyCount_desc">回覆數（多→少）</option>
+          </select>
+        </div>
       </div>
     </div>
 

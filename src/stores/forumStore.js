@@ -51,6 +51,7 @@ export const useForumStore = defineStore('forum', {
       totalCount: 0,
       totalPages: 0,
     },
+    sortOption: 'createdAt_desc',
 
     // ========== 帖文詳情 ==========
     selectedThread: null,
@@ -239,16 +240,47 @@ export const useForumStore = defineStore('forum', {
           })
         }
 
-        listContents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        const contentsWithStats = listContents.map(item => {
+          const replyStats = calculateReplyStats(item.contentId, contentsWithHtml)
+          return {
+            ...item,
+            _replyStats: replyStats,
+          }
+        })
+
+        const parseDateValue = (value) => {
+          if (!value) return 0
+          const time = new Date(value).getTime()
+          return Number.isNaN(time) ? 0 : time
+        }
+
+        const sortOption = this.sortOption || 'createdAt_desc'
+
+        contentsWithStats.sort((a, b) => {
+          if (sortOption === 'lastReply_desc') {
+            const aLast = parseDateValue(a._replyStats?.lastReplyTime || a.createdAt)
+            const bLast = parseDateValue(b._replyStats?.lastReplyTime || b.createdAt)
+            return bLast - aLast
+          }
+
+          if (sortOption === 'replyCount_desc') {
+            const aCount = Number(a._replyStats?.replyCount || 0)
+            const bCount = Number(b._replyStats?.replyCount || 0)
+            if (bCount !== aCount) return bCount - aCount
+            return parseDateValue(b.createdAt) - parseDateValue(a.createdAt)
+          }
+
+          return parseDateValue(b.createdAt) - parseDateValue(a.createdAt)
+        })
 
         // 4. 前端分頁
         const pageSize = this.pagination.pageSize
-        const totalCount = listContents.length
+        const totalCount = contentsWithStats.length
         const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
         const currentPage = Math.min(Math.max(1, targetPage), totalPages)
         const start = (currentPage - 1) * pageSize
         const end = start + pageSize
-        const pageItems = listContents.slice(start, end)
+        const pageItems = contentsWithStats.slice(start, end)
 
         this.pagination = {
           currentPage,
@@ -260,7 +292,7 @@ export const useForumStore = defineStore('forum', {
         // 5. 組合顯示資料
         this.topics = pageItems.map(item => {
           const { textContent, imageUrls } = normalizeRichContent(item.bodyHtml, toAbsoluteUrl)
-          const replyStats = calculateReplyStats(item.contentId, contentsWithHtml)
+          const replyStats = item._replyStats || calculateReplyStats(item.contentId, contentsWithHtml)
 
           return {
             id: item.contentId,
@@ -584,6 +616,12 @@ export const useForumStore = defineStore('forum', {
 
     clearSearch() {
       this.searchKeyword = ''
+      this.pagination.currentPage = 1
+      this.fetchTopics()
+    },
+
+    setSortOption(option) {
+      this.sortOption = option
       this.pagination.currentPage = 1
       this.fetchTopics()
     }
