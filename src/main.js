@@ -27,6 +27,7 @@ import "./assets/css/nucleo-svg.css";
 //Bootstrap
 import { createBootstrap } from "bootstrap-vue-next";
 import "bootstrap/dist/css/bootstrap.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 import 'bootstrap-icons/font/bootstrap-icons.css'
 

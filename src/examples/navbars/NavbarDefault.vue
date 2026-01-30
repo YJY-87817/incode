@@ -4,8 +4,6 @@ import { ref, watch } from "vue";
 
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
-import UserIndex from "@/views/user/UserIndex.vue";
-import UserMission from "@/views/user/UserMission.vue";
 
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
 import downArrow from "@/assets/img/down-arrow.svg";
@@ -462,12 +460,6 @@ watch(
                       >
                         <span>討論區</span>
                       </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'presentation' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>預設首頁</span>
-                      </RouterLink>
                     </div>
                   </div>
                 </div>
@@ -479,12 +471,6 @@ watch(
                   class="dropdown-item border-radius-md"
                 >
                   <span>討論區</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'presentation' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>預設首頁</span>
                 </RouterLink>
               </div>
             </div>
