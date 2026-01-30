@@ -1,5 +1,5 @@
-// 大腦與倉庫 (UserPoint.js)
-// 這是你系統的靈魂。我們不把資料放在頁面裡，而是放在一個獨立的檔案 UserPoint.js。
+// 大腦與倉庫 (UsePointStore.js)
+// 這是你系統的靈魂。我們不把資料放在頁面裡，而是放在一個獨立的檔案 UsePointStore.js
 
 // State (倉庫)：就像銀行的保險箱，裡面存著「原始帳單紀錄」、「使用者現在查什麼關鍵字」。
 
@@ -10,7 +10,7 @@ import { defineStore } from "pinia";
 // import axios from "axios";
 import service from "@/api/point/axios.js";
 
-export const useUserPointStore = defineStore("userPoint", {
+export const usePointStore = defineStore("usePoint", {
   state: () => ({
     rawLogs: [], // 存放後端回傳的所有原始紀錄
     isLoading: false, // 全域載入狀態

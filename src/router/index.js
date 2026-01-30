@@ -8,8 +8,8 @@ import AuthorView from "../views/LandingPages/Author/AuthorView.vue";
 import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
-import Register from "@/views/user/Register.vue";
-import Login from "@/views/user/Login.vue";
+import Register from "@/views/user/register.vue";
+import Login from "@/views/user/login.vue";
 import UserIndex from "@/views/user/UserIndex.vue";
 import UserProfile from "@/views/user/UserProfile.vue";
 import UserSettings from "@/views/user/UserSettings.vue";
@@ -39,7 +39,7 @@ import ElProgressBars from "../layouts/sections/elements/progress-bars/ProgressB
 import ElToggles from "../layouts/sections/elements/toggles/TogglesView.vue";
 import ElTypography from "../layouts/sections/elements/typography/TypographyView.vue";
 // import TestQiu from "../views/point/TestQiu.vue";
-import Mission from "../views/point/Mission.vue";
+import Task from "../views/point/Task.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
@@ -281,9 +281,9 @@ const router = createRouter({
       component: PointLog, //views的檔案名稱
     },
     {
-      path: "/mission",
-      name: "mission",
-      component: Mission, //views的檔案名稱
+      path: "/task",
+      name: "task",
+      component: Task, //views的檔案名稱
     },
     {
       path: "/recharge",

@@ -2,12 +2,12 @@
 import { onMounted } from "vue";
 import NavbarDefault from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
-import { useUserPointStore } from "@/stores/point/UserPoint.js";
+import { usePointStore } from "@/stores/point/UsePointStore.js";
 import PointSummary from "@/components/point/PointSummary.vue";
 import PointFilter from "@/components/point/PointFilter.vue";
 import PointTable from "@/components/point/PointTable.vue";
 
-const store = useUserPointStore();
+const store = usePointStore();
 onMounted(() => store.fetchLogs());
 </script>
 

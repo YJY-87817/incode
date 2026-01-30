@@ -6,9 +6,9 @@
 它包含了一個**「切片功能（分頁）」**：如果大腦給它 100 筆資料，它會設定一次只秀 10 筆，讓你按「下一頁」才看後面的。 -->
 <script setup>
 import { ref, computed, watch } from "vue";
-import { useUserPointStore } from "@/stores/point/UserPoint.js";
+import { usePointStore } from "@/stores/point/UsePointStore.js";
 
-const store = useUserPointStore();
+const store = usePointStore();
 const currentPage = ref(1); //紀錄現在在第幾頁
 const itemsPerPage = 10; //設定一頁秀 10 筆
 

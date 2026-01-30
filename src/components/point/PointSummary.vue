@@ -5,9 +5,9 @@
 
 它只是從大腦 (Store) 讀取 totalGained 和 totalSpent 這兩個數字，然後套上漂亮的顏色顯示出來。 -->
 <script setup>
-import { useUserPointStore } from "@/stores/point/UserPoint.js";
+import { usePointStore } from "@/stores/point/UsePointStore.js";
 
-const store = useUserPointStore();
+const store = usePointStore();
 </script>
 
 <template>

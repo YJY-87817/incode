@@ -336,7 +336,7 @@ watch(
                         <span>我的任務進度</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'mission' }"
+                        :to="{ name: 'task' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>任務大廳</span>
@@ -372,7 +372,7 @@ watch(
                   <span>我的任務進度</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'mission' }"
+                  :to="{ name: 'task' }"
                   class="dropdown-item border-radius-md"
                 >
                   <span>任務大廳</span>

@@ -5,8 +5,8 @@
 
 刷新按鈕：按下它，就會叫大腦裡的辦事員 (Action) 重新去抓一次最新的資料。 -->
 <script setup>
-import { useUserPointStore } from "@/stores/point/UserPoint.js";
-const store = useUserPointStore();
+import { usePointStore } from "@/stores/point/UsePointStore.js";
+const store = usePointStore();
 </script>
 
 <template>
