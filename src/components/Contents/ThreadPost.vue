@@ -4,20 +4,23 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div class="flex-grow-1">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <h6 class="card-title mb-0">{{ post.author }}</h6>
-              <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+            <div
+              class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1"
+            >
+              <div class="d-flex align-items-center gap-2">
+                <h6 class="card-title mb-0">{{ post.author }}</h6>
+                <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+              </div>
+              <div class="interaction-container" @click.stop>
+                <InteractionButtons
+                  :key="`interactions-${post.id}`"
+                  :contentId="post.id"
+                  @interaction-success="handleInteractionSuccess"
+                  @interaction-error="handleInteractionError"
+                />
+              </div>
             </div>
             <small class="text-muted">{{ post.createdAt }}</small>
-            <!-- 互動按鈕 -->
-            <div class="mt-2">
-              <InteractionButtons
-                :key="`interactions-${post.id}`"
-                :contentId="post.id"
-                @interaction-success="handleInteractionSuccess"
-                @interaction-error="handleInteractionError"
-              />
-            </div>
           </div>
           <button class="btn btn-sm btn-forum-secondary" @click="toggleReply">
             <i class="fas fa-reply me-1"></i>回覆

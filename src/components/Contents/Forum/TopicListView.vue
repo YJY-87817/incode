@@ -219,24 +219,29 @@ const submitQuickReply = async () => {
 
         <!-- 帖文內容 -->
         <div class="card-body border-bottom">
-          <h3 class="card-title fs-4 fs-md-3 text-break">
-            {{ forumStore.threadDetail.title }}
-          </h3>
+          <div
+            class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+          >
+            <h3 class="card-title fs-4 fs-md-3 text-break mb-0">
+              {{ forumStore.threadDetail.title }}
+            </h3>
+
+            <div class="interaction-container" @click.stop>
+              <InteractionButtons
+                :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
+                :contentId="forumStore.threadDetail.id"
+                @interaction-success="handleTopicInteractionSuccess"
+                @interaction-error="handleTopicInteractionError"
+              />
+            </div>
+          </div>
           <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
             <span>by {{ forumStore.threadDetail.author }}</span>
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
 
-          <!-- 主題互動按鈕 -->
-          <div class="mb-3">
-            <InteractionButtons
-              :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
-              :contentId="forumStore.threadDetail.id"
-              @interaction-success="handleTopicInteractionSuccess"
-              @interaction-error="handleTopicInteractionError"
-            />
-          </div>
+          <!-- 主題互動按鈕已移到標題右側 -->
 
           <HtmlIframe
             class="card-text rich-content"
@@ -518,15 +523,28 @@ const submitQuickReply = async () => {
                         </span>
                       </div>
 
-                      <!-- 主題標題 -->
-                      <h6 class="mb-2 fs-6 fw-bold">
-                        <a
-                          href="javascript:void(0)"
-                          class="topic-title-link text-break"
-                        >
-                          {{ topic.title }}
-                        </a>
-                      </h6>
+                      <!-- 主題標題 + 互動按鈕 (同一行) -->
+                      <div
+                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                      >
+                        <h6 class="mb-0 fs-6 fw-bold">
+                          <a
+                            href="javascript:void(0)"
+                            class="topic-title-link text-break"
+                          >
+                            {{ topic.title }}
+                          </a>
+                        </h6>
+
+                        <div class="interaction-container" @click.stop>
+                          <InteractionButtons
+                            :key="`topic-interactions-${topic.id}`"
+                            :contentId="topic.id"
+                            @interaction-success="handleTopicInteractionSuccess"
+                            @interaction-error="handleTopicInteractionError"
+                          />
+                        </div>
+                      </div>
 
                       <!-- 主題圖片縮圖 -->
                       <div
@@ -569,15 +587,7 @@ const submitQuickReply = async () => {
                         </span>
                       </div>
 
-                      <!-- 互動按鈕 -->
-                      <div class="mt-2 interaction-container" @click.stop>
-                        <InteractionButtons
-                          :key="`topic-interactions-${topic.id}`"
-                          :contentId="topic.id"
-                          @interaction-success="handleTopicInteractionSuccess"
-                          @interaction-error="handleTopicInteractionError"
-                        />
-                      </div>
+                      <!-- 互動按鈕已移到標題右側 -->
                     </div>
                   </div>
                 </td>
