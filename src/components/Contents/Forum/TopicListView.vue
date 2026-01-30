@@ -389,6 +389,7 @@ const submitQuickReply = async () => {
                   :post="post"
                   :category-id="forumStore.threadDetail.categoryId"
                   :hide-nested-replies="true"
+                  :preview-only="true"
                 />
                 
                 <!-- 回文的子留言 -->
