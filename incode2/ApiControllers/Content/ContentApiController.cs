@@ -84,10 +84,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    [HttpGet("user/{userId}/posts")]
-    public async Task<IActionResult> GetUserPosts(int userId)
+    [HttpGet("me/posts")]
+    public async Task<IActionResult> GetMyPosts()
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 1 });
       return Ok(new
@@ -99,10 +100,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    [HttpGet("user/{userId}/replies")]
-    public async Task<IActionResult> GetUserReplies(int userId)
+    [HttpGet("me/replies")]
+    public async Task<IActionResult> GetMyReplies()
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 2 });
       return Ok(new
@@ -114,10 +116,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    [HttpGet("user/{userId}/comments")]
-    public async Task<IActionResult> GetUserComments(int userId)
+    [HttpGet("me/comments")]
+    public async Task<IActionResult> GetMyComments()
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 });
       return Ok(new
@@ -129,10 +132,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    [HttpGet("user/{userId}/liked-contents")]
-    public async Task<IActionResult> GetUserLikedContents(int userId)
+    [HttpGet("me/liked-contents")]
+    public async Task<IActionResult> GetMyLikedContents()
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       var contents = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" });
       return Ok(new
@@ -144,10 +148,11 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    [HttpGet("user/{userId}/bookmarked-contents")]
-    public async Task<IActionResult> GetUserBookmarkedContents(int userId)
+    [HttpGet("me/bookmarked-contents")]
+    public async Task<IActionResult> GetMyBookmarkedContents()
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       var contents = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" });
       return Ok(new
