@@ -84,72 +84,72 @@ onMounted(() => {
     </div>
 
     <div class="collapse" id="filterCollapse" ref="filterCollapseRef">
-      <div class="card-body">
-        <div class="mb-4 border-bottom pb-3">
-          <label class="form-label fw-bold">
+      <div class="card-body p-3">
+        <div class="mb-2 border-bottom pb-2">
+          <label class="form-label fw-bold small mb-1">
             <i class="bi bi-tag"></i> 價格範圍
           </label>
-          <div class="row g-2 mb-3">
+          <div class="row g-1 mb-2">
             <div class="col-6">
               <input :value="filters.minPrice" @input="updateMinPrice($event.target.value)" type="number"
-                class="form-control form-control-sm border" placeholder="最低點數" />
+                class="form-control form-control-sm border px-2" placeholder="最低" />
             </div>
             <div class="col-6">
               <input :value="filters.maxPrice" @input="updateMaxPrice($event.target.value)" type="number"
-                class="form-control form-control-sm border" placeholder="最高點數" />
+                class="form-control form-control-sm border px-2" placeholder="最高" />
             </div>
           </div>
-          <div class="text-center small">
+          <div class="text-center small text-muted" style="font-size: 0.8rem;">
             {{ filters.minPrice }} ~ {{ filters.maxPrice }} 點
           </div>
         </div>
 
-        <div class="mb-4 border-bottom pb-3">
-          <label class="form-label fw-bold">
+        <div class="mb-2 border-bottom pb-2">
+          <label class="form-label fw-bold small mb-1">
             <i class="bi bi-list"></i> 商品類別
           </label>
           <div class="form-check-list">
-            <div v-for="category in categories" :key="category.id" class="form-check form-check-custom mb-2">
-              <input :id="`category-${category.id}`" type="checkbox" class="form-check-input"
+            <div v-for="category in categories" :key="category.id" class="form-check mb-1">
+              <input :id="`category-${category.id}`" type="checkbox" class="form-check-input mt-1"
                 :checked="filters.categories.includes(category.name)" @change="handleToggleCategory(category.name)" />
-              <label :for="`category-${category.id}`" class="form-check-label">
+              <label :for="`category-${category.id}`" class="form-check-label small" style="padding-top: 2px;">
                 {{ category.name }}
               </label>
             </div>
           </div>
         </div>
 
-        <div class="mb-4 border-bottom pb-3">
-          <label class="form-label fw-bold">
+        <div class="mb-2 border-bottom pb-2">
+          <label class="form-label fw-bold small mb-1">
             <i class="bi bi-collection"></i> 商品系列
           </label>
           <div class="form-check-list">
-            <div v-for="seriesItem in series" :key="seriesItem.id" class="form-check form-check-custom mb-2">
-              <input :id="`series-${seriesItem.id}`" type="checkbox" class="form-check-input"
+            <div v-for="seriesItem in series" :key="seriesItem.id" class="form-check mb-1">
+              <input :id="`series-${seriesItem.id}`" type="checkbox" class="form-check-input mt-1"
                 :checked="filters.series.includes(seriesItem.name)" @change="handleToggleSeries(seriesItem.name)" />
-              <label :for="`series-${seriesItem.id}`" class="form-check-label">
+              <label :for="`series-${seriesItem.id}`" class="form-check-label small" style="padding-top: 2px;">
                 {{ seriesItem.name }}
               </label>
             </div>
           </div>
         </div>
 
-        <div class="mb-4">
-          <label class="form-label fw-bold">
+        <div class="mb-2">
+          <label class="form-label fw-bold small mb-1">
             <i class="bi bi-box-seam"></i> 庫存狀態
           </label>
           <div class="form-check">
             <input id="inStock" :checked="filters.inStock" @change="updateInStock($event.target.checked)"
-              type="checkbox" class="form-check-input" />
-            <label for="inStock" class="form-check-label">
+              type="checkbox" class="form-check-input mt-1" />
+            <label for="inStock" class="form-check-label small" style="padding-top: 2px;">
               只顯示有庫存的商品
             </label>
           </div>
         </div>
 
-        <hr />
+        <hr class="my-2" />
 
-        <button @click="handleResetFilters" class="btn btn-custom-primary w-100">
+        <button @click="handleResetFilters" class="btn btn-custom-primary w-100 btn-sm">
           <i class="bi bi-arrow-counterclockwise"></i> 重設篩選
         </button>
       </div>
@@ -160,21 +160,6 @@ onMounted(() => {
 <style scoped>
 .sticky-top {
   z-index: 10;
-}
-
-.form-check-custom .form-check-input {
-  border-radius: 0.25rem;
-}
-
-.form-check-custom .form-check-label {
-  margin-left: 0.5rem;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.form-check-custom .form-check-input:checked {
-  background-color: #145369;
-  border-color: #145369;
 }
 
 /* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */

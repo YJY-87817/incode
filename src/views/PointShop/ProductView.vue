@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
+import NavbarsCard from "@/components/NavbarCard.vue";
 
 // 套版範例
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -149,13 +150,10 @@ onMounted(() => {
         <div class="col-lg-3">
           <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
             @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
+          <!-- <NavbarsCard></NavbarsCard> -->
         </div>
 
         <div class="col-lg-9">
-          <!-- <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
-            @reset-filters="resetFilters" />
-          <br>
-          <br> -->
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <component :is="Component" :products="products" :filtered-products="filteredProducts" :loading="loading"

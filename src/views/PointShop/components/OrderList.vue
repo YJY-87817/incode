@@ -11,7 +11,6 @@ onMounted(async () => {
   await getOrdersByUser().then(res => {
     orders.value = res.data.data
     loading.value = false
-    login.value = true;
   }).catch(error => {
     loading.value = false
     if (error.response && error.response.status === 401) {
@@ -33,11 +32,11 @@ onMounted(async () => {
           style="background: linear-gradient(87deg, #86B0BD 0%, #6da1b3 100%); border-radius: 1rem 1rem 0 0;">
           <div class="d-flex justify-content-between align-items-center">
             <div class="text-white">
-              <h5 class="mb-0 text-white font-weight-bold d-flex align-items-center">
+              <h5 class="mb-0 font-weight-bold d-flex align-items-center">
                 <i class="bi bi-bag-check-fill me-2 fs-5"></i>
                 訂單查詢
               </h5>
-              <small class="opacity-75 ms-1">查看您的歷史購物記錄</small>
+              <small class=" ms-1">查看您的歷史購物記錄</small>
             </div>
             <div v-if="!loading && orders.length > 0">
               <span class="badge bg-white text-dark rounded-pill px-3 py-2 shadow-sm d-flex align-items-center">
@@ -67,7 +66,7 @@ onMounted(async () => {
             </div>
             <h4 class="fw-bold text-dark mb-2">目前沒有任何訂單</h4>
             <p class="text-muted mb-4">您還沒有兌換任何商品，快去商店逛逛吧！</p>
-            <router-link :to="{ name: 'PointShop' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
+            <router-link :to="{ name: 'PointShop' }" class="btn btn-custom-primary  btn-lg rounded-pill px-5 shadow-md">
               <i class="bi bi-cart-plus me-2"></i>前往購物
             </router-link>
           </div>
@@ -75,7 +74,7 @@ onMounted(async () => {
           <!-- <div v-else-if="login == false" class="text-center py-5">
             <h4 class="fw-bold text-dark mb-2">目前還沒有登入</h4>
             <p class="text-muted mb-4">您還沒有登入系統，前往登入！</p>
-            <router-link :to="{ name: 'Login' }" class="btn btn-info text-white btn-lg rounded-pill px-5 shadow-md">
+            <router-link :to="{ name: 'Login' }" class="btn btn-custom-primary  btn-lg rounded-pill px-5 shadow-md">
               <i class="bi bi-cart-plus me-2"></i>前往登入
             </router-link>
           </div> -->
@@ -129,5 +128,17 @@ onMounted(async () => {
 .spinner-border {
   width: 3rem;
   height: 3rem;
+}
+
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
+}
+
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
 }
 </style>

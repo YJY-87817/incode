@@ -63,28 +63,28 @@ const checkout = async () => {
 
 <template>
   <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-      <h5 class="fw-bold text-dark mb-0">
+    <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: #86B0BD;">
+      <h5 class="fw-bold mb-0">
         <i class="bi bi-truck me-2 text-primary"></i>寄送資訊
       </h5>
     </div>
 
     <div class="card-body px-4">
       <div class="mb-3">
-        <label class="form-label text-secondary small fw-bold">收件人姓名</label>
-        <input type="text" class="form-control" placeholder="請輸入收件人姓名" v-model="name">
+        <label class="form-label  small fw-bold">收件人姓名</label>
+        <input type="text" class="form-control border p-2 " placeholder="請輸入收件人姓名" v-model="name">
       </div>
       <div class="mb-3">
-        <label class="form-label text-secondary small fw-bold">聯絡電話</label>
-        <input type="tel" class="form-control" placeholder="09xx-xxx-xxx" v-model="phone">
+        <label class="form-label  small fw-bold">聯絡電話</label>
+        <input type="tel" class="form-control border p-2 " placeholder="09xx-xxx-xxx" v-model="phone">
       </div>
       <div class="mb-3">
-        <label class="form-label text-secondary small fw-bold">寄送地址</label>
-        <input type="text" class="form-control" placeholder="請輸入收件地址" v-model="address">
+        <label class="form-label  small fw-bold">寄送地址</label>
+        <input type="text" class="form-control border p-2 " placeholder="請輸入收件地址" v-model="address">
       </div>
       <div class="mb-3">
-        <label class="form-label text-secondary small fw-bold">備註事項</label>
-        <textarea v-model="remark" class="form-control" rows="3" placeholder="如有特殊需求請填寫"></textarea>
+        <label class="form-label  small fw-bold">備註事項</label>
+        <textarea v-model="remark" class="form-control border p-2 " rows="3" placeholder="如有特殊需求請填寫"></textarea>
       </div>
     </div>
 

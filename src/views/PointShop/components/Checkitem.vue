@@ -18,9 +18,9 @@ const decrease = (item) => {
 <template>
   <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4">
-      <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-        <h4 class="fw-bold text-dark mb-0">
-          <i class="bi bi-cart3 me-2" style="color: #86B0BD;"></i>購物清單
+      <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: #86B0BD;">
+        <h4 class="fw-bold mb-0">
+          <i class="bi bi-cart3 me-2"></i>購物清單
         </h4>
       </div>
 
@@ -49,14 +49,14 @@ const decrease = (item) => {
               </div>
             </div>
 
-            <div class="ms-3 border-start ps-3 py-1">
-              <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;"
+            <div class="ms-2 ms-md-3 border-start ps-2 ps-md-3 py-1">
+              <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-2">
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
                   @click="increase(item)">+</button>
-                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;"
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
                   @click="decrease(item)">−</button>
-                <button class="btn btn-sm btn-custom-primary ms-1" style="font-size: 0.875rem;">
-                  <i class="bi bi-trash" style="font-size: 0.875rem;"
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;">
+                  <i class="bi bi-trash" style="font-size: 0.75rem;"
                     @click="CartNow.removeFromCart(item.productId)"></i>
                 </button>
               </div>
