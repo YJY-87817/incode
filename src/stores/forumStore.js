@@ -300,9 +300,10 @@ export const useForumStore = defineStore('forum', {
     // ========== 帖文詳情 ==========
     async fetchThreadDetail(threadId) {
       try {
-        const [detailRes, commentsRes] = await Promise.all([
+        const [detailRes, commentsRes, allContentsRes] = await Promise.all([
           apiClient.get(`/ContentApi/${threadId}`),
           contentInteractionApi.getComments(threadId),
+          apiClient.get('/ContentApi', { params: { pageSize: 9999 } })
         ])
 
         // 處理主題詳情
@@ -353,26 +354,29 @@ export const useForumStore = defineStore('forum', {
             })
         )
 
-        // 獲取回文 - 只取 type === REPLY 的內容（不包含 COMMENT 或 COMMENT_REPLY）
+        // 獲取回文 - 改為獲取所有內容然後過濾
         const normalizedThreadId = Number(threadId)
-        const repliesRes = await apiClient.get('/ContentApi', {
-          params: { parentContentId: normalizedThreadId },
-        })
-        // API 可能返回 { items: [...] } 或直接返回數組
-        const replyItems = Array.isArray(repliesRes?.items)
-          ? repliesRes.items
-          : (Array.isArray(repliesRes) ? repliesRes : [])
+
+        const allItems = Array.isArray(allContentsRes?.items)
+          ? allContentsRes.items
+          : (Array.isArray(allContentsRes) ? allContentsRes : [])
+
+
+        // 過濾出 parent_content_id 等於當前主題 ID 的內容
+        const replyItems = allItems.filter(i =>
+          i.parentContentId !== null &&
+          Number(i.parentContentId) === normalizedThreadId
+        )
 
         // 只過濾出回文類型，排除留言和留言回覆，並且排除已經在留言中出現過的ID
         const commentIds = new Set(this.threadComments.map(c => c.id))
         const replyList = replyItems.filter(i =>
           i.type === CONTENT_TYPES.REPLY &&
-          !commentIds.has(i.contentId) &&
-          Number(i.parentContentId) === normalizedThreadId
+          !commentIds.has(i.contentId)
         )
 
         // 獲取所有回文的子留言
-        this.threadPosts = (await Promise.all(
+        this.threadPosts = await Promise.all(
           replyList.map(async (i) => {
             const replyHtml = await fetchBodyHtml(i.body)
             const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
@@ -381,18 +385,14 @@ export const useForumStore = defineStore('forum', {
             )
 
             // 為每個回文獲取其子留言 (type=3 且 parent_content_id 為該回文 ID)
+            const replyId = i.contentId
+            const replyCommentList = allItems.filter(rc =>
+              rc.type === CONTENT_TYPES.COMMENT &&
+              Number(rc.parentContentId) === replyId
+            )
+
             let replyComments = []
             try {
-              const replyCommentsRes = await apiClient.get('/ContentApi', {
-                params: { parentContentId: i.contentId },
-              })
-              const replyCommentItems = Array.isArray(replyCommentsRes?.items)
-                ? replyCommentsRes.items
-                : (Array.isArray(replyCommentsRes) ? replyCommentsRes : [])
-
-              // 只取留言類型 (type=3)
-              const replyCommentList = replyCommentItems.filter(rc => rc.type === CONTENT_TYPES.COMMENT)
-
               replyComments = await Promise.all(
                 replyCommentList.map(async (rc) => {
                   const rcHtml = await fetchBodyHtml(rc.body)
@@ -430,8 +430,9 @@ export const useForumStore = defineStore('forum', {
               replies: replyComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
             }
           })
-        )).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        )
 
+        this.threadPosts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
         this.threadComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
         this.threadCurrentPage = 1
       } catch (error) {
