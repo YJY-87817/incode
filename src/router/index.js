@@ -192,11 +192,6 @@ const router = createRouter({
       name: "test",
       component: () => import("@/views/Contents/test.vue"),
     },
-    {
-      path: "/imagetest",
-      name: "imagetest",
-      component: () => import("@/components/Contents/ImageTest.vue"),
-    },
     // 以上是tim的路由
 
     // owen
