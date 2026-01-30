@@ -20,7 +20,13 @@
                 />
               </div>
             </div>
-            <small class="text-muted">{{ post.createdAt }}</small>
+            <small 
+              class="text-muted post-time"
+              :class="{ 'clickable': post.type === 2 || post.type === 3 }"
+              @click="goToPostDetail"
+            >
+              {{ post.createdAt }}
+            </small>
           </div>
           <button
             class="btn btn-sm btn-forum-secondary thread-reply-btn"
@@ -142,6 +148,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import apiClient from "@/api/request.js";
 import { uploadImage } from "@/api/imageapi.js";
@@ -152,6 +159,7 @@ import { toAbsoluteUrl } from "@/utils/contentBody.js";
 import { appendUrls } from "@/components/Contents/Forum/forumUtils";
 
 const forumStore = useForumStore();
+const router = useRouter();
 
 const props = defineProps({
   post: {
@@ -323,6 +331,16 @@ function cancelReply() {
 }
 
 /**
+ * 點擊發文時間跳轉到該回文/留言的詳細頁面
+ */
+function goToPostDetail() {
+  // 只有回文(type=2)或留言(type=3)可以跳轉
+  if (props.post.type === CONTENT_TYPES.REPLY || props.post.type === CONTENT_TYPES.COMMENT) {
+    router.push({ name: "forum-thread", params: { id: props.post.id } });
+  }
+}
+
+/**
  * 處理互動成功
  */
 function handleInteractionSuccess(data) {
@@ -384,6 +402,23 @@ function handleInteractionError(data) {
   color: #0f3c4d;
   letter-spacing: 0.2px;
   font-size: 1rem;
+}
+
+.post-time {
+  transition: all 0.2s ease;
+}
+
+.post-time.clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.post-time.clickable:hover {
+  color: #145369 !important;
+  text-decoration-style: solid;
+  font-weight: 500;
 }
 
 .thread-reply-btn {
