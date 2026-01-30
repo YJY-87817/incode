@@ -21,11 +21,25 @@ public partial class Mission
 
     public int RewardExp { get; set; }
 
+    public string Category { get; set; }
+
+    public string Difficulty { get; set; }
+
+    public string EstimatedDuration { get; set; }
+
     public string ResetType { get; set; }
+
+    public int? ParticipantCount { get; set; }
+
+    public bool? IsFeatured { get; set; }
+
+    public DateTime? LastResetAt { get; set; }
 
     public bool IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual ICollection<MissionProgress> MissionProgress { get; set; } = new List<MissionProgress>();
 }

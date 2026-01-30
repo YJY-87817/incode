@@ -1,0 +1,109 @@
+﻿@model incode2.Models.Mission
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>Mission</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="MissionId" />
+            <div class="form-group">
+                <label asp-for="MissionName" class="control-label"></label>
+                <input asp-for="MissionName" class="form-control" />
+                <span asp-validation-for="MissionName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MissionDetail" class="control-label"></label>
+                <input asp-for="MissionDetail" class="form-control" />
+                <span asp-validation-for="MissionDetail" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TargetType" class="control-label"></label>
+                <input asp-for="TargetType" class="form-control" />
+                <span asp-validation-for="TargetType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TargetCount" class="control-label"></label>
+                <input asp-for="TargetCount" class="form-control" />
+                <span asp-validation-for="TargetCount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RewardPoints" class="control-label"></label>
+                <input asp-for="RewardPoints" class="form-control" />
+                <span asp-validation-for="RewardPoints" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RewardExp" class="control-label"></label>
+                <input asp-for="RewardExp" class="form-control" />
+                <span asp-validation-for="RewardExp" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Category" class="control-label"></label>
+                <input asp-for="Category" class="form-control" />
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Difficulty" class="control-label"></label>
+                <input asp-for="Difficulty" class="form-control" />
+                <span asp-validation-for="Difficulty" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EstimatedDuration" class="control-label"></label>
+                <input asp-for="EstimatedDuration" class="form-control" />
+                <span asp-validation-for="EstimatedDuration" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ResetType" class="control-label"></label>
+                <input asp-for="ResetType" class="form-control" />
+                <span asp-validation-for="ResetType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ParticipantCount" class="control-label"></label>
+                <input asp-for="ParticipantCount" class="form-control" />
+                <span asp-validation-for="ParticipantCount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="IsFeatured" class="control-label"></label>
+                <input asp-for="IsFeatured" class="form-control" />
+                <span asp-validation-for="IsFeatured" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LastResetAt" class="control-label"></label>
+                <input asp-for="LastResetAt" class="form-control" />
+                <span asp-validation-for="LastResetAt" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreatedAt" class="control-label"></label>
+                <input asp-for="CreatedAt" class="form-control" />
+                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UpdatedAt" class="control-label"></label>
+                <input asp-for="UpdatedAt" class="form-control" />
+                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

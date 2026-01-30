@@ -5,10 +5,10 @@ namespace incode2.Services.Point
 {
     public interface IEntrustMissionService
     {
-        Task<IEnumerable<EntrustMissionDTO>> GetAllAsync();
-        Task<EntrustMissionDTO> GetByIdAsync(int id);
-        Task<ResultDTO> CreateAsync(EntrustMissionDTO dto);
-        Task<ResultDTO> UpdateAsync(int id, EntrustMissionDTO dto);
-        Task<ResultDTO> DeleteAsync(int id);
+        Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync();
+        Task<EntrustMissionDTO> GetEntrustMissionByIdAsync(int id);
+        Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto);
+        Task<ResultDTO> UpdateEntrustMissionAsync(int id, EntrustMissionDTO dto);
+        Task<ResultDTO> DeleteEntrustMissionAsync(int id);
     }
 }

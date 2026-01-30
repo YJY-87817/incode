@@ -1,6 +1,8 @@
 ﻿using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
+using incode2.Services.Point;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,29 +18,21 @@ namespace incode2.ApiControllers.Point
     public class EntrustMissionApiController : ControllerBase
     {
         private readonly incodedatabaseContext _context;
+        private readonly IEntrustMissionService _entrustMissionService;
 
-        public EntrustMissionApiController(incodedatabaseContext context)
+        public EntrustMissionApiController(incodedatabaseContext context , IEntrustMissionService entrustMissionService)
         {
             _context = context;
+            _entrustMissionService = entrustMissionService;
         }
 
         // GET: api/EntrustMissionApi
         [HttpGet]
+        //[Authorize]
         public async Task<IEnumerable<EntrustMissionDTO>> GetEntrustMission()
         {
-            return _context.EntrustMission.Select(em => new EntrustMissionDTO
-            {
-                EntrustMissionId = em.EntrustMissionId,
-                UserId = em.UserId,
-                ContentId = em.ContentId,
-                Title = em.Title,
-                Detail = em.Detail,
-                RewardPoints = em.RewardPoints,
-                MaxParticipants = em.MaxParticipants,
-                Status = em.Status,
-                IsActive = em.IsActive,
-                CreatedAt = em.CreatedAt,
-            });
+           var entrustmission = await _entrustMissionService.GetAllEntrustMissionAsync();
+            return entrustmission;
         }
 
         // GET: api/EntrustMissionApi/5
