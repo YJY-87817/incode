@@ -73,7 +73,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="card shadow-sm border-0 sticky-top mb-5" style="top: 80px ">
+  <div class="card shadow-sm border-0 mb-5 rounded" style="top: 80px ">
 
     <div ref="filterHeaderRef"
       class="card-header text-white d-flex justify-content-between align-items-center collapsed"
@@ -158,10 +158,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.sticky-top {
-  z-index: 10;
-}
-
 /* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */
 .card-header:not(.collapsed) .bi-chevron-down {
   transform: rotate(180deg);
@@ -170,6 +166,12 @@ onMounted(() => {
 /* 加上過渡動畫效果 */
 .bi-chevron-down {
   transition: transform 0.3s ease;
+}
+
+/* 修正收合時底部圓角消失的問題 */
+.card-header.collapsed {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
 }
 
 .btn-custom-primary {

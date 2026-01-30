@@ -1,9 +1,9 @@
 <script setup></script>
 
 <template>
-    <div class="card shadow-sm border-0 sticky-top mb-5 mt-2 accordion" id="accordionNavbar">
+    <div class="card shadow-sm border-0 sticky-top mb-5 mt-2 accordion rounded" id="accordionNavbar">
 
-        <button class="card-header d-flex justify-content-between align-items-center accordion-button"
+        <button class="card-header d-flex justify-content-between align-items-center accordion-button rounded"
             style="background-color: #86B0BD" data-bs-toggle="collapse" data-bs-target="#collapseNavbar"
             aria-expanded="true" aria-controls="collapseNavbar">
             <h6 class="mb-0">網站導覽</h6>
