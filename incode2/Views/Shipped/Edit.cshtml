@@ -13,7 +13,7 @@
                 </div>
 
                 <div class="card-body p-4">
-                    <form asp-action="Edit" method="post">
+                    <form id="editShippedForm" asp-action="Edit" method="post">
                         <input type="hidden" asp-for="ShippedDetailId" />
 
                         <div class="mb-4">
@@ -26,15 +26,15 @@
                         <h5 class="text-primary mb-3"><i class="bi bi-person-badge me-2"></i>收件人資訊</h5>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱</label>
+                                <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱 <span class="text-danger">*</span></label>
                                 <input asp-for="RecipientName" class="form-control" required>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話</label>
+                                <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話 <span class="text-danger">*</span></label>
                                 <input asp-for="RecipientPhone" class="form-control" required>
                             </div>
                             <div class="col-12 mb-4">
-                                <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址</label>
+                                <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址 <span class="text-danger">*</span></label>
                                 <input asp-for="RecipientAddress" class="form-control" required>
                             </div>
                         </div>
@@ -68,8 +68,15 @@
                             </div>
                         </div>
 
+                        <!-- 驗證提示訊息 -->
+                        <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            <strong>請檢查以下必填欄位：</strong>
+                            <ul id="errorList" class="mb-0 mt-2"></ul>
+                        </div>
+
                         <div class="d-grid gap-2">
-                            <button id="BtnEdit" type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold">
+                            <button id="BtnEdit" type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold" onclick="validateEditShippedForm(event)">
                                 <i class="bi bi-save me-1"></i> 儲存所有修改
                             </button>
                             <a href="@Url.Action("Index")" class="btn btn-link text-secondary">返回列表</a>
@@ -80,3 +87,49 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function validateEditShippedForm(event) {
+            const form = document.getElementById('editShippedForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const recipientName = document.querySelector('input[name="RecipientName"]');
+            if (!recipientName.value.trim()) {
+                errors.push('收件人名稱');
+            }
+
+            const recipientPhone = document.querySelector('input[name="RecipientPhone"]');
+            if (!recipientPhone.value.trim()) {
+                errors.push('收件人電話');
+            }
+
+            const recipientAddress = document.querySelector('input[name="RecipientAddress"]');
+            if (!recipientAddress.value.trim()) {
+                errors.push('收件人地址');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
+            }
+        }
+    </script>
+}
