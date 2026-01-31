@@ -196,6 +196,7 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
+import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
@@ -438,7 +439,13 @@ const openDetailedReplyModal = () => {
 
 async function submitReply() {
   if (!replyContent.value.trim()) {
-    alert("請輸入回覆內容");
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請輸入回覆內容",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
     return;
   }
 
@@ -456,7 +463,13 @@ async function submitReply() {
 
   try {
     await apiClient.post("/ContentApi", dto);
-    alert("回覆成功！");
+    await Swal.fire({
+      icon: "success",
+      title: "已送出！",
+      text: "簡易留言已成功送出",
+      timer: 1500,
+      showConfirmButton: false,
+    });
     replyContent.value = "";
     showReply.value = false;
 
@@ -466,7 +479,13 @@ async function submitReply() {
     }
   } catch (error) {
     console.error("回覆失敗:", error);
-    alert("回覆失敗，請稍後再試");
+    await Swal.fire({
+      icon: "error",
+      title: "送出失敗",
+      text: "回覆失敗，請稍後再試",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
   } finally {
     isSubmittingReply.value = false;
   }
@@ -502,9 +521,15 @@ function handleInteractionSuccess(data) {
 /**
  * 處理互動錯誤
  */
-function handleInteractionError(data) {
+async function handleInteractionError(data) {
   console.error("互動失敗:", data);
-  alert(`互動失敗: ${data.error}`);
+  await Swal.fire({
+    icon: "error",
+    title: "互動失敗",
+    text: data.error || "操作失敗，請稍後再試",
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
 }
 </script>
 

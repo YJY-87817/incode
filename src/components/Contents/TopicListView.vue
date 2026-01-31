@@ -14,6 +14,7 @@ import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "./forumUtils";
+import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
@@ -61,9 +62,15 @@ const handleTopicInteractionSuccess = (data) => {
 /**
  * 處理主題互動錯誤
  */
-const handleTopicInteractionError = (data) => {
+const handleTopicInteractionError = async (data) => {
   console.error("主題互動失敗:", data);
-  alert(`互動失敗: ${data.error}`);
+  await Swal.fire({
+    icon: "error",
+    title: "互動失敗",
+    text: data.error || "操作失敗，請稍後再試",
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
 };
 
 /**
@@ -122,12 +129,24 @@ const toggleQuickReply = () => {
 
 const submitQuickReply = async () => {
   if (!forumStore.threadDetail?.id) {
-    alert("未找到對應的主題，請重新嘗試");
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "未找到對應的主題，請重新嘗試",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
     return;
   }
 
   if (!quickReplyContent.value.trim()) {
-    alert("請輸入內容");
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請輸入內容",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
     return;
   }
 
@@ -145,7 +164,13 @@ const submitQuickReply = async () => {
 
   try {
     await apiClient.post("/ContentApi", dto);
-    alert("已送出！");
+    await Swal.fire({
+      icon: "success",
+      title: "已送出！",
+      text: "簡易留言已成功送出",
+      timer: 1500,
+      showConfirmButton: false,
+    });
 
     // 直接调用 store 重新获取详情
     if (forumStore.selectedThread) {
@@ -156,7 +181,13 @@ const submitQuickReply = async () => {
     showQuickReply.value = false;
   } catch (error) {
     console.error("送出留言/回文失敗:", error);
-    alert("送出失敗，請稍後再試");
+    await Swal.fire({
+      icon: "error",
+      title: "送出失敗",
+      text: "送出失敗，請稍後再試",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
   } finally {
     isSubmittingQuickReply.value = false;
   }
