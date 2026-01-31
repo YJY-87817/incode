@@ -400,6 +400,12 @@ export const useForumStore = defineStore('forum', {
 
         // 處理留言 - 只保留 COMMENT 類型（不包含其他類型）
         const commentsData = commentsRes?.comments || []
+        
+        // 獲取所有內容用於查找留言回覆
+        const allItems = Array.isArray(allContentsRes?.items)
+          ? allContentsRes.items
+          : (Array.isArray(allContentsRes) ? allContentsRes : [])
+        
         this.threadComments = await Promise.all(
           commentsData
             .filter(c => c.type === CONTENT_TYPES.COMMENT || !c.type) // 信任 API 返回的類型，或默認為 COMMENT
@@ -409,6 +415,40 @@ export const useForumStore = defineStore('forum', {
                 commentHtml,
                 toAbsoluteUrl
               )
+              
+              // 為每個留言獲取其留言回覆 (type=4 且 parent_content_id 為該留言 ID)
+              const commentId = comment.contentId
+              const commentReplies = allItems.filter(cr =>
+                cr.type === CONTENT_TYPES.COMMENT_REPLY &&
+                Number(cr.parentContentId) === commentId
+              )
+              
+              let replies = []
+              try {
+                replies = await Promise.all(
+                  commentReplies.map(async (cr) => {
+                    const crHtml = await fetchBodyHtml(cr.body)
+                    const { sanitizedHtml: crSanitizedHtml, textContent: crTextContent, imageUrls: crImageUrls } = normalizeRichContent(
+                      crHtml,
+                      toAbsoluteUrl
+                    )
+                    return {
+                      id: cr.contentId,
+                      author: cr.username,
+                      createdAt: cr.createdAt,
+                      content: crTextContent,
+                      contentHtml: crSanitizedHtml,
+                      contentText: crTextContent,
+                      imageUrls: crImageUrls,
+                      type: CONTENT_TYPES.COMMENT_REPLY,
+                      parentContentId: cr.parentContentId,
+                    }
+                  })
+                )
+              } catch (error) {
+                console.error(`獲取留言 ${comment.contentId} 的回覆失敗:`, error)
+              }
+              
               return {
                 id: comment.contentId,
                 author: comment.username,
@@ -419,17 +459,13 @@ export const useForumStore = defineStore('forum', {
                 imageUrls,
                 type: CONTENT_TYPES.COMMENT,
                 parentContentId: comment.parentContentId,
-                replies: [],
+                replies: replies.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
               }
             })
         )
 
         // 獲取回文 - 改為獲取所有內容然後過濾
         const normalizedThreadId = Number(threadId)
-
-        const allItems = Array.isArray(allContentsRes?.items)
-          ? allContentsRes.items
-          : (Array.isArray(allContentsRes) ? allContentsRes : [])
 
 
         // 過濾出 parent_content_id 等於當前主題 ID 的內容

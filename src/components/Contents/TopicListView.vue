@@ -38,19 +38,6 @@ const showQuickReply = ref(false);
 const quickReplyContent = ref("");
 const isSubmittingQuickReply = ref(false);
 
-// 展開回文子留言的狀態
-const expandedReplies = ref(new Set());
-
-const toggleReplyComments = (replyId) => {
-  if (expandedReplies.value.has(replyId)) {
-    expandedReplies.value.delete(replyId);
-  } else {
-    expandedReplies.value.add(replyId);
-  }
-  // 觸發響應式更新
-  expandedReplies.value = new Set(expandedReplies.value);
-};
-
 /**
  * 處理主題互動成功
  */
@@ -498,7 +485,7 @@ const openDetailedReply = () => {
                 :key="'comment-' + comment.id"
                 :post="comment"
                 :category-id="forumStore.threadDetail.categoryId"
-                :hide-nested-replies="true"
+                :hide-nested-replies="false"
                 :preview-only="true"
               />
             </div>
@@ -506,55 +493,14 @@ const openDetailedReply = () => {
             <!-- 回文分頁 (type=2) -->
             <div v-if="paginatedThreadPosts.length > 0" class="mb-4 reply-list">
               <h6 class="fs-6 mb-2">💭 回文</h6>
-              <div
+              <ThreadPost
                 v-for="post in paginatedThreadPosts"
-                :key="post.id"
-                class="mb-1"
-              >
-                <ThreadPost
-                  :post="post"
-                  :category-id="forumStore.threadDetail.categoryId"
-                  :hide-nested-replies="true"
-                  :preview-only="true"
-                />
-
-                <!-- 回文的子留言 -->
-                <div
-                  v-if="post.replies && post.replies.length > 0"
-                  class="ms-3 mt-1 reply-comments"
-                >
-                  <button
-                    class="btn btn-sm btn-outline-secondary mb-2"
-                    @click="toggleReplyComments(post.id)"
-                  >
-                    <i
-                      class="fas"
-                      :class="
-                        expandedReplies.has(post.id)
-                          ? 'fa-chevron-up'
-                          : 'fa-chevron-down'
-                      "
-                    ></i>
-                    <span class="ms-1">
-                      {{ expandedReplies.has(post.id) ? "收起" : "展開" }}留言
-                      ({{ post.replies.length }})
-                    </span>
-                  </button>
-
-                  <transition name="fade">
-                    <div v-show="expandedReplies.has(post.id)">
-                      <ThreadPost
-                        v-for="replyComment in post.replies"
-                        :key="'reply-comment-' + replyComment.id"
-                        :post="replyComment"
-                        :category-id="forumStore.threadDetail.categoryId"
-                        :hide-nested-replies="true"
-                        :preview-only="true"
-                      />
-                    </div>
-                  </transition>
-                </div>
-              </div>
+                :key="'reply-' + post.id"
+                :post="post"
+                :category-id="forumStore.threadDetail.categoryId"
+                :hide-nested-replies="false"
+                :preview-only="true"
+              />
             </div>
 
             <!-- 分頁導航 -->
