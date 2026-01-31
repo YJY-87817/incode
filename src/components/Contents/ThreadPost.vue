@@ -1,5 +1,5 @@
 <template>
-  <div class="thread-post mb-3">
+  <div class="thread-post mb-1">
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
@@ -633,6 +633,10 @@ async function handleInteractionError(data) {
   transition: all 0.2s ease;
   border: none;
   box-shadow: none;
+}
+
+.thread-post .card-body {
+  padding: 0.75rem;
 }
 
 .thread-post .card:hover {

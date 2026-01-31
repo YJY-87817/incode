@@ -488,7 +488,10 @@ const openDetailedReply = () => {
             </transition>
 
             <!-- 所有留言 (type=3) -->
-            <div v-if="forumStore.threadComments.length > 0" class="mb-4">
+            <div
+              v-if="forumStore.threadComments.length > 0"
+              class="mb-4 comment-list"
+            >
               <h6 class="fs-6 mb-2">📝 留言</h6>
               <ThreadPost
                 v-for="comment in forumStore.threadComments"
@@ -501,12 +504,12 @@ const openDetailedReply = () => {
             </div>
 
             <!-- 回文分頁 (type=2) -->
-            <div v-if="paginatedThreadPosts.length > 0" class="mb-4">
+            <div v-if="paginatedThreadPosts.length > 0" class="mb-4 reply-list">
               <h6 class="fs-6 mb-2">💭 回文</h6>
               <div
                 v-for="post in paginatedThreadPosts"
                 :key="post.id"
-                class="mb-3"
+                class="mb-1"
               >
                 <ThreadPost
                   :post="post"
@@ -518,7 +521,7 @@ const openDetailedReply = () => {
                 <!-- 回文的子留言 -->
                 <div
                   v-if="post.replies && post.replies.length > 0"
-                  class="ms-4 mt-2"
+                  class="ms-3 mt-1 reply-comments"
                 >
                   <button
                     class="btn btn-sm btn-outline-secondary mb-2"
@@ -539,10 +542,7 @@ const openDetailedReply = () => {
                   </button>
 
                   <transition name="fade">
-                    <div
-                      v-show="expandedReplies.has(post.id)"
-                      class="reply-comments"
-                    >
+                    <div v-show="expandedReplies.has(post.id)">
                       <ThreadPost
                         v-for="replyComment in post.replies"
                         :key="'reply-comment-' + replyComment.id"
@@ -1069,8 +1069,20 @@ const openDetailedReply = () => {
 /* 回文子留言樣式 */
 .reply-comments {
   border-left: 3px solid #86b0bd;
-  padding-left: 1rem;
+  padding-left: 0.5rem;
   background-color: rgba(255, 240, 221, 0.2);
   border-radius: 4px;
+}
+
+.comment-list :deep(.thread-post),
+.reply-list :deep(.thread-post),
+.reply-comments :deep(.thread-post) {
+  margin-bottom: 0.25rem !important;
+}
+
+.comment-list :deep(.card-body),
+.reply-list :deep(.card-body),
+.reply-comments :deep(.card-body) {
+  padding: 0.5rem !important;
 }
 </style>
