@@ -174,15 +174,47 @@
     <!-- 巢狀回覆 -->
     <div
       v-if="!hideNestedReplies && post.replies && post.replies.length > 0"
-      class="replies-container ms-4"
+      class="nested-replies-section ms-3 mt-2"
     >
-      <ThreadPost
-        v-for="reply in post.replies"
-        :key="reply.id"
-        :post="reply"
-        :is-reply="true"
-        :category-id="categoryId"
-      />
+      <button
+        class="btn btn-sm btn-outline-secondary mb-2 nested-toggle-btn"
+        @click="toggleNestedReplies"
+      >
+        <i
+          class="fas"
+          :class="isNestedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+        ></i>
+        <span class="ms-1">
+          {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
+            post.replies.length
+          }})
+        </span>
+      </button>
+
+      <div
+        v-show="isNestedExpanded"
+        ref="nestedRepliesWrapper"
+        class="nested-replies-wrapper"
+        :class="{
+          'nested-collapsed': nestedToggleEnabled && !isNestedFullyExpanded,
+          'nested-expanded': nestedToggleEnabled && isNestedFullyExpanded,
+        }"
+      >
+        <div class="nested-replies-content">
+          <ThreadPost
+            v-for="reply in post.replies"
+            :key="reply.id"
+            :post="reply"
+            :is-reply="true"
+            :category-id="categoryId"
+          />
+          <div
+            v-if="nestedToggleEnabled"
+            class="nested-click-layer"
+            @click.stop="toggleNestedFullExpand"
+          ></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -235,6 +267,13 @@ const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
 const PREVIEW_MIN_HEIGHT = 60;
 const savedScrollPosition = ref(0);
 
+// 巢狀回覆展開/收起狀態
+const isNestedExpanded = ref(false);
+const isNestedFullyExpanded = ref(false);
+const nestedRepliesWrapper = ref(null);
+const nestedToggleEnabled = ref(false);
+const NESTED_COLLAPSED_MAX_HEIGHT = 200;
+
 const typeLabel = computed(() => {
   switch (props.post.type) {
     case CONTENT_TYPES.REPLY:
@@ -245,6 +284,18 @@ const typeLabel = computed(() => {
       return "回覆";
     default:
       return "內容";
+  }
+});
+
+const nestedLabel = computed(() => {
+  // 根據當前內容類型決定巢狀內容的標籤
+  switch (props.post.type) {
+    case CONTENT_TYPES.REPLY:
+      return "留言"; // 回文下的是留言
+    case CONTENT_TYPES.COMMENT:
+      return "回覆"; // 留言下的是留言回覆
+    default:
+      return "回覆";
   }
 });
 
@@ -365,6 +416,58 @@ watch(
   [safeContent, previewImages, hasInlineImages, () => props.previewOnly],
   () => {
     updatePreviewToggleState();
+  }
+);
+
+// ========== 巢狀回覆展開/收起邏輯 ==========
+function toggleNestedReplies() {
+  isNestedExpanded.value = !isNestedExpanded.value;
+  if (isNestedExpanded.value) {
+    nextTick(() => {
+      updateNestedToggleState();
+    });
+  }
+}
+
+function toggleNestedFullExpand() {
+  if (!nestedToggleEnabled.value) return;
+  isNestedFullyExpanded.value = !isNestedFullyExpanded.value;
+}
+
+const measureNestedHeight = () => {
+  const wrapper = nestedRepliesWrapper.value;
+  if (!wrapper) return 0;
+  return wrapper.scrollHeight || wrapper.offsetHeight || 0;
+};
+
+const updateNestedToggleState = async () => {
+  if (
+    !isNestedExpanded.value ||
+    !props.post.replies ||
+    props.post.replies.length === 0
+  ) {
+    nestedToggleEnabled.value = false;
+    isNestedFullyExpanded.value = false;
+    return;
+  }
+
+  await nextTick();
+  requestAnimationFrame(() => {
+    const height = measureNestedHeight();
+    const needsToggle = height > NESTED_COLLAPSED_MAX_HEIGHT + 1;
+    nestedToggleEnabled.value = needsToggle;
+    if (!needsToggle) {
+      isNestedFullyExpanded.value = false;
+    }
+  });
+};
+
+watch(
+  () => isNestedExpanded.value,
+  () => {
+    if (isNestedExpanded.value) {
+      updateNestedToggleState();
+    }
   }
 );
 
@@ -803,5 +906,101 @@ async function handleInteractionError(data) {
 
 .thread-post .replies-container .replies-container .thread-post .card:hover {
   background-color: rgba(255, 240, 221, 0.5);
+}
+
+/* ========== 巢狀回覆展開/收起樣式 ========== */
+.nested-replies-section {
+  margin-top: 0.5rem;
+}
+
+.nested-toggle-btn {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-color: #d1d3d4;
+  color: #145369;
+  background-color: #fff;
+  transition: all 0.2s ease;
+}
+
+.nested-toggle-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #145369;
+  color: #145369;
+}
+
+.nested-toggle-btn i {
+  transition: transform 0.2s ease;
+}
+
+.nested-replies-wrapper {
+  position: relative;
+  transition:
+    max-height 0.3s ease,
+    padding 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.nested-replies-content {
+  position: relative;
+  width: 100%;
+}
+
+.nested-replies-wrapper.nested-collapsed {
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background-color: rgba(255, 240, 221, 0.25);
+  border: 1px dashed #d1d3d4;
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.nested-replies-wrapper.nested-collapsed::-webkit-scrollbar {
+  display: none;
+}
+
+.nested-replies-wrapper.nested-collapsed .nested-replies-content {
+  opacity: 0.95;
+}
+
+.nested-replies-wrapper.nested-expanded {
+  border-top: 1px dashed #d1d3d4;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nested-replies-wrapper.nested-expanded .nested-replies-content {
+  opacity: 1;
+}
+
+.nested-click-layer {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: transparent;
+  z-index: 2;
+}
+
+/* 調整巢狀回覆內的卡片樣式 */
+.nested-replies-wrapper .thread-post .card {
+  border: none;
+  background-color: rgba(255, 240, 221, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.nested-replies-wrapper .thread-post .card:hover {
+  background-color: rgba(255, 240, 221, 0.7);
+}
+
+.nested-replies-wrapper.nested-collapsed .thread-post .card {
+  pointer-events: none;
+}
+
+.nested-replies-wrapper.nested-expanded .thread-post .card {
+  pointer-events: auto;
 }
 </style>
