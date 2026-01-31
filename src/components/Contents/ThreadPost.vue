@@ -655,10 +655,16 @@ function handleInteractionError(data) {
 
 .preview-iframe-wrapper.preview-collapsed {
   max-height: 180px;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background-color: rgba(255, 240, 221, 0.35);
   border: 1px dashed #d1d3d4;
   border-radius: 6px;
+}
+
+.preview-iframe-wrapper.preview-collapsed iframe {
+  pointer-events: none;
 }
 
 .preview-iframe-wrapper.preview-collapsed .preview-body {
