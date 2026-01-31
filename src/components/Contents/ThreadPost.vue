@@ -529,6 +529,11 @@ function handleInteractionError(data) {
 
 .preview-iframe-wrapper {
   position: relative;
+  transition:
+    max-height 0.2s ease,
+    padding 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .preview-body {
@@ -539,6 +544,7 @@ function handleInteractionError(data) {
   display: flex;
   gap: 0.75rem;
   align-items: stretch;
+  transition: gap 0.2s ease;
 }
 
 .preview-text-col {
@@ -555,6 +561,9 @@ function handleInteractionError(data) {
   flex: 0 0 140px;
   display: flex;
   align-items: flex-start;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .preview-images-grid {
