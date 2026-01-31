@@ -44,6 +44,7 @@
               'preview-expanded': previewToggleEnabled && isPreviewExpanded,
             }"
           >
+            <!-- 這裡是preview(留言+回文) -->
             <div
               class="preview-body"
               :class="{
@@ -658,9 +659,15 @@ function handleInteractionError(data) {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background-color: rgba(255, 240, 221, 0.35);
   border: 1px dashed #d1d3d4;
   border-radius: 6px;
+}
+
+.preview-iframe-wrapper.preview-collapsed::-webkit-scrollbar {
+  display: none;
 }
 
 .preview-iframe-wrapper.preview-collapsed iframe {
