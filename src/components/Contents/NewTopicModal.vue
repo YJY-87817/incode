@@ -6,6 +6,24 @@ import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 
 const forumStore = useForumStore();
 
+const modalMode = computed(() => forumStore.newTopic?.mode || "post");
+const isPostMode = computed(() => modalMode.value === "post");
+const modalTitle = computed(() => {
+  switch (modalMode.value) {
+    case "comment":
+      return "詳細留言";
+    case "reply":
+      return "詳細回文";
+    case "commentReply":
+      return "詳細回覆";
+    default:
+      return "發表新主題";
+  }
+});
+const submitLabel = computed(() =>
+  modalMode.value === "post" ? "發表" : "送出"
+);
+
 const newTopicState = reactive({
   title: forumStore.newTopic.title || "",
   body: forumStore.newTopic.body || "",
@@ -458,6 +476,15 @@ watch(
         }
       }
     }
+
+    if (
+      isOpen &&
+      !forumStore.newTopic.parentContentId &&
+      forumStore.newTopic.mode !== "post"
+    ) {
+      forumStore.newTopic.mode = "post";
+      forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+    }
   },
   { immediate: false, flush: "post" }
 );
@@ -668,13 +695,16 @@ const submitNewTopic = () => {
   }
 
   const isReply = Boolean(newTopicState.parentContentId);
+  const resolvedContentType =
+    forumStore.newTopic?.contentType ??
+    (isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: effectiveCategoryId.value,
     parentContentId: newTopicState.parentContentId,
     title: newTopicState.title,
     body: newTopicState.body,
-    type: isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST,
+    type: resolvedContentType,
   };
 
   console.log("[NewTopicModal] submitNewTopic - 提交 DTO:", dto);
@@ -711,6 +741,8 @@ const resetNewTopicDraft = () => {
   forumStore.newTopic.categoryId = null;
   forumStore.newTopic.parentContentId = null;
   forumStore.newTopic.categorySearch = "";
+  forumStore.newTopic.mode = "post";
+  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
 };
 </script>
 
@@ -727,7 +759,7 @@ const resetNewTopicDraft = () => {
             <div
               class="modal-header d-flex justify-content-between align-items-center mb-3"
             >
-              <h5 class="modal-title mb-0">發表新主題</h5>
+              <h5 class="modal-title mb-0">{{ modalTitle }}</h5>
               <button
                 type="button"
                 class="btn-close"
@@ -735,7 +767,7 @@ const resetNewTopicDraft = () => {
               ></button>
             </div>
             <div class="modal-body">
-              <div class="row g-3">
+              <div v-if="isPostMode" class="row g-3">
                 <div
                   :class="
                     showSubCategoryColumn
@@ -1000,6 +1032,11 @@ const resetNewTopicDraft = () => {
                   </div>
                 </div>
               </div>
+              <div v-else class="mb-3">
+                <small class="text-muted">
+                  使用編輯器撰寫詳細內容，可附圖片。
+                </small>
+              </div>
               <div class="mb-3">
                 <label class="form-label">標題</label>
                 <input
@@ -1024,7 +1061,9 @@ const resetNewTopicDraft = () => {
               >
                 取消
               </button>
-              <button type="submit" class="btn btn-forum-primary">發表</button>
+              <button type="submit" class="btn btn-forum-primary">
+                {{ submitLabel }}
+              </button>
             </div>
           </form>
         </div>

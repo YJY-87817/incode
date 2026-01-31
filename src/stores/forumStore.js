@@ -80,6 +80,8 @@ export const useForumStore = defineStore('forum', {
       categoryId: null,
       parentContentId: null,
       categorySearch: '',
+      mode: 'post',
+      contentType: CONTENT_TYPES.POST,
     },
     isSubmittingNewTopic: false,
     isUploadingNewTopicImages: false,
@@ -591,6 +593,8 @@ export const useForumStore = defineStore('forum', {
     cancelNewTopic() {
       this.newTopic.title = ''
       this.newTopic.body = ''
+      this.newTopic.mode = 'post'
+      this.newTopic.contentType = CONTENT_TYPES.POST
       this.showNewTopicBox = false
     },
 

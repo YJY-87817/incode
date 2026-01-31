@@ -96,27 +96,27 @@
             >
               <i
                 class="fas"
-                :class="isQuickReplyOpen ? 'fa-times' : 'fa-pen'"
+                :class="showQuickReply ? 'fa-times' : 'fa-pen'"
               ></i>
               <span class="ms-1">
-                {{ isQuickReplyOpen ? "收起簡易留言" : "簡易留言" }}
+                {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
               </span>
             </button>
             <button
               class="btn btn-forum-secondary btn-sm"
               type="button"
-              @click="openDetailedReply"
+              @click="openDetailedReplyModal"
             >
               <i class="fas fa-feather-alt me-1"></i>
-              詳細留言
+              詳細回覆
             </button>
-            <small class="text-muted" v-if="!replyMode">
-              簡易留言僅文字；詳細留言可附圖片
+            <small class="text-muted" v-if="!showQuickReply">
+              簡易留言僅文字；詳細回覆會開啟編輯視窗
             </small>
           </div>
 
           <transition name="fade">
-            <div v-show="replyMode === 'quick'" class="quick-reply-box">
+            <div v-show="showQuickReply" class="quick-reply-box">
               <textarea
                 v-model="replyContent"
                 class="form-control"
@@ -139,50 +139,6 @@
                   type="button"
                   @click="cancelReply"
                   :disabled="isSubmittingReply"
-                >
-                  取消
-                </button>
-              </div>
-            </div>
-          </transition>
-
-          <transition name="fade">
-            <div v-show="replyMode === 'detailed'" class="detailed-reply-box">
-              <textarea
-                v-model="replyContent"
-                class="form-control"
-                rows="4"
-                placeholder="撰寫您的回覆..."
-              ></textarea>
-              <div
-                class="d-flex flex-column flex-sm-row gap-2 align-items-start my-2"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  class="form-control form-control-sm"
-                  @change="handleReplyImages"
-                  :disabled="isUploadingImages"
-                />
-                <small class="text-muted">
-                  上傳後會自動把圖片網址加入內容。{{
-                    isUploadingImages ? "上傳中..." : ""
-                  }}
-                </small>
-              </div>
-              <div class="d-flex gap-2 mt-2">
-                <button
-                  class="btn btn-forum-primary btn-sm"
-                  @click="submitReply"
-                  :disabled="isSubmittingReply || !replyContent.trim()"
-                >
-                  <i class="fas fa-paper-plane me-1"></i>
-                  {{ isSubmittingReply ? "發送中..." : "發送回覆" }}
-                </button>
-                <button
-                  class="btn btn-forum-secondary btn-sm"
-                  @click="cancelReply"
                 >
                   取消
                 </button>
@@ -214,12 +170,10 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import apiClient from "@/api/request.js";
-import { uploadImage } from "@/api/imageapi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
-import { appendUrls } from "@/components/Contents/Forum/forumUtils";
 
 const forumStore = useForumStore();
 const router = useRouter();
@@ -250,12 +204,9 @@ const props = defineProps({
 const showReply = ref(false);
 const replyContent = ref("");
 const isSubmittingReply = ref(false);
-const isUploadingImages = ref(false);
 const isPreviewExpanded = ref(false);
 const isPreviewLocked = ref(false);
-const replyMode = ref(null);
-
-const isQuickReplyOpen = computed(() => replyMode.value === "quick");
+const showQuickReply = ref(false);
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -329,42 +280,70 @@ function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
     replyContent.value = "";
-    replyMode.value = null;
+    showQuickReply.value = false;
     return;
   }
-  replyMode.value = null;
+  showQuickReply.value = false;
 }
 
 function toggleQuickReply() {
   if (!showReply.value) {
     showReply.value = true;
   }
-
-  replyMode.value = replyMode.value === "quick" ? null : "quick";
+  showQuickReply.value = !showQuickReply.value;
 }
 
-function openDetailedReply() {
-  if (!showReply.value) {
-    showReply.value = true;
-  }
-  replyMode.value = "detailed";
-}
+const getCategoryIdValue = (cat) =>
+  cat?.id ??
+  cat?.content_category_id ??
+  cat?.categoryId ??
+  cat?.category_id ??
+  null;
 
-async function handleReplyImages(event) {
-  const files = event.target?.files;
-  if (!files || !files.length) return;
-  isUploadingImages.value = true;
-  try {
-    const uploaded = await uploadImage(files);
-    replyContent.value = appendUrls(replyContent.value, uploaded);
-  } catch (error) {
-    console.error("回覆圖片上傳失敗:", error);
-    alert("圖片上傳失敗，請稍後再試");
-  } finally {
-    isUploadingImages.value = false;
-    if (event.target) event.target.value = "";
-  }
-}
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const openDetailedReplyModal = () => {
+  const categoryId = props.categoryId ?? props.post.categoryId ?? null;
+  const categories = forumStore.categories || [];
+
+  const matchedCategory = categories.find(
+    (cat) => String(getCategoryIdValue(cat)) === String(categoryId)
+  );
+
+  const parentCategoryId = matchedCategory
+    ? getParentCategoryIdValue(matchedCategory)
+    : null;
+
+  const parentCategory = parentCategoryId
+    ? categories.find(
+        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+      )
+    : null;
+
+  const categorySearchName = parentCategory
+    ? getCategoryName(parentCategory)
+    : matchedCategory
+      ? getCategoryName(matchedCategory)
+      : "";
+
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = categoryId;
+  forumStore.newTopic.parentContentId = props.post.id;
+  forumStore.newTopic.categorySearch = categorySearchName;
+  forumStore.newTopic.mode = "commentReply";
+  forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT_REPLY;
+
+  forumStore.toggleNewTopicModal(true);
+};
 
 async function submitReply() {
   if (!replyContent.value.trim()) {
@@ -405,7 +384,7 @@ async function submitReply() {
 function cancelReply() {
   showReply.value = false;
   replyContent.value = "";
-  replyMode.value = null;
+  showQuickReply.value = false;
 }
 
 /**

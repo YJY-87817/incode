@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useForumStore } from "@/stores/forumStore";
+import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -18,6 +18,17 @@ const resolveThreadId = (rawId) => {
   if (rawId === undefined || rawId === null || rawId === "") return null;
   const numericId = Number(rawId);
   return Number.isNaN(numericId) ? rawId : numericId;
+};
+
+const openNewTopicModal = () => {
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = forumStore.selectedCategory ?? null;
+  forumStore.newTopic.parentContentId = null;
+  forumStore.newTopic.categorySearch = "";
+  forumStore.newTopic.mode = "post";
+  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  forumStore.toggleNewTopicModal(true);
 };
 
 /**
@@ -108,7 +119,7 @@ watch(
             <button
               class="btn btn-forum-primary w-100"
               type="button"
-              @click="forumStore.toggleNewTopicModal(true)"
+              @click="openNewTopicModal"
             >
               <i class="fas fa-plus"></i>
               <span class="ms-2">發表新主題</span>

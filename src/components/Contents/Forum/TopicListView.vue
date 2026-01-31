@@ -222,6 +222,8 @@ const openDetailedComment = () => {
   forumStore.newTopic.categoryId = threadCategoryId;
   forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
   forumStore.newTopic.categorySearch = categorySearchName;
+  forumStore.newTopic.mode = "comment";
+  forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT;
   forumStore.selectedCategory = threadCategoryId;
 
   console.log("[openDetailedComment] Setting newTopic:", {
@@ -230,6 +232,49 @@ const openDetailedComment = () => {
     categorySearch: categorySearchName,
     selectedCategory: threadCategoryId,
   });
+
+  forumStore.toggleNewTopicModal(true);
+};
+
+const openDetailedReply = () => {
+  console.log("[openDetailedReply] threadDetail:", forumStore.threadDetail);
+
+  if (!forumStore.threadDetail?.id) {
+    console.error("[openDetailedReply] No threadDetail.id found");
+    return;
+  }
+
+  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+  const categories = forumStore.categories || [];
+
+  const matchedCategory = categories.find(
+    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+  );
+
+  const parentCategoryId = matchedCategory
+    ? getParentCategoryIdValue(matchedCategory)
+    : null;
+
+  const parentCategory = parentCategoryId
+    ? categories.find(
+        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+      )
+    : null;
+
+  const categorySearchName = parentCategory
+    ? getCategoryName(parentCategory)
+    : matchedCategory
+      ? getCategoryName(matchedCategory)
+      : "";
+
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = threadCategoryId;
+  forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
+  forumStore.newTopic.categorySearch = categorySearchName;
+  forumStore.newTopic.mode = "reply";
+  forumStore.newTopic.contentType = CONTENT_TYPES.REPLY;
+  forumStore.selectedCategory = threadCategoryId;
 
   forumStore.toggleNewTopicModal(true);
 };
@@ -339,7 +384,7 @@ const openDetailedComment = () => {
         <!-- 回覆區域 -->
         <div class="p-3">
           <div class="mt-3 mt-md-5">
-            <h5 class="fs-5 fs-md-4 mb-3">💬 留言</h5>
+            <h5 class="fs-5 fs-md-4 mb-3">💬 留言/回文</h5>
 
             <div
               class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
@@ -365,8 +410,16 @@ const openDetailedComment = () => {
                 <i class="fas fa-feather-alt me-1"></i>
                 詳細留言
               </button>
+              <button
+                class="btn btn-forum-secondary btn-sm"
+                type="button"
+                @click="openDetailedReply"
+              >
+                <i class="fas fa-feather-alt me-1"></i>
+                詳細回文
+              </button>
               <small class="text-muted" v-if="!showQuickReply">
-                簡易留言僅文字；詳細留言會開啟編輯視窗
+                簡易留言僅文字；詳細留言/回文會開啟編輯視窗
               </small>
             </div>
 
