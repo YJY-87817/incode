@@ -1,6 +1,6 @@
 <template>
   <div class="thread-post mb-3">
-    <div class="card shadow-sm">
+    <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div class="flex-grow-1">
@@ -589,11 +589,12 @@ function handleInteractionError(data) {
 
 .thread-post .card {
   transition: all 0.2s ease;
-  border-color: #d1d3d4;
+  border: none;
+  box-shadow: none;
 }
 
 .thread-post .card:hover {
-  box-shadow: 0 4px 8px rgba(134, 176, 189, 0.3);
+  box-shadow: none;
 }
 
 /* 隱藏留言/回文區塊內的所有滾動條（保留可滾動） */
@@ -740,7 +741,7 @@ function handleInteractionError(data) {
 
 /* 巢狀回覆的樣式 */
 .thread-post .replies-container .thread-post .card {
-  border-left: 3px solid #86b0bd;
+  border: none;
   background-color: rgba(255, 240, 221, 0.3);
 }
 
@@ -750,7 +751,7 @@ function handleInteractionError(data) {
 
 /* 更深層巢狀的樣式 */
 .thread-post .replies-container .replies-container .thread-post .card {
-  border-left-color: #d1d3d4;
+  border: none;
   background-color: rgba(255, 240, 221, 0.2);
 }
 
