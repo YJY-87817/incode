@@ -6,9 +6,9 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
-import CategoryFilter from "@/components/Contents/Forum/CategoryFilter.vue";
+import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
-import TopicListView from "@/components/Contents/Forum/TopicListView.vue";
+import TopicListView from "@/components/Contents/TopicListView.vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();

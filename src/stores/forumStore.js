@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/api/request.js'
 import contentInteractionApi from '@/api/contentInteractionApi.js'
-import { calculateReplyStats } from '@/components/Contents/Forum/forumUtils'
+import { calculateReplyStats } from '@/components/Contents/forumUtils'
 import { normalizeRichContent } from '@/utils/sanitizeHtml.js'
 import { fetchBodyHtml, toAbsoluteUrl } from '@/utils/contentBody.js'
 
