@@ -232,6 +232,7 @@ const previewWrapper = ref(null);
 const previewToggleEnabled = ref(false);
 const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
 const PREVIEW_MIN_HEIGHT = 60;
+const savedScrollPosition = ref(0);
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -296,7 +297,23 @@ const previewMinHeight = computed(() => {
 
 function togglePreview() {
   if (!previewToggleEnabled.value) return;
+
+  // 當前是收起狀態，即將展開 -> 保存當前的滾動位置
+  if (!isPreviewExpanded.value) {
+    savedScrollPosition.value = window.scrollY || window.pageYOffset;
+  }
+
   isPreviewExpanded.value = !isPreviewExpanded.value;
+
+  // 當前是展開狀態，即將收起 -> 恢復之前的滾動位置
+  if (!isPreviewExpanded.value) {
+    nextTick(() => {
+      window.scrollTo({
+        top: savedScrollPosition.value,
+        behavior: "instant",
+      });
+    });
+  }
 }
 
 const showCollapsedIframe = computed(
