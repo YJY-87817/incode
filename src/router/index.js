@@ -47,11 +47,6 @@ const router = createRouter({
       name: "forum-thread",
       component: () => import("@/views/Contents/forum.vue"),
     },
-    {
-      path: "/test",
-      name: "test",
-      component: () => import("@/views/Contents/test.vue"),
-    },
     // 以上是tim的路由
 
     // owen
