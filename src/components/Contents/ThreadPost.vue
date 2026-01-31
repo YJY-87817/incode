@@ -9,6 +9,7 @@
             >
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
+                  <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
                   <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
                   <small
                     class="text-muted post-time"
@@ -18,7 +19,6 @@
                     {{ post.createdAt }}
                   </small>
                 </div>
-                <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
               </div>
               <div class="interaction-container" @click.stop>
                 <InteractionButtons
