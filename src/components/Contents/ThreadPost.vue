@@ -52,6 +52,25 @@
               }"
             >
               <div
+                v-if="
+                  previewToggleEnabled &&
+                  !isPreviewExpanded &&
+                  previewImages.length
+                "
+                class="preview-images-col"
+              >
+                <div class="preview-images-grid">
+                  <img
+                    v-for="(url, idx) in previewImages"
+                    :key="url + idx"
+                    :src="url"
+                    alt="留言圖片"
+                    class="preview-image-thumb"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div
                 class="preview-text-col"
                 :class="{
                   'preview-text-col--full':
@@ -79,25 +98,6 @@
                   class="preview-click-layer"
                   @click.stop="togglePreview"
                 ></div>
-              </div>
-              <div
-                v-if="
-                  previewToggleEnabled &&
-                  !isPreviewExpanded &&
-                  previewImages.length
-                "
-                class="preview-images-col"
-              >
-                <div class="preview-images-grid">
-                  <img
-                    v-for="(url, idx) in previewImages"
-                    :key="url + idx"
-                    :src="url"
-                    alt="留言圖片"
-                    class="preview-image-thumb"
-                    loading="lazy"
-                  />
-                </div>
               </div>
             </div>
           </div>
