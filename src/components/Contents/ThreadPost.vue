@@ -7,8 +7,17 @@
             <div
               class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1"
             >
-              <div class="d-flex align-items-center gap-2">
-                <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="post-meta">
+                  <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
+                  <small
+                    class="text-muted post-time"
+                    :class="{ clickable: post.type === 2 || post.type === 3 }"
+                    @click="goToPostDetail"
+                  >
+                    {{ post.createdAt }}
+                  </small>
+                </div>
                 <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
               </div>
               <div class="interaction-container" @click.stop>
@@ -20,13 +29,6 @@
                 />
               </div>
             </div>
-            <small
-              class="text-muted post-time"
-              :class="{ clickable: post.type === 2 || post.type === 3 }"
-              @click="goToPostDetail"
-            >
-              {{ post.createdAt }}
-            </small>
           </div>
           <button
             class="btn btn-sm btn-forum-secondary thread-reply-btn"
@@ -531,8 +533,17 @@ function handleInteractionError(data) {
   font-size: 1rem;
 }
 
+.post-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .post-time {
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .post-time.clickable {
