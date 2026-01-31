@@ -281,7 +281,7 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "html, body { white-space: pre-wrap; scrollbar-width: none; -ms-overflow-style: none; } * { scrollbar-width: none; -ms-overflow-style: none; } ::-webkit-scrollbar { display: none; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
 
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
@@ -595,6 +595,17 @@ function handleInteractionError(data) {
 
 .thread-post .card:hover {
   box-shadow: 0 4px 8px rgba(134, 176, 189, 0.3);
+}
+
+/* 隱藏留言/回文區塊內的所有滾動條（保留可滾動） */
+.thread-post,
+.thread-post :deep(*) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.thread-post :deep(*::-webkit-scrollbar) {
+  display: none;
 }
 
 .rich-content {
