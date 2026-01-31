@@ -747,6 +747,11 @@ async function handleInteractionError(data) {
   box-shadow: none;
 }
 
+.interaction-container {
+  position: relative;
+  z-index: 20;
+}
+
 /* 隱藏留言/回文區塊內的所有滾動條（保留可滾動） */
 .thread-post,
 .thread-post :deep(*) {

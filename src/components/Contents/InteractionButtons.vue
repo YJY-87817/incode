@@ -123,6 +123,8 @@ function getButtonClass(categoryId) {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem;
+  position: relative;
+  z-index: 20;
 }
 
 /* 基礎互動按鈕樣式 */
