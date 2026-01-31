@@ -96,12 +96,12 @@
                   text-color="#145369"
                   :extra-css="iframeExtraCssExpanded"
                 />
-                <div
-                  v-if="previewToggleEnabled"
-                  class="preview-click-layer"
-                  @click.stop="togglePreview"
-                ></div>
               </div>
+              <div
+                v-if="previewToggleEnabled"
+                class="preview-click-layer"
+                @click.stop="togglePreview"
+              ></div>
             </div>
           </div>
         </div>
@@ -207,6 +207,7 @@
             :post="reply"
             :is-reply="true"
             :category-id="categoryId"
+            :preview-only="true"
           />
           <div
             v-if="nestedToggleEnabled"
@@ -781,6 +782,7 @@ async function handleInteractionError(data) {
 
 .preview-body {
   width: 100%;
+  position: relative;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -841,6 +843,7 @@ async function handleInteractionError(data) {
   background-color: rgba(255, 240, 221, 0.35);
   border: 1px dashed #d1d3d4;
   border-radius: 6px;
+  z-index: 2;
 }
 
 .preview-iframe-wrapper.preview-collapsed::-webkit-scrollbar {
@@ -859,6 +862,7 @@ async function handleInteractionError(data) {
 .preview-iframe-wrapper.preview-expanded {
   border-top: 1px dashed #d1d3d4;
   padding-top: 0.75rem;
+  z-index: 2;
 }
 
 .preview-iframe-wrapper.preview-expanded .preview-body {
@@ -871,7 +875,7 @@ async function handleInteractionError(data) {
   inset: 0;
   cursor: pointer;
   background: transparent;
-  z-index: 2;
+  z-index: 3;
 }
 
 @media (max-width: 768px) {
@@ -982,7 +986,7 @@ async function handleInteractionError(data) {
   inset: 0;
   cursor: pointer;
   background: transparent;
-  z-index: 2;
+  z-index: 1;
 }
 
 /* 調整巢狀回覆內的卡片樣式 */
