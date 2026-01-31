@@ -3,6 +3,7 @@ import { reactive, onMounted, watch, ref, computed } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
+import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 
@@ -46,7 +47,6 @@ const newCategoryDescription = ref("");
 const createCategoryParentId = ref(null);
 const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
-const showPublishSuccessModal = ref(false);
 const showTitleBodyRequiredModal = ref(false);
 
 const NO_REPLY_LABEL = "無(發表新主題)";
@@ -668,10 +668,6 @@ const closeCategoryNameModal = () => {
   showCategoryNameModal.value = false;
 };
 
-const closePublishSuccessModal = () => {
-  showPublishSuccessModal.value = false;
-};
-
 const closeTitleBodyRequiredModal = () => {
   showTitleBodyRequiredModal.value = false;
 };
@@ -712,7 +708,12 @@ const submitNewTopic = () => {
   apiClient
     .post("/ContentApi", dto)
     .then(() => {
-      showPublishSuccessModal.value = true;
+      Swal.fire({
+        icon: "success",
+        title: "發表成功",
+        showConfirmButton: false,
+        timer: 1500
+      });
       // 直接刷新主題列表而不是只觸發信號
       forumStore.pagination.currentPage = 1;
       forumStore.fetchTopics();
@@ -1186,38 +1187,7 @@ const resetNewTopicDraft = () => {
       </div>
     </div>
 
-    <div
-      v-if="showPublishSuccessModal"
-      class="create-category-backdrop"
-      @click.self="closePublishSuccessModal"
-    >
-      <div class="create-category-dialog">
-        <div class="create-category-content">
-          <div
-            class="modal-header d-flex justify-content-between align-items-center mb-3"
-          >
-            <h5 class="modal-title mb-0">提示</h5>
-            <button
-              type="button"
-              class="btn-close"
-              @click="closePublishSuccessModal"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-0">發表成功</p>
-          </div>
-          <div class="modal-footer d-flex justify-content-end">
-            <button
-              type="button"
-              class="btn btn-forum-primary"
-              @click="closePublishSuccessModal"
-            >
-              我知道了
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <div
       v-if="showTitleBodyRequiredModal"
