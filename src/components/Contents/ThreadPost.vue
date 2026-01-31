@@ -281,8 +281,7 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "html, body { white-space: pre-wrap; scrollbar-width: none; -ms-overflow-style: none; } * { scrollbar-width: none; -ms-overflow-style: none; } ::-webkit-scrollbar { display: none; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
-
+  "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
   return `${baseIframeCss} img { display: none; }`;
