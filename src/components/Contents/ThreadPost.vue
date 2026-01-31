@@ -37,30 +37,14 @@
         </div>
         <div class="mt-2">
           <div
-            v-if="previewOnly && !isPreviewExpanded"
-            class="preview-content"
-            @click="togglePreview"
+            class="preview-iframe-wrapper"
+            :class="{
+              'preview-collapsed': previewOnly && !isPreviewExpanded,
+              'preview-expanded': previewOnly && isPreviewExpanded,
+            }"
           >
-            <p class="preview-text mb-2">
-              {{ previewText }}
-              <span v-if="isTruncated" class="text-muted">…</span>
-            </p>
-            <div v-if="previewImages.length" class="preview-images">
-              <img
-                v-for="(url, idx) in previewImages"
-                :key="url + idx"
-                :src="url"
-                alt="留言圖片"
-                class="preview-image-thumb"
-                loading="lazy"
-              />
-            </div>
-          </div>
-
-          <div v-else class="preview-iframe-wrapper">
             <HtmlIframe
               class="card-text rich-content"
-              :class="{ 'preview-expanded': previewOnly }"
               :html="safeContent"
               :min-height="60"
               text-color="#145369"
@@ -71,16 +55,6 @@
               class="preview-click-layer"
               @click.stop="togglePreview"
             ></div>
-          </div>
-
-          <div v-if="previewOnly" class="preview-toggle">
-            <button
-              type="button"
-              class="btn btn-link p-0 preview-toggle-btn"
-              @click.stop="togglePreview"
-            >
-              {{ previewToggleLabel }}
-            </button>
           </div>
         </div>
 
@@ -205,7 +179,6 @@ const showReply = ref(false);
 const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isPreviewExpanded = ref(false);
-const isPreviewLocked = ref(false);
 const showQuickReply = ref(false);
 
 const typeLabel = computed(() => {
@@ -245,35 +218,9 @@ const contentSummary = computed(() => {
   return typeof base === "string" ? base : String(base ?? "");
 });
 
-const previewText = computed(() => {
-  const base = contentSummary.value.trim();
-  if (!base) return "(無內容)";
-  return base.length > 50 ? base.slice(0, 50) : base;
-});
-
-const isTruncated = computed(() => contentSummary.value.trim().length > 50);
-
-const previewImages = computed(() => {
-  const images = props.post.imageUrls ?? [];
-  return Array.isArray(images) ? images.slice(0, 3) : [];
-});
-
-const previewToggleLabel = computed(() => {
-  if (!props.previewOnly) return "";
-  if (isPreviewLocked.value) return "收起";
-  if (isPreviewExpanded.value) return "固定展開";
-  return "展開";
-});
-
 function togglePreview() {
   if (!props.previewOnly) return;
-  if (isPreviewLocked.value) {
-    isPreviewLocked.value = false;
-    isPreviewExpanded.value = false;
-    return;
-  }
-  isPreviewLocked.value = true;
-  isPreviewExpanded.value = true;
+  isPreviewExpanded.value = !isPreviewExpanded.value;
 }
 
 function toggleReply() {
@@ -526,56 +473,21 @@ function handleInteractionError(data) {
   margin: 0.5rem 0;
 }
 
-.preview-content {
-  cursor: pointer;
+.preview-iframe-wrapper {
+  position: relative;
+}
+
+.preview-iframe-wrapper.preview-collapsed {
+  max-height: 180px;
+  overflow: hidden;
   background-color: rgba(255, 240, 221, 0.35);
   border: 1px dashed #d1d3d4;
   border-radius: 6px;
-  padding: 0.75rem;
 }
 
-.preview-text {
-  color: #145369;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.preview-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.preview-image-thumb {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #d1d3d4;
-}
-
-.preview-expanded {
+.preview-iframe-wrapper.preview-expanded {
   border-top: 1px dashed #d1d3d4;
   padding-top: 0.75rem;
-}
-
-.preview-toggle {
-  margin-top: 0.35rem;
-}
-
-.preview-toggle-btn {
-  font-size: 0.85rem;
-  color: #145369;
-  text-decoration: none;
-}
-
-.preview-toggle-btn:hover {
-  text-decoration: underline;
-  color: #0f3c4d;
-}
-
-.preview-iframe-wrapper {
-  position: relative;
 }
 
 .preview-click-layer {
