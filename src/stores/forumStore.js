@@ -506,6 +506,40 @@ export const useForumStore = defineStore('forum', {
                     rcHtml,
                     toAbsoluteUrl
                   )
+                  
+                  // 為回文下的每個留言獲取其留言回覆 (type=4)
+                  const commentId = rc.contentId
+                  const commentReplies = allItems.filter(cr =>
+                    cr.type === CONTENT_TYPES.COMMENT_REPLY &&
+                    Number(cr.parentContentId) === commentId
+                  )
+                  
+                  let replies = []
+                  try {
+                    replies = await Promise.all(
+                      commentReplies.map(async (cr) => {
+                        const crHtml = await fetchBodyHtml(cr.body)
+                        const { sanitizedHtml: crSanitizedHtml, textContent: crTextContent, imageUrls: crImageUrls } = normalizeRichContent(
+                          crHtml,
+                          toAbsoluteUrl
+                        )
+                        return {
+                          id: cr.contentId,
+                          author: cr.username,
+                          createdAt: cr.createdAt,
+                          content: crTextContent,
+                          contentHtml: crSanitizedHtml,
+                          contentText: crTextContent,
+                          imageUrls: crImageUrls,
+                          type: CONTENT_TYPES.COMMENT_REPLY,
+                          parentContentId: cr.parentContentId,
+                        }
+                      })
+                    )
+                  } catch (error) {
+                    console.error(`獲取留言 ${rc.contentId} 的回覆失敗:`, error)
+                  }
+                  
                   return {
                     id: rc.contentId,
                     author: rc.username,
@@ -516,6 +550,7 @@ export const useForumStore = defineStore('forum', {
                     imageUrls: rcImageUrls,
                     type: CONTENT_TYPES.COMMENT,
                     parentContentId: rc.parentContentId,
+                    replies: replies.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
                   }
                 })
               )
