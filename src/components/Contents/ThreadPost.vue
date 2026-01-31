@@ -37,27 +37,29 @@
         </div>
         <div class="mt-2">
           <div
+            ref="previewWrapper"
             class="preview-iframe-wrapper"
             :class="{
-              'preview-collapsed': previewOnly && !isPreviewExpanded,
-              'preview-expanded': previewOnly && isPreviewExpanded,
+              'preview-collapsed': previewToggleEnabled && !isPreviewExpanded,
+              'preview-expanded': previewToggleEnabled && isPreviewExpanded,
             }"
           >
             <div
               class="preview-body"
               :class="{
-                'preview-row': previewOnly && !isPreviewExpanded,
-                'preview-full': !previewOnly || isPreviewExpanded,
+                'preview-row': previewToggleEnabled && !isPreviewExpanded,
+                'preview-full': !previewToggleEnabled || isPreviewExpanded,
               }"
             >
               <div
                 class="preview-text-col"
                 :class="{
-                  'preview-text-col--full': !previewOnly || isPreviewExpanded,
+                  'preview-text-col--full':
+                    !previewToggleEnabled || isPreviewExpanded,
                 }"
               >
                 <HtmlIframe
-                  v-show="!previewOnly || !isPreviewExpanded"
+                  v-show="showCollapsedIframe"
                   class="card-text rich-content"
                   :html="safeContent"
                   :min-height="60"
@@ -65,7 +67,7 @@
                   :extra-css="iframeExtraCssCollapsed"
                 />
                 <HtmlIframe
-                  v-show="!previewOnly || isPreviewExpanded"
+                  v-show="showExpandedIframe"
                   class="card-text rich-content"
                   :html="safeContent"
                   :min-height="60"
@@ -73,13 +75,17 @@
                   :extra-css="iframeExtraCssExpanded"
                 />
                 <div
-                  v-if="previewOnly"
+                  v-if="previewToggleEnabled"
                   class="preview-click-layer"
                   @click.stop="togglePreview"
                 ></div>
               </div>
               <div
-                v-if="previewOnly && !isPreviewExpanded && previewImages.length"
+                v-if="
+                  previewToggleEnabled &&
+                  !isPreviewExpanded &&
+                  previewImages.length
+                "
                 class="preview-images-col"
               >
                 <div class="preview-images-grid">
@@ -179,7 +185,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import apiClient from "@/api/request.js";
@@ -219,6 +225,9 @@ const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isPreviewExpanded = ref(false);
 const showQuickReply = ref(false);
+const previewWrapper = ref(null);
+const previewToggleEnabled = ref(false);
+const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -252,6 +261,11 @@ const safeContent = computed(() => {
   return sanitizedHtml;
 });
 
+const hasInlineImages = computed(() => {
+  const rawHtml = props.post.contentHtml ?? props.post.content ?? "";
+  return /<img\s/i.test(rawHtml);
+});
+
 const contentSummary = computed(() => {
   const base = props.post.contentText ?? props.post.content ?? "";
   return typeof base === "string" ? base : String(base ?? "");
@@ -266,16 +280,67 @@ const baseIframeCss =
   "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
 
 const iframeExtraCssCollapsed = computed(() => {
-  if (!props.previewOnly) return baseIframeCss;
+  if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
   return `${baseIframeCss} img { display: none; }`;
 });
 
 const iframeExtraCssExpanded = computed(() => baseIframeCss);
 
 function togglePreview() {
-  if (!props.previewOnly) return;
+  if (!previewToggleEnabled.value) return;
   isPreviewExpanded.value = !isPreviewExpanded.value;
 }
+
+const showCollapsedIframe = computed(
+  () => previewToggleEnabled.value && !isPreviewExpanded.value
+);
+
+const showExpandedIframe = computed(
+  () => !previewToggleEnabled.value || isPreviewExpanded.value
+);
+
+const measurePreviewHeight = () => {
+  const wrapper = previewWrapper.value;
+  if (!wrapper) return 0;
+  const iframes = Array.from(wrapper.querySelectorAll("iframe"));
+  if (!iframes.length) return 0;
+  const visibleFrame = iframes.find((el) => el.getClientRects().length > 0);
+  const target = visibleFrame || iframes[0];
+  const rect = target.getBoundingClientRect?.();
+  return rect?.height || target.offsetHeight || 0;
+};
+
+const updatePreviewToggleState = async () => {
+  if (!props.previewOnly) {
+    previewToggleEnabled.value = false;
+    isPreviewExpanded.value = false;
+    return;
+  }
+
+  await nextTick();
+  requestAnimationFrame(() => {
+    const height = measurePreviewHeight();
+    const needsToggleByHeight = height > PREVIEW_COLLAPSED_MAX_HEIGHT + 1;
+    const needsToggleByImages =
+      previewImages.value.length > 0 || hasInlineImages.value;
+    const shouldEnable = needsToggleByHeight || needsToggleByImages;
+    previewToggleEnabled.value = shouldEnable;
+    if (!shouldEnable) {
+      isPreviewExpanded.value = false;
+    }
+  });
+};
+
+onMounted(() => {
+  updatePreviewToggleState();
+});
+
+watch(
+  [safeContent, previewImages, hasInlineImages, () => props.previewOnly],
+  () => {
+    updatePreviewToggleState();
+  }
+);
 
 function toggleReply() {
   showReply.value = !showReply.value;
