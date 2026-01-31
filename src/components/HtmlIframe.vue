@@ -78,6 +78,24 @@ const baseCss = computed(() => {
     : "";
   return `
     :root { color-scheme: light; }
+    *, *::before, *::after {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    *::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
     body {
       margin: 0;
       padding: 0;
