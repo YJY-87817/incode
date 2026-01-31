@@ -43,7 +43,7 @@
               'preview-expanded': previewOnly && isPreviewExpanded,
             }"
           >
-            <div v-if="previewOnly" class="preview-row">
+            <div v-if="previewOnly && !isPreviewExpanded" class="preview-row">
               <div class="preview-text-col">
                 <HtmlIframe
                   class="card-text rich-content"
@@ -79,6 +79,11 @@
                 text-color="#145369"
                 :extra-css="iframeExtraCss"
               />
+              <div
+                v-if="previewOnly"
+                class="preview-click-layer"
+                @click.stop="togglePreview"
+              ></div>
             </template>
           </div>
         </div>
@@ -251,7 +256,7 @@ const previewImages = computed(() => {
 const iframeExtraCss = computed(() => {
   const baseCss =
     "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
-  if (!props.previewOnly) return baseCss;
+  if (!props.previewOnly || isPreviewExpanded.value) return baseCss;
   return `${baseCss} img { display: none; }`;
 });
 
