@@ -1,73 +1,81 @@
-<!-- src/components/mission-hall/TaskTabs.vue -->
 <script setup>
-defineProps({
+import { useTaskStore } from "@/stores/point/UseTaskStore";
+
+const props = defineProps({
   activeTab: {
     type: String,
-    required: true,
     default: "mission",
   },
 });
 
 const emit = defineEmits(["change"]);
+const store = useTaskStore();
+
+function changeTab(tab) {
+  emit("change", tab);
+}
 </script>
 
 <template>
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <div class="card shadow-blur blur border-0 mb-4">
-        <div class="card-body p-3">
-          <div class="row align-items-center">
-            <!-- Tab 導航 -->
-            <!-- <div class="col-lg-5"> -->
-            <div class="nav-wrapper position-relative">
-              <ul
-                class="nav nav-pills nav-fill p-1 bg-gray-100 border-radius-lg"
-              >
-                <li class="nav-item">
-                  <button
-                    @click="emit('change', 'mission')"
-                    :class="[
-                      'nav-link mb-0 px-0 py-2 border-0 w-100 transition-all',
-                      activeTab === 'mission'
-                        ? 'active bg-white shadow font-weight-bold text-info'
-                        : 'bg-transparent text-dark',
-                    ]"
-                  >
-                    <i class="fas fa-certificate me-2 text-xs"></i>
-                    官方挑戰
-                  </button>
-                </li>
-                <li class="nav-item">
-                  <button
-                    @click="emit('change', 'entrustMission')"
-                    :class="[
-                      'nav-link mb-0 px-0 py-2 border-0 w-100 transition-all',
-                      activeTab === 'entrustMission'
-                        ? 'active bg-white shadow font-weight-bold text-info'
-                        : 'bg-transparent text-dark',
-                    ]"
-                  >
-                    <i class="fas fa-users me-2 text-xs"></i>
-                    影友委託
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <!-- </div> -->
+  <div class="nav-wrapper position-relative mb-3">
+    <ul
+      class="nav nav-pills nav-fill p-1 bg-white border-radius-lg shadow-sm flex-row justify-content-center mx-auto"
+      style="max-width: 400px"
+    >
+      <li class="nav-item">
+        <a
+          class="nav-link mb-0 px-0 py-2"
+          :class="{ active: store.activeTab === 'mission' }"
+          @click="changeTab('mission')"
+          href="javascript:;"
+        >
+          <i class="fas fa-flag text-sm me-2"></i>
+          <span class="ms-1">官方挑戰</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link mb-0 px-0 py-2"
+          :class="{ active: store.activeTab === 'entrust' }"
+          @click="changeTab('entrust')"
+          href="javascript:;"
+        >
+          <i class="fas fa-users text-sm me-2"></i>
+          <span class="ms-1">影友委託</span>
+        </a>
+      </li>
+    </ul>
 
-            <!-- 右側插槽：搜尋、發布按鈕等（由父組件決定放什麼） -->
-            <!-- <div class="col-lg-7 mt-3 mt-lg-0">
-              <slot name="right-content"></slot>
-            </div> -->
-          </div>
-        </div>
-      </div>
+    <div class="tab-content-slot mt-2">
+      <slot name="bottom-content"></slot>
     </div>
   </div>
 </template>
 
 <style scoped>
-.transition-all {
-  transition: all 0.25s ease-in-out;
+/* 膠囊式切換樣式：視覺上更緊湊且無邊框空白 */
+.nav-pills .nav-link {
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+  color: #67748e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-pills .nav-link.active {
+  background-image: linear-gradient(310deg, #11cdef 0%, #1171ef 100%);
+  color: #fff !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.nav-link:hover:not(.active) {
+  background-color: #f8f9fa;
+}
+
+/* 移除 nav-tabs 預設的下劃線，避免產生不必要的視覺斷層 */
+.nav-tabs {
+  border-bottom: none;
 }
 </style>

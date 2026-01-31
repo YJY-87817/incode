@@ -1,14 +1,44 @@
-<!-- src/components/mission-hall/EntrustMissionTable.vue -->
 <script setup>
+import { computed } from "vue";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
 
 const store = useTaskStore();
-
 const emit = defineEmits(["open-detail", "claim"]);
+
+const list = computed(() => store.filteredList);
 </script>
 
 <template>
-  <div class="col-12">
+  <div v-if="store.isLoading" class="text-center py-8">
+    <div class="spinner-border text-info" role="status"></div>
+    <p class="mt-3 text-secondary">載入任務中...</p>
+  </div>
+
+  <div v-else-if="store.error" class="alert alert-danger text-center py-5">
+    {{ store.error }}
+    <button
+      @click="store.fetchTasks"
+      class="btn btn-sm btn-outline-danger mt-2"
+    >
+      重試
+    </button>
+  </div>
+
+  <div v-else-if="list.length === 0" class="empty-state-wrapper py-5">
+    <h5 class="text-dark font-weight-bold mb-1 text-center">找不到相關任務</h5>
+    <p class="text-secondary text-sm mb-4 text-center">
+      目前沒有符合條件的委託任務，請嘗試調整篩選條件。
+    </p>
+
+    <button
+      @click="store.clearFilters"
+      class="btn btn-sm btn-outline-info border-radius-pill px-4 d-block mx-auto"
+    >
+      清除所有篩選
+    </button>
+  </div>
+
+  <div v-else class="col-12">
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table align-items-center mb-0">
@@ -37,11 +67,7 @@ const emit = defineEmits(["open-detail", "claim"]);
             </tr>
           </thead>
           <tbody>
-            <tr
-              v-for="c in store.filteredList"
-              :key="c.id"
-              class="commission-row"
-            >
+            <tr v-for="c in list" :key="c.id" class="commission-row">
               <td class="ps-4">
                 <div
                   class="d-flex align-items-center cursor-pointer"
@@ -91,10 +117,25 @@ const emit = defineEmits(["open-detail", "claim"]);
                   詳情
                 </button>
                 <button
-                  @click="emit('claim', c.title)"
+                  v-if="!c.claimed && !c.completed"
+                  @click="emit('claim', { type: 'entrust', commission: c })"
                   class="btn btn-sm bg-gradient-info mb-0"
                 >
                   接取
+                </button>
+                <button
+                  v-else-if="c.claimed"
+                  class="btn btn-sm btn-outline-success shadow-none px-3 mb-0"
+                  disabled
+                >
+                  已接取
+                </button>
+                <button
+                  v-else
+                  class="btn btn-sm btn-outline-secondary shadow-none px-3 mb-0"
+                  disabled
+                >
+                  已完成
                 </button>
               </td>
             </tr>

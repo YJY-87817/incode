@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
-import service from "@/api/point/axios.js"; // 暫時註解
+import service from "@/api/point/axios.js"; // 假設這是你的 API 服務
+
+// const USE_MOCK = import.meta.env.DEV && true; // 開發模式下使用 mock 資料（可從 .env 控制）
 
 export const useTaskStore = defineStore("task", {
   state: () => ({
@@ -12,11 +14,11 @@ export const useTaskStore = defineStore("task", {
     sortOption: "default",
     showAdvancedFilters: false,
     isLoading: false,
+    error: null, // error 狀態
     activeTab: "mission",
   }),
 
   getters: {
-    // 現在直接使用 state.activeTab，不再需要傳參數
     currentCategories: (state) => {
       if (state.activeTab === "mission") {
         return [
@@ -55,7 +57,7 @@ export const useTaskStore = defineStore("task", {
       const source =
         state.activeTab === "mission" ? state.missions : state.entrustMissions;
 
-      let result = [...source];
+      let result = source;
 
       // 搜尋
       if (state.searchQuery.trim()) {
@@ -82,30 +84,44 @@ export const useTaskStore = defineStore("task", {
         );
       }
 
-      // 時長
-      if (state.selectedDuration !== "不限時間") {
+      // 時長（僅 mission 適用）
+      if (
+        state.activeTab === "mission" &&
+        state.selectedDuration !== "不限時間"
+      ) {
         result = result.filter(
           (item) => item.duration === state.selectedDuration,
         );
       }
 
-      // 排序
-      return result.sort((a, b) => {
+      // 排序（統一處理欄位差異）
+      return [...result].sort((a, b) => {
         if (state.sortOption === "reward") {
-          return (b.reward || b.price || 0) - (a.reward || a.price || 0);
+          const aVal =
+            state.activeTab === "mission" ? a.reward || 0 : a.price || 0;
+          const bVal =
+            state.activeTab === "mission" ? b.reward || 0 : b.price || 0;
+          return bVal - aVal;
         }
         if (state.sortOption === "popular") {
-          return (
-            (b.participants || b.applicants || b.views || 0) -
-            (a.participants || a.applicants || a.views || 0)
-          );
+          const aPop =
+            state.activeTab === "mission"
+              ? a.participants || 0
+              : a.applicants || a.views || 0;
+          const bPop =
+            state.activeTab === "mission"
+              ? b.participants || 0
+              : b.applicants || b.views || 0;
+          return bPop - aPop;
         }
         if (state.sortOption === "urgent") {
-          return b.urgent === a.urgent ? 0 : b.urgent ? -1 : 1;
+          const aUrgent = state.activeTab === "entrust" ? !!a.urgent : false;
+          const bUrgent = state.activeTab === "entrust" ? !!b.urgent : false;
+          return bUrgent === aUrgent ? 0 : bUrgent ? -1 : 1;
         }
         // 預設排序
-        if (a.featured !== b.featured) return b.featured ? 1 : -1;
-        return b.id - a.id;
+        if (a.featured !== b.featured) return b.featured ? -1 : 1;
+        return (b.id || 0) - (a.id || 0);
       });
     },
 
@@ -138,11 +154,11 @@ export const useTaskStore = defineStore("task", {
       if (newTab !== "mission") {
         this.selectedDifficulty = "不限難度";
       }
-      // 可選擇是否在切換 tab 時重置其他篩選
-      // this.resetFilters();
+      // 可選擇是否重置其他篩選
+      // this.clearFilters();
     },
 
-    resetFilters() {
+    clearFilters() {
       this.searchQuery = "";
       this.selectedCategory = "全部";
       this.selectedDifficulty = "不限難度";
@@ -156,39 +172,103 @@ export const useTaskStore = defineStore("task", {
     },
 
     async fetchTasks() {
+      // if (USE_MOCK) {
+      //   // mock 資料
+      //   this.missions = [
+      //     {
+      //       id: 1,
+      //       title: "每日登入",
+      //       desc: "今天也要看看有什麼新電影！",
+      //       reward: 10,
+      //       category: "基礎",
+      //       difficulty: "簡單",
+      //       duration: "1-3 天",
+      //       participants: 0,
+      //       featured: true,
+      //       claimed: false,
+      //       completed: false,
+      //     },
+      //     {
+      //       id: 2,
+      //       title: "分享電影心得",
+      //       desc: "發表一篇電影評論",
+      //       reward: 50,
+      //       category: "內容創作",
+      //       difficulty: "中等",
+      //       duration: "3-7 天",
+      //       participants: 5,
+      //       featured: false,
+      //       claimed: false,
+      //       completed: false,
+      //     },
+      //     // 更多...
+      //   ];
+      //   this.entrustMissions = [
+      //     {
+      //       id: 101,
+      //       title: "電影字幕校對",
+      //       desc: "協助校對電影字幕中的錯字與時間軸",
+      //       price: 120,
+      //       category: "字幕",
+      //       deadline: "3天內",
+      //       applicants: 0,
+      //       maxParticipants: 1,
+      //       urgent: true,
+      //       claimed: false,
+      //       completed: false,
+      //     },
+      //     {
+      //       id: 102,
+      //       title: "尋找稀有電影資源",
+      //       desc: "幫忙找到特定電影的下載連結",
+      //       price: 200,
+      //       category: "資源",
+      //       deadline: "7天內",
+      //       applicants: 2,
+      //       maxParticipants: 3,
+      //       urgent: false,
+      //       claimed: false,
+      //       completed: false,
+      //     },
+      //     // 更多...
+      //   ];
+      //   this.isLoading = false;
+      //   this.error = null;
+      //   return;
+      // }
+
       this.isLoading = true;
+      this.error = null;
       try {
         const [missionRes, entrustRes] = await Promise.all([
-          service.get("/api/MissionApi"), // 取得所有啟用平台任務
-          service.get("/api/EntrustMissionApi"), // 取得開放中的委託任務
+          service.get("/api/MissionApi"),
+          service.get("/api/EntrustMissionApi"),
         ]);
 
-        // 平台任務：直接使用後端回傳格式（或輕微轉換）
         this.missions = (missionRes.data || []).map((item) => ({
-          // 統一前端使用的欄位名稱（可選，如果你想保持舊名稱）
           id: item.missionId,
           title: item.missionName,
-          desc: item.missionDetail, // 原 desc 對應 detail
+          desc: item.missionDetail,
           reward: item.rewardPoints,
-          exp: item.rewardExp, // 如果前端要顯示經驗值
+          exp: item.rewardExp,
           category: item.category,
           difficulty: item.difficulty,
-          duration: item.estimatedDuration || item.resetType || "每日", // 後備方案
+          duration: item.estimatedDuration || item.resetType || "每日",
           participants: item.participantCount || 0,
           featured: item.isFeatured || false,
           resetType: item.resetType,
           isActive: item.isActive,
           createdAt: item.createdAt,
-          // 如果有其他需要的前端欄位，可在此補充
+          claimed: false, // 假設後端有，回傳時設置
+          completed: false,
         }));
 
-        // 委託任務：同樣映射
         this.entrustMissions = (entrustRes.data || []).map((item) => ({
           id: item.entrustMissionId,
           title: item.title || "未命名委託",
           desc: item.detail || "無詳細說明",
           price: item.rewardPoints || 0,
-          category: item.category || "其他", // ← 修正 null 問題
+          category: item.category || "其他",
           deadline: item.deadline
             ? new Date(item.deadline).toLocaleString("zh-TW", {
                 dateStyle: "medium",
@@ -197,53 +277,65 @@ export const useTaskStore = defineStore("task", {
             : "無期限",
           maxParticipants: item.maxParticipants || 1,
           applicants: item.currentParticipants ?? 0,
-          urgent: !!item.isUrgent, // 轉 boolean，更嚴謹
+          urgent: !!item.isUrgent,
           status: item.status || "open",
           requester: item.requesterName || "匿名影友",
           createdAt: item.createdAt,
+          claimed: false,
+          completed: false,
         }));
-
-        console.log("任務資料載入完成", {
-          missionsCount: this.missions.length,
-          entrustCount: this.entrustMissions.length,
-        });
+        console.log(
+          `載入完成：平台 ${this.missions.length} 項，委託 ${this.entrustMissions.length} 項`,
+        );
       } catch (err) {
         console.error("載入任務失敗", err);
-
-        // 錯誤時才 fallback 到假資料（避免開發時一直看到空列表）
-        this.missions = [
-          {
-            id: 1,
-            title: "每日登入",
-            desc: "今天也要看看有什麼新電影！",
-            reward: 10,
-            category: "日常",
-            difficulty: "簡單",
-            duration: "每日",
-            participants: 0,
-            featured: true,
-          },
-          // 更多假資料...
-        ];
-
-        this.entrustMissions = [
-          {
-            id: 101,
-            title: "電影字幕校對",
-            desc: "協助校對電影字幕中的錯字與時間軸",
-            price: 120,
-            category: "字幕",
-            deadline: "3天內",
-            applicants: 0,
-            maxParticipants: 1,
-            urgent: true,
-          },
-          // 更多...
-        ];
+        this.error =
+          err.response?.data?.message ||
+          err.message ||
+          "無法載入任務，請稍後再試";
       } finally {
         this.isLoading = false;
       }
     },
+
+    async claimTask(type, taskId) {
+      if (type !== "platform") return;
+
+      try {
+        console.log(`開始領取任務：MissionId = ${taskId}`);
+        const response = await service.post(`/api/MissionApi/claim/${taskId}`);
+
+        console.log("HTTP 狀態碼：", response.status);
+        console.log("完整回應資料：", response.data); // 印出整個 response.data
+        console.log(
+          "回傳的 participantCount：",
+          response.data?.data?.participantCount,
+        );
+
+        const result = response.data;
+
+        if (result.ok && result.data) {
+          const mission = this.missions.find((m) => m.id === taskId);
+          if (mission) {
+            mission.claimed = true;
+            mission.participants =
+              result.data.participantCount ?? (mission.participants || 0) + 1;
+            this.missions = [...this.missions];
+            console.log(`前端更新後 participants: ${mission.participants}`);
+          }
+        }
+
+        return result;
+      } catch (err) {
+        console.error("領取請求失敗：");
+        console.error("錯誤訊息：", err.message);
+        console.error("後端回傳錯誤：", err.response?.data); // ← 關鍵！印出後端錯誤訊息
+        console.error("HTTP 狀態碼：", err.response?.status);
+
+        const msg = err.response?.data?.message || "領取失敗，請檢查網路或後端";
+        throw new Error(msg);
+      }
+    }, //之後任務完成邏輯
 
     getCategoryIcon(category) {
       const icons = {
@@ -271,20 +363,6 @@ export const useTaskStore = defineStore("task", {
         高難度: "bg-gradient-warning",
       };
       return colors[difficulty] || "bg-gradient-secondary";
-    },
-
-    clearFilters() {
-      this.searchQuery = "";
-      this.selectedCategory = "全部";
-      this.selectedDifficulty = "不限難度";
-      this.selectedDuration = "不限時間";
-      this.sortOption = "default";
-      this.showAdvancedFilters = false; // 順便關閉高級面板
-    },
-
-    // 如果你原本有 resetFilters，也可以保留或改名
-    resetFilters() {
-      this.clearFilters(); // 統一呼叫
     },
   },
 });

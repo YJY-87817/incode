@@ -1,4 +1,3 @@
-<!-- src/views/Task.vue -->
 <script setup>
 import { ref, onMounted } from "vue";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
@@ -21,13 +20,7 @@ const store = useTaskStore();
 const isDrawerOpen = ref(false);
 const selectedTask = ref(null);
 
-// tab 切換
-const activeTab = ref("mission");
-
-const setActiveTab = (tab) => {
-  activeTab.value = tab;
-  store.setActiveTab(tab);
-};
+const isClaiming = ref(false); // 用來控制「處理中」狀態
 
 // 開啟詳情抽屜
 const openDetail = (task) => {
@@ -36,23 +29,61 @@ const openDetail = (task) => {
 };
 
 // 領取/接取任務
-const handleClaim = (title) => {
-  alert(`已成功接取：${title}\n請至「個人中心 > 我的任務」查看進度。`);
-  isDrawerOpen.value = false;
+const handleClaim = async (payload) => {
+  if (!payload?.type || (!payload?.mission && !payload?.commission)) {
+    console.warn("無效的 claim payload", payload);
+    return;
+  }
 
-  // 更新本地計數（未來可改成 API）
-  if (selectedTask.value) {
-    if (activeTab.value === "mission") {
-      store.claimMission(selectedTask.value.id);
-    } else {
-      store.applyEntrust(selectedTask.value.id);
-    }
+  const task = payload.mission || payload.commission;
+  if (!task?.id) {
+    alert("無法識別任務 ID");
+    return;
+  }
+
+  // 樂觀更新：先標記為已領取
+  const originalClaimed = task.claimed;
+  task.claimed = true;
+
+  // 如果你想在抽屜內顯示 loading，可 emit 一個事件給抽屜
+  // 或直接在父層控制
+  isClaiming.value = true;
+
+  try {
+    await store.claimTask(payload.type, task.id);
+
+    // 成功：顯示成功提示（建議改用 toast）
+    // alert(`已成功${payload.type === "platform" ? "領取" : "接取"}：${task.title}`);
+
+    // 更好的做法：使用 toast（假設你有安裝 vue-toastification）
+    // toast.success(`已成功${payload.type === "platform" ? "領取" : "接取"}：${task.title}`);
+
+    // 成功後才重新載入（確保最新資料）
+    await store.fetchTasks();
+
+    // 關閉抽屜
+    isDrawerOpen.value = false;
+  } catch (err) {
+    // 失敗：回滾樂觀更新
+    task.claimed = originalClaimed;
+
+    // 顯示錯誤
+    const errorMsg =
+      err.response?.data?.message || err.message || "操作失敗，請稍後再試";
+    alert(errorMsg); // 或 toast.error(errorMsg)
+
+    // 可選擇不關閉抽屜，讓使用者看到錯誤後再試
+    // isDrawerOpen.value = false;  ← 註解掉這行
+  } finally {
+    isClaiming.value = false;
   }
 };
 
 // 頁面載入時自動取資料
 onMounted(() => {
-  store.fetchTasks();
+  if (store.missions.length === 0 && store.entrustMissions.length === 0) {
+    store.fetchTasks();
+  }
 });
 </script>
 
@@ -60,51 +91,35 @@ onMounted(() => {
   <NavbarDefault style="background-color: #fff0dd" />
 
   <div class="bg-gray-100 min-vh-100 pb-5">
-    <!-- 頁頭 -->
-    <header class="position-relative">
-      <div
-        class="page-header min-height-250 border-radius-xl mt-4 mx-5 shadow-lg"
-        style="
-          background-image: url(&quot;https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=1920&q=80&quot;);
-        "
-      >
-        <span class="mask bg-gradient-dark opacity-7"></span>
-        <div class="container text-center z-index-2">
-          <h2 class="text-white font-weight-bolder">任務大廳</h2>
-          <p class="text-white opacity-8">
-            透過貢獻與互助，累積點數經驗值換取影城商品與提升等級！
-          </p>
-        </div>
-      </div>
-    </header>
-
     <div class="container mt-2">
       <div class="row">
-        <div class="col-lg-11 mx-auto">
+        <div class="filter-container col-lg-11 mx-auto">
           <!-- Tab 導航 -->
-          <TaskTabs
-            :active-tab="store.activeTab"
-            @change="store.setActiveTab"
-          />
-
-          <!-- 搜尋、過濾、類別、清除篩選 -->
-          <TaskSearchFilterBar />
+          <TaskTabs :active-tab="store.activeTab" @change="store.setActiveTab">
+            <!-- 搜尋、過濾、類別、清除篩選 -->
+            <template #bottom-content>
+              <TaskSearchFilterBar />
+            </template>
+          </TaskTabs>
 
           <!-- 統計卡片 -->
           <TaskStatsCards />
 
-          <!-- 加載中 -->
-          <div v-if="store.isLoading" class="text-center my-5">
-            <div class="spinner-border text-info" role="status">
-              <span class="visually-hidden">載入中...</span>
-            </div>
-            <p class="text-sm text-secondary mt-2">正在載入任務數據...</p>
+          <!-- 錯誤顯示 -->
+          <div v-if="store.error" class="alert alert-danger text-center my-5">
+            {{ store.error }}
+            <button
+              @click="store.fetchTasks"
+              class="btn btn-outline-danger btn-sm mt-2"
+            >
+              重試
+            </button>
           </div>
 
           <!-- 任務內容 -->
           <div v-else class="row">
             <!-- 平台任務卡片列表 -->
-            <div v-if="activeTab === 'mission'">
+            <div v-if="store.activeTab === 'mission'">
               <MissionList @open-detail="openDetail" @claim="handleClaim" />
             </div>
 
@@ -123,13 +138,14 @@ onMounted(() => {
     <TaskDetailDrawer
       v-model:open="isDrawerOpen"
       :task="selectedTask"
-      :tab="activeTab"
+      :tab="store.activeTab"
+      :is-claiming="isClaiming"
       @claim="handleClaim"
     />
 
     <div
       v-if="isDrawerOpen"
-      @click="isDrawerOpen = false"
+      @click.self="isDrawerOpen = false"
       class="drawer-backdrop"
     ></div>
   </div>
@@ -138,7 +154,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 全局樣式（可移到全局 CSS 或 scoped 保留） */
 .transition-all {
   transition: all 0.25s ease-in-out;
 }
