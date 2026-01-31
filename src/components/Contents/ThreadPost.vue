@@ -84,7 +84,7 @@
                   v-show="showCollapsedIframe"
                   class="card-text rich-content"
                   :html="safeContent"
-                  :min-height="60"
+                  :min-height="previewMinHeight"
                   text-color="#145369"
                   :extra-css="iframeExtraCssCollapsed"
                 />
@@ -92,7 +92,7 @@
                   v-show="showExpandedIframe"
                   class="card-text rich-content"
                   :html="safeContent"
-                  :min-height="60"
+                  :min-height="previewMinHeight"
                   text-color="#145369"
                   :extra-css="iframeExtraCssExpanded"
                 />
@@ -231,6 +231,7 @@ const showQuickReply = ref(false);
 const previewWrapper = ref(null);
 const previewToggleEnabled = ref(false);
 const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
+const PREVIEW_MIN_HEIGHT = 60;
 
 const typeLabel = computed(() => {
   switch (props.post.type) {
@@ -288,6 +289,11 @@ const iframeExtraCssCollapsed = computed(() => {
 });
 
 const iframeExtraCssExpanded = computed(() => baseIframeCss);
+
+const previewMinHeight = computed(() => {
+  if (props.previewOnly && !previewToggleEnabled.value) return 0;
+  return PREVIEW_MIN_HEIGHT;
+});
 
 function togglePreview() {
   if (!previewToggleEnabled.value) return;
