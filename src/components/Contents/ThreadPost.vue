@@ -43,18 +43,43 @@
               'preview-expanded': previewOnly && isPreviewExpanded,
             }"
           >
-            <HtmlIframe
-              class="card-text rich-content"
-              :html="safeContent"
-              :min-height="60"
-              text-color="#145369"
-              :extra-css="'body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }'"
-            />
-            <div
-              v-if="previewOnly"
-              class="preview-click-layer"
-              @click.stop="togglePreview"
-            ></div>
+            <div v-if="previewOnly" class="preview-row">
+              <div class="preview-text-col">
+                <HtmlIframe
+                  class="card-text rich-content"
+                  :html="safeContent"
+                  :min-height="60"
+                  text-color="#145369"
+                  :extra-css="iframeExtraCss"
+                />
+                <div
+                  class="preview-click-layer"
+                  @click.stop="togglePreview"
+                ></div>
+              </div>
+              <div v-if="previewImages.length" class="preview-images-col">
+                <div class="preview-images-grid">
+                  <img
+                    v-for="(url, idx) in previewImages"
+                    :key="url + idx"
+                    :src="url"
+                    alt="留言圖片"
+                    class="preview-image-thumb"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <template v-else>
+              <HtmlIframe
+                class="card-text rich-content"
+                :html="safeContent"
+                :min-height="60"
+                text-color="#145369"
+                :extra-css="iframeExtraCss"
+              />
+            </template>
           </div>
         </div>
 
@@ -216,6 +241,18 @@ const safeContent = computed(() => {
 const contentSummary = computed(() => {
   const base = props.post.contentText ?? props.post.content ?? "";
   return typeof base === "string" ? base : String(base ?? "");
+});
+
+const previewImages = computed(() => {
+  const images = props.post.imageUrls ?? [];
+  return Array.isArray(images) ? images.slice(0, 3) : [];
+});
+
+const iframeExtraCss = computed(() => {
+  const baseCss =
+    "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  if (!props.previewOnly) return baseCss;
+  return `${baseCss} img { display: none; }`;
 });
 
 function togglePreview() {
@@ -477,6 +514,40 @@ function handleInteractionError(data) {
   position: relative;
 }
 
+.preview-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.preview-text-col {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.preview-images-col {
+  flex: 0 0 140px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.preview-images-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.preview-image-thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
 .preview-iframe-wrapper.preview-collapsed {
   max-height: 180px;
   overflow: hidden;
@@ -496,6 +567,20 @@ function handleInteractionError(data) {
   cursor: pointer;
   background: transparent;
   z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .preview-row {
+    flex-direction: column;
+  }
+
+  .preview-images-col {
+    flex: 0 0 auto;
+  }
+
+  .preview-images-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* 巢狀回覆的樣式 */
