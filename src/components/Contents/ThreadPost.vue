@@ -43,21 +43,45 @@
               'preview-expanded': previewOnly && isPreviewExpanded,
             }"
           >
-            <div v-if="previewOnly && !isPreviewExpanded" class="preview-row">
-              <div class="preview-text-col">
+            <div
+              class="preview-body"
+              :class="{
+                'preview-row': previewOnly && !isPreviewExpanded,
+                'preview-full': !previewOnly || isPreviewExpanded,
+              }"
+            >
+              <div
+                class="preview-text-col"
+                :class="{
+                  'preview-text-col--full': !previewOnly || isPreviewExpanded,
+                }"
+              >
                 <HtmlIframe
+                  v-show="!previewOnly || !isPreviewExpanded"
                   class="card-text rich-content"
                   :html="safeContent"
                   :min-height="60"
                   text-color="#145369"
-                  :extra-css="iframeExtraCss"
+                  :extra-css="iframeExtraCssCollapsed"
+                />
+                <HtmlIframe
+                  v-show="!previewOnly || isPreviewExpanded"
+                  class="card-text rich-content"
+                  :html="safeContent"
+                  :min-height="60"
+                  text-color="#145369"
+                  :extra-css="iframeExtraCssExpanded"
                 />
                 <div
+                  v-if="previewOnly"
                   class="preview-click-layer"
                   @click.stop="togglePreview"
                 ></div>
               </div>
-              <div v-if="previewImages.length" class="preview-images-col">
+              <div
+                v-if="previewOnly && !isPreviewExpanded && previewImages.length"
+                class="preview-images-col"
+              >
                 <div class="preview-images-grid">
                   <img
                     v-for="(url, idx) in previewImages"
@@ -70,21 +94,6 @@
                 </div>
               </div>
             </div>
-
-            <template v-else>
-              <HtmlIframe
-                class="card-text rich-content"
-                :html="safeContent"
-                :min-height="60"
-                text-color="#145369"
-                :extra-css="iframeExtraCss"
-              />
-              <div
-                v-if="previewOnly"
-                class="preview-click-layer"
-                @click.stop="togglePreview"
-              ></div>
-            </template>
           </div>
         </div>
 
@@ -253,12 +262,15 @@ const previewImages = computed(() => {
   return Array.isArray(images) ? images.slice(0, 3) : [];
 });
 
-const iframeExtraCss = computed(() => {
-  const baseCss =
-    "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
-  if (!props.previewOnly || isPreviewExpanded.value) return baseCss;
-  return `${baseCss} img { display: none; }`;
+const baseIframeCss =
+  "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+
+const iframeExtraCssCollapsed = computed(() => {
+  if (!props.previewOnly) return baseIframeCss;
+  return `${baseIframeCss} img { display: none; }`;
 });
+
+const iframeExtraCssExpanded = computed(() => baseIframeCss);
 
 function togglePreview() {
   if (!props.previewOnly) return;
@@ -519,6 +531,10 @@ function handleInteractionError(data) {
   position: relative;
 }
 
+.preview-body {
+  width: 100%;
+}
+
 .preview-row {
   display: flex;
   gap: 0.75rem;
@@ -529,6 +545,10 @@ function handleInteractionError(data) {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.preview-text-col--full {
+  width: 100%;
 }
 
 .preview-images-col {
