@@ -538,6 +538,9 @@ function handleInteractionError(data) {
 
 .preview-body {
   width: 100%;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .preview-row {
@@ -551,6 +554,9 @@ function handleInteractionError(data) {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .preview-text-col--full {
@@ -590,9 +596,19 @@ function handleInteractionError(data) {
   border-radius: 6px;
 }
 
+.preview-iframe-wrapper.preview-collapsed .preview-body {
+  opacity: 0.96;
+  transform: translateY(1px);
+}
+
 .preview-iframe-wrapper.preview-expanded {
   border-top: 1px dashed #d1d3d4;
   padding-top: 0.75rem;
+}
+
+.preview-iframe-wrapper.preview-expanded .preview-body {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .preview-click-layer {
