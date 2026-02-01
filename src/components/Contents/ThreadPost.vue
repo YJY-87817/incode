@@ -99,69 +99,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 回覆輸入框 -->
-        <div v-if="showReply" class="mt-3 border-top pt-3">
-          <div
-            class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
-          >
-            <button
-              class="btn btn-forum-primary btn-sm"
-              type="button"
-              @click="toggleQuickReply"
-            >
-              <i
-                class="fas"
-                :class="showQuickReply ? 'fa-times' : 'fa-pen'"
-              ></i>
-              <span class="ms-1">
-                {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-              </span>
-            </button>
-            <button
-              class="btn btn-forum-secondary btn-sm"
-              type="button"
-              @click="openDetailedReplyModal"
-            >
-              <i class="fas fa-feather-alt me-1"></i>
-              詳細回覆
-            </button>
-            <small class="text-muted" v-if="!showQuickReply">
-              簡易留言僅文字；詳細回覆會開啟編輯視窗
-            </small>
-          </div>
-
-          <transition name="fade">
-            <div v-show="showQuickReply" class="quick-reply-box">
-              <textarea
-                v-model="replyContent"
-                class="form-control"
-                rows="4"
-                placeholder="請輸入簡易留言（純文字）"
-              ></textarea>
-
-              <div class="d-flex flex-wrap gap-2 quick-reply-actions">
-                <button
-                  class="btn btn-forum-primary btn-sm"
-                  type="button"
-                  @click="submitReply"
-                  :disabled="isSubmittingReply || !replyContent.trim()"
-                >
-                  <i class="fas fa-paper-plane me-1"></i>
-                  {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
-                </button>
-                <button
-                  class="btn btn-forum-secondary btn-sm"
-                  type="button"
-                  @click="cancelReply"
-                  :disabled="isSubmittingReply"
-                >
-                  取消
-                </button>
-              </div>
-            </div>
-          </transition>
-        </div>
       </div>
     </div>
 
@@ -191,6 +128,66 @@
             }})
           </span>
         </button>
+      </div>
+
+      <!-- 回覆輸入框：置於展開內容上方 -->
+      <div v-if="showReply" class="mb-3 border-top pt-3">
+        <div
+          class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
+        >
+          <button
+            class="btn btn-forum-primary btn-sm"
+            type="button"
+            @click="toggleQuickReply"
+          >
+            <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
+            <span class="ms-1">
+              {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
+            </span>
+          </button>
+          <button
+            class="btn btn-forum-secondary btn-sm"
+            type="button"
+            @click="openDetailedReplyModal"
+          >
+            <i class="fas fa-feather-alt me-1"></i>
+            詳細回覆
+          </button>
+          <small class="text-muted" v-if="!showQuickReply">
+            簡易留言僅文字；詳細回覆會開啟編輯視窗
+          </small>
+        </div>
+
+        <transition name="fade">
+          <div v-show="showQuickReply" class="quick-reply-box">
+            <textarea
+              v-model="replyContent"
+              class="form-control"
+              rows="4"
+              placeholder="請輸入簡易留言（純文字）"
+            ></textarea>
+
+            <div class="d-flex flex-wrap gap-2 quick-reply-actions">
+              <button
+                class="btn btn-forum-primary btn-sm"
+                type="button"
+                @click="submitReply"
+                :disabled="isSubmittingReply || !replyContent.trim()"
+              >
+                <i class="fas fa-paper-plane me-1"></i>
+                {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
+              </button>
+              <button
+                class="btn btn-forum-secondary btn-sm"
+                type="button"
+                @click="cancelReply"
+                :disabled="isSubmittingReply"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </transition>
       </div>
 
       <div
@@ -231,6 +228,66 @@
       >
         <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
       </button>
+
+      <!-- 回覆輸入框 -->
+      <div v-if="showReply" class="mt-3 border-top pt-3">
+        <div
+          class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
+        >
+          <button
+            class="btn btn-forum-primary btn-sm"
+            type="button"
+            @click="toggleQuickReply"
+          >
+            <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
+            <span class="ms-1">
+              {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
+            </span>
+          </button>
+          <button
+            class="btn btn-forum-secondary btn-sm"
+            type="button"
+            @click="openDetailedReplyModal"
+          >
+            <i class="fas fa-feather-alt me-1"></i>
+            詳細回覆
+          </button>
+          <small class="text-muted" v-if="!showQuickReply">
+            簡易留言僅文字；詳細回覆會開啟編輯視窗
+          </small>
+        </div>
+
+        <transition name="fade">
+          <div v-show="showQuickReply" class="quick-reply-box">
+            <textarea
+              v-model="replyContent"
+              class="form-control"
+              rows="4"
+              placeholder="請輸入簡易留言（純文字）"
+            ></textarea>
+
+            <div class="d-flex flex-wrap gap-2 quick-reply-actions">
+              <button
+                class="btn btn-forum-primary btn-sm"
+                type="button"
+                @click="submitReply"
+                :disabled="isSubmittingReply || !replyContent.trim()"
+              >
+                <i class="fas fa-paper-plane me-1"></i>
+                {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
+              </button>
+              <button
+                class="btn btn-forum-secondary btn-sm"
+                type="button"
+                @click="cancelReply"
+                :disabled="isSubmittingReply"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </transition>
+      </div>
     </div>
   </div>
 </template>
