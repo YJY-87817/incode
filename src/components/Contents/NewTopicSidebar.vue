@@ -168,11 +168,7 @@ const submitSidebar = async () => {
         <span v-if="titleModel.trim()">{{ titleModel }}</span>
         <span v-else class="text-muted">未命名的貼文</span>
       </div>
-      <button
-        type="button"
-        class="btn btn-sm btn-outline-secondary"
-        @click.stop="closeSidebar"
-      >
+      <button type="button" class="btn btn-sm b" @click.stop="closeSidebar">
         關閉
       </button>
     </div>
@@ -269,9 +265,9 @@ const submitSidebar = async () => {
 
 .banner-content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0;
   max-width: 100%;
 }
 
@@ -283,6 +279,9 @@ const submitSidebar = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .banner-title .text-muted {
@@ -306,6 +305,16 @@ const submitSidebar = async () => {
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   white-space: nowrap;
+}
+
+.new-topic-banner .btn {
+  flex-shrink: 0;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  border-radius: 0;
 }
 
 /* 完整編輯器樣式 */
