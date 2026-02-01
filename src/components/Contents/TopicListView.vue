@@ -1006,7 +1006,10 @@ const openDetailedReply = () => {
   background: rgba(255, 240, 221, 0.5);
   border: 1px solid #d1d3d4;
   border-radius: 8px;
-  padding: 1rem;
+  padding-top: 1rem; /* 上 */
+  padding-right: 1rem; /* 右 */
+  padding-left: 1rem; /* 左 */
+  padding-bottom: 0; /* 下 */
 }
 
 .quick-reply-actions .btn {
