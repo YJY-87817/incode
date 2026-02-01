@@ -26,7 +26,7 @@ const modalTitle = computed(() => {
 });
 
 const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發表" : "送出"
+  modalMode.value === "post" ? "發布" : "發布"
 );
 
 const titleModel = computed({
@@ -160,7 +160,7 @@ const submitSidebar = async () => {
         </div>
       </div>
     </div>
-    <div class="card-body pt-0 sidebar-body">
+    <div class="card-body pt-0 pb-0 sidebar-body">
       <div class="mb-3">
         <label class="form-label">標題</label>
         <input v-model="titleModel" class="form-control" />
