@@ -191,10 +191,9 @@ const submitSidebar = async () => {
   min-height: 180px;
 }
 
-@media (max-width: 991px) {
-  .new-topic-sidebar {
-    position: sticky;
-    top: 1rem;
-  }
+.new-topic-sidebar {
+  position: sticky;
+  top: 1rem;
+  z-index: 2;
 }
 </style>
