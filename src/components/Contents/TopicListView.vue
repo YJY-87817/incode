@@ -358,7 +358,7 @@ const openDetailedReply = () => {
         </div>
 
         <!-- 帖文內容 -->
-        <div class="card-body border-bottom">
+        <div class="card-body">
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
@@ -418,10 +418,10 @@ const openDetailedReply = () => {
         </div>
 
         <!-- 回覆區域 -->
-        <div class="p-3">
+        <div class="pl-3 pb-3 pr-3">
           <div class="">
             <div
-              class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
+              class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle border-bottom pb-3"
             >
               <div class="reply-mode-tabs">
                 <button
@@ -966,7 +966,7 @@ const openDetailedReply = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
+  padding: 0 8px 8px 8px;
   border-radius: 12px;
   height: auto;
   font-size: 1rem;
