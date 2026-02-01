@@ -126,7 +126,7 @@
             @click="selectQuickReply"
           >
             <i class="fas fa-pen me-1"></i>
-            簡易留言
+            {{ quickReplyLabel }}
           </button>
           <button
             class="nav-link"
@@ -135,7 +135,7 @@
             @click="selectDetailedReply"
           >
             <i class="fas fa-feather-alt me-1"></i>
-            詳細回覆
+            {{ detailedReplyLabel }}
           </button>
         </div>
         <button
@@ -216,7 +216,7 @@
           @click="selectQuickReply"
         >
           <i class="fas fa-pen me-1"></i>
-          簡易留言
+          {{ quickReplyLabel }}
         </button>
         <button
           class="nav-link"
@@ -225,7 +225,7 @@
           @click="selectDetailedReply"
         >
           <i class="fas fa-feather-alt me-1"></i>
-          詳細回覆
+          {{ detailedReplyLabel }}
         </button>
       </div>
 
@@ -316,6 +316,14 @@ const typeLabel = computed(() => {
 
 const replyButtonLabel = computed(() =>
   props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
+);
+
+const quickReplyLabel = computed(() =>
+  props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆"
+);
+
+const detailedReplyLabel = computed(() =>
+  props.post.type === CONTENT_TYPES.REPLY ? "詳細留言" : "詳細回覆"
 );
 
 const nestedLabel = computed(() => {

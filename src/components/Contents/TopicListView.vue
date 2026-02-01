@@ -423,7 +423,7 @@ const openDetailedReply = () => {
             <h5 class="fs-5 fs-md-4 mb-3">💬 留言/回文</h5>
 
             <div
-              class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
+              class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
             >
               <button
                 class="btn btn-forum-primary btn-sm"
