@@ -706,13 +706,10 @@ export const useForumStore = defineStore('forum', {
     },
 
     toggleNewTopicSidebar(value, contentId = null, contentData = null) {
-      console.log('[forumStore] toggleNewTopicSidebar called:', { value, contentId, contentData });
       this.showNewTopicSidebar = value
       if (value) {
         this.replyingToContentId = contentId
         this.replyingToContentData = contentData
-        console.log('[forumStore] Set replyingToContentId:', this.replyingToContentId);
-        console.log('[forumStore] Set replyingToContentData:', this.replyingToContentData);
       } else {
         this.replyingToContentId = null
         this.replyingToContentData = null

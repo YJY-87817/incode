@@ -305,15 +305,7 @@ const NESTED_COLLAPSED_MAX_HEIGHT = 200;
 
 // 檢查是否為正在回覆的目標
 const isReplyingTarget = computed(() => {
-  const isTarget = forumStore.replyingToContentId === props.post.id;
-  if (isTarget) {
-    console.log(
-      "[ThreadPost] This post is replying target:",
-      props.post.id,
-      props.post.title
-    );
-  }
-  return isTarget;
+  return forumStore.replyingToContentId === props.post.id;
 });
 
 const typeLabel = computed(() => {
@@ -580,10 +572,6 @@ function selectQuickReply() {
 }
 
 function selectDetailedReply() {
-  console.log(
-    "[ThreadPost] selectDetailedReply called for post:",
-    props.post.id
-  );
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -610,10 +598,6 @@ const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
 const openDetailedReplyModal = () => {
-  console.log(
-    "[ThreadPost] openDetailedReplyModal called for post:",
-    props.post.id
-  );
   const categoryId = props.categoryId ?? props.post.categoryId ?? null;
   const categories = forumStore.categories || [];
 
@@ -646,23 +630,14 @@ const openDetailedReplyModal = () => {
   forumStore.newTopic.mode = replySetting.mode;
   forumStore.newTopic.contentType = replySetting.type;
 
-  console.log("[ThreadPost] About to call toggleNewTopicModal(false)");
   forumStore.toggleNewTopicModal(false);
-
-  const contentData = {
+  forumStore.toggleNewTopicSidebar(true, props.post.id, {
     id: props.post.id,
     title: props.post.title || "",
     author: props.post.author,
     createdAt: props.post.createdAt,
     contentText: contentSummary.value,
-  };
-  console.log("[ThreadPost] About to call toggleNewTopicSidebar with:", {
-    contentId: props.post.id,
-    contentData,
   });
-
-  forumStore.toggleNewTopicSidebar(true, props.post.id, contentData);
-  console.log("[ThreadPost] toggleNewTopicSidebar called successfully");
 };
 
 async function submitReply() {

@@ -1,23 +1,11 @@
 <script setup>
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
-
-// Debug: 監控 replying 資料變化
-watch(
-  () => forumStore.replyingToContentId,
-  (newVal) => {
-    console.log("[NewTopicSidebar] replyingToContentId:", newVal);
-    console.log(
-      "[NewTopicSidebar] replyingToContentData:",
-      forumStore.replyingToContentData
-    );
-  }
-);
 
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isSupportedMode = computed(() =>
@@ -155,9 +143,6 @@ const submitSidebar = async () => {
       <div class="d-flex align-items-start justify-content-between gap-2">
         <div>
           <h6 class="mb-1">{{ modalTitle }}</h6>
-          <small v-if="replyingToContent" class="text-danger">
-            [Debug] 回覆 ID: {{ forumStore.replyingToContentId }}
-          </small>
         </div>
         <div class="d-flex align-items-center gap-2">
           <button

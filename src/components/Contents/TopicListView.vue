@@ -233,7 +233,6 @@ const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
 const openDetailedComment = () => {
-  console.log("[TopicListView] openDetailedComment called");
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedComment] No threadDetail.id found");
     return;
