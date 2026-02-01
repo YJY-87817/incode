@@ -730,6 +730,12 @@ const submitNewTopic = async () => {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
 
+    // 如果是從草稿打開的，刪除該草稿
+    if (forumStore.currentEditingDraftId) {
+      forumStore.removeDraft(forumStore.currentEditingDraftId);
+      forumStore.currentEditingDraftId = null;
+    }
+
     resetNewTopicDraft();
     closeNewTopic();
   } catch (error) {
@@ -747,21 +753,37 @@ const handleModalCancel = () => {
   const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
 
   if (hasTitle || hasContent) {
-    // 有內容時，創建草稿並最小化
-    const draftId = forumStore.createDraft({
-      title: newTopicState.title,
-      body: newTopicState.body,
-      categoryId: newTopicState.categoryId,
-      parentContentId: newTopicState.parentContentId,
-      categorySearch: categorySearch.value,
-      mode: forumStore.newTopic.mode,
-      contentType: forumStore.newTopic.contentType,
-      replyingToContentId: forumStore.replyingToContentId,
-      replyingToContentData: forumStore.replyingToContentData,
-      replyingToThreadId: forumStore.replyingToThreadId,
-    });
-    forumStore.toggleDraftMinimize(draftId, true);
+    // 檢查是否是從草稿打開的
+    if (forumStore.currentEditingDraftId) {
+      // 同步內容回原草稿
+      forumStore.updateDraft(forumStore.currentEditingDraftId, {
+        title: newTopicState.title,
+        body: newTopicState.body,
+        categoryId: newTopicState.categoryId,
+        parentContentId: newTopicState.parentContentId,
+        categorySearch: categorySearch.value,
+      });
+      // 保持草稿最小化
+      forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, true);
+    } else {
+      // 創建新草稿並最小化
+      const draftId = forumStore.createDraft({
+        title: newTopicState.title,
+        body: newTopicState.body,
+        categoryId: newTopicState.categoryId,
+        parentContentId: newTopicState.parentContentId,
+        categorySearch: categorySearch.value,
+        mode: forumStore.newTopic.mode,
+        contentType: forumStore.newTopic.contentType,
+        replyingToContentId: forumStore.replyingToContentId,
+        replyingToContentData: forumStore.replyingToContentData,
+        replyingToThreadId: forumStore.replyingToThreadId,
+      });
+      forumStore.toggleDraftMinimize(draftId, true);
+    }
+
     forumStore.toggleNewTopicModal(false);
+    forumStore.currentEditingDraftId = null;
 
     // 清空 modal 的內容
     resetNewTopicDraft();
@@ -770,11 +792,7 @@ const handleModalCancel = () => {
 
   // 沒有內容時，只關閉 modal
   forumStore.toggleNewTopicModal(false);
-};
-
-const resetNewTopicDraft = () => {
-  newTopicState.title = "";
-  newTopicState.body = "";
+  forumStore.currentEditingDraftId = null;
   newTopicState.categoryId = null;
   newTopicState.parentContentId = null;
   selectedSubCategoryId.value = null;

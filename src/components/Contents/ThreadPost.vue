@@ -312,9 +312,11 @@ const nestedRepliesWrapper = ref(null);
 const nestedToggleEnabled = ref(false);
 const NESTED_COLLAPSED_MAX_HEIGHT = 200;
 
-// 檢查是否為正在回覆的目標
+// 檢查是否為正在回覆的目標（檢查所有草稿）
 const isReplyingTarget = computed(() => {
-  return forumStore.replyingToContentId === props.post.id;
+  return forumStore.drafts.some(
+    (draft) => draft.replyingToContentId === props.post.id
+  );
 });
 
 const typeLabel = computed(() => {
@@ -728,15 +730,20 @@ function goToPostDetail() {
 }
 
 /**
- * 點擊高亮的"正在回覆此內容"切換 sidebar 的展開/最小化狀態
+ * 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
  */
 function handleReplyingTargetClick() {
   if (!isReplyingTarget.value) return;
 
-  // Toggle sidebar 的展開/最小化狀態
-  forumStore.toggleNewTopicSidebarMinimize(
-    !forumStore.isNewTopicSidebarMinimized
+  // 找到正在回覆此內容的草稿
+  const targetDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === props.post.id
   );
+
+  if (targetDraft) {
+    // Toggle 該草稿的展開/最小化狀態
+    forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
+  }
 }
 
 /**

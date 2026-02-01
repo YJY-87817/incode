@@ -91,6 +91,7 @@ export const useForumStore = defineStore('forum', {
     // ========== 多個草稿相關 ==========
     drafts: [], // { id, title, body, categoryId, parentContentId, categorySearch, mode, contentType, isMinimized, replyingToContentId, replyingToContentData, replyingToThreadId }
     nextDraftId: 1,
+    currentEditingDraftId: null, // 記錄當前正在 modal 中編輯的草稿 ID
 
     // ========== 其他 ==========
     showNewTopicModal: false,

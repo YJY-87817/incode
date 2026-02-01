@@ -161,6 +161,9 @@ const openLargeEditor = (draft) => {
   forumStore.replyingToContentData = draft.replyingToContentData;
   forumStore.replyingToThreadId = draft.replyingToThreadId;
 
+  // 記錄當前編輯的草稿 ID，以便從 modal 回來時同步
+  forumStore.currentEditingDraftId = draft.id;
+
   forumStore.toggleNewTopicModal(true);
   // 暫時最小化這個草稿
   forumStore.toggleDraftMinimize(draft.id, true);
