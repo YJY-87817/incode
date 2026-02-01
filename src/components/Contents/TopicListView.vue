@@ -394,8 +394,9 @@ const openDetailedReply = () => {
 
             <div class="interaction-container" @click.stop>
               <InteractionButtons
+                v-if="forumStore.threadDetail?.id != null"
                 :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
-                :contentId="forumStore.threadDetail.id"
+                :contentId="Number(forumStore.threadDetail.id)"
                 @interaction-success="handleTopicInteractionSuccess"
                 @interaction-error="handleTopicInteractionError"
               />
