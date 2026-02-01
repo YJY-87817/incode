@@ -91,6 +91,7 @@ export const useForumStore = defineStore('forum', {
     // ========== 其他 ==========
     showNewTopicModal: false,
     showNewTopicSidebar: false,
+    isNewTopicSidebarMinimized: false,
     lastRefreshTime: 0,
     
     // ========== 視覺連結 ==========
@@ -710,10 +711,16 @@ export const useForumStore = defineStore('forum', {
       if (value) {
         this.replyingToContentId = contentId
         this.replyingToContentData = contentData
+        this.isNewTopicSidebarMinimized = false
       } else {
         this.replyingToContentId = null
         this.replyingToContentData = null
+        this.isNewTopicSidebarMinimized = false
       }
+    },
+
+    toggleNewTopicSidebarMinimize(minimized) {
+      this.isNewTopicSidebarMinimized = minimized
     },
 
     triggerTopicRefresh() {

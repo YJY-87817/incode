@@ -49,6 +49,24 @@ const closeSidebar = () => {
   forumStore.toggleNewTopicSidebar(false);
 };
 
+const handleCancelClick = () => {
+  // 檢查標題和內容是否有非空白文字
+  const hasTitle = titleModel.value && titleModel.value.trim().length > 0;
+  const hasContent = bodyModel.value && bodyModel.value.trim().length > 0;
+
+  if (hasTitle || hasContent) {
+    // 如果有內容，最小化 sidebar
+    forumStore.toggleNewTopicSidebarMinimize(true);
+  } else {
+    // 如果沒有內容，直接關閉
+    closeSidebar();
+  }
+};
+
+const expandSidebar = () => {
+  forumStore.toggleNewTopicSidebarMinimize(false);
+};
+
 const openLargeEditor = () => {
   forumStore.toggleNewTopicModal(true);
   forumStore.toggleNewTopicSidebar(false);
@@ -135,8 +153,44 @@ const submitSidebar = async () => {
 </script>
 
 <template>
+  <!-- 最小化的 banner -->
   <div
-    v-if="forumStore.showNewTopicSidebar && isSupportedMode"
+    v-if="
+      forumStore.showNewTopicSidebar &&
+      forumStore.isNewTopicSidebarMinimized &&
+      isSupportedMode
+    "
+    class="new-topic-banner"
+  >
+    <div class="banner-content">
+      <div class="banner-title">
+        <span v-if="titleModel.trim()">{{ titleModel }}</span>
+        <span v-else class="text-muted">未命名的貼文</span>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary"
+        @click="expandSidebar"
+      >
+        展開
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        @click="closeSidebar"
+      >
+        關閉
+      </button>
+    </div>
+  </div>
+
+  <!-- 完整的編輯器 -->
+  <div
+    v-if="
+      forumStore.showNewTopicSidebar &&
+      !forumStore.isNewTopicSidebarMinimized &&
+      isSupportedMode
+    "
     class="card shadow-sm mb-4 new-topic-sidebar"
   >
     <div class="card-header bg-white">
@@ -177,7 +231,7 @@ const submitSidebar = async () => {
         <button
           type="button"
           class="btn btn-outline-secondary"
-          @click="closeSidebar"
+          @click="handleCancelClick"
         >
           取消
         </button>
@@ -190,6 +244,61 @@ const submitSidebar = async () => {
 </template>
 
 <style scoped>
+/* 最小化的 banner 樣式 */
+.new-topic-banner {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: white;
+  border-top: 1px solid #d2d6da;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 1rem;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 100%;
+}
+
+.banner-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-title .text-muted {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.new-topic-banner .btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* 完整編輯器樣式 */
 .new-topic-sidebar :deep(.tiptap-editor-wrapper) {
   display: flex;
   flex-direction: column;
@@ -276,5 +385,16 @@ const submitSidebar = async () => {
 .new-topic-sidebar .form-control {
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
+}
+
+/* banner 中的按鈕樣式 */
+.new-topic-banner .btn-primary {
+  background-color: #145369;
+  border-color: #145369;
+}
+
+.new-topic-banner .btn-primary:hover {
+  background-color: #0f3c4d;
+  border-color: #0f3c4d;
 }
 </style>
