@@ -77,6 +77,14 @@ const threadTotalPages = computed(() => forumStore.threadTotalPages);
 
 const paginatedThreadPosts = computed(() => forumStore.paginatedThreadPosts);
 
+const threadCommentsTotalPages = computed(
+  () => forumStore.threadCommentsTotalPages
+);
+
+const paginatedThreadComments = computed(
+  () => forumStore.paginatedThreadComments
+);
+
 /**
  * 頁面導航
  */
@@ -88,6 +96,10 @@ const goToThreadPage = (page) => {
   forumStore.changeThreadPage(page);
 };
 
+const goToCommentPage = (page) => {
+  forumStore.changeThreadCommentsPage(page);
+};
+
 const prevThreadPage = () => {
   if (forumStore.threadCurrentPage > 1) {
     forumStore.changeThreadPage(forumStore.threadCurrentPage - 1);
@@ -97,6 +109,22 @@ const prevThreadPage = () => {
 const nextThreadPage = () => {
   if (forumStore.threadCurrentPage < threadTotalPages.value) {
     forumStore.changeThreadPage(forumStore.threadCurrentPage + 1);
+  }
+};
+
+const prevCommentPage = () => {
+  if (forumStore.threadCommentsCurrentPage > 1) {
+    forumStore.changeThreadCommentsPage(
+      forumStore.threadCommentsCurrentPage - 1
+    );
+  }
+};
+
+const nextCommentPage = () => {
+  if (forumStore.threadCommentsCurrentPage < threadCommentsTotalPages.value) {
+    forumStore.changeThreadCommentsPage(
+      forumStore.threadCommentsCurrentPage + 1
+    );
   }
 };
 
@@ -481,13 +509,56 @@ const openDetailedReply = () => {
             >
               <h6 class="fs-6 mb-2">📝 留言</h6>
               <ThreadPost
-                v-for="comment in forumStore.threadComments"
+                v-for="comment in paginatedThreadComments"
                 :key="'comment-' + comment.id"
                 :post="comment"
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
               />
+              <nav v-if="threadCommentsTotalPages > 1" class="mt-3">
+                <ul
+                  class="pagination pagination-sm justify-content-center flex-wrap gap-1"
+                >
+                  <li
+                    class="page-item"
+                    :class="{
+                      disabled: forumStore.threadCommentsCurrentPage === 1,
+                    }"
+                    @click="prevCommentPage"
+                  >
+                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
+                      <i class="fa-solid fa-caret-left"></i>
+                    </a>
+                  </li>
+                  <li
+                    class="page-item"
+                    v-for="page in threadCommentsTotalPages"
+                    :key="`comment-page-${page}`"
+                    :class="{
+                      active: forumStore.threadCommentsCurrentPage === page,
+                    }"
+                    @click="goToCommentPage(page)"
+                  >
+                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
+                      {{ page }}
+                    </a>
+                  </li>
+                  <li
+                    class="page-item"
+                    :class="{
+                      disabled:
+                        forumStore.threadCommentsCurrentPage ===
+                        threadCommentsTotalPages,
+                    }"
+                    @click="nextCommentPage"
+                  >
+                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
+                      <i class="fa-solid fa-caret-right"></i>
+                    </a>
+                  </li>
+                </ul>
+              </nav>
             </div>
 
             <!-- 回文分頁 (type=2) -->

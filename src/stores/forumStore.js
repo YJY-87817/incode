@@ -71,6 +71,8 @@ export const useForumStore = defineStore('forum', {
     threadComments: [],
     threadCurrentPage: 1,
     threadItemsPerPage: 5,
+    threadCommentsCurrentPage: 1,
+    threadCommentsItemsPerPage: 5,
 
     // ========== 新主題表單 ==========
     showNewTopicBox: false,
@@ -100,11 +102,33 @@ export const useForumStore = defineStore('forum', {
     },
 
     /**
+     * 計算留言的總頁數
+     */
+    threadCommentsTotalPages: (state) => {
+      return Math.ceil(
+        state.threadComments.length / state.threadCommentsItemsPerPage
+      )
+    },
+
+    /**
      * 當前頁的回文列表
      */
     paginatedThreadPosts: (state) => {
       const start = (state.threadCurrentPage - 1) * state.threadItemsPerPage
       return state.threadPosts.slice(start, start + state.threadItemsPerPage)
+    },
+
+    /**
+     * 當前頁的留言列表
+     */
+    paginatedThreadComments: (state) => {
+      const start =
+        (state.threadCommentsCurrentPage - 1) *
+        state.threadCommentsItemsPerPage
+      return state.threadComments.slice(
+        start,
+        start + state.threadCommentsItemsPerPage
+      )
     },
 
     /**
@@ -576,6 +600,7 @@ export const useForumStore = defineStore('forum', {
         this.threadPosts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
         this.threadComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
         this.threadCurrentPage = 1
+        this.threadCommentsCurrentPage = 1
       } catch (error) {
         console.error('獲取帖文詳情失敗:', error)
       }
@@ -602,11 +627,19 @@ export const useForumStore = defineStore('forum', {
       }
       this.threadPosts = []
       this.threadComments = []
+      this.threadCurrentPage = 1
+      this.threadCommentsCurrentPage = 1
     },
 
     changeThreadPage(page) {
       if (page >= 1 && page <= this.threadTotalPages) {
         this.threadCurrentPage = page
+      }
+    },
+
+    changeThreadCommentsPage(page) {
+      if (page >= 1 && page <= this.threadCommentsTotalPages) {
+        this.threadCommentsCurrentPage = page
       }
     },
 
