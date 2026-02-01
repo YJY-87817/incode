@@ -499,7 +499,11 @@ onBeforeUnmount(() => {
   cursor: pointer;
   font-size: 0.875rem;
   transition: all 0.2s ease;
-  min-width: 32px;
+  min-width: 44px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -522,6 +526,11 @@ onBeforeUnmount(() => {
 .toolbar-file-input {
   position: relative;
   overflow: hidden;
+  min-width: 44px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar-file-input input {
