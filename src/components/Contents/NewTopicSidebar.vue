@@ -249,120 +249,136 @@ const updateDraftBody = (draft, value) => {
 </script>
 
 <template>
-  <!-- 所有最小化的 banner 放在一個固定容器中 -->
-  <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
-    <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
-      <div
-        v-if="draft.isMinimized"
-        class="new-topic-banner"
-        @click="expandDraft(draft)"
-      >
-        <div class="banner-content">
-          <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
-            <i class="fa-solid fa-people-pulling"></i>
-          </div>
-          <div class="banner-left">
-            <div class="banner-title">
-              <span v-if="draft.title.trim()">{{ draft.title }}</span>
-              <span v-else class="text-muted">未命名的草稿</span>
+  <div class="new-topic-sidebar-stack">
+    <!-- 所有最小化的 banner 放在一個固定容器中 -->
+    <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
+      <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
+        <div
+          v-if="draft.isMinimized"
+          class="new-topic-banner"
+          @click="expandDraft(draft)"
+        >
+          <div class="banner-content">
+            <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
+              <i class="fa-solid fa-people-pulling"></i>
+            </div>
+            <div class="banner-left">
+              <div class="banner-title">
+                <span v-if="draft.title.trim()">{{ draft.title }}</span>
+                <span v-else class="text-muted">未命名的草稿</span>
+              </div>
+            </div>
+            <div class="banner-right">
+              <button
+                type="button"
+                class="btn btn-sm banner-close-btn"
+                @click.stop="closeDraft(draft)"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
             </div>
           </div>
-          <div class="banner-right">
-            <button
-              type="button"
-              class="btn btn-sm banner-close-btn"
-              @click.stop="closeDraft(draft)"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
         </div>
-      </div>
-    </template>
-  </div>
+      </template>
+    </div>
 
-  <!-- 所有展開的編輯器 -->
-  <div class="editors-container">
-    <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
-      <div
-        v-if="!draft.isMinimized"
-        class="card shadow-sm mb-4 new-topic-sidebar"
-      >
-        <div class="card-header bg-white">
-          <div class="d-flex align-items-start justify-content-between gap-2">
-            <div>
-              <h6 class="mb-1">{{ getModalTitle(draft.mode) }}</h6>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary"
-                @click="openLargeEditor(draft)"
-              >
-                放大
-              </button>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                @click="handleCancelClick(draft)"
-              >
-                關閉
-              </button>
+    <!-- 所有展開的編輯器 -->
+    <div class="editors-container">
+      <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
+        <div
+          v-if="!draft.isMinimized"
+          class="card shadow-sm mb-4 new-topic-sidebar"
+        >
+          <div class="card-header bg-white">
+            <div class="d-flex align-items-start justify-content-between gap-2">
+              <div>
+                <h6 class="mb-1">{{ getModalTitle(draft.mode) }}</h6>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  @click="openLargeEditor(draft)"
+                >
+                  放大
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="handleCancelClick(draft)"
+                >
+                  關閉
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="card-body pt-0 pb-0 sidebar-body">
-          <div class="mb-3">
-            <label class="form-label">標題</label>
-            <input
-              :value="draft.title"
-              @input="updateDraftTitle(draft, $event.target.value)"
-              class="form-control"
-            />
-          </div>
-          <div class="mb-3 editor-section">
-            <label class="form-label">內容</label>
-            <div class="editor-wrapper">
-              <TiptapEditor
-                :modelValue="draft.body"
-                @update:modelValue="updateDraftBody(draft, $event)"
-                placeholder="請輸入貼文內容..."
+          <div class="card-body pt-0 pb-0 sidebar-body">
+            <div class="mb-3">
+              <label class="form-label">標題</label>
+              <input
+                :value="draft.title"
+                @input="updateDraftTitle(draft, $event.target.value)"
+                class="form-control"
               />
             </div>
-          </div>
-          <div class="d-flex justify-content-end gap-2 sidebar-actions">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              @click="handleCancelClick(draft)"
-            >
-              取消
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="submitDraft(draft)"
-            >
-              {{ submitLabel }}
-            </button>
+            <div class="mb-3 editor-section">
+              <label class="form-label">內容</label>
+              <div class="editor-wrapper">
+                <TiptapEditor
+                  :modelValue="draft.body"
+                  @update:modelValue="updateDraftBody(draft, $event)"
+                  placeholder="請輸入貼文內容..."
+                />
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 sidebar-actions">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                @click="handleCancelClick(draft)"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                @click="submitDraft(draft)"
+              >
+                {{ submitLabel }}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* Banner 容器：固定在頂部 */
-.banners-container {
+.new-topic-sidebar-stack {
   position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 1000;
+}
+
+.banners-container {
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.editors-container {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow: auto;
 }
 
 /* 最小化的 banner 樣式 */
@@ -502,10 +518,9 @@ const updateDraftBody = (draft, value) => {
 }
 
 .new-topic-sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  z-index: 1000;
+  position: relative;
+  height: 100%;
+  z-index: 1;
   display: flex;
   flex-direction: column;
 }
