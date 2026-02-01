@@ -963,44 +963,58 @@ const openDetailedReply = () => {
 }
 
 .reply-mode-tabs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0;
-  padding: 3px;
-  background: #fff;
-  border: 1px solid #d1d3d4;
-  border-radius: 999px;
-  height: 32px;
-  font-size: 0.875rem;
+  gap: 8px;
+  padding: 8px;
+  /* background: #f8f9fa; */
+  /* border: 2px solid #145369; */
+  border-radius: 12px;
+  height: auto;
+  font-size: 1rem;
   transition: all 0.2s ease;
-  overflow: hidden;
+  overflow: visible;
   margin: 0;
+  flex-wrap: wrap;
 }
 
 .reply-mode-tabs .nav-link {
-  border: none;
-  background: transparent;
+  border: 2px solid #86b0bd;
+  background: #fff;
   color: #145369;
-  padding: 0 0.75rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 26px;
-  line-height: 26px;
-  transition: all 0.2s ease;
+  height: auto;
+  line-height: 1.5;
+  transition: all 0.3s ease;
   margin: 0;
+  min-width: 140px;
+  box-shadow: 0 2px 4px rgba(20, 83, 105, 0.1);
+}
+
+.reply-mode-tabs .nav-link i {
+  font-size: 1.1rem;
+  margin-right: 6px;
 }
 
 .reply-mode-tabs .nav-link:hover {
-  background: #f8f9fa;
+  background: #fff0dd;
+  border-color: #145369;
+  color: #145369;
+  box-shadow: 0 4px 8px rgba(20, 83, 105, 0.2);
+  transform: translateY(-2px);
 }
 
 .reply-mode-tabs .nav-link.active {
   background: #145369;
-  color: #fff;
+  color: #fff0dd;
+  border-color: #145369;
+  box-shadow: 0 4px 12px rgba(20, 83, 105, 0.3);
 }
 
 .quick-reply-box {
