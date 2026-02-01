@@ -213,10 +213,19 @@ const iframeStyle = computed(() => {
 });
 
 const effectiveSandbox = computed(() => {
-  if (!props.allowScripts) return props.sandbox;
-  if (!props.sandbox) return "allow-scripts";
-  if (props.sandbox.includes("allow-scripts")) return props.sandbox;
-  return `${props.sandbox} allow-scripts`;
+  const rawSandbox = (props.sandbox || "").trim();
+
+  if (!props.allowScripts) return rawSandbox;
+
+  const tokens = rawSandbox.split(/\s+/).filter(Boolean);
+  const hasSameOrigin = tokens.includes("allow-same-origin");
+
+  // 若需要腳本且同源存取（例如量測 iframe 高度），
+  // 直接移除 sandbox 屬性以避免瀏覽器警告。
+  if (hasSameOrigin || tokens.length === 0) return null;
+
+  if (!tokens.includes("allow-scripts")) tokens.push("allow-scripts");
+  return tokens.join(" ");
 });
 </script>
 
