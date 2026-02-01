@@ -188,10 +188,17 @@ const submitSidebar = async () => {
 </template>
 
 <style scoped>
-.new-topic-sidebar :deep(.editor-content) {
-  min-height: 180px;
+.new-topic-sidebar :deep(.tiptap-editor-wrapper) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   max-height: 100%;
   overflow: auto;
+}
+
+.new-topic-sidebar :deep(.editor-content) {
+  min-height: 180px;
   flex: 1;
 }
 
@@ -229,6 +236,7 @@ const submitSidebar = async () => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  max-height: 100%;
 }
 
 .new-topic-sidebar .sidebar-actions {
