@@ -141,7 +141,6 @@ const submitSidebar = async () => {
       <div class="d-flex align-items-start justify-content-between gap-2">
         <div>
           <h6 class="mb-1">{{ modalTitle }}</h6>
-          <small class="text-muted">在側邊欄撰寫詳細內容</small>
         </div>
         <div class="d-flex align-items-center gap-2">
           <button
