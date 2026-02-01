@@ -109,6 +109,7 @@
     >
       <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
         <button
+          v-if="canReply"
           class="btn btn-sm btn-forum-secondary thread-reply-btn"
           @click="toggleReply"
         >
@@ -118,7 +119,7 @@
           ></i
           >{{ replyButtonLabel }}
         </button>
-        <div v-if="showReply" class="reply-mode-tabs">
+        <div v-if="showReply && canReply" class="reply-mode-tabs">
           <button
             class="nav-link"
             type="button"
@@ -156,7 +157,7 @@
 
       <!-- 回覆輸入框：置於展開內容上方 -->
       <QuickReplyBox
-        v-if="showReply"
+        v-if="showReply && canReply"
         v-show="showQuickReply"
         v-model="replyContent"
         :is-submitting="isSubmittingReply"
@@ -199,6 +200,7 @@
       class="mt-2"
     >
       <button
+        v-if="canReply"
         class="btn btn-sm btn-forum-secondary thread-reply-btn"
         @click="toggleReply"
       >
@@ -208,7 +210,7 @@
         ></i
         >{{ replyButtonLabel }}
       </button>
-      <div v-if="showReply" class="reply-mode-tabs ms-2">
+      <div v-if="showReply && canReply" class="reply-mode-tabs ms-2">
         <button
           class="nav-link"
           type="button"
@@ -231,7 +233,7 @@
 
       <!-- 回覆輸入框 -->
       <QuickReplyBox
-        v-if="showReply"
+        v-if="showReply && canReply"
         v-show="showQuickReply"
         v-model="replyContent"
         :is-submitting="isSubmittingReply"
@@ -316,6 +318,10 @@ const typeLabel = computed(() => {
 
 const replyButtonLabel = computed(() =>
   props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
+);
+
+const canReply = computed(
+  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY
 );
 
 const quickReplyLabel = computed(() =>
