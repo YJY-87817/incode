@@ -254,9 +254,9 @@ const submitSidebar = async () => {
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  padding: 0.75rem 1rem;
+  /* padding: 0.75rem 1rem; */
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -299,7 +299,7 @@ const submitSidebar = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0.75rem 1rem;
+  padding: 0.25rem;
   display: flex;
   align-items: center;
 }
