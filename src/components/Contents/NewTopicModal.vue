@@ -317,6 +317,9 @@ watch(
       replySearch.value = "";
       return;
     }
+    if (modalMode.value === "commentReply") {
+      return;
+    }
     const match = (newTopicState.topics || []).find(
       (topic) => String(topic.id) === String(value)
     );
@@ -329,6 +332,7 @@ watch(
 watch(
   () => replySearch.value,
   (value) => {
+    if (modalMode.value === "commentReply") return;
     const input = String(value || "").trim();
     if (!input || input === NO_REPLY_LABEL) {
       newTopicState.parentContentId = null;
@@ -427,6 +431,7 @@ watch(
 watch(
   () => newTopicState.topics,
   (topics) => {
+    if (modalMode.value === "commentReply") return;
     if (!newTopicState.parentContentId) return;
     const match = (topics || []).find(
       (topic) => String(topic.id) === String(newTopicState.parentContentId)
@@ -468,6 +473,10 @@ watch(
       syncCategorySelection(forumStore.newTopic.categoryId);
       if (forumStore.newTopic.categorySearch && !categorySearch.value) {
         categorySearch.value = forumStore.newTopic.categorySearch;
+      }
+
+      if (forumStore.newTopic.parentContentId) {
+        newTopicState.parentContentId = forumStore.newTopic.parentContentId;
       }
 
       // 如果有 parentContentId，需要確保主題列表已加載
