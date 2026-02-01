@@ -155,40 +155,16 @@
       </div>
 
       <!-- 回覆輸入框：置於展開內容上方 -->
-      <div v-if="showReply" class="mb-3 pt-3">
-        <transition name="fade">
-          <div v-show="showQuickReply" class="quick-reply-box">
-            <textarea
-              v-model="replyContent"
-              class="form-control"
-              rows="1"
-              placeholder="請輸入簡易留言（純文字）"
-              @input="autoResizeTextarea"
-              @focus="autoResizeTextarea"
-            ></textarea>
-
-            <div class="d-flex flex-wrap gap-2 quick-reply-actions">
-              <button
-                class="btn btn-forum-primary btn-sm"
-                type="button"
-                @click="submitReply"
-                :disabled="isSubmittingReply || !replyContent.trim()"
-              >
-                <i class="fas fa-paper-plane me-1"></i>
-                {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
-              </button>
-              <button
-                class="btn btn-forum-secondary btn-sm"
-                type="button"
-                @click="cancelReply"
-                :disabled="isSubmittingReply"
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </transition>
-      </div>
+      <QuickReplyBox
+        v-if="showReply"
+        v-show="showQuickReply"
+        v-model="replyContent"
+        :is-submitting="isSubmittingReply"
+        @submit="submitReply"
+        @cancel="cancelReply"
+        @textarea-input="autoResizeTextarea"
+        class="mb-3 pt-3"
+      />
 
       <div
         v-show="isNestedExpanded"
@@ -254,40 +230,16 @@
       </div>
 
       <!-- 回覆輸入框 -->
-      <div v-if="showReply" class="mt-3 pt-3">
-        <transition name="fade">
-          <div v-show="showQuickReply" class="quick-reply-box">
-            <textarea
-              v-model="replyContent"
-              class="form-control"
-              rows="1"
-              placeholder="請輸入簡易留言（純文字）"
-              @input="autoResizeTextarea"
-              @focus="autoResizeTextarea"
-            ></textarea>
-
-            <div class="d-flex flex-wrap gap-2 quick-reply-actions">
-              <button
-                class="btn btn-forum-primary btn-sm"
-                type="button"
-                @click="submitReply"
-                :disabled="isSubmittingReply || !replyContent.trim()"
-              >
-                <i class="fas fa-paper-plane me-1"></i>
-                {{ isSubmittingReply ? "送出中..." : "送出簡易留言" }}
-              </button>
-              <button
-                class="btn btn-forum-secondary btn-sm"
-                type="button"
-                @click="cancelReply"
-                :disabled="isSubmittingReply"
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </transition>
-      </div>
+      <QuickReplyBox
+        v-if="showReply"
+        v-show="showQuickReply"
+        v-model="replyContent"
+        :is-submitting="isSubmittingReply"
+        @submit="submitReply"
+        @cancel="cancelReply"
+        @textarea-input="autoResizeTextarea"
+        class="mt-3 pt-3"
+      />
     </div>
   </div>
 </template>
@@ -299,6 +251,7 @@ import HtmlIframe from "@/components/HtmlIframe.vue";
 import apiClient from "@/api/request.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
