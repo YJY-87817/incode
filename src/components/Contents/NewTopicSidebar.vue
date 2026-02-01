@@ -286,7 +286,7 @@ const submitSidebar = async () => {
 }
 
 .banner-right {
-  flex: 0 0 120px;
+  flex: 0 0 20%;
   display: flex;
   align-items: stretch;
 }
