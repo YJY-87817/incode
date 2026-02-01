@@ -357,18 +357,14 @@ const updateDraftBody = (draft, value) => {
 <style scoped>
 /* Banner 容器：固定在頂部 */
 .new-topic-sidebar-stack {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  z-index: 1000;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .banners-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -376,9 +372,8 @@ const updateDraftBody = (draft, value) => {
 
 .editors-container {
   position: relative;
-  z-index: 1;
-  height: 100%;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* 最小化的 banner 樣式 */
