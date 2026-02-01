@@ -672,7 +672,7 @@ const closeTitleBodyRequiredModal = () => {
   showTitleBodyRequiredModal.value = false;
 };
 
-const submitNewTopic = () => {
+const submitNewTopic = async () => {
   console.log(
     "[NewTopicModal] submitNewTopic - 當前 body:",
     newTopicState.body
@@ -705,25 +705,30 @@ const submitNewTopic = () => {
 
   console.log("[NewTopicModal] submitNewTopic - 提交 DTO:", dto);
 
-  apiClient
-    .post("/ContentApi", dto)
-    .then(() => {
-      Swal.fire({
-        icon: "success",
-        title: "發表成功",
-        showConfirmButton: false,
-        timer: 1500
-      });
-      // 直接刷新主題列表而不是只觸發信號
-      forumStore.pagination.currentPage = 1;
-      forumStore.fetchTopics();
-      resetNewTopicDraft();
-      closeNewTopic();
-    })
-    .catch((error) => {
-      console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
-      alert("發表失敗，請稍後再試");
+  try {
+    await apiClient.post("/ContentApi", dto);
+    await Swal.fire({
+      icon: "success",
+      title: "發表成功",
+      showConfirmButton: false,
+      timer: 1500,
     });
+
+    // 直接刷新主題列表而不是只觸發信號
+    forumStore.pagination.currentPage = 1;
+    await forumStore.fetchTopics();
+
+    // 若是回文/留言/回覆，且當前已開啟該主題，刷新詳情內容
+    if (isReply && forumStore.selectedThread) {
+      await forumStore.fetchThreadDetail(forumStore.selectedThread);
+    }
+
+    resetNewTopicDraft();
+    closeNewTopic();
+  } catch (error) {
+    console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
+    alert("發表失敗，請稍後再試");
+  }
 };
 
 const closeNewTopic = () => {
@@ -1186,8 +1191,6 @@ const resetNewTopicDraft = () => {
         </div>
       </div>
     </div>
-
-
 
     <div
       v-if="showTitleBodyRequiredModal"
