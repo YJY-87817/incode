@@ -22,7 +22,7 @@ const modalTitle = computed(() => {
   }
 });
 const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發表" : "送出"
+  modalMode.value === "post" ? "發佈" : "發佈"
 );
 
 const newTopicState = reactive({
@@ -1045,11 +1045,7 @@ const resetNewTopicDraft = () => {
                   </div>
                 </div>
               </div>
-              <div v-else class="mb-3">
-                <small class="text-muted">
-                  使用編輯器撰寫詳細內容，可附圖片。
-                </small>
-              </div>
+              <div v-else class="mb-3"></div>
               <div class="mb-3">
                 <label class="form-label">標題</label>
                 <input

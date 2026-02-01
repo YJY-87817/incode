@@ -18,7 +18,7 @@
           :disabled="isSubmitting || !modelValue.trim()"
         >
           <i class="fas fa-paper-plane me-1"></i>
-          {{ isSubmitting ? "送出中..." : "送出簡易留言" }}
+          {{ isSubmitting ? "送出中..." : "發佈" }}
         </button>
         <button
           class="btn btn-forum-secondary btn-sm"
