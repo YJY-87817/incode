@@ -131,7 +131,7 @@
       </div>
 
       <!-- 回覆輸入框：置於展開內容上方 -->
-      <div v-if="showReply" class="mb-3 border-top pt-3">
+      <div v-if="showReply" class="mb-3 pt-3">
         <div
           class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
         >
@@ -230,7 +230,7 @@
       </button>
 
       <!-- 回覆輸入框 -->
-      <div v-if="showReply" class="mt-3 border-top pt-3">
+      <div v-if="showReply" class="mt-3 pt-3">
         <div
           class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
         >
