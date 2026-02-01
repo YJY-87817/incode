@@ -419,7 +419,7 @@ const openDetailedReply = () => {
 
         <!-- 回覆區域 -->
         <div class="p-3">
-          <div class="mt-3">
+          <div class="">
             <div
               class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
             >
@@ -967,8 +967,6 @@ const openDetailedReply = () => {
   align-items: center;
   gap: 8px;
   padding: 8px;
-  /* background: #f8f9fa; */
-  /* border: 2px solid #145369; */
   border-radius: 12px;
   height: auto;
   font-size: 1rem;
