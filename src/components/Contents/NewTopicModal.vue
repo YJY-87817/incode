@@ -408,8 +408,14 @@ watch(
 watch(
   () => effectiveCategoryId.value,
   (newCat) => {
-    newTopicState.parentContentId = null;
-    replySearch.value = "";
+    const shouldPreserveParent =
+      forumStore.newTopic.mode !== "post" &&
+      Boolean(forumStore.newTopic.parentContentId);
+
+    if (!shouldPreserveParent) {
+      newTopicState.parentContentId = null;
+      replySearch.value = "";
+    }
     if (newCat) {
       fetchTopics(newCat);
     } else {
