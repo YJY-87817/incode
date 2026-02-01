@@ -163,28 +163,6 @@ const submitSidebar = async () => {
       </div>
     </div>
     <div class="card-body pt-0 pb-0 sidebar-body">
-      <!-- 顯示正在回覆的內容資訊 -->
-      <div v-if="replyingToContent" class="replying-to-info mb-3">
-        <div class="replying-to-header">
-          <i class="fas fa-reply me-2"></i>
-          <span>正在回覆</span>
-        </div>
-        <div class="replying-to-content">
-          <div class="d-flex align-items-start gap-2">
-            <div class="flex-grow-1">
-              <div class="text-muted small mb-1">
-                <strong>{{ replyingToContent.author }}</strong>
-                <span class="mx-1">·</span>
-                <span>{{ replyingToContent.createdAt }}</span>
-              </div>
-              <div class="replying-to-text">
-                {{ replyingToContent.contentText || replyingToContent.title }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="mb-3">
         <label class="form-label">標題</label>
         <input v-model="titleModel" class="form-control" />
@@ -212,44 +190,6 @@ const submitSidebar = async () => {
 </template>
 
 <style scoped>
-.replying-to-info {
-  background: linear-gradient(
-    135deg,
-    rgba(233, 30, 99, 0.08) 0%,
-    rgba(233, 30, 99, 0.03) 100%
-  );
-  border: 2px solid #e91e63;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 12px;
-}
-
-.replying-to-header {
-  font-weight: 600;
-  color: #e91e63;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.replying-to-content {
-  padding: 8px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #e91e63;
-}
-
-.replying-to-text {
-  color: #145369;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  max-height: 80px;
-  overflow-y: auto;
-  word-wrap: break-word;
-  white-space: pre-wrap;
-}
-
 .new-topic-sidebar :deep(.tiptap-editor-wrapper) {
   display: flex;
   flex-direction: column;
