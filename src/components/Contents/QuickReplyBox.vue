@@ -61,3 +61,13 @@ function handleInput(event) {
   handleTextareaEvent(event);
 }
 </script>
+
+<style scoped>
+.quick-reply-box textarea.form-control {
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  line-height: 1.4;
+  transition: height 0.12s ease;
+}
+</style>

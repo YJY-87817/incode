@@ -10,6 +10,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
+import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
@@ -207,6 +208,13 @@ const submitQuickReply = async () => {
     isSubmittingQuickReply.value = false;
   }
 };
+
+function autoResizeTextarea(event) {
+  const textarea = event?.target;
+  if (!textarea) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
 
 const getCategoryIdValue = (cat) =>
   cat?.id ??
@@ -469,38 +477,14 @@ const openDetailedReply = () => {
               </small>
             </div>
 
-            <transition name="fade">
-              <div v-show="showQuickReply" class="quick-reply-box">
-                <textarea
-                  v-model="quickReplyContent"
-                  class="form-control"
-                  rows="4"
-                  placeholder="請輸入簡易留言（純文字）"
-                ></textarea>
-
-                <div class="d-flex flex-wrap gap-2 quick-reply-actions">
-                  <button
-                    class="btn btn-forum-primary btn-sm"
-                    type="button"
-                    @click="submitQuickReply"
-                    :disabled="
-                      isSubmittingQuickReply || !quickReplyContent.trim()
-                    "
-                  >
-                    <i class="fas fa-paper-plane me-1"></i>
-                    {{ isSubmittingQuickReply ? "送出中..." : "送出簡易留言" }}
-                  </button>
-                  <button
-                    class="btn btn-forum-secondary btn-sm"
-                    type="button"
-                    @click="toggleQuickReply"
-                    :disabled="isSubmittingQuickReply"
-                  >
-                    取消
-                  </button>
-                </div>
-              </div>
-            </transition>
+            <QuickReplyBox
+              v-if="showQuickReply"
+              v-model="quickReplyContent"
+              :is-submitting="isSubmittingQuickReply"
+              @submit="submitQuickReply"
+              @cancel="toggleQuickReply"
+              @textarea-input="autoResizeTextarea"
+            />
 
             <!-- 所有留言 (type=3) -->
             <div
