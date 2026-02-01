@@ -160,16 +160,18 @@ const submitSidebar = async () => {
         </div>
       </div>
     </div>
-    <div class="card-body pt-0">
+    <div class="card-body pt-0 sidebar-body">
       <div class="mb-3">
         <label class="form-label">標題</label>
         <input v-model="titleModel" class="form-control" />
       </div>
-      <div class="mb-3">
+      <div class="mb-3 editor-section">
         <label class="form-label">內容</label>
-        <TiptapEditor v-model="bodyModel" placeholder="請輸入貼文內容..." />
+        <div class="editor-wrapper">
+          <TiptapEditor v-model="bodyModel" placeholder="請輸入貼文內容..." />
+        </div>
       </div>
-      <div class="d-flex justify-content-end gap-2">
+      <div class="d-flex justify-content-end gap-2 sidebar-actions">
         <button
           type="button"
           class="btn btn-outline-secondary"
@@ -188,16 +190,49 @@ const submitSidebar = async () => {
 <style scoped>
 .new-topic-sidebar :deep(.editor-content) {
   min-height: 180px;
+  max-height: 100%;
+  overflow: auto;
+  flex: 1;
 }
 
 .new-topic-sidebar {
   position: sticky;
-  top: 1rem;
+  top: 0;
+  bottom: 0;
+  height: 100vh;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
 }
 
 .new-topic-sidebar .card-header {
   padding-bottom: 0;
+}
+
+.new-topic-sidebar .sidebar-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.new-topic-sidebar .editor-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-topic-sidebar .editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.new-topic-sidebar .sidebar-actions {
+  margin-top: auto;
 }
 
 .new-topic-sidebar .form-control {
