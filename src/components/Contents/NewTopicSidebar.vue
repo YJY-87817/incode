@@ -148,7 +148,7 @@ const submitSidebar = async () => {
             class="btn btn-sm btn-outline-primary"
             @click="openLargeEditor"
           >
-            放大編輯
+            放大
           </button>
           <button
             type="button"
