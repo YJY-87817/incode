@@ -317,7 +317,7 @@ watch(
       replySearch.value = "";
       return;
     }
-    if (modalMode.value === "commentReply") {
+    if (modalMode.value !== "post") {
       return;
     }
     const match = (newTopicState.topics || []).find(
@@ -332,7 +332,7 @@ watch(
 watch(
   () => replySearch.value,
   (value) => {
-    if (modalMode.value === "commentReply") return;
+    if (modalMode.value !== "post") return;
     const input = String(value || "").trim();
     if (!input || input === NO_REPLY_LABEL) {
       newTopicState.parentContentId = null;
@@ -431,7 +431,7 @@ watch(
 watch(
   () => newTopicState.topics,
   (topics) => {
-    if (modalMode.value === "commentReply") return;
+    if (modalMode.value !== "post") return;
     if (!newTopicState.parentContentId) return;
     const match = (topics || []).find(
       (topic) => String(topic.id) === String(newTopicState.parentContentId)
