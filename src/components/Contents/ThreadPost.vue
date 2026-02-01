@@ -320,9 +320,12 @@ const replyButtonLabel = computed(() =>
   props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
 );
 
-const canReply = computed(
-  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY
-);
+const canReply = computed(() => {
+  if (props.post.type === CONTENT_TYPES.COMMENT_REPLY) return false;
+  if (props.previewOnly && props.post.type === CONTENT_TYPES.COMMENT)
+    return false;
+  return true;
+});
 
 const quickReplyLabel = computed(() =>
   props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆"
