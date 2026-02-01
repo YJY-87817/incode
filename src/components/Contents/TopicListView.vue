@@ -419,9 +419,7 @@ const openDetailedReply = () => {
 
         <!-- 回覆區域 -->
         <div class="p-3">
-          <div class="mt-3 mt-md-5">
-            <h5 class="fs-5 fs-md-4 mb-3">💬 留言/回文</h5>
-
+          <div class="mt-3">
             <div
               class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
             >
@@ -471,7 +469,6 @@ const openDetailedReply = () => {
               v-if="forumStore.threadComments.length > 0"
               class="mb-4 comment-list"
             >
-              <h6 class="fs-5 mb-2">📝 留言</h6>
               <ThreadPost
                 v-for="comment in paginatedThreadComments"
                 :key="'comment-' + comment.id"
@@ -527,7 +524,6 @@ const openDetailedReply = () => {
 
             <!-- 回文分頁 (type=2) -->
             <div v-if="paginatedThreadPosts.length > 0" class="mb-4 reply-list">
-              <h6 class="fs-5 mb-2">💭 回文</h6>
               <ThreadPost
                 v-for="post in paginatedThreadPosts"
                 :key="'reply-' + post.id"
