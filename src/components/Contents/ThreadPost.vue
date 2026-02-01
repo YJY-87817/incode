@@ -565,8 +565,8 @@ function toggleReply() {
     replyTab.value = null;
     return;
   }
-  showQuickReply.value = false;
-  replyTab.value = null;
+  replyTab.value = "quick";
+  showQuickReply.value = true;
 }
 
 function selectQuickReply() {
@@ -828,23 +828,26 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem;
+  padding: 0;
   background: rgba(255, 240, 221, 0.65);
   border: 1px solid #d1d3d4;
   border-radius: 999px;
+  height: 28px;
 }
 
 .reply-mode-tabs .nav-link {
   border: none;
   background: transparent;
   color: #145369;
-  padding: 0.35rem 0.9rem;
+  padding: 0 0.7rem;
   border-radius: 999px;
   font-size: 0.875rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: 28px;
+  line-height: 28px;
   transition: all 0.2s ease;
 }
 
