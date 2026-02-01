@@ -507,7 +507,7 @@ const openDetailedReply = () => {
               v-if="forumStore.threadComments.length > 0"
               class="mb-4 comment-list"
             >
-              <h6 class="fs-6 mb-2">📝 留言</h6>
+              <h6 class="fs-5 mb-2">📝 留言</h6>
               <ThreadPost
                 v-for="comment in paginatedThreadComments"
                 :key="'comment-' + comment.id"
@@ -563,7 +563,7 @@ const openDetailedReply = () => {
 
             <!-- 回文分頁 (type=2) -->
             <div v-if="paginatedThreadPosts.length > 0" class="mb-4 reply-list">
-              <h6 class="fs-6 mb-2">💭 回文</h6>
+              <h6 class="fs-5 mb-2">💭 回文</h6>
               <ThreadPost
                 v-for="post in paginatedThreadPosts"
                 :key="'reply-' + post.id"

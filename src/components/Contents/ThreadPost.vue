@@ -30,12 +30,6 @@
               </div>
             </div>
           </div>
-          <button
-            class="btn btn-sm btn-forum-secondary thread-reply-btn"
-            @click="toggleReply"
-          >
-            <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
-          </button>
         </div>
         <div class="mt-2">
           <div
@@ -176,20 +170,28 @@
       v-if="!hideNestedReplies && post.replies && post.replies.length > 0"
       class="nested-replies-section ms-3 mt-2"
     >
-      <button
-        class="btn btn-sm btn-outline-secondary mb-2 nested-toggle-btn"
-        @click="toggleNestedReplies"
-      >
-        <i
-          class="fas"
-          :class="isNestedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
-        ></i>
-        <span class="ms-1">
-          {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
-            post.replies.length
-          }})
-        </span>
-      </button>
+      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+        <button
+          class="btn btn-sm btn-forum-secondary thread-reply-btn"
+          @click="toggleReply"
+        >
+          <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
+        </button>
+        <button
+          class="btn btn-sm btn-outline-secondary nested-toggle-btn"
+          @click="toggleNestedReplies"
+        >
+          <i
+            class="fas"
+            :class="isNestedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+          ></i>
+          <span class="ms-1">
+            {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
+              post.replies.length
+            }})
+          </span>
+        </button>
+      </div>
 
       <div
         v-show="isNestedExpanded"
@@ -216,6 +218,19 @@
           ></div>
         </div>
       </div>
+    </div>
+
+    <!-- 無巢狀回覆時的單獨按鈕 -->
+    <div
+      v-if="hideNestedReplies || !post.replies || post.replies.length === 0"
+      class="mt-2"
+    >
+      <button
+        class="btn btn-sm btn-forum-secondary thread-reply-btn"
+        @click="toggleReply"
+      >
+        <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
+      </button>
     </div>
   </div>
 </template>
