@@ -262,28 +262,27 @@ const openDetailedComment = () => {
       ? getCategoryName(matchedCategory)
       : "";
 
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = threadCategoryId;
-  forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
-  forumStore.newTopic.categorySearch = categorySearchName;
-  forumStore.newTopic.mode = "comment";
-  forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT;
   forumStore.selectedCategory = threadCategoryId;
 
-  forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(
-    true,
-    forumStore.threadDetail.id,
-    {
+  // 創建新的草稿
+  forumStore.createDraft({
+    title: "",
+    body: "",
+    categoryId: threadCategoryId,
+    parentContentId: forumStore.threadDetail.id,
+    categorySearch: categorySearchName,
+    mode: "comment",
+    contentType: CONTENT_TYPES.COMMENT,
+    replyingToContentId: forumStore.threadDetail.id,
+    replyingToContentData: {
       id: forumStore.threadDetail.id,
       title: forumStore.threadDetail.title,
       author: forumStore.threadDetail.author,
       createdAt: forumStore.threadDetail.createdAt,
       contentText: forumStore.threadDetail.contentText,
     },
-    forumStore.threadDetail.id
-  );
+    replyingToThreadId: forumStore.threadDetail.id,
+  });
 };
 
 const openDetailedReply = () => {
@@ -315,28 +314,27 @@ const openDetailedReply = () => {
       ? getCategoryName(matchedCategory)
       : "";
 
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = threadCategoryId;
-  forumStore.newTopic.parentContentId = forumStore.threadDetail.id;
-  forumStore.newTopic.categorySearch = categorySearchName;
-  forumStore.newTopic.mode = "reply";
-  forumStore.newTopic.contentType = CONTENT_TYPES.REPLY;
   forumStore.selectedCategory = threadCategoryId;
 
-  forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(
-    true,
-    forumStore.threadDetail.id,
-    {
+  // 創建新的草稿
+  forumStore.createDraft({
+    title: "",
+    body: "",
+    categoryId: threadCategoryId,
+    parentContentId: forumStore.threadDetail.id,
+    categorySearch: categorySearchName,
+    mode: "reply",
+    contentType: CONTENT_TYPES.REPLY,
+    replyingToContentId: forumStore.threadDetail.id,
+    replyingToContentData: {
       id: forumStore.threadDetail.id,
       title: forumStore.threadDetail.title,
       author: forumStore.threadDetail.author,
       createdAt: forumStore.threadDetail.createdAt,
       contentText: forumStore.threadDetail.contentText,
     },
-    forumStore.threadDetail.id
-  );
+    replyingToThreadId: forumStore.threadDetail.id,
+  });
 };
 </script>
 

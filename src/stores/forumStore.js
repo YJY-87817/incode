@@ -88,6 +88,10 @@ export const useForumStore = defineStore('forum', {
     isSubmittingNewTopic: false,
     isUploadingNewTopicImages: false,
 
+    // ========== 多個草稿相關 ==========
+    drafts: [], // { id, title, body, categoryId, parentContentId, categorySearch, mode, contentType, isMinimized, replyingToContentId, replyingToContentData, replyingToThreadId }
+    nextDraftId: 1,
+
     // ========== 其他 ==========
     showNewTopicModal: false,
     showNewTopicSidebar: false,
@@ -701,6 +705,48 @@ export const useForumStore = defineStore('forum', {
 
     updateNewTopicCategory(categoryId) {
       this.newTopic.categoryId = categoryId
+    },
+
+    // ========== 多個草稿管理 ==========
+    createDraft(options = {}) {
+      const draftId = this.nextDraftId++
+      const newDraft = {
+        id: draftId,
+        title: options.title || '',
+        body: options.body || '',
+        categoryId: options.categoryId || null,
+        parentContentId: options.parentContentId || null,
+        categorySearch: options.categorySearch || '',
+        mode: options.mode || 'post',
+        contentType: options.contentType || CONTENT_TYPES.POST,
+        isMinimized: false,
+        replyingToContentId: options.replyingToContentId || null,
+        replyingToContentData: options.replyingToContentData || null,
+        replyingToThreadId: options.replyingToThreadId || null,
+      }
+      this.drafts.push(newDraft)
+      return draftId
+    },
+
+    updateDraft(draftId, updates) {
+      const draft = this.drafts.find(d => d.id === draftId)
+      if (draft) {
+        Object.assign(draft, updates)
+      }
+    },
+
+    removeDraft(draftId) {
+      const index = this.drafts.findIndex(d => d.id === draftId)
+      if (index !== -1) {
+        this.drafts.splice(index, 1)
+      }
+    },
+
+    toggleDraftMinimize(draftId, minimized) {
+      const draft = this.drafts.find(d => d.id === draftId)
+      if (draft) {
+        draft.isMinimized = minimized
+      }
     },
 
     // ========== 舊有功能保留 ==========

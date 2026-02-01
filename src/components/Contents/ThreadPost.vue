@@ -630,28 +630,27 @@ const openDetailedReplyModal = () => {
       ? getCategoryName(matchedCategory)
       : "";
 
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = categoryId;
-  forumStore.newTopic.parentContentId = props.post.id;
-  forumStore.newTopic.categorySearch = categorySearchName;
   const replySetting = resolveReplyContentType();
-  forumStore.newTopic.mode = replySetting.mode;
-  forumStore.newTopic.contentType = replySetting.type;
 
-  forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(
-    true,
-    props.post.id,
-    {
+  // 創建新的草稿
+  forumStore.createDraft({
+    title: "",
+    body: "",
+    categoryId: categoryId,
+    parentContentId: props.post.id,
+    categorySearch: categorySearchName,
+    mode: replySetting.mode,
+    contentType: replySetting.type,
+    replyingToContentId: props.post.id,
+    replyingToContentData: {
       id: props.post.id,
       title: props.post.title || "",
       author: props.post.author,
       createdAt: props.post.createdAt,
       contentText: contentSummary.value,
     },
-    forumStore.selectedThread
-  );
+    replyingToThreadId: forumStore.selectedThread,
+  });
 };
 
 async function submitReply() {

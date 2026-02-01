@@ -10,13 +10,12 @@ const forumStore = useForumStore();
 const router = useRouter();
 const route = useRoute();
 
-const modalMode = computed(() => forumStore.newTopic?.mode || "post");
-const isSupportedMode = computed(() =>
-  ["comment", "reply", "commentReply"].includes(modalMode.value)
-);
+// 獲取所有草稿
+const allDrafts = computed(() => forumStore.drafts || []);
 
-const modalTitle = computed(() => {
-  switch (modalMode.value) {
+// 獲取模式標題
+const getModalTitle = (mode) => {
+  switch (mode) {
     case "comment":
       return "詳細留言";
     case "reply":
@@ -26,25 +25,42 @@ const modalTitle = computed(() => {
     default:
       return "詳細發布";
   }
-});
+};
 
-const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發布" : "發布"
-);
+const submitLabel = "發布";
 
-const titleModel = computed({
-  get: () => forumStore.newTopic.title,
-  set: (value) => {
-    forumStore.newTopic.title = value;
-  },
-});
+// 滾動到回覆目標的函數
+const scrollToReplyTarget = async (draft) => {
+  const targetId = draft.replyingToContentId;
+  let threadId = draft.replyingToThreadId;
 
-const bodyModel = computed({
-  get: () => forumStore.newTopic.body,
-  set: (value) => {
-    forumStore.newTopic.body = value;
-  },
-});
+  if (!targetId) return;
+
+  if (!threadId) {
+    threadId = await resolveThreadIdByContentId(targetId);
+    if (threadId) {
+      forumStore.updateDraft(draft.id, { replyingToThreadId: threadId });
+    }
+  }
+
+  if (!threadId) return;
+
+  forumStore.pendingScrollTargetId = targetId;
+
+  const currentThreadId = route.params?.id ?? null;
+  if (String(currentThreadId ?? "") !== String(threadId)) {
+    router.push({ name: "forum-thread", params: { id: threadId } });
+    return;
+  }
+
+  nextTick(() => {
+    const targetEl = document.getElementById(`content-${targetId}`);
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      forumStore.pendingScrollTargetId = null;
+    }
+  });
+};
 
 const replyingToContent = computed(() => forumStore.replyingToContentData);
 
@@ -110,80 +126,48 @@ const resolveThreadIdByContentId = async (contentId) => {
   }
 };
 
-const scrollToReplyTarget = async () => {
-  const targetId =
-    replyingToContent.value?.id ?? forumStore.replyingToContentId ?? null;
-
-  let threadId = forumStore.replyingToThreadId ?? forumStore.selectedThread;
-
-  if (!targetId) return;
-
-  if (!threadId) {
-    threadId = await resolveThreadIdByContentId(targetId);
-    if (threadId) {
-      forumStore.replyingToThreadId = threadId;
-    }
-  }
-
-  if (!threadId) return;
-
-  forumStore.pendingScrollTargetId = targetId;
-
-  const currentThreadId = route.params?.id ?? null;
-  if (String(currentThreadId ?? "") !== String(threadId)) {
-    router.push({ name: "forum-thread", params: { id: threadId } });
-    return;
-  }
-
-  nextTick(() => {
-    const targetEl = document.getElementById(`content-${targetId}`);
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      forumStore.pendingScrollTargetId = null;
-    }
-  });
-};
-
-const closeSidebar = () => {
-  forumStore.toggleNewTopicSidebar(false);
-};
-
-const handleCancelClick = () => {
-  // 檢查標題和內容是否有非空白文字
-  const hasTitle = titleModel.value && titleModel.value.trim().length > 0;
-  const hasContent = bodyModel.value && bodyModel.value.trim().length > 0;
+// 處理草稿操作
+const handleCancelClick = (draft) => {
+  const hasTitle = draft.title && draft.title.trim().length > 0;
+  const hasContent = draft.body && draft.body.trim().length > 0;
 
   if (hasTitle || hasContent) {
-    // 如果有內容，最小化 sidebar
-    forumStore.toggleNewTopicSidebarMinimize(true);
+    // 如果有內容，最小化
+    forumStore.toggleDraftMinimize(draft.id, true);
   } else {
-    // 如果沒有內容，直接關閉
-    closeSidebar();
+    // 如果沒有內容，直接刪除
+    forumStore.removeDraft(draft.id);
   }
 };
 
-const expandSidebar = () => {
-  forumStore.toggleNewTopicSidebarMinimize(false);
+const expandDraft = (draft) => {
+  forumStore.toggleDraftMinimize(draft.id, false);
 };
 
-const openLargeEditor = () => {
+const closeDraft = (draft) => {
+  forumStore.removeDraft(draft.id);
+};
+
+const openLargeEditor = (draft) => {
+  // 將草稿內容複製到 newTopic，然後打開 modal
+  forumStore.newTopic.title = draft.title;
+  forumStore.newTopic.body = draft.body;
+  forumStore.newTopic.categoryId = draft.categoryId;
+  forumStore.newTopic.parentContentId = draft.parentContentId;
+  forumStore.newTopic.categorySearch = draft.categorySearch;
+  forumStore.newTopic.mode = draft.mode;
+  forumStore.newTopic.contentType = draft.contentType;
+  forumStore.replyingToContentId = draft.replyingToContentId;
+  forumStore.replyingToContentData = draft.replyingToContentData;
+  forumStore.replyingToThreadId = draft.replyingToThreadId;
+
   forumStore.toggleNewTopicModal(true);
-  // 打開 modal 時，隱藏 sidebar 但不清空回覆信息
-  forumStore.toggleNewTopicSidebar(false, null, null, null, false);
+  // 暫時最小化這個草稿
+  forumStore.toggleDraftMinimize(draft.id, true);
 };
 
-const resetNewTopicDraft = () => {
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = null;
-  forumStore.newTopic.parentContentId = null;
-  forumStore.newTopic.categorySearch = "";
-  forumStore.newTopic.mode = "post";
-  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
-};
-
-const submitSidebar = async () => {
-  if (!titleModel.value || !bodyModel.value) {
+const submitDraft = async (draft) => {
+  if (!draft.title || !draft.body) {
     await Swal.fire({
       icon: "warning",
       title: "提醒",
@@ -194,8 +178,8 @@ const submitSidebar = async () => {
     return;
   }
 
-  const parentContentId = forumStore.newTopic.parentContentId ?? null;
-  const categoryId = forumStore.newTopic.categoryId ?? null;
+  const parentContentId = draft.parentContentId ?? null;
+  const categoryId = draft.categoryId ?? null;
 
   if (!parentContentId && !categoryId) {
     await Swal.fire({
@@ -209,15 +193,15 @@ const submitSidebar = async () => {
   }
 
   const resolvedContentType =
-    forumStore.newTopic?.contentType ??
+    draft.contentType ??
     (parentContentId ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
 
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId,
     parentContentId,
-    title: titleModel.value,
-    body: bodyModel.value,
+    title: draft.title,
+    body: draft.body,
     type: resolvedContentType,
   };
 
@@ -237,8 +221,8 @@ const submitSidebar = async () => {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
 
-    resetNewTopicDraft();
-    forumStore.toggleNewTopicSidebar(false);
+    // 刪除這個草稿
+    forumStore.removeDraft(draft.id);
   } catch (error) {
     console.error("[NewTopicSidebar] submit - 發表失敗:", error);
     await Swal.fire({
@@ -250,97 +234,112 @@ const submitSidebar = async () => {
     });
   }
 };
+
+// 更新草稿內容的函數
+const updateDraftTitle = (draft, value) => {
+  forumStore.updateDraft(draft.id, { title: value });
+};
+
+const updateDraftBody = (draft, value) => {
+  forumStore.updateDraft(draft.id, { body: value });
+};
 </script>
 
 <template>
-  <!-- 最小化的 banner -->
-  <div
-    v-if="
-      forumStore.showNewTopicSidebar &&
-      forumStore.isNewTopicSidebarMinimized &&
-      isSupportedMode
-    "
-    class="new-topic-banner"
-    @click="expandSidebar"
-  >
-    <div class="banner-content">
-      <div class="banner-jump" @click.stop="scrollToReplyTarget">
-        <i class="fa-solid fa-people-pulling"></i>
-      </div>
-      <div class="banner-left">
-        <div class="banner-title">
-          <span v-if="titleModel.trim()">{{ titleModel }}</span>
-          <span v-else class="text-muted">未命名的貼文</span>
+  <div class="drafts-container">
+    <!-- 遍歷所有草稿 -->
+    <template v-for="draft in allDrafts" :key="draft.id">
+      <!-- 最小化的 banner -->
+      <div
+        v-if="draft.isMinimized"
+        class="new-topic-banner"
+        @click="expandDraft(draft)"
+      >
+        <div class="banner-content">
+          <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
+            <i class="fa-solid fa-people-pulling"></i>
+          </div>
+          <div class="banner-left">
+            <div class="banner-title">
+              <span v-if="draft.title.trim()">{{ draft.title }}</span>
+              <span v-else class="text-muted">未命名的草稿</span>
+            </div>
+          </div>
+          <div class="banner-right">
+            <button
+              type="button"
+              class="btn btn-sm banner-close-btn"
+              @click.stop="closeDraft(draft)"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
         </div>
       </div>
-      <div class="banner-right">
-        <button
-          type="button"
-          class="btn btn-sm banner-close-btn"
-          @click.stop="closeSidebar"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <!-- 完整的編輯器 -->
-  <div
-    v-if="
-      forumStore.showNewTopicSidebar &&
-      !forumStore.isNewTopicSidebarMinimized &&
-      isSupportedMode
-    "
-    class="card shadow-sm mb-4 new-topic-sidebar"
-  >
-    <div class="card-header bg-white">
-      <div class="d-flex align-items-start justify-content-between gap-2">
-        <div>
-          <h6 class="mb-1">{{ modalTitle }}</h6>
+      <!-- 完整的編輯器 -->
+      <div v-else class="card shadow-sm mb-4 new-topic-sidebar">
+        <div class="card-header bg-white">
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <div>
+              <h6 class="mb-1">{{ getModalTitle(draft.mode) }}</h6>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                @click="openLargeEditor(draft)"
+              >
+                放大
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                @click="handleCancelClick(draft)"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            @click="openLargeEditor"
-          >
-            放大
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            @click="handleCancelClick"
-          >
-            關閉
-          </button>
+        <div class="card-body pt-0 pb-0 sidebar-body">
+          <div class="mb-3">
+            <label class="form-label">標題</label>
+            <input
+              :value="draft.title"
+              @input="updateDraftTitle(draft, $event.target.value)"
+              class="form-control"
+            />
+          </div>
+          <div class="mb-3 editor-section">
+            <label class="form-label">內容</label>
+            <div class="editor-wrapper">
+              <TiptapEditor
+                :modelValue="draft.body"
+                @update:modelValue="updateDraftBody(draft, $event)"
+                placeholder="請輸入貼文內容..."
+              />
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 sidebar-actions">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="handleCancelClick(draft)"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="submitDraft(draft)"
+            >
+              {{ submitLabel }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="card-body pt-0 pb-0 sidebar-body">
-      <div class="mb-3">
-        <label class="form-label">標題</label>
-        <input v-model="titleModel" class="form-control" />
-      </div>
-      <div class="mb-3 editor-section">
-        <label class="form-label">內容</label>
-        <div class="editor-wrapper">
-          <TiptapEditor v-model="bodyModel" placeholder="請輸入貼文內容..." />
-        </div>
-      </div>
-      <div class="d-flex justify-content-end gap-2 sidebar-actions">
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          @click="handleCancelClick"
-        >
-          取消
-        </button>
-        <button type="button" class="btn btn-primary" @click="submitSidebar">
-          {{ submitLabel }}
-        </button>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 

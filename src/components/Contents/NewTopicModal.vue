@@ -747,24 +747,29 @@ const handleModalCancel = () => {
   const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
 
   if (hasTitle || hasContent) {
-    // 有內容時，回到 sidebar 並最小化為 banner
+    // 有內容時，創建草稿並最小化
+    const draftId = forumStore.createDraft({
+      title: newTopicState.title,
+      body: newTopicState.body,
+      categoryId: newTopicState.categoryId,
+      parentContentId: newTopicState.parentContentId,
+      categorySearch: categorySearch.value,
+      mode: forumStore.newTopic.mode,
+      contentType: forumStore.newTopic.contentType,
+      replyingToContentId: forumStore.replyingToContentId,
+      replyingToContentData: forumStore.replyingToContentData,
+      replyingToThreadId: forumStore.replyingToThreadId,
+    });
+    forumStore.toggleDraftMinimize(draftId, true);
     forumStore.toggleNewTopicModal(false);
-    forumStore.toggleNewTopicSidebar(true, null, null, null, false);
-    forumStore.toggleNewTopicSidebarMinimize(true);
+
+    // 清空 modal 的內容
+    resetNewTopicDraft();
     return;
   }
 
-  // 沒有內容時，只關閉 modal，保留回覆信息
+  // 沒有內容時，只關閉 modal
   forumStore.toggleNewTopicModal(false);
-
-  // 如果之前是在回覆模式，保持 sidebar 打開並回到最小化狀態
-  if (forumStore.replyingToContentId) {
-    forumStore.toggleNewTopicSidebar(true, null, null, null, false);
-    forumStore.toggleNewTopicSidebarMinimize(true);
-  } else {
-    // 否則完全關閉
-    forumStore.toggleNewTopicSidebar(false, null, null, null, true);
-  }
 };
 
 const resetNewTopicDraft = () => {
