@@ -340,6 +340,12 @@ const submitSidebar = async () => {
   border-left: 1px solid #d2d6da;
 }
 
+.new-topic-banner .banner-close-btn:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: #fff;
+}
+
 /* 完整編輯器樣式 */
 .new-topic-sidebar :deep(.tiptap-editor-wrapper) {
   display: flex;
