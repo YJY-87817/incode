@@ -810,10 +810,12 @@ async function handleInteractionError(data) {
 }
 
 .thread-reply-btn {
-  height: 28px;
-  min-height: 28px;
+  height: 32px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
+  padding: 0.25rem 0.75rem;
+  margin: 0;
 }
 
 .thread-post .btn i {
@@ -828,14 +830,15 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 2px;
+  padding: 3px;
   background: #fff;
   border: 1px solid #d1d3d4;
   border-radius: 999px;
-  height: 28px;
+  height: 32px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
   overflow: hidden;
+  margin: 0;
 }
 
 .reply-mode-tabs .nav-link {
@@ -849,9 +852,10 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  line-height: 24px;
+  height: 26px;
+  line-height: 26px;
   transition: all 0.2s ease;
+  margin: 0;
 }
 
 .reply-mode-tabs .nav-link:hover {
@@ -1087,6 +1091,11 @@ async function handleInteractionError(data) {
   color: #145369;
   background-color: #fff;
   transition: all 0.2s ease;
+  height: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
 }
 
 .nested-toggle-btn:hover {
