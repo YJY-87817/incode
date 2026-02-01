@@ -160,7 +160,7 @@ const submitSidebar = async () => {
         </div>
       </div>
     </div>
-    <div class="card-body">
+    <div class="card-body pt-0">
       <div class="mb-3">
         <label class="form-label">標題</label>
         <input v-model="titleModel" class="form-control" />
