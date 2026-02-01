@@ -248,6 +248,27 @@ const submitSidebar = async () => {
   max-height: 100%;
 }
 
+.new-topic-sidebar .btn-primary {
+  background-color: #145369;
+  border-color: #145369;
+}
+
+.new-topic-sidebar .btn-primary:hover {
+  background-color: #0f3c4d;
+  border-color: #0f3c4d;
+}
+
+.new-topic-sidebar .btn-outline-primary {
+  color: #145369;
+  border-color: #145369;
+}
+
+.new-topic-sidebar .btn-outline-primary:hover {
+  background-color: #145369;
+  border-color: #145369;
+  color: white;
+}
+
 .new-topic-sidebar .sidebar-actions {
   margin-top: auto;
 }
