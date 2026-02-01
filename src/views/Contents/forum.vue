@@ -17,25 +17,13 @@ const route = useRoute();
 
 const tryScrollToPendingTarget = async () => {
   const targetId = forumStore.pendingScrollTargetId;
-  console.log("[Forum] 嘗試捲動 pending 目標", {
-    targetId,
-    route: route.fullPath,
-    threadId: forumStore.threadDetail.id,
-    posts: forumStore.threadPosts.length,
-    comments: forumStore.threadComments.length,
-  });
   if (!targetId) return;
 
   await nextTick();
   const targetEl = document.getElementById(`content-${targetId}`);
-  console.log("[Forum] 查找目標元素", {
-    targetId,
-    found: Boolean(targetEl),
-  });
   if (targetEl) {
     targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
     forumStore.pendingScrollTargetId = null;
-    console.log("[Forum] 已捲動並清除 pendingScrollTargetId");
   }
 };
 

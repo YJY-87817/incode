@@ -116,21 +116,10 @@ const scrollToReplyTarget = async () => {
 
   let threadId = forumStore.replyingToThreadId ?? forumStore.selectedThread;
 
-  console.log("[NewTopicSidebar] 回到原文點擊", {
-    targetId,
-    threadId,
-    replyingToContentId: forumStore.replyingToContentId,
-    replyingToContentData: forumStore.replyingToContentData,
-    selectedThread: forumStore.selectedThread,
-    currentRoute: route.fullPath,
-  });
-
   if (!targetId) return;
 
   if (!threadId) {
-    console.log("[NewTopicSidebar] threadId 為空，嘗試解析", { targetId });
     threadId = await resolveThreadIdByContentId(targetId);
-    console.log("[NewTopicSidebar] 解析結果", { targetId, threadId });
     if (threadId) {
       forumStore.replyingToThreadId = threadId;
     }
@@ -140,30 +129,17 @@ const scrollToReplyTarget = async () => {
 
   forumStore.pendingScrollTargetId = targetId;
 
-  console.log("[NewTopicSidebar] 設定 pendingScrollTargetId", {
-    pendingScrollTargetId: forumStore.pendingScrollTargetId,
-  });
-
   const currentThreadId = route.params?.id ?? null;
   if (String(currentThreadId ?? "") !== String(threadId)) {
-    console.log("[NewTopicSidebar] 導向 forum-thread", {
-      currentThreadId,
-      targetThreadId: threadId,
-    });
     router.push({ name: "forum-thread", params: { id: threadId } });
     return;
   }
 
   nextTick(() => {
     const targetEl = document.getElementById(`content-${targetId}`);
-    console.log("[NewTopicSidebar] 同頁查找目標", {
-      targetId,
-      found: Boolean(targetEl),
-    });
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
       forumStore.pendingScrollTargetId = null;
-      console.log("[NewTopicSidebar] 已捲動並清除 pendingScrollTargetId");
     }
   });
 };
