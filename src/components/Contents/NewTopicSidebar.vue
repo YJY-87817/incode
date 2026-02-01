@@ -361,13 +361,19 @@ const updateDraftBody = (draft, value) => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  overflow: visible;
 }
 
 .banners-container {
-  position: relative;
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  z-index: 100;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .editors-container {
