@@ -708,18 +708,24 @@ export const useForumStore = defineStore('forum', {
       this.showNewTopicModal = value
     },
 
-    toggleNewTopicSidebar(value, contentId = null, contentData = null, threadId = null) {
+    toggleNewTopicSidebar(value, contentId = null, contentData = null, threadId = null, clearReplyInfo = true) {
       this.showNewTopicSidebar = value
       if (value) {
-        this.replyingToContentId = contentId
-        this.replyingToContentData = contentData
-        this.replyingToThreadId = threadId ?? this.selectedThread ?? contentId
+        // 只有在提供了新的 contentId 時才更新回覆信息
+        if (contentId !== null) {
+          this.replyingToContentId = contentId
+          this.replyingToContentData = contentData
+          this.replyingToThreadId = threadId ?? this.selectedThread ?? contentId
+        }
         this.isNewTopicSidebarMinimized = false
       } else {
-        this.replyingToContentId = null
-        this.replyingToContentData = null
-        this.replyingToThreadId = null
-        this.pendingScrollTargetId = null
+        // 只有在 clearReplyInfo 為 true 時才清空回覆信息
+        if (clearReplyInfo) {
+          this.replyingToContentId = null
+          this.replyingToContentData = null
+          this.replyingToThreadId = null
+          this.pendingScrollTargetId = null
+        }
         this.isNewTopicSidebarMinimized = false
       }
     },

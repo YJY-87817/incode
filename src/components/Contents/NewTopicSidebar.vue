@@ -168,7 +168,8 @@ const expandSidebar = () => {
 
 const openLargeEditor = () => {
   forumStore.toggleNewTopicModal(true);
-  forumStore.toggleNewTopicSidebar(false);
+  // 打開 modal 時，隱藏 sidebar 但不清空回覆信息
+  forumStore.toggleNewTopicSidebar(false, null, null, null, false);
 };
 
 const resetNewTopicDraft = () => {
