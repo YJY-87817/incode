@@ -45,6 +45,18 @@ const bodyModel = computed({
 
 const replyingToContent = computed(() => forumStore.replyingToContentData);
 
+const scrollToReplyTarget = () => {
+  const targetId =
+    replyingToContent.value?.id ?? forumStore.replyingToContentId ?? null;
+
+  if (!targetId) return;
+
+  const targetEl = document.getElementById(`content-${targetId}`);
+  if (targetEl) {
+    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+};
+
 const closeSidebar = () => {
   forumStore.toggleNewTopicSidebar(false);
 };
@@ -164,6 +176,7 @@ const submitSidebar = async () => {
     @click="expandSidebar"
   >
     <div class="banner-content">
+      <div class="banner-jump" @click.stop="scrollToReplyTarget">回到原文</div>
       <div class="banner-left">
         <div class="banner-title">
           <span v-if="titleModel.trim()">{{ titleModel }}</span>
@@ -285,6 +298,19 @@ const submitSidebar = async () => {
   display: flex;
 }
 
+.banner-jump {
+  flex: 0 0 20%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  border-right: 1px solid #d2d6da;
+  font-weight: 600;
+  color: #145369;
+  user-select: none;
+  cursor: pointer;
+}
+
 .banner-right {
   flex: 0 0 20%;
   display: flex;
@@ -319,6 +345,10 @@ const submitSidebar = async () => {
 .new-topic-banner:hover {
   background-color: #f0f5f8;
   border-color: #145369;
+}
+
+.new-topic-banner .banner-jump:hover {
+  background-color: #e8f0f3;
 }
 
 .new-topic-banner .btn-sm {

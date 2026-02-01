@@ -1,5 +1,5 @@
 <template>
-  <div class="thread-post mb-1">
+  <div class="thread-post mb-1" :id="`content-${post.id}`">
     <div class="card" :class="{ 'replying-target': isReplyingTarget }">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
