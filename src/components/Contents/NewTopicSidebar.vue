@@ -371,15 +371,18 @@ const updateDraftBody = (draft, value) => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  z-index: 100;
+  z-index: 50;
   background: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding-top: 0.25rem;
 }
 
 .editors-container {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 最小化的 banner 樣式 */
@@ -519,11 +522,16 @@ const updateDraftBody = (draft, value) => {
 }
 
 .new-topic-sidebar {
-  position: relative;
-  height: 100%;
-  z-index: 1;
+  position: sticky;
+  height: auto;
+  max-height: calc(100vh - 120px);
+  z-index: 40;
   display: flex;
   flex-direction: column;
+  top: 0;
+  margin-bottom: 1rem;
+  background: white;
+  border: 1px solid #dee2e6;
 }
 
 .new-topic-sidebar .card-header {
