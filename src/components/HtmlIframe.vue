@@ -115,9 +115,36 @@ const baseCss = computed(() => {
 
 const stripScripts = (html) => {
   if (!html) return "";
+
+  // 先用正則移除可能的 script 標籤（避免不完整標記被 DOMParser 保留）
+  const withoutScripts = html.replace(
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    ""
+  );
+
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
+  const doc = parser.parseFromString(withoutScripts, "text/html");
+
+  // 再次移除所有 script 標籤
   doc.querySelectorAll("script").forEach((node) => node.remove());
+
+  // 移除所有 on* 事件屬性（onclick, onload, onerror 等）
+  doc.querySelectorAll("*").forEach((element) => {
+    Array.from(element.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = String(attr.value || "").trim();
+      if (name.startsWith("on")) {
+        element.removeAttribute(attr.name);
+        return;
+      }
+
+      // 防止 javascript: URL
+      if ((name === "href" || name === "src") && /^javascript:/i.test(value)) {
+        element.removeAttribute(attr.name);
+      }
+    });
+  });
+
   return doc.body.innerHTML;
 };
 
