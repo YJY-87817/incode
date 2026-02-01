@@ -827,38 +827,40 @@ async function handleInteractionError(data) {
 .reply-mode-tabs {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0;
-  background: rgba(255, 240, 221, 0.65);
+  gap: 0;
+  padding: 2px;
+  background: #fff;
   border: 1px solid #d1d3d4;
   border-radius: 999px;
   height: 28px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .reply-mode-tabs .nav-link {
   border: none;
   background: transparent;
   color: #145369;
-  padding: 0 0.7rem;
+  padding: 0 0.75rem;
   border-radius: 999px;
   font-size: 0.875rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  line-height: 28px;
+  height: 24px;
+  line-height: 24px;
   transition: all 0.2s ease;
 }
 
 .reply-mode-tabs .nav-link:hover {
-  background: rgba(20, 83, 105, 0.08);
+  background: #f8f9fa;
 }
 
 .reply-mode-tabs .nav-link.active {
   background: #145369;
-  color: #fff0dd;
-  box-shadow: 0 6px 12px rgba(20, 83, 105, 0.18);
+  color: #fff;
 }
 
 .quick-reply-box,
