@@ -259,14 +259,6 @@ const toggleUnderline = () => {
   editor.value?.chain().focus().toggleUnderline().run();
 };
 
-const undo = () => {
-  editor.value?.chain().focus().undo().run();
-};
-
-const redo = () => {
-  editor.value?.chain().focus().redo().run();
-};
-
 // 打開裁剪器進行編輯
 const openCropperForEdit = (file) => {
   const url = URL.createObjectURL(file);
@@ -435,27 +427,6 @@ onBeforeUnmount(() => {
           title="嵌入YouTube影片"
         >
           🎥 影片
-        </button>
-      </div>
-
-      <div class="toolbar-group">
-        <button
-          type="button"
-          @click="undo"
-          :disabled="!editor?.value?.can().undo()"
-          class="toolbar-btn"
-          title="復原"
-        >
-          ↶
-        </button>
-        <button
-          type="button"
-          @click="redo"
-          :disabled="!editor?.value?.can().redo()"
-          class="toolbar-btn"
-          title="重做"
-        >
-          ↷
         </button>
       </div>
 
