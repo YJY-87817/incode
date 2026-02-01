@@ -176,7 +176,7 @@ const submitSidebar = async () => {
           class="btn btn-sm banner-close-btn"
           @click.stop="closeSidebar"
         >
-          關閉
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
     </div>
