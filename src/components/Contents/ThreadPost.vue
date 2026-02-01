@@ -840,6 +840,22 @@ async function handleInteractionError(data) {
   box-shadow: none;
 }
 
+/* 留言之間的水平分隔線（與簡易留言上方同風格） */
+.thread-post + .thread-post {
+  position: relative;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.thread-post + .thread-post::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #d1d3d4;
+}
+
 .thread-post .card-body {
   padding: 0.75rem;
 }
