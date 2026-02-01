@@ -33,7 +33,9 @@ const editorContentRef = ref(null);
 
 const adjustEditorHeight = () => {
   if (!editorContentRef.value) return;
-  const proseMirror = editorContentRef.value.querySelector(".ProseMirror");
+  const containerEl = editorContentRef.value?.$el || editorContentRef.value;
+  if (!containerEl || typeof containerEl.querySelector !== "function") return;
+  const proseMirror = containerEl.querySelector(".ProseMirror");
   if (proseMirror) {
     proseMirror.style.height = "auto";
     const scrollHeight = proseMirror.scrollHeight;
