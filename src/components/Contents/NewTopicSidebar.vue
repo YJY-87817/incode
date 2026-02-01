@@ -164,13 +164,21 @@ const submitSidebar = async () => {
     @click="expandSidebar"
   >
     <div class="banner-content">
-      <div class="banner-title">
-        <span v-if="titleModel.trim()">{{ titleModel }}</span>
-        <span v-else class="text-muted">未命名的貼文</span>
+      <div class="banner-left">
+        <div class="banner-title">
+          <span v-if="titleModel.trim()">{{ titleModel }}</span>
+          <span v-else class="text-muted">未命名的貼文</span>
+        </div>
       </div>
-      <button type="button" class="btn btn-sm b" @click.stop="closeSidebar">
-        關閉
-      </button>
+      <div class="banner-right">
+        <button
+          type="button"
+          class="btn btn-sm banner-close-btn"
+          @click.stop="closeSidebar"
+        >
+          關閉
+        </button>
+      </div>
     </div>
   </div>
 
@@ -271,6 +279,18 @@ const submitSidebar = async () => {
   max-width: 100%;
 }
 
+.banner-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.banner-right {
+  flex: 0 0 120px;
+  display: flex;
+  align-items: stretch;
+}
+
 .banner-title {
   flex: 1;
   min-width: 0;
@@ -307,7 +327,9 @@ const submitSidebar = async () => {
   white-space: nowrap;
 }
 
-.new-topic-banner .btn {
+.new-topic-banner .banner-close-btn {
+  width: 100%;
+  height: 100%;
   flex-shrink: 0;
   padding: 0 1rem;
   display: flex;
@@ -315,6 +337,7 @@ const submitSidebar = async () => {
   justify-content: center;
   font-size: 1.25rem;
   border-radius: 0;
+  border-left: 1px solid #d2d6da;
 }
 
 /* 完整編輯器樣式 */
