@@ -866,6 +866,11 @@ const openDetailedReply = () => {
   border-top-color: #d1d3d4;
 }
 
+.card-body {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
 /* 按鈕樣式 */
 .btn-forum-secondary {
   background-color: transparent;
