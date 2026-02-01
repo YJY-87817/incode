@@ -739,12 +739,12 @@ async function handleInteractionError(data) {
 <style scoped>
 /* 正在回覆的目標內容高亮效果 */
 .thread-post .card.replying-target {
-  border: 2px solid #e91e63;
-  box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+  border: 2px solid #145369;
+  box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
   background: linear-gradient(
     135deg,
-    rgba(233, 30, 99, 0.05) 0%,
-    rgba(233, 30, 99, 0.02) 100%
+    rgba(20, 83, 105, 0.08) 0%,
+    rgba(20, 83, 105, 0.03) 100%
   );
   position: relative;
   animation: pulse-border 2s ease-in-out infinite;
@@ -755,23 +755,23 @@ async function handleInteractionError(data) {
   position: absolute;
   top: -12px;
   left: 12px;
-  background: linear-gradient(135deg, #e91e63 0%, #ff4081 100%);
-  color: white;
+  background: linear-gradient(135deg, #145369 0%, #0f3c4d 100%);
+  color: #fff0dd;
   padding: 2px 12px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.4);
+  box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
   z-index: 10;
 }
 
 @keyframes pulse-border {
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+    box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(233, 30, 99, 0.5);
+    box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
   }
 }
 
