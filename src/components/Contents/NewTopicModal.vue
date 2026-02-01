@@ -742,6 +742,22 @@ const closeNewTopic = () => {
   forumStore.toggleNewTopicModal(false);
 };
 
+const handleModalCancel = () => {
+  const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
+  const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
+
+  if (hasTitle || hasContent) {
+    forumStore.toggleNewTopicModal(false);
+    forumStore.toggleNewTopicSidebar(true);
+    forumStore.toggleNewTopicSidebarMinimize(true);
+    return;
+  }
+
+  forumStore.toggleNewTopicModal(false);
+  forumStore.toggleNewTopicSidebar(false);
+  forumStore.toggleNewTopicSidebarMinimize(false);
+};
+
 const resetNewTopicDraft = () => {
   newTopicState.title = "";
   newTopicState.body = "";
@@ -764,7 +780,7 @@ const resetNewTopicDraft = () => {
     <div
       v-if="forumStore.showNewTopicModal"
       class="custom-modal-backdrop"
-      @click.self="closeNewTopic"
+      @click.self="handleModalCancel"
     >
       <div class="modal-dialog">
         <div class="modal-content">
@@ -776,7 +792,7 @@ const resetNewTopicDraft = () => {
               <button
                 type="button"
                 class="btn-close"
-                @click="closeNewTopic"
+                @click="handleModalCancel"
               ></button>
             </div>
             <div class="modal-body">
@@ -1066,7 +1082,7 @@ const resetNewTopicDraft = () => {
             <div class="modal-footer d-flex justify-content-end">
               <button
                 class="btn btn-forum-secondary me-2"
-                @click="closeNewTopic"
+                @click="handleModalCancel"
               >
                 取消
               </button>
