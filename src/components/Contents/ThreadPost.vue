@@ -114,24 +114,21 @@
         >
           <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
         </button>
-        <div
-          v-if="showReply"
-          class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
-        >
+        <div v-if="showReply" class="reply-mode-tabs">
           <button
-            class="btn btn-forum-primary btn-sm"
+            class="nav-link"
             type="button"
-            @click="toggleQuickReply"
+            :class="{ active: replyTab === 'quick' }"
+            @click="selectQuickReply"
           >
-            <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
-            <span class="ms-1">
-              {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-            </span>
+            <i class="fas fa-pen me-1"></i>
+            簡易留言
           </button>
           <button
-            class="btn btn-forum-secondary btn-sm"
+            class="nav-link"
             type="button"
-            @click="openDetailedReplyModal"
+            :class="{ active: replyTab === 'detailed' }"
+            @click="selectDetailedReply"
           >
             <i class="fas fa-feather-alt me-1"></i>
             詳細回覆
@@ -225,24 +222,21 @@
       >
         <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
       </button>
-      <div
-        v-if="showReply"
-        class="d-inline-flex flex-wrap gap-2 align-items-center ms-2 quick-reply-toggle"
-      >
+      <div v-if="showReply" class="reply-mode-tabs ms-2">
         <button
-          class="btn btn-forum-primary btn-sm"
+          class="nav-link"
           type="button"
-          @click="toggleQuickReply"
+          :class="{ active: replyTab === 'quick' }"
+          @click="selectQuickReply"
         >
-          <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
-          <span class="ms-1">
-            {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-          </span>
+          <i class="fas fa-pen me-1"></i>
+          簡易留言
         </button>
         <button
-          class="btn btn-forum-secondary btn-sm"
+          class="nav-link"
           type="button"
-          @click="openDetailedReplyModal"
+          :class="{ active: replyTab === 'detailed' }"
+          @click="selectDetailedReply"
         >
           <i class="fas fa-feather-alt me-1"></i>
           詳細回覆
@@ -328,6 +322,7 @@ const replyContent = ref("");
 const isSubmittingReply = ref(false);
 const isPreviewExpanded = ref(false);
 const showQuickReply = ref(false);
+const replyTab = ref(null);
 const previewWrapper = ref(null);
 const previewToggleEnabled = ref(false);
 const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
@@ -567,16 +562,28 @@ function toggleReply() {
   if (!showReply.value) {
     replyContent.value = "";
     showQuickReply.value = false;
+    replyTab.value = null;
     return;
   }
   showQuickReply.value = false;
+  replyTab.value = null;
 }
 
-function toggleQuickReply() {
+function selectQuickReply() {
   if (!showReply.value) {
     showReply.value = true;
   }
-  showQuickReply.value = !showQuickReply.value;
+  replyTab.value = "quick";
+  showQuickReply.value = true;
+}
+
+function selectDetailedReply() {
+  if (!showReply.value) {
+    showReply.value = true;
+  }
+  replyTab.value = "detailed";
+  showQuickReply.value = false;
+  openDetailedReplyModal();
 }
 
 const getCategoryIdValue = (cat) =>
@@ -690,6 +697,7 @@ function cancelReply() {
   showReply.value = false;
   replyContent.value = "";
   showQuickReply.value = false;
+  replyTab.value = null;
 }
 
 /**
@@ -814,6 +822,40 @@ async function handleInteractionError(data) {
 
 .quick-reply-toggle .btn {
   min-width: 120px;
+}
+
+.reply-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: rgba(255, 240, 221, 0.65);
+  border: 1px solid #d1d3d4;
+  border-radius: 999px;
+}
+
+.reply-mode-tabs .nav-link {
+  border: none;
+  background: transparent;
+  color: #145369;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.reply-mode-tabs .nav-link:hover {
+  background: rgba(20, 83, 105, 0.08);
+}
+
+.reply-mode-tabs .nav-link.active {
+  background: #145369;
+  color: #fff0dd;
+  box-shadow: 0 6px 12px rgba(20, 83, 105, 0.18);
 }
 
 .quick-reply-box,
