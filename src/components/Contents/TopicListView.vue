@@ -425,35 +425,36 @@ const openDetailedReply = () => {
             <div
               class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
             >
-              <button
-                class="btn btn-forum-primary btn-sm"
-                type="button"
-                @click="toggleQuickReply"
-              >
-                <i
-                  class="fas"
-                  :class="showQuickReply ? 'fa-times' : 'fa-pen'"
-                ></i>
-                <span class="ms-1">
+              <div class="reply-mode-tabs">
+                <button
+                  class="nav-link"
+                  type="button"
+                  :class="{ active: showQuickReply }"
+                  @click="toggleQuickReply"
+                >
+                  <i
+                    class="fas me-1"
+                    :class="showQuickReply ? 'fa-times' : 'fa-pen'"
+                  ></i>
                   {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-                </span>
-              </button>
-              <button
-                class="btn btn-forum-secondary btn-sm"
-                type="button"
-                @click="openDetailedComment"
-              >
-                <i class="fas fa-feather-alt me-1"></i>
-                詳細留言
-              </button>
-              <button
-                class="btn btn-forum-secondary btn-sm"
-                type="button"
-                @click="openDetailedReply"
-              >
-                <i class="fas fa-feather-alt me-1"></i>
-                詳細回文
-              </button>
+                </button>
+                <button
+                  class="nav-link"
+                  type="button"
+                  @click="openDetailedComment"
+                >
+                  <i class="fas fa-feather-alt me-1"></i>
+                  詳細留言
+                </button>
+                <button
+                  class="nav-link"
+                  type="button"
+                  @click="openDetailedReply"
+                >
+                  <i class="fas fa-feather-alt me-1"></i>
+                  詳細回文
+                </button>
+              </div>
             </div>
 
             <QuickReplyBox
@@ -963,6 +964,47 @@ const openDetailedReply = () => {
 
 .quick-reply-toggle .btn {
   min-width: 120px;
+}
+
+.reply-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
+  background: #fff;
+  border: 1px solid #d1d3d4;
+  border-radius: 999px;
+  height: 32px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  margin: 0;
+}
+
+.reply-mode-tabs .nav-link {
+  border: none;
+  background: transparent;
+  color: #145369;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  line-height: 26px;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.reply-mode-tabs .nav-link:hover {
+  background: #f8f9fa;
+}
+
+.reply-mode-tabs .nav-link.active {
+  background: #145369;
+  color: #fff;
 }
 
 .quick-reply-box {
