@@ -112,7 +112,11 @@
           class="btn btn-sm btn-forum-secondary thread-reply-btn"
           @click="toggleReply"
         >
-          <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
+          <i
+            class="fas me-1"
+            :class="showReply ? 'fa-chevron-up' : 'fa-reply'"
+          ></i
+          >{{ replyButtonLabel }}
         </button>
         <div v-if="showReply" class="reply-mode-tabs">
           <button
@@ -220,7 +224,11 @@
         class="btn btn-sm btn-forum-secondary thread-reply-btn"
         @click="toggleReply"
       >
-        <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
+        <i
+          class="fas me-1"
+          :class="showReply ? 'fa-chevron-up' : 'fa-reply'"
+        ></i
+        >{{ replyButtonLabel }}
       </button>
       <div v-if="showReply" class="reply-mode-tabs ms-2">
         <button
