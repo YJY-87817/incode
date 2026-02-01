@@ -1,6 +1,6 @@
 <template>
   <div class="thread-post mb-1">
-    <div class="card">
+    <div class="card" :class="{ 'replying-target': isReplyingTarget }">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div class="flex-grow-1">
@@ -303,6 +303,19 @@ const nestedRepliesWrapper = ref(null);
 const nestedToggleEnabled = ref(false);
 const NESTED_COLLAPSED_MAX_HEIGHT = 200;
 
+// 檢查是否為正在回覆的目標
+const isReplyingTarget = computed(() => {
+  const isTarget = forumStore.replyingToContentId === props.post.id;
+  if (isTarget) {
+    console.log(
+      "[ThreadPost] This post is replying target:",
+      props.post.id,
+      props.post.title
+    );
+  }
+  return isTarget;
+});
+
 const typeLabel = computed(() => {
   switch (props.post.type) {
     case CONTENT_TYPES.REPLY:
@@ -567,6 +580,10 @@ function selectQuickReply() {
 }
 
 function selectDetailedReply() {
+  console.log(
+    "[ThreadPost] selectDetailedReply called for post:",
+    props.post.id
+  );
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -593,6 +610,10 @@ const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
 const openDetailedReplyModal = () => {
+  console.log(
+    "[ThreadPost] openDetailedReplyModal called for post:",
+    props.post.id
+  );
   const categoryId = props.categoryId ?? props.post.categoryId ?? null;
   const categories = forumStore.categories || [];
 
@@ -625,8 +646,23 @@ const openDetailedReplyModal = () => {
   forumStore.newTopic.mode = replySetting.mode;
   forumStore.newTopic.contentType = replySetting.type;
 
+  console.log("[ThreadPost] About to call toggleNewTopicModal(false)");
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true);
+
+  const contentData = {
+    id: props.post.id,
+    title: props.post.title || "",
+    author: props.post.author,
+    createdAt: props.post.createdAt,
+    contentText: contentSummary.value,
+  };
+  console.log("[ThreadPost] About to call toggleNewTopicSidebar with:", {
+    contentId: props.post.id,
+    contentData,
+  });
+
+  forumStore.toggleNewTopicSidebar(true, props.post.id, contentData);
+  console.log("[ThreadPost] toggleNewTopicSidebar called successfully");
 };
 
 async function submitReply() {
@@ -726,6 +762,44 @@ async function handleInteractionError(data) {
 </script>
 
 <style scoped>
+/* 正在回覆的目標內容高亮效果 */
+.thread-post .card.replying-target {
+  border: 2px solid #e91e63;
+  box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(233, 30, 99, 0.05) 0%,
+    rgba(233, 30, 99, 0.02) 100%
+  );
+  position: relative;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.thread-post .card.replying-target::before {
+  content: "✍️ 正在回覆此內容";
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: linear-gradient(135deg, #e91e63 0%, #ff4081 100%);
+  color: white;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.4);
+  z-index: 10;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(233, 30, 99, 0.5);
+  }
+}
+
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
   background-color: #145369;

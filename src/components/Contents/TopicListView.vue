@@ -233,6 +233,7 @@ const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
 const openDetailedComment = () => {
+  console.log("[TopicListView] openDetailedComment called");
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedComment] No threadDetail.id found");
     return;
@@ -272,7 +273,13 @@ const openDetailedComment = () => {
   forumStore.selectedCategory = threadCategoryId;
 
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true);
+  forumStore.toggleNewTopicSidebar(true, forumStore.threadDetail.id, {
+    id: forumStore.threadDetail.id,
+    title: forumStore.threadDetail.title,
+    author: forumStore.threadDetail.author,
+    createdAt: forumStore.threadDetail.createdAt,
+    contentText: forumStore.threadDetail.contentText,
+  });
 };
 
 const openDetailedReply = () => {
@@ -314,7 +321,13 @@ const openDetailedReply = () => {
   forumStore.selectedCategory = threadCategoryId;
 
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true);
+  forumStore.toggleNewTopicSidebar(true, forumStore.threadDetail.id, {
+    id: forumStore.threadDetail.id,
+    title: forumStore.threadDetail.title,
+    author: forumStore.threadDetail.author,
+    createdAt: forumStore.threadDetail.createdAt,
+    contentText: forumStore.threadDetail.contentText,
+  });
 };
 </script>
 

@@ -92,6 +92,10 @@ export const useForumStore = defineStore('forum', {
     showNewTopicModal: false,
     showNewTopicSidebar: false,
     lastRefreshTime: 0,
+    
+    // ========== 視覺連結 ==========
+    replyingToContentId: null,
+    replyingToContentData: null,
   }),
 
   getters: {
@@ -701,8 +705,18 @@ export const useForumStore = defineStore('forum', {
       this.showNewTopicModal = value
     },
 
-    toggleNewTopicSidebar(value) {
+    toggleNewTopicSidebar(value, contentId = null, contentData = null) {
+      console.log('[forumStore] toggleNewTopicSidebar called:', { value, contentId, contentData });
       this.showNewTopicSidebar = value
+      if (value) {
+        this.replyingToContentId = contentId
+        this.replyingToContentData = contentData
+        console.log('[forumStore] Set replyingToContentId:', this.replyingToContentId);
+        console.log('[forumStore] Set replyingToContentData:', this.replyingToContentData);
+      } else {
+        this.replyingToContentId = null
+        this.replyingToContentData = null
+      }
     },
 
     triggerTopicRefresh() {
