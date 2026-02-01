@@ -729,13 +729,15 @@ function goToPostDetail() {
 }
 
 /**
- * 點擊高亮的"正在回覆此內容"打開 sidebar
+ * 點擊高亮的"正在回覆此內容"切換 sidebar 的展開/最小化狀態
  */
 function handleReplyingTargetClick() {
   if (!isReplyingTarget.value) return;
 
-  // 展開 sidebar（如果已最小化）
-  forumStore.toggleNewTopicSidebarMinimize(false);
+  // Toggle sidebar 的展開/最小化狀態
+  forumStore.toggleNewTopicSidebarMinimize(
+    !forumStore.isNewTopicSidebarMinimized
+  );
 }
 
 /**
