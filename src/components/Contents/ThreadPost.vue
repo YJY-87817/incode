@@ -757,6 +757,10 @@ async function handleInteractionError(data) {
   align-items: center;
 }
 
+.thread-post .btn i {
+  font-size: 0.8rem;
+}
+
 .quick-reply-toggle .btn {
   min-width: 120px;
 }
