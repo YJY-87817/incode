@@ -29,6 +29,17 @@ const cropper = ref(null);
 const cropImageEl = ref(null);
 const selectedImageNode = ref(null);
 const selectedImagePos = ref(null);
+const editorContentRef = ref(null);
+
+const adjustEditorHeight = () => {
+  if (!editorContentRef.value) return;
+  const proseMirror = editorContentRef.value.querySelector(".ProseMirror");
+  if (proseMirror) {
+    proseMirror.style.height = "auto";
+    const scrollHeight = proseMirror.scrollHeight;
+    proseMirror.style.height = scrollHeight + "px";
+  }
+};
 
 const PreserveImageOnShiftEnter = Extension.create({
   name: "preserveImageOnShiftEnter",
@@ -86,11 +97,13 @@ const editor = useEditor({
   onUpdate: ({ editor: editorInstance }) => {
     const html = editorInstance.getHTML();
     emit("update:modelValue", html);
+    nextTick(() => adjustEditorHeight());
   },
   onCreate: ({ editor: editorInstance }) => {
     // 添加雙擊圖片事件監聽
     const editorElement = editorInstance.view.dom;
     editorElement.addEventListener("dblclick", handleImageDoubleClick);
+    nextTick(() => adjustEditorHeight());
   },
 });
 
@@ -433,7 +446,12 @@ onBeforeUnmount(() => {
       <div v-if="isUploadingImages" class="upload-status">上傳中...</div>
     </div>
 
-    <EditorContent v-if="editor" :editor="editor" class="editor-content" />
+    <EditorContent
+      v-if="editor"
+      ref="editorContentRef"
+      :editor="editor"
+      class="editor-content"
+    />
   </div>
 
   <!-- 圖片裁剪器彈窗 -->
@@ -555,14 +573,16 @@ onBeforeUnmount(() => {
 
 .editor-content {
   padding: 0.75rem;
-  min-height: 200px;
   background-color: #fff;
 }
 
 :deep(.ProseMirror) {
   outline: none;
-  min-height: 200px;
+  min-height: 4.5rem;
   padding: 0;
+  resize: none;
+  overflow-y: hidden;
+  line-height: 1.5rem;
 }
 
 :deep(.ProseMirror p) {
