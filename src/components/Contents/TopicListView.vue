@@ -958,6 +958,10 @@ const openDetailedReply = () => {
   font-size: 1.35rem;
 }
 
+.quick-reply-toggle {
+  padding-bottom: 0.5rem !important;
+}
+
 .quick-reply-toggle .btn {
   min-width: 120px;
 }
