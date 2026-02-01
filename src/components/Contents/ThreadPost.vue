@@ -34,7 +34,7 @@
             class="btn btn-sm btn-forum-secondary thread-reply-btn"
             @click="toggleReply"
           >
-            <i class="fas fa-reply me-1"></i>回覆
+            <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
           </button>
         </div>
         <div class="mt-2">
@@ -288,6 +288,10 @@ const typeLabel = computed(() => {
   }
 });
 
+const replyButtonLabel = computed(() =>
+  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
+);
+
 const nestedLabel = computed(() => {
   // 根據當前內容類型決定巢狀內容的標籤
   switch (props.post.type) {
@@ -347,6 +351,26 @@ const previewMinHeight = computed(() => {
   if (props.previewOnly && !previewToggleEnabled.value) return 0;
   return PREVIEW_MIN_HEIGHT;
 });
+
+const resolveReplyContentType = () => {
+  switch (props.post.type) {
+    case CONTENT_TYPES.REPLY:
+      return {
+        type: CONTENT_TYPES.COMMENT,
+        mode: "comment",
+      };
+    case CONTENT_TYPES.COMMENT:
+      return {
+        type: CONTENT_TYPES.COMMENT_REPLY,
+        mode: "commentReply",
+      };
+    default:
+      return {
+        type: CONTENT_TYPES.COMMENT_REPLY,
+        mode: "commentReply",
+      };
+  }
+};
 
 function togglePreview() {
   if (!previewToggleEnabled.value) return;
@@ -535,8 +559,9 @@ const openDetailedReplyModal = () => {
   forumStore.newTopic.categoryId = categoryId;
   forumStore.newTopic.parentContentId = props.post.id;
   forumStore.newTopic.categorySearch = categorySearchName;
-  forumStore.newTopic.mode = "commentReply";
-  forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT_REPLY;
+  const replySetting = resolveReplyContentType();
+  forumStore.newTopic.mode = replySetting.mode;
+  forumStore.newTopic.contentType = replySetting.type;
 
   forumStore.toggleNewTopicModal(true);
 };
@@ -562,7 +587,7 @@ async function submitReply() {
     parentContentId: props.post.id, // 回覆到當前貼文/留言
     title: `Re: ${contentSummary.value.substring(0, 50)}...`, // 簡短標題
     body: replyContent.value.trim(),
-    type: CONTENT_TYPES.COMMENT_REPLY, // 設定為留言回覆類型
+    type: resolveReplyContentType().type, // 根據被回覆內容決定類型
   };
 
   try {
