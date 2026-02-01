@@ -37,21 +37,21 @@ namespace incode2.ApiControllers.Point
             return Ok(mission);
         }
 
-        [HttpPost("claim/{id}")]
+        [HttpPost("{id}/missionClaim")]
         [Authorize]
         public async Task<ActionResult<ResultDTO>> ClaimMission(int id)
         {
-            // 取得當前使用者 ID（假設你有自訂的 GetId() 擴充方法）
-            int userId = User.GetId();  // 如果 GetId() 是你自訂的，確保它回傳 int
+            int userId = User.GetId();
 
-            // 防呆：如果 GetId() 沒實作或失敗，fallback 到 Claims
+            // 額外防呆：確保 userId 是正數
             if (userId <= 0)
             {
-                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out userId))
+                return Unauthorized(new ResultDTO
                 {
-                    return Unauthorized(new ResultDTO { Ok = false, Code = 401, Message = "無效的使用者身份，請重新登入" });
-                }
+                    Ok = false,
+                    Code = 401,
+                    Message = "使用者 ID 無效"
+                });
             }
 
             var result = await _missionService.ClaimMissionAsync(id, userId);
