@@ -175,9 +175,10 @@ export const useForumStore = defineStore('forum', {
         const data = await apiClient.get('/CategoryApi')
         this.categories = data
 
-        // 預設選擇第一個分類
-        if (!this.newTopic.categoryId && data.length > 0) {
-          this.newTopic.categoryId = this.selectedCategory || data[0].id
+        // 不再預設選擇第一個分類
+        // 只有在已經有選擇的分類時才同步到 newTopic
+        if (this.selectedCategory && data.length > 0) {
+          this.newTopic.categoryId = this.selectedCategory
         }
       } catch (error) {
         console.error('載入分類失敗:', error)
