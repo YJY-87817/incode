@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
 import service from "@/api/point/axios.js"; // 假設這是你的 API 服務
 
-// const USE_MOCK = import.meta.env.DEV && true; // 開發模式下使用 mock 資料（可從 .env 控制）
-
 export const useTaskStore = defineStore("task", {
   state: () => ({
     missions: [], // 平台任務
@@ -30,18 +28,19 @@ export const useTaskStore = defineStore("task", {
           "電影知識",
           "其他",
         ];
+      } else {
+        return [
+          "全部",
+          "影音",
+          "跑腿",
+          "翻譯",
+          "設計",
+          "諮詢",
+          "技術",
+          "資料",
+          "其他",
+        ];
       }
-      return [
-        "全部",
-        "票務",
-        "字幕",
-        "尋片",
-        "解析",
-        "資源",
-        "社交",
-        "內容",
-        "其他",
-      ];
     },
 
     difficultyOptions: () => ["不限難度", "簡單", "中等", "高難度"],
@@ -54,10 +53,11 @@ export const useTaskStore = defineStore("task", {
     ],
 
     filteredList: (state) => {
+      const isMission = state.activeTab === "mission";
       const source =
         state.activeTab === "mission" ? state.missions : state.entrustMissions;
 
-      let result = source;
+      let result = [...source];
 
       // 搜尋
       if (state.searchQuery.trim()) {
@@ -84,44 +84,63 @@ export const useTaskStore = defineStore("task", {
         );
       }
 
-      // 時長（僅 mission 適用）
-      if (
-        state.activeTab === "mission" &&
-        state.selectedDuration !== "不限時間"
-      ) {
-        result = result.filter(
-          (item) => item.duration === state.selectedDuration,
-        );
+      if (state.selectedDuration !== "不限時間") {
+        if (isMission) {
+          // 平台任務：匹配字串 (如 "1-3 天")
+          result = result.filter(
+            (item) => item.duration === state.selectedDuration,
+          );
+        } else {
+          // 委託任務：根據 deadline 日期計算
+          const now = new Date();
+          result = result.filter((item) => {
+            if (!item.rawDeadline) return true; // 無期限則不濾除
+            const deadlineDate = new Date(item.rawDeadline);
+            const diffDays = (deadlineDate - now) / (1000 * 60 * 60 * 24);
+
+            if (state.selectedDuration === "1-3 天")
+              return diffDays > 0 && diffDays <= 3;
+            if (state.selectedDuration === "3-7 天")
+              return diffDays > 3 && diffDays <= 7;
+            if (state.selectedDuration === "7-14 天")
+              return diffDays > 7 && diffDays <= 14;
+            if (state.selectedDuration === "14 天以上") return diffDays > 14;
+            return true;
+          });
+        }
       }
 
       // 排序（統一處理欄位差異）
       return [...result].sort((a, b) => {
+        const isMission = state.activeTab === "mission";
+
+        // 1. 獎勵/價格排序
         if (state.sortOption === "reward") {
-          const aVal =
-            state.activeTab === "mission" ? a.reward || 0 : a.price || 0;
-          const bVal =
-            state.activeTab === "mission" ? b.reward || 0 : b.price || 0;
+          const aVal = isMission ? a.reward || 0 : a.price || 0;
+          const bVal = isMission ? b.reward || 0 : b.price || 0;
           return bVal - aVal;
         }
+
+        // 2. 人氣排序 (修正 0 的讀取問題)
         if (state.sortOption === "popular") {
-          const aPop =
-            state.activeTab === "mission"
-              ? a.participants || 0
-              : a.applicants || a.views || 0;
-          const bPop =
-            state.activeTab === "mission"
-              ? b.participants || 0
-              : b.applicants || b.views || 0;
+          // 使用 nullish coalescing (??) 確保 0 不會被視為 false
+          const aPop = isMission ? (a.participants ?? 0) : (a.applicants ?? 0);
+          const bPop = isMission ? (b.participants ?? 0) : (b.applicants ?? 0);
           return bPop - aPop;
         }
+
+        // 3. 緊急程度排序 (委託模式限定)
         if (state.sortOption === "urgent") {
-          const aUrgent = state.activeTab === "entrust" ? !!a.urgent : false;
-          const bUrgent = state.activeTab === "entrust" ? !!b.urgent : false;
-          return bUrgent === aUrgent ? 0 : bUrgent ? -1 : 1;
+          return (b.urgent === true) - (a.urgent === true);
         }
-        // 預設排序
-        if (a.featured !== b.featured) return b.featured ? -1 : 1;
-        return (b.id || 0) - (a.id || 0);
+
+        // 4. 預設排序 (精選優先，其次 ID 倒序)
+        if (a.featured !== b.featured) {
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        }
+
+        // 確保 ID 比較時型別正確
+        return Number(b.id || 0) - Number(a.id || 0);
       });
     },
 
@@ -132,18 +151,21 @@ export const useTaskStore = defineStore("task", {
     },
 
     totalParticipants: (state) => {
-      return state.activeTab === "mission"
-        ? state.missions.reduce((sum, m) => sum + (m.participants || 0), 0)
-        : state.entrustMissions.reduce(
-            (sum, c) => sum + (c.applicants || 0),
-            0,
-          );
+      const isMission = state.activeTab === "mission";
+      const list = isMission ? state.missions : state.entrustMissions;
+      const key = isMission ? "participants" : "applicants";
+      return list.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
     },
 
     totalRewardPool: (state) => {
-      return state.activeTab === "mission"
-        ? state.missions.reduce((sum, m) => sum + (m.reward || 0), 0)
-        : state.entrustMissions.reduce((sum, c) => sum + (c.price || 0), 0);
+      const isMission = state.activeTab === "mission";
+      const source = isMission ? state.missions : state.entrustMissions;
+
+      return source.reduce((sum, item) => {
+        // 確保讀取正確的欄位：Mission 用 reward，Entrust 用 price
+        const value = isMission ? item.reward || 0 : item.price || 0;
+        return sum + Number(value);
+      }, 0);
     },
   },
 
@@ -172,71 +194,6 @@ export const useTaskStore = defineStore("task", {
     },
 
     async fetchTasks() {
-      // if (USE_MOCK) {
-      //   // mock 資料
-      //   this.missions = [
-      //     {
-      //       id: 1,
-      //       title: "每日登入",
-      //       desc: "今天也要看看有什麼新電影！",
-      //       reward: 10,
-      //       category: "基礎",
-      //       difficulty: "簡單",
-      //       duration: "1-3 天",
-      //       participants: 0,
-      //       featured: true,
-      //       claimed: false,
-      //       completed: false,
-      //     },
-      //     {
-      //       id: 2,
-      //       title: "分享電影心得",
-      //       desc: "發表一篇電影評論",
-      //       reward: 50,
-      //       category: "內容創作",
-      //       difficulty: "中等",
-      //       duration: "3-7 天",
-      //       participants: 5,
-      //       featured: false,
-      //       claimed: false,
-      //       completed: false,
-      //     },
-      //     // 更多...
-      //   ];
-      //   this.entrustMissions = [
-      //     {
-      //       id: 101,
-      //       title: "電影字幕校對",
-      //       desc: "協助校對電影字幕中的錯字與時間軸",
-      //       price: 120,
-      //       category: "字幕",
-      //       deadline: "3天內",
-      //       applicants: 0,
-      //       maxParticipants: 1,
-      //       urgent: true,
-      //       claimed: false,
-      //       completed: false,
-      //     },
-      //     {
-      //       id: 102,
-      //       title: "尋找稀有電影資源",
-      //       desc: "幫忙找到特定電影的下載連結",
-      //       price: 200,
-      //       category: "資源",
-      //       deadline: "7天內",
-      //       applicants: 2,
-      //       maxParticipants: 3,
-      //       urgent: false,
-      //       claimed: false,
-      //       completed: false,
-      //     },
-      //     // 更多...
-      //   ];
-      //   this.isLoading = false;
-      //   this.error = null;
-      //   return;
-      // }
-
       this.isLoading = true;
       this.error = null;
       try {
@@ -269,6 +226,8 @@ export const useTaskStore = defineStore("task", {
           desc: item.detail || "無詳細說明",
           price: item.rewardPoints || 0,
           category: item.category || "其他",
+          rawDeadline: item.deadline,
+          //顯示用：格式化日期
           deadline: item.deadline
             ? new Date(item.deadline).toLocaleString("zh-TW", {
                 dateStyle: "medium",
@@ -276,10 +235,10 @@ export const useTaskStore = defineStore("task", {
               })
             : "無期限",
           maxParticipants: item.maxParticipants || 1,
-          applicants: item.currentParticipants ?? 0,
+          // 確保人數被正確轉為數字，避免計算時變字串相加
+          applicants: Number(item.currentParticipants ?? 0),
           urgent: !!item.isUrgent,
           status: item.status || "open",
-          requester: item.requesterName || "匿名影友",
           createdAt: item.createdAt,
           claimed: false,
           completed: false,
@@ -299,40 +258,57 @@ export const useTaskStore = defineStore("task", {
     },
 
     async claimTask(type, taskId) {
-      if (type !== "platform") return;
-
+      // 移除 return，改為根據 type 決定 endpoint
       try {
-        console.log(`開始領取任務：MissionId = ${taskId}`);
-        const response = await service.post(`/api/MissionApi/claim/${taskId}`);
+        const isPlatform = type === "platform";
+        const endpoint = isPlatform
+          ? `/api/MissionApi/${taskId}/missionClaim`
+          : `/api/EntrustMissionApi/${taskId}/entrustMissionClaim`;
 
-        console.log("HTTP 狀態碼：", response.status);
-        console.log("完整回應資料：", response.data); // 印出整個 response.data
-        console.log(
-          "回傳的 participantCount：",
-          response.data?.data?.participantCount,
-        );
+        console.log(`開始領取 ${type} 任務：ID = ${taskId}`);
 
+        const response = await service.post(endpoint);
         const result = response.data;
 
+        // 只要後端回傳 ok 或成功狀態
         if (result.ok && result.data) {
-          const mission = this.missions.find((m) => m.id === taskId);
-          if (mission) {
-            mission.claimed = true;
-            mission.participants =
-              result.data.participantCount ?? (mission.participants || 0) + 1;
-            this.missions = [...this.missions];
-            console.log(`前端更新後 participants: ${mission.participants}`);
+          const listKey = isPlatform ? "missions" : "entrustMissions";
+          const taskIndex = this[listKey].findIndex((t) => t.id === taskId);
+
+          if (taskIndex !== -1) {
+            // 1. 取得舊任務並建立副本 (確保響應式渲染)
+            const task = { ...this[listKey][taskIndex] };
+
+            // 2. 更新狀態
+            task.claimed = true;
+
+            // 3. 更新人數 (處理不同的欄位名稱)
+            if (isPlatform) {
+              // 平台任務用 participantCount
+              task.participants =
+                result.data.participantCount ?? (task.participants || 0) + 1;
+            } else {
+              // 委託任務用 currentParticipants
+              task.applicants =
+                result.data.CurrentParticipants ?? (task.applicants || 0) + 1;
+            }
+
+            // 4. 寫回 Store 並觸發 UI 刷新
+            this[listKey][taskIndex] = task;
+            this[listKey] = [...this[listKey]];
+
+            console.log(
+              `${type} 前端更新成功，目前人數: ${isPlatform ? task.participants : task.applicants}`,
+            );
           }
         }
-
         return result;
       } catch (err) {
-        console.error("領取請求失敗：");
-        console.error("錯誤訊息：", err.message);
-        console.error("後端回傳錯誤：", err.response?.data); // ← 關鍵！印出後端錯誤訊息
-        console.error("HTTP 狀態碼：", err.response?.status);
-
-        const msg = err.response?.data?.message || "領取失敗，請檢查網路或後端";
+        console.error(
+          `領取 ${type} 請求失敗：`,
+          err.response?.data || err.message,
+        );
+        const msg = err.response?.data?.message || "領取失敗，請稍後再試";
         throw new Error(msg);
       }
     }, //之後任務完成邏輯
@@ -344,13 +320,13 @@ export const useTaskStore = defineStore("task", {
         社群互動: "fas fa-users",
         觀影實踐: "fas fa-ticket-alt",
         電影知識: "fas fa-book",
-        票務: "fas fa-ticket-alt",
-        字幕: "fas fa-closed-captioning",
-        尋片: "fas fa-search",
-        解析: "fas fa-book-open",
-        資源: "fas fa-cloud-upload-alt",
-        社交: "fas fa-user-friends",
-        內容: "fas fa-file-alt",
+        影音: "fas fa-ticket-alt",
+        跑腿: "fas fa-closed-captioning",
+        翻譯: "fas fa-search",
+        設計: "fas fa-book-open",
+        諮詢: "fas fa-cloud-upload-alt",
+        技術: "fas fa-user-friends",
+        資料: "fas fa-file-alt",
         其他: "fas fa-file-alt",
       };
       return icons[category] || "fas fa-film";
