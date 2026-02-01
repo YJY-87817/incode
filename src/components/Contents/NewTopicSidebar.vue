@@ -504,9 +504,8 @@ const updateDraftBody = (draft, value) => {
 .new-topic-sidebar {
   position: sticky;
   top: 0;
-  bottom: 0;
   height: 100vh;
-  z-index: 2;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
 }
