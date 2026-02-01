@@ -195,6 +195,13 @@ const submitSidebar = async () => {
   min-height: 0;
   max-height: 100%;
   overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.new-topic-sidebar :deep(.tiptap-editor-wrapper)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .new-topic-sidebar :deep(.editor-content) {
