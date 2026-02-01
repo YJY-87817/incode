@@ -161,6 +161,7 @@ const submitSidebar = async () => {
       isSupportedMode
     "
     class="new-topic-banner"
+    @click="expandSidebar"
   >
     <div class="banner-content">
       <div class="banner-title">
@@ -169,15 +170,8 @@ const submitSidebar = async () => {
       </div>
       <button
         type="button"
-        class="btn btn-sm btn-primary"
-        @click="expandSidebar"
-      >
-        展開
-      </button>
-      <button
-        type="button"
         class="btn btn-sm btn-outline-secondary"
-        @click="closeSidebar"
+        @click.stop="closeSidebar"
       >
         關閉
       </button>
@@ -294,6 +288,18 @@ const submitSidebar = async () => {
 .banner-title .text-muted {
   color: #6c757d;
   font-style: italic;
+}
+
+.new-topic-banner {
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.new-topic-banner:hover {
+  background-color: #f0f5f8;
+  border-color: #145369;
 }
 
 .new-topic-banner .btn-sm {
