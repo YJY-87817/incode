@@ -41,7 +41,6 @@ namespace incode2.Services.Point
                 }).ToListAsync();
         }
 
-        // Services/Point/MissionService.cs
         public async Task<ResultDTO> ClaimMissionAsync(int missionId, int userId)
         {
             var mission = await _context.Mission

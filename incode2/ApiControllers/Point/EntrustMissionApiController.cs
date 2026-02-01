@@ -1,5 +1,6 @@
 ﻿using incode2.DTO;
 using incode2.Dtos;
+using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Point;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace incode2.ApiControllers.Point
@@ -28,11 +31,51 @@ namespace incode2.ApiControllers.Point
 
         // GET: api/EntrustMissionApi
         [HttpGet]
-        //[Authorize]
         public async Task<IEnumerable<EntrustMissionDTO>> GetEntrustMission()
         {
            var entrustmission = await _entrustMissionService.GetAllEntrustMissionAsync();
             return entrustmission;
+        }
+
+        // POST: api/EntrustMissionApi/{id}/claim  - 接取委託任務（重點新增）
+        [HttpPost("{id}/entrustMissionClaim")]
+        [Authorize]
+        public async Task<ActionResult<ResultDTO>> ClaimEntrustMission(int id)
+        {
+            int userId = User.GetId();
+
+            // 額外防呆：確保 userId 是正數
+            if (userId <= 0)
+            {
+                return Unauthorized(new ResultDTO
+                {
+                    Ok = false,
+                    Code = 401,
+                    Message = "使用者 ID 無效"
+                });
+            }
+
+            var result = await _entrustMissionService.ClaimEntrustMissionAsync(id, userId);
+
+            if (!result.Ok)
+            {
+                return result.Code switch
+                {
+                    400 => BadRequest(result),
+                    401 => Unauthorized(result),
+                    404 => NotFound(result),
+                    409 => Conflict(result),
+                    410 => StatusCode(410, result),   // Gone - 任務已下架或過期
+                    _ => StatusCode(500, new ResultDTO
+                    {
+                        Ok = false,
+                        Code = 500,
+                        Message = result.Message ?? "伺服器內部錯誤，請稍後再試"
+                    })
+                };
+            }
+
+            return Ok(result);
         }
 
         // GET: api/EntrustMissionApi/5
