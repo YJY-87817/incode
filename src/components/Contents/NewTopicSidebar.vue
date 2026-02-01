@@ -263,7 +263,9 @@ const submitSidebar = async () => {
     @click="expandSidebar"
   >
     <div class="banner-content">
-      <div class="banner-jump" @click.stop="scrollToReplyTarget">回到原文</div>
+      <div class="banner-jump" @click.stop="scrollToReplyTarget">
+        <i class="fa-solid fa-people-pulling"></i>
+      </div>
       <div class="banner-left">
         <div class="banner-title">
           <span v-if="titleModel.trim()">{{ titleModel }}</span>
@@ -435,7 +437,8 @@ const submitSidebar = async () => {
 }
 
 .new-topic-banner .banner-jump:hover {
-  background-color: #e8f0f3;
+  background-color: #145369;
+  color: #fff;
 }
 
 .new-topic-banner .btn-sm {
