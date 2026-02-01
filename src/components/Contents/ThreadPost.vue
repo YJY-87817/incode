@@ -1,6 +1,13 @@
 <template>
   <div class="thread-post mb-1" :id="`content-${post.id}`">
-    <div class="card" :class="{ 'replying-target': isReplyingTarget }">
+    <div
+      class="card"
+      :class="{
+        'replying-target': isReplyingTarget,
+        'cursor-pointer': isReplyingTarget,
+      }"
+      @click="handleReplyingTargetClick"
+    >
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start">
           <div class="flex-grow-1">
@@ -722,6 +729,16 @@ function goToPostDetail() {
 }
 
 /**
+ * 點擊高亮的"正在回覆此內容"打開 sidebar
+ */
+function handleReplyingTargetClick() {
+  if (!isReplyingTarget.value) return;
+
+  // 展開 sidebar（如果已最小化）
+  forumStore.toggleNewTopicSidebarMinimize(false);
+}
+
+/**
  * 處理互動成功
  */
 function handleInteractionSuccess(data) {
@@ -755,6 +772,17 @@ async function handleInteractionError(data) {
   );
   position: relative;
   animation: pulse-border 2s ease-in-out infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.thread-post .card.replying-target:hover {
+  box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.12) 0%,
+    rgba(20, 83, 105, 0.06) 100%
+  );
 }
 
 .thread-post .card.replying-target::before {
