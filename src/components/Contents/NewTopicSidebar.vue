@@ -249,10 +249,9 @@ const updateDraftBody = (draft, value) => {
 </script>
 
 <template>
-  <div class="drafts-container">
-    <!-- 遍歷所有草稿 -->
-    <template v-for="draft in allDrafts" :key="draft.id">
-      <!-- 最小化的 banner -->
+  <!-- 所有最小化的 banner 放在一個固定容器中 -->
+  <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
+    <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
       <div
         v-if="draft.isMinimized"
         class="new-topic-banner"
@@ -279,9 +278,16 @@ const updateDraftBody = (draft, value) => {
           </div>
         </div>
       </div>
+    </template>
+  </div>
 
-      <!-- 完整的編輯器 -->
-      <div v-else class="card shadow-sm mb-4 new-topic-sidebar">
+  <!-- 所有展開的編輯器 -->
+  <div class="editors-container">
+    <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
+      <div
+        v-if="!draft.isMinimized"
+        class="card shadow-sm mb-4 new-topic-sidebar"
+      >
         <div class="card-header bg-white">
           <div class="d-flex align-items-start justify-content-between gap-2">
             <div>
@@ -347,21 +353,25 @@ const updateDraftBody = (draft, value) => {
 </template>
 
 <style scoped>
-/* 最小化的 banner 樣式 */
-.new-topic-banner {
+/* Banner 容器：固定在頂部 */
+.banners-container {
   position: sticky;
   top: 0;
-  bottom: auto;
   left: 0;
   right: 0;
-  z-index: 2;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* 最小化的 banner 樣式 */
+.new-topic-banner {
+  position: relative;
   background: white;
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* padding: 0.75rem 1rem; */
-  margin-top: 0;
-  margin-bottom: 0.25rem;
   animation: slideUp 0.3s ease-out;
 }
 
