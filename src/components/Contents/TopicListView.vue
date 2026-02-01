@@ -472,9 +472,6 @@ const openDetailedReply = () => {
                 <i class="fas fa-feather-alt me-1"></i>
                 詳細回文
               </button>
-              <small class="text-muted" v-if="!showQuickReply">
-                簡易留言僅文字；詳細留言/回文會開啟編輯視窗
-              </small>
             </div>
 
             <QuickReplyBox
