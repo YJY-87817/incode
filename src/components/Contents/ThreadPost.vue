@@ -161,8 +161,10 @@
             <textarea
               v-model="replyContent"
               class="form-control"
-              rows="4"
+              rows="1"
               placeholder="請輸入簡易留言（純文字）"
+              @input="autoResizeTextarea"
+              @focus="autoResizeTextarea"
             ></textarea>
 
             <div class="d-flex flex-wrap gap-2 quick-reply-actions">
@@ -258,8 +260,10 @@
             <textarea
               v-model="replyContent"
               class="form-control"
-              rows="4"
+              rows="1"
               placeholder="請輸入簡易留言（純文字）"
+              @input="autoResizeTextarea"
+              @focus="autoResizeTextarea"
             ></textarea>
 
             <div class="d-flex flex-wrap gap-2 quick-reply-actions">
@@ -564,6 +568,13 @@ watch(
     }
   }
 );
+
+function autoResizeTextarea(event) {
+  const textarea = event?.target;
+  if (!textarea) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
 
 function toggleReply() {
   showReply.value = !showReply.value;
@@ -882,6 +893,14 @@ async function handleInteractionError(data) {
   border: 1px solid #d1d3d4;
   border-radius: 8px;
   padding: 1rem;
+}
+
+.quick-reply-box textarea.form-control {
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  line-height: 1.4;
+  transition: height 0.12s ease;
 }
 
 .quick-reply-actions .btn {
