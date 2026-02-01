@@ -689,7 +689,6 @@ function goToPostDetail() {
  * 處理互動成功
  */
 function handleInteractionSuccess(data) {
-  console.log("互動成功:", data);
   // 可以在此顯示 toast 或其他反饋
 }
 

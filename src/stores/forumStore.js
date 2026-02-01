@@ -172,7 +172,6 @@ export const useForumStore = defineStore('forum', {
       this.isLoading = true
       try {
         const data = await apiClient.get('/CategoryApi')
-        console.log('分類資料:', data)
         this.categories = data
 
         // 預設選擇第一個分類
@@ -370,7 +369,6 @@ export const useForumStore = defineStore('forum', {
 
         // 處理主題詳情
         const detail = detailRes?.contentId ? detailRes : detailRes?.data
-        console.log('[fetchThreadDetail] Raw detail response:', detail);
         
         if (detail && detail.contentId) {
           const detailBodyHtml = await fetchBodyHtml(detail.body)
@@ -387,7 +385,6 @@ export const useForumStore = defineStore('forum', {
             const matchedTopic = this.topics.find(t => String(t.id) === String(threadId));
             if (matchedTopic) {
               categoryId = matchedTopic.categoryId ?? matchedTopic.category_id ?? null;
-              console.log('[fetchThreadDetail] Found categoryId from topics list:', categoryId);
             }
           }
           
@@ -397,16 +394,8 @@ export const useForumStore = defineStore('forum', {
             const matchedItem = allItems.find(i => String(i.contentId) === String(threadId));
             if (matchedItem) {
               categoryId = matchedItem.categoryId ?? matchedItem.category_id ?? null;
-              console.log('[fetchThreadDetail] Found categoryId from allContentsRes:', categoryId);
             }
           }
-          
-          console.log('[fetchThreadDetail] Final categoryId:', categoryId, 'from detail:', {
-            categoryId: detail.categoryId,
-            category_id: detail.category_id,
-            cateId: detail.cateId,
-            cate_id: detail.cate_id
-          });
           
           this.threadDetail = {
             id: detail.contentId,
@@ -678,7 +667,6 @@ export const useForumStore = defineStore('forum', {
       }
 
       try {
-        console.log('提交DTO:', dto)
         await apiClient.post('/ContentApi', dto)
         alert('發表成功！')
         this.newTopic.title = ''

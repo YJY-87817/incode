@@ -85,7 +85,6 @@ const editor = useEditor({
   ],
   onUpdate: ({ editor: editorInstance }) => {
     const html = editorInstance.getHTML();
-    console.log("[TiptapEditor] onUpdate - 發送 HTML:", html);
     emit("update:modelValue", html);
   },
   onCreate: ({ editor: editorInstance }) => {
@@ -174,9 +173,6 @@ watch(
       typeof editor.value.getHTML === "function" &&
       editor.value.getHTML() !== newValue
     ) {
-      console.log(
-        "[TiptapEditor] watch - props.modelValue 改變，更新編輯器內容"
-      );
       editor.value.commands.setContent(newValue);
     }
   },
@@ -199,8 +195,6 @@ const insertImage = async (event) => {
     const urls = await uploadImage(files);
     const urlList = Array.isArray(urls) ? urls : [urls];
 
-    console.log("[TiptapEditor] insertImage - 收到的 URLs:", urlList);
-
     const validUrls = urlList.filter(Boolean);
     if (!validUrls.length) {
       console.warn("[TiptapEditor] insertImage - 所有 URL 皆為空");
@@ -208,7 +202,6 @@ const insertImage = async (event) => {
     }
 
     const content = validUrls.flatMap((url, index) => {
-      console.log("[TiptapEditor] insertImage - 插入圖片:", url);
       const nodes = [{ type: "image", attrs: { src: url } }];
       if (index < validUrls.length - 1) {
         nodes.push({ type: "paragraph" });
@@ -217,26 +210,12 @@ const insertImage = async (event) => {
     });
 
     try {
-      const result = currentEditor
-        .chain()
-        .focus()
-        .insertContent(content)
-        .run();
-
-      console.log("[TiptapEditor] insertImage - insertContent 執行結果:", result);
+      const result = currentEditor.chain().focus().insertContent(content).run();
 
       if (result) {
         setTimeout(() => {
           const html = currentEditor.getHTML();
-          console.log(
-            "[TiptapEditor] insertImage - 插入後的編輯器 HTML:",
-            html
-          );
-
           if (html.includes("<img")) {
-            console.log(
-              "[TiptapEditor] insertImage - ✓ 圖片已成功插入到編輯器"
-            );
           } else {
             console.warn(
               "[TiptapEditor] insertImage - ✗ 圖片插入後未找到 <img 標籤"
@@ -344,7 +323,6 @@ const insertCroppedImage = async () => {
         new File([blob], "cropped.jpg", { type: "image/jpeg" }),
       ]);
       src = Array.isArray(urls) ? urls[0] : urls;
-      console.log("[TiptapEditor] 裁剪圖片上傳成功:", src);
     } catch (uploadError) {
       console.error(
         "[TiptapEditor] 裁剪圖片上傳失敗，使用 base64:",
@@ -378,15 +356,12 @@ const insertCroppedImage = async () => {
           { from: pos, to: pos + node.nodeSize },
           { type: "image", attrs: { src } }
         );
-        console.log("[TiptapEditor] 已替換現有圖片");
       } else {
         editor.value.commands.setImage({ src });
-        console.log("[TiptapEditor] 已插入新圖片");
       }
     } else {
       // 插入新圖片
       editor.value.commands.setImage({ src });
-      console.log("[TiptapEditor] 已插入新圖片");
     }
   } catch (error) {
     console.error("[TiptapEditor] 插入裁剪圖片失敗:", error);

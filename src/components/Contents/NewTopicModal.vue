@@ -499,12 +499,6 @@ watch(
         (topic) => String(topic.id) === String(parentId)
       );
       if (match && !replySearch.value) {
-        console.log(
-          "[NewTopicModal] Auto-filling replySearch for parentId:",
-          parentId,
-          "match:",
-          match
-        );
         replySearch.value = getTopicTitle(match) || "";
       }
     }
@@ -673,11 +667,6 @@ const closeTitleBodyRequiredModal = () => {
 };
 
 const submitNewTopic = async () => {
-  console.log(
-    "[NewTopicModal] submitNewTopic - 當前 body:",
-    newTopicState.body
-  );
-
   if (!newTopicState.title || !newTopicState.body) {
     showTitleBodyRequiredModal.value = true;
     return;
@@ -702,8 +691,6 @@ const submitNewTopic = async () => {
     body: newTopicState.body,
     type: resolvedContentType,
   };
-
-  console.log("[NewTopicModal] submitNewTopic - 提交 DTO:", dto);
 
   try {
     await apiClient.post("/ContentApi", dto);

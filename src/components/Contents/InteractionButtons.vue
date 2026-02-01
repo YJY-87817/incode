@@ -13,9 +13,7 @@ const props = defineProps({
   },
 });
 
-onMounted(() => {
-  console.log("InteractionButtons mounted for contentId:", props.contentId);
-});
+onMounted(() => {});
 
 const emit = defineEmits(["interaction-success", "interaction-error"]);
 

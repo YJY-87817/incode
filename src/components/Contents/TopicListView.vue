@@ -43,7 +43,6 @@ const isSubmittingQuickReply = ref(false);
  * 處理主題互動成功
  */
 const handleTopicInteractionSuccess = (data) => {
-  console.log("主題互動成功:", data);
   // 可以在此顯示 toast 或其他反饋
 };
 
@@ -234,42 +233,34 @@ const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
 const openDetailedComment = () => {
-  console.log("[openDetailedComment] threadDetail:", forumStore.threadDetail);
-
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedComment] No threadDetail.id found");
     return;
   }
 
   const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-  console.log("[openDetailedComment] threadCategoryId:", threadCategoryId);
 
   const categories = forumStore.categories || [];
-  console.log("[openDetailedComment] categories:", categories);
 
   const matchedCategory = categories.find(
     (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
   );
-  console.log("[openDetailedComment] matchedCategory:", matchedCategory);
 
   const parentCategoryId = matchedCategory
     ? getParentCategoryIdValue(matchedCategory)
     : null;
-  console.log("[openDetailedComment] parentCategoryId:", parentCategoryId);
 
   const parentCategory = parentCategoryId
     ? categories.find(
         (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
       )
     : null;
-  console.log("[openDetailedComment] parentCategory:", parentCategory);
 
   const categorySearchName = parentCategory
     ? getCategoryName(parentCategory)
     : matchedCategory
       ? getCategoryName(matchedCategory)
       : "";
-  console.log("[openDetailedComment] categorySearchName:", categorySearchName);
 
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
@@ -280,19 +271,10 @@ const openDetailedComment = () => {
   forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT;
   forumStore.selectedCategory = threadCategoryId;
 
-  console.log("[openDetailedComment] Setting newTopic:", {
-    categoryId: threadCategoryId,
-    parentContentId: forumStore.threadDetail.id,
-    categorySearch: categorySearchName,
-    selectedCategory: threadCategoryId,
-  });
-
   forumStore.toggleNewTopicModal(true);
 };
 
 const openDetailedReply = () => {
-  console.log("[openDetailedReply] threadDetail:", forumStore.threadDetail);
-
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedReply] No threadDetail.id found");
     return;
