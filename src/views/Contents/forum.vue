@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 
@@ -14,6 +14,30 @@ import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 const forumStore = useForumStore();
 const route = useRoute();
+
+const tryScrollToPendingTarget = async () => {
+  const targetId = forumStore.pendingScrollTargetId;
+  console.log("[Forum] 嘗試捲動 pending 目標", {
+    targetId,
+    route: route.fullPath,
+    threadId: forumStore.threadDetail.id,
+    posts: forumStore.threadPosts.length,
+    comments: forumStore.threadComments.length,
+  });
+  if (!targetId) return;
+
+  await nextTick();
+  const targetEl = document.getElementById(`content-${targetId}`);
+  console.log("[Forum] 查找目標元素", {
+    targetId,
+    found: Boolean(targetEl),
+  });
+  if (targetEl) {
+    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    forumStore.pendingScrollTargetId = null;
+    console.log("[Forum] 已捲動並清除 pendingScrollTargetId");
+  }
+};
 
 const resolveThreadId = (rawId) => {
   if (rawId === undefined || rawId === null || rawId === "") return null;
@@ -75,6 +99,28 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => forumStore.pendingScrollTargetId,
+  () => {
+    if (forumStore.pendingScrollTargetId) {
+      tryScrollToPendingTarget();
+    }
+  }
+);
+
+watch(
+  () => [
+    forumStore.threadDetail.id,
+    forumStore.threadPosts.length,
+    forumStore.threadComments.length,
+  ],
+  () => {
+    if (forumStore.pendingScrollTargetId) {
+      tryScrollToPendingTarget();
+    }
+  }
 );
 </script>
 

@@ -1,11 +1,14 @@
 <script setup>
-import { computed } from "vue";
+import { computed, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const router = useRouter();
+const route = useRoute();
 
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isSupportedMode = computed(() =>
@@ -45,16 +48,124 @@ const bodyModel = computed({
 
 const replyingToContent = computed(() => forumStore.replyingToContentData);
 
-const scrollToReplyTarget = () => {
+const fetchContentDetail = async (contentId) => {
+  const res = await apiClient.get(`/ContentApi/${contentId}`);
+  return res?.contentId ? res : (res?.data ?? res);
+};
+
+const resolveThreadIdByContentId = async (contentId) => {
+  try {
+    const detail = await fetchContentDetail(contentId);
+    if (!detail) return null;
+
+    const type = detail.type ?? detail.contentType ?? detail.content_type;
+    const currentId = detail.contentId ?? detail.id ?? detail.content_id;
+    const parentId =
+      detail.parentContentId ?? detail.parent_content_id ?? detail.parentId;
+
+    if (type === CONTENT_TYPES.POST || !parentId) return currentId;
+    if (type === CONTENT_TYPES.REPLY) return parentId;
+
+    // COMMENT or COMMENT_REPLY: need to walk up
+    const parent = await fetchContentDetail(parentId);
+    if (!parent) return parentId;
+
+    const parentType = parent.type ?? parent.contentType ?? parent.content_type;
+    const parentParentId =
+      parent.parentContentId ?? parent.parent_content_id ?? parent.parentId;
+
+    if (parentType === CONTENT_TYPES.REPLY) {
+      return parentParentId ?? parentId;
+    }
+
+    if (parentType === CONTENT_TYPES.POST) {
+      return parentId;
+    }
+
+    if (parentType === CONTENT_TYPES.COMMENT) {
+      if (!parentParentId) return parentId;
+      const grandParent = await fetchContentDetail(parentParentId);
+      if (!grandParent) return parentParentId;
+
+      const gpType =
+        grandParent.type ?? grandParent.contentType ?? grandParent.content_type;
+      const gpParentId =
+        grandParent.parentContentId ??
+        grandParent.parent_content_id ??
+        grandParent.parentId;
+
+      if (gpType === CONTENT_TYPES.REPLY) {
+        return gpParentId ?? parentParentId;
+      }
+
+      if (gpType === CONTENT_TYPES.POST) {
+        return parentParentId;
+      }
+    }
+
+    return parentId;
+  } catch (error) {
+    console.error("[NewTopicSidebar] resolveThreadIdByContentId 失敗", error);
+    return null;
+  }
+};
+
+const scrollToReplyTarget = async () => {
   const targetId =
     replyingToContent.value?.id ?? forumStore.replyingToContentId ?? null;
 
+  let threadId = forumStore.replyingToThreadId ?? forumStore.selectedThread;
+
+  console.log("[NewTopicSidebar] 回到原文點擊", {
+    targetId,
+    threadId,
+    replyingToContentId: forumStore.replyingToContentId,
+    replyingToContentData: forumStore.replyingToContentData,
+    selectedThread: forumStore.selectedThread,
+    currentRoute: route.fullPath,
+  });
+
   if (!targetId) return;
 
-  const targetEl = document.getElementById(`content-${targetId}`);
-  if (targetEl) {
-    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (!threadId) {
+    console.log("[NewTopicSidebar] threadId 為空，嘗試解析", { targetId });
+    threadId = await resolveThreadIdByContentId(targetId);
+    console.log("[NewTopicSidebar] 解析結果", { targetId, threadId });
+    if (threadId) {
+      forumStore.replyingToThreadId = threadId;
+    }
   }
+
+  if (!threadId) return;
+
+  forumStore.pendingScrollTargetId = targetId;
+
+  console.log("[NewTopicSidebar] 設定 pendingScrollTargetId", {
+    pendingScrollTargetId: forumStore.pendingScrollTargetId,
+  });
+
+  const currentThreadId = route.params?.id ?? null;
+  if (String(currentThreadId ?? "") !== String(threadId)) {
+    console.log("[NewTopicSidebar] 導向 forum-thread", {
+      currentThreadId,
+      targetThreadId: threadId,
+    });
+    router.push({ name: "forum-thread", params: { id: threadId } });
+    return;
+  }
+
+  nextTick(() => {
+    const targetEl = document.getElementById(`content-${targetId}`);
+    console.log("[NewTopicSidebar] 同頁查找目標", {
+      targetId,
+      found: Boolean(targetEl),
+    });
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      forumStore.pendingScrollTargetId = null;
+      console.log("[NewTopicSidebar] 已捲動並清除 pendingScrollTargetId");
+    }
+  });
 };
 
 const closeSidebar = () => {

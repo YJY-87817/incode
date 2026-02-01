@@ -272,13 +272,18 @@ const openDetailedComment = () => {
   forumStore.selectedCategory = threadCategoryId;
 
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true, forumStore.threadDetail.id, {
-    id: forumStore.threadDetail.id,
-    title: forumStore.threadDetail.title,
-    author: forumStore.threadDetail.author,
-    createdAt: forumStore.threadDetail.createdAt,
-    contentText: forumStore.threadDetail.contentText,
-  });
+  forumStore.toggleNewTopicSidebar(
+    true,
+    forumStore.threadDetail.id,
+    {
+      id: forumStore.threadDetail.id,
+      title: forumStore.threadDetail.title,
+      author: forumStore.threadDetail.author,
+      createdAt: forumStore.threadDetail.createdAt,
+      contentText: forumStore.threadDetail.contentText,
+    },
+    forumStore.threadDetail.id
+  );
 };
 
 const openDetailedReply = () => {
@@ -320,13 +325,18 @@ const openDetailedReply = () => {
   forumStore.selectedCategory = threadCategoryId;
 
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true, forumStore.threadDetail.id, {
-    id: forumStore.threadDetail.id,
-    title: forumStore.threadDetail.title,
-    author: forumStore.threadDetail.author,
-    createdAt: forumStore.threadDetail.createdAt,
-    contentText: forumStore.threadDetail.contentText,
-  });
+  forumStore.toggleNewTopicSidebar(
+    true,
+    forumStore.threadDetail.id,
+    {
+      id: forumStore.threadDetail.id,
+      title: forumStore.threadDetail.title,
+      author: forumStore.threadDetail.author,
+      createdAt: forumStore.threadDetail.createdAt,
+      contentText: forumStore.threadDetail.contentText,
+    },
+    forumStore.threadDetail.id
+  );
 };
 </script>
 

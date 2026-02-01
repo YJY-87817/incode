@@ -631,13 +631,18 @@ const openDetailedReplyModal = () => {
   forumStore.newTopic.contentType = replySetting.type;
 
   forumStore.toggleNewTopicModal(false);
-  forumStore.toggleNewTopicSidebar(true, props.post.id, {
-    id: props.post.id,
-    title: props.post.title || "",
-    author: props.post.author,
-    createdAt: props.post.createdAt,
-    contentText: contentSummary.value,
-  });
+  forumStore.toggleNewTopicSidebar(
+    true,
+    props.post.id,
+    {
+      id: props.post.id,
+      title: props.post.title || "",
+      author: props.post.author,
+      createdAt: props.post.createdAt,
+      contentText: contentSummary.value,
+    },
+    forumStore.selectedThread
+  );
 };
 
 async function submitReply() {

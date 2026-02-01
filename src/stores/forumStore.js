@@ -97,6 +97,8 @@ export const useForumStore = defineStore('forum', {
     // ========== 視覺連結 ==========
     replyingToContentId: null,
     replyingToContentData: null,
+    replyingToThreadId: null,
+    pendingScrollTargetId: null,
   }),
 
   getters: {
@@ -706,15 +708,18 @@ export const useForumStore = defineStore('forum', {
       this.showNewTopicModal = value
     },
 
-    toggleNewTopicSidebar(value, contentId = null, contentData = null) {
+    toggleNewTopicSidebar(value, contentId = null, contentData = null, threadId = null) {
       this.showNewTopicSidebar = value
       if (value) {
         this.replyingToContentId = contentId
         this.replyingToContentData = contentData
+        this.replyingToThreadId = threadId ?? this.selectedThread ?? contentId
         this.isNewTopicSidebarMinimized = false
       } else {
         this.replyingToContentId = null
         this.replyingToContentData = null
+        this.replyingToThreadId = null
+        this.pendingScrollTargetId = null
         this.isNewTopicSidebarMinimized = false
       }
     },
