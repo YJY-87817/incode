@@ -195,4 +195,18 @@ const submitSidebar = async () => {
   top: 1rem;
   z-index: 2;
 }
+
+.new-topic-sidebar .card-header {
+  padding-bottom: 0;
+}
+
+.new-topic-sidebar .form-control {
+  border: 1px solid #d2d6da;
+  border-radius: 0.375rem;
+}
+
+.new-topic-sidebar .form-control:focus {
+  border-color: #e91e63;
+  box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25);
+}
 </style>
