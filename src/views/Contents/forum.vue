@@ -8,6 +8,7 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
+import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
@@ -28,6 +29,7 @@ const openNewTopicModal = () => {
   forumStore.newTopic.categorySearch = "";
   forumStore.newTopic.mode = "post";
   forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  forumStore.toggleNewTopicSidebar(false);
   forumStore.toggleNewTopicModal(true);
 };
 
@@ -96,6 +98,7 @@ watch(
 
       <!-- 側邊欄 -->
       <div class="col-lg-3">
+        <NewTopicSidebar />
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-white">
             <h6 class="mb-0">📊 論壇統計</h6>

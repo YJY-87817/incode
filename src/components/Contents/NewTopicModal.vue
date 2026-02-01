@@ -469,6 +469,11 @@ watch(
 watch(
   () => forumStore.showNewTopicModal,
   (isOpen) => {
+    if (isOpen) {
+      newTopicState.title = forumStore.newTopic.title || "";
+      newTopicState.body = forumStore.newTopic.body || "";
+    }
+
     if (isOpen && forumStore.newTopic.categoryId) {
       syncCategorySelection(forumStore.newTopic.categoryId);
       if (forumStore.newTopic.categorySearch && !categorySearch.value) {

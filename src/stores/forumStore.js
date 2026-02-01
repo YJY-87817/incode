@@ -90,6 +90,7 @@ export const useForumStore = defineStore('forum', {
 
     // ========== 其他 ==========
     showNewTopicModal: false,
+    showNewTopicSidebar: false,
     lastRefreshTime: 0,
   }),
 
@@ -697,6 +698,10 @@ export const useForumStore = defineStore('forum', {
     // ========== 舊有功能保留 ==========
     toggleNewTopicModal(value) {
       this.showNewTopicModal = value
+    },
+
+    toggleNewTopicSidebar(value) {
+      this.showNewTopicSidebar = value
     },
 
     triggerTopicRefresh() {

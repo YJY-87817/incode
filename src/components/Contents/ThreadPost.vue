@@ -625,7 +625,8 @@ const openDetailedReplyModal = () => {
   forumStore.newTopic.mode = replySetting.mode;
   forumStore.newTopic.contentType = replySetting.type;
 
-  forumStore.toggleNewTopicModal(true);
+  forumStore.toggleNewTopicModal(false);
+  forumStore.toggleNewTopicSidebar(true);
 };
 
 async function submitReply() {

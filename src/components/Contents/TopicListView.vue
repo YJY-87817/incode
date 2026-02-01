@@ -271,7 +271,8 @@ const openDetailedComment = () => {
   forumStore.newTopic.contentType = CONTENT_TYPES.COMMENT;
   forumStore.selectedCategory = threadCategoryId;
 
-  forumStore.toggleNewTopicModal(true);
+  forumStore.toggleNewTopicModal(false);
+  forumStore.toggleNewTopicSidebar(true);
 };
 
 const openDetailedReply = () => {
@@ -312,7 +313,8 @@ const openDetailedReply = () => {
   forumStore.newTopic.contentType = CONTENT_TYPES.REPLY;
   forumStore.selectedCategory = threadCategoryId;
 
-  forumStore.toggleNewTopicModal(true);
+  forumStore.toggleNewTopicModal(false);
+  forumStore.toggleNewTopicSidebar(true);
 };
 </script>
 
