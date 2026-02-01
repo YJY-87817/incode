@@ -114,26 +114,9 @@
         >
           <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
         </button>
-        <button
-          class="btn btn-sm btn-outline-secondary nested-toggle-btn"
-          @click="toggleNestedReplies"
-        >
-          <i
-            class="fas"
-            :class="isNestedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
-          ></i>
-          <span class="ms-1">
-            {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
-              post.replies.length
-            }})
-          </span>
-        </button>
-      </div>
-
-      <!-- 回覆輸入框：置於展開內容上方 -->
-      <div v-if="showReply" class="mb-3 pt-3">
         <div
-          class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
+          v-if="showReply"
+          class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle"
         >
           <button
             class="btn btn-forum-primary btn-sm"
@@ -153,11 +136,25 @@
             <i class="fas fa-feather-alt me-1"></i>
             詳細回覆
           </button>
-          <small class="text-muted" v-if="!showQuickReply">
-            簡易留言僅文字；詳細回覆會開啟編輯視窗
-          </small>
         </div>
+        <button
+          class="btn btn-sm btn-outline-secondary nested-toggle-btn"
+          @click="toggleNestedReplies"
+        >
+          <i
+            class="fas"
+            :class="isNestedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"
+          ></i>
+          <span class="ms-1">
+            {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
+              post.replies.length
+            }})
+          </span>
+        </button>
+      </div>
 
+      <!-- 回覆輸入框：置於展開內容上方 -->
+      <div v-if="showReply" class="mb-3 pt-3">
         <transition name="fade">
           <div v-show="showQuickReply" class="quick-reply-box">
             <textarea
@@ -228,35 +225,32 @@
       >
         <i class="fas fa-reply me-1"></i>{{ replyButtonLabel }}
       </button>
+      <div
+        v-if="showReply"
+        class="d-inline-flex flex-wrap gap-2 align-items-center ms-2 quick-reply-toggle"
+      >
+        <button
+          class="btn btn-forum-primary btn-sm"
+          type="button"
+          @click="toggleQuickReply"
+        >
+          <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
+          <span class="ms-1">
+            {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
+          </span>
+        </button>
+        <button
+          class="btn btn-forum-secondary btn-sm"
+          type="button"
+          @click="openDetailedReplyModal"
+        >
+          <i class="fas fa-feather-alt me-1"></i>
+          詳細回覆
+        </button>
+      </div>
 
       <!-- 回覆輸入框 -->
       <div v-if="showReply" class="mt-3 pt-3">
-        <div
-          class="d-flex flex-wrap gap-2 align-items-center mb-3 quick-reply-toggle"
-        >
-          <button
-            class="btn btn-forum-primary btn-sm"
-            type="button"
-            @click="toggleQuickReply"
-          >
-            <i class="fas" :class="showQuickReply ? 'fa-times' : 'fa-pen'"></i>
-            <span class="ms-1">
-              {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-            </span>
-          </button>
-          <button
-            class="btn btn-forum-secondary btn-sm"
-            type="button"
-            @click="openDetailedReplyModal"
-          >
-            <i class="fas fa-feather-alt me-1"></i>
-            詳細回覆
-          </button>
-          <small class="text-muted" v-if="!showQuickReply">
-            簡易留言僅文字；詳細回覆會開啟編輯視窗
-          </small>
-        </div>
-
         <transition name="fade">
           <div v-show="showQuickReply" class="quick-reply-box">
             <textarea
