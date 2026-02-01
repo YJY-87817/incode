@@ -97,8 +97,7 @@ watch(
       </div>
 
       <!-- 側邊欄 -->
-      <div class="col-lg-3">
-        <NewTopicSidebar />
+      <div class="col-lg-3 forum-sidebar">
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-white">
             <h6 class="mb-0">📊 論壇統計</h6>
@@ -129,6 +128,7 @@ watch(
             </button>
           </div>
         </div>
+        <NewTopicSidebar />
       </div>
     </div>
   </div>
@@ -205,6 +205,13 @@ watch(
 .card-header h5,
 .card-header h6 {
   color: #fff;
+}
+
+/* 側邊欄排版，確保 banner 貼底 */
+.forum-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* 表格樣式 */

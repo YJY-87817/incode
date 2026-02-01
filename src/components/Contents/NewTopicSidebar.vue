@@ -209,7 +209,7 @@ const submitSidebar = async () => {
           <button
             type="button"
             class="btn btn-sm btn-outline-secondary"
-            @click="closeSidebar"
+            @click="handleCancelClick"
           >
             關閉
           </button>
@@ -247,14 +247,18 @@ const submitSidebar = async () => {
 /* 最小化的 banner 樣式 */
 .new-topic-banner {
   position: sticky;
-  bottom: 0;
+  top: 0;
+  bottom: auto;
   left: 0;
   right: 0;
   z-index: 2;
   background: white;
-  border-top: 1px solid #d2d6da;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #d2d6da;
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 0.75rem 1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
   animation: slideUp 0.3s ease-out;
 }
 
