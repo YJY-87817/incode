@@ -20,7 +20,6 @@
   import Cart from "@/views/PointShop/components/Cart.vue";
   import { onMounted } from "vue";
   import { useAuthStore } from "@/stores/user/auth";
-  import GlobalAlert from "@/views/user/components/GlobalAlert.vue";
 
   const authStore = useAuthStore();
 
@@ -34,7 +33,4 @@
   <router-view />
   <Cart />
   <chat-widget />
-  <v-app>
-    <GlobalAlert />
-  </v-app>
 </template>
