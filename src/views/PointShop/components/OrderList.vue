@@ -6,17 +6,21 @@ import OrderItem from "@/views/PointShop/components/OrderItem.vue";
 
 const orders = ref([]);
 const loading = ref(true);
+const login = ref(false);
 // 取得使用者訂單資料
 const getordernew = async () => {
   await getOrdersByUser().then(res => {
     orders.value = res.data.data
     loading.value = false
+    login.value = true;
   }).catch(error => {
     loading.value = false
     if (error.response && error.response.status === 401) {
       orders.value = []
+      login.value = false;
     } else {
-      console.log("取得訂單資料失敗:", error);
+      // console.log("取得訂單資料失敗:", error);
+      login.value = false;
     }
   });
 };
@@ -43,6 +47,13 @@ onMounted(() => {
           <span class="visually-hidden">Loading...</span>
         </div>
         <p class="mt-2 text-muted">正在取得您的訂單...</p>
+      </div>
+
+      <!-- Not Logged In -->
+      <div v-else-if="!login" class="text-center bg-light card-body px-4">
+        <i class="bi bi-person-lines-fill fs-1 text-secondary mb-3 d-block"></i>
+        <h4 class="fw-bold">您尚未登入</h4>
+        <div class="text-muted">請先登入會員以查看您的訂單紀錄。</div>
       </div>
 
       <!-- Empty State -->
