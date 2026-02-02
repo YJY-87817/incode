@@ -89,7 +89,7 @@ const handleCheckout = () => {
 </script>
 
 <template>
-  <DefaultNavbar light="" />
+  <DefaultNavbar light />
 
   <div class="bg-gray-200 min-vh-100 pb-5 mt-6">
     <div class="container-fluid mt-n6">

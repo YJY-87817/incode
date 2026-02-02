@@ -57,7 +57,7 @@
 </script>
 
 <template>
-  <DefaultNavbar />
+  <DefaultNavbar light />
   <v-container fluid class="fill-height bg-grey-lighten-5">
     <div class="d-flex flex-column align-center w-100">
       <div class="text-center mb-4">

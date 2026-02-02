@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from "vue";
-import NavbarDefault from "@/examples/navbars/NavbarDefault.vue";
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
 import { usePointStore } from "@/stores/point/UsePointStore.js";
 import PointSummary from "@/components/point/PointSummary.vue";
@@ -12,8 +12,7 @@ onMounted(() => store.fetchLogs());
 </script>
 
 <template>
-  <NavbarDefault style="background-color: #fff0dd" />
-  <div class="container py-5">
+<DefaultNavbar light />  <div class="container py-5">
     <div class="row g-4">
       <div class="col-lg-3">
         <PointSummary />

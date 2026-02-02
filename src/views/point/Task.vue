@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
 
 // 引入所有子元件
-import NavbarDefault from "@/examples/navbars/NavbarDefault.vue";
+import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
 
 import TaskTabs from "@/components/task/TaskTab.vue";
@@ -88,7 +88,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <NavbarDefault style="background-color: #fff0dd" />
+<DefaultNavbar light />
 
   <div class="bg-gray-100 min-vh-100 pb-5">
     <div class="container mt-2">

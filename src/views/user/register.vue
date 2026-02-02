@@ -102,7 +102,7 @@
 </script>
 
 <template>
-  <DefaultNavbar />
+  <DefaultNavbar light />
   <v-container fluid class="fill-height bg-grey-lighten-5">
     <v-row justify="center" align="center">
       <v-col cols="12" sm="10" md="10" lg="8">

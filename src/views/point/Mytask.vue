@@ -67,7 +67,7 @@ const viewDetail = (task) => {
 
 <template>
   <div class="fixed-top w-100 z-index-3">
-    <DefaultNavbar light="" />
+    <DefaultNavbar light />
   </div>
 
   <div class="bg-gray-100 min-vh-100 pb-5">

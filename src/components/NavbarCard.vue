@@ -50,7 +50,7 @@ onMounted(() => {
                         </label>
                     </div>
                 </router-link>
-                <router-link :to="{ name: 'mission' }" class="text-decoration-none text-dark">
+                <router-link :to="{ name: 'task' }" class="text-decoration-none text-dark">
                     <div class="mb-2 border-bottom pb-2 mouse-pointer">
                         <label class="form-label fw-bold small mb-1" style="cursor: pointer;">
                             <i class="bi bi-trophy"></i> 任務大廳

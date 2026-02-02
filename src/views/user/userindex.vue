@@ -132,7 +132,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DefaultNavbar />
+  <DefaultNavbar light />
   <div class="container">
     <v-container
       class="mt-5 position-relative"
