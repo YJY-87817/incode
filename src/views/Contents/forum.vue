@@ -146,10 +146,6 @@ watch(
                   forumStore.pagination.totalCount
                 }}</strong>
               </div>
-
-              <div
-                class="d-flex justify-content-between align-items-center"
-              ></div>
             </div>
 
             <button
