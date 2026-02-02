@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import FooterCentered from "@/examples/footers/FooterCentered.vue";
 
 // 1. 頁面狀態控制
 const activeTab = ref("ongoing"); // ongoing, pending, completed
@@ -293,6 +294,7 @@ const viewDetail = (task) => {
       class="drawer-backdrop"
     ></div>
   </div>
+  <FooterCentered />
 </template>
 
 <style scoped>

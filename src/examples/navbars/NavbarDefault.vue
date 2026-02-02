@@ -5,7 +5,6 @@ import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import { useAuthStore } from "@/stores/user/auth";
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
-import downArrow from "@/assets/img/down-arrow.svg";
 import DownArrWhite from "@/assets/img/down-arrow-white.svg";
 
 // 取得購物車狀態
@@ -218,12 +217,12 @@ watch(
                 <div class="col-12 px-4 py-2">
                   <div class="row">
                     <div class="position-relative">
-                      <RouterLink
+                      <!-- <RouterLink
                         :to="{ name: 'test-qiu' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>TestQiu</span>
-                      </RouterLink>
+                      </RouterLink> -->
                       <RouterLink
                         :to="{ name: 'point-log' }"
                         class="dropdown-item border-radius-md"
@@ -237,7 +236,7 @@ watch(
                         <span>我的任務進度</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'mission' }"
+                        :to="{ name: 'task' }"
                         class="dropdown-item border-radius-md"
                       >
                         <span>任務大廳</span>
@@ -254,12 +253,12 @@ watch(
               </div>
               <!-- 響應式任務 -->
               <div class="d-lg-none">
-                <RouterLink
+                <!-- <RouterLink
                   :to="{ name: 'test-qiu' }"
                   class="dropdown-item border-radius-md"
                 >
                   <span>TestQiu</span>
-                </RouterLink>
+                </RouterLink> -->
                 <RouterLink
                   :to="{ name: 'point-log' }"
                   class="dropdown-item border-radius-md"
@@ -273,7 +272,7 @@ watch(
                   <span>我的任務進度</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'mission' }"
+                  :to="{ name: 'task' }"
                   class="dropdown-item border-radius-md"
                 >
                   <span>任務大廳</span>
@@ -287,6 +286,7 @@ watch(
               </div>
             </div>
           </li>
+
           <!-- 點數商城區 -->
           <li class="nav-item dropdown dropdown-hover mx-2">
             <a
@@ -362,6 +362,9 @@ watch(
                       <RouterLink
                         :to="{ name: 'Order' }"
                         class="dropdown-item border-radius-md"
+                      >
+                      </RouterLink>
+                        <RouterLink
                       >
                         <span>我的訂單</span>
                       </RouterLink>

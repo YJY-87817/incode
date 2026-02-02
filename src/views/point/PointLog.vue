@@ -1,52 +1,30 @@
-<!-- 會員點數紀錄頁面 -->
 <script setup>
-import { onMounted, computed } from "vue";
+import { onMounted } from "vue";
 import NavbarDefault from "@/examples/navbars/NavbarDefault.vue";
-import FooterDefault from "@/examples/footers/FooterDefault.vue";
-import PointLogList from "@/components/point/PointLogList.vue";
-import { usePointLogStore } from "@/stores/point/pointLogStore";
+import FooterCentered from "@/examples/footers/FooterCentered.vue";
+import { usePointStore } from "@/stores/point/UsePointStore.js";
+import PointSummary from "@/components/point/PointSummary.vue";
+import PointFilter from "@/components/point/PointFilter.vue";
+import PointTable from "@/components/point/PointTable.vue";
 
-// 使用新的 PointLog Store 來管理點數紀錄資料
-const pointLogStore = usePointLogStore();
-
-// 使用 computed 來連結 Store 裡的資料
-const pointLogs = computed(() => pointLogStore.pointLogs);
-const isLoading = computed(() => pointLogStore.isLoading);
-const errorMsg = computed(() => pointLogStore.fetchError);
-
-// 在組件掛載時執行 API 請求
-onMounted(() => {
-  // 如果還沒有資料，就去抓取點數紀錄
-  if (pointLogs.value.length === 0) {
-    pointLogStore.fetchPointLogs();
-  }
-});
+const store = usePointStore();
+onMounted(() => store.fetchLogs());
 </script>
 
 <template>
-  <NavbarDefault light />
-
-  <div class="container py-4">
-    <div class="row">
-      <div class="col-12">
-        <h2 class="text-center mb-4">我的點數紀錄</h2>
-
-        <!-- 顯示錯誤訊息 -->
-        <div v-if="errorMsg" class="alert alert-danger text-center m-5 p-4">
-          {{ errorMsg }}
-          <button class="btn btn-outline-danger ms-3" @click="pointLogStore.fetchPointLogs">
-            重試
-          </button>
+  <NavbarDefault style="background-color: #fff0dd" />
+  <div class="container py-5">
+    <div class="row g-4">
+      <div class="col-lg-3">
+        <PointSummary />
+      </div>
+      <div class="col-lg-9">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+          <PointFilter />
+          <PointTable />
         </div>
-
-        <!-- 顯示點數紀錄列表 -->
-        <PointLogList
-          :point-logs="pointLogs"
-          :is-loading="isLoading"
-        />
       </div>
     </div>
   </div>
-
-  <FooterDefault />
+  <FooterCentered />
 </template>

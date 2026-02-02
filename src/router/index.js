@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 // tim 以下
-import FirstView from "@/views/FirstView.vue"
+import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
 import Register from "@/views/user/register.vue";
@@ -14,15 +14,14 @@ import UserLike from "@/views/user/UserLike.vue"
 import UserSave from "@/views/user/UserSave.vue"
 import UserMission from "@/views/user/UserMission.vue"
 // owen
-import TestQiu from "../views/point/TestQiu.vue";
-import Mission from "../views/point/Mission.vue";
+
+import Task from "../views/point/Task.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
 import PointShopView from "@/views/PointShop/PointShopView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
-
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,13 +69,13 @@ const router = createRouter({
       name: "UserSettings",
       component: UserSettings,
     },
-   {
-    path: '/profile/:username', 
-    name: 'UserProfile',
-    // 建議使用動態載入 (Lazy loading)
-    component: () => import('@/views/user/UserProfile.vue'),
-    props: true 
-  },
+    {
+      path: '/profile/:username',
+      name: 'UserProfile',
+      // 建議使用動態載入 (Lazy loading)
+      component: () => import('@/views/user/UserProfile.vue'),
+      props: true
+    },
     {
       path: "/userindex",
       name: "UserIndex",
@@ -106,18 +105,19 @@ const router = createRouter({
               path: "UserLike",
               name: "UserLike",
               component: UserLike,
-            }
-          ]
-        }]
+            },
+          ],
+        },
+      ],
     },
     // owen
 
     // qiu以下
-    {
-      path: "/test-qiu",
-      name: "test-qiu",
-      component: TestQiu, // 我的任務
-    },
+    // {
+    //   path: "/test-qiu",
+    //   name: "test-qiu",
+    //   component: TestQiu, // 我的任務
+    // },
     {
       path: "/mytask",
       name: "mytask",
@@ -129,9 +129,9 @@ const router = createRouter({
       component: PointLog, //views的檔案名稱
     },
     {
-      path: "/mission",
-      name: "mission",
-      component: Mission, //views的檔案名稱
+      path: "/task",
+      name: "task",
+      component: Task, //views的檔案名稱
     },
     {
       path: "/recharge",
