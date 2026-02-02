@@ -1,55 +1,37 @@
-﻿using incode2.Dtos;
+using incode2.Dtos;
 using incode2.Dtos.PointShop;
-using incode2.Models;
-using incode2.Partials;
+using incode2.Services.PointShop;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
+using incode2.Extensions;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace incode2.ApiControllers
 {
     [EnableCors("VueApp")]
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class OrderApiController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IOrderService _orderService;
 
-        public OrderApiController(incodedatabaseContext context)
+        public OrderApiController(IOrderService orderService)
         {
-            _context = context;
+            _orderService = orderService;
         }
 
+        private int userId => HttpContext.User.GetId();
 
         // 取得UserId的訂單資料
-        // GET: api/OrderApi/order/{UserId}
-        [HttpGet("order/{UserId}")]
-        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int userId)
+        // GET: api/OrderApi/order
+        [HttpGet("order")]
+        public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder() //登入才可找
+        //[HttpGet("order/{UserId}")]
+        //public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int UserId)
         {
-            try
-            {
-                var orders = await _context.Orders
-                    .Where(e => e.UserId == userId)
-                    .Select(e => new OrderDTO
-                    {
-                        UserId = e.UserId,
-                        TotalPoint = e.TotalPoint,
-                        Remark = e.Remark,
-                        OrderDate = e.OrderDate,
-                        Status = e.Status,
-                        OrderId = e.OrderId
-                    })
-                    .ToListAsync();
-
-                // 若無訂單回傳空集合（視需求可改為 Failure/NotFound）
-                return ResultDTO<IEnumerable<OrderDTO>>.Success(orders);
-            }
-            catch (Exception ex)
-            {
-                // 統一使用 ResultDTO 回傳錯誤，並給予 500 狀態碼
-                return ResultDTO<IEnumerable<OrderDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
-            }
+            return await _orderService.GetOrderAsync(userId);
         }
 
 
@@ -58,332 +40,44 @@ namespace incode2.ApiControllers
         [HttpGet("orderdetail/{OrderId}")]
         public async Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
         {
-            try
-            {
-                var details = await _context.Orderdetail
-                    .Where(e => e.OrderId == orderId)
-                    .Select(e => new OrderDetailDTO
-                    {
-                        OrderdetailId = e.OrderdetailId,
-                        OrderId = e.OrderId,
-                        ProductId = e.ProductId,
-                        ProductName = e.Product.Name,
-                        ImageName = e.Product.ImageName,
-                        Quantity = e.Quantity,
-                        UnitPointAtPurchase = e.UnitPointAtPurchase,
-                        RequiresShipping = e.RequiresShipping
-                    })
-                    .ToListAsync();
-
-                if (details == null || !details.Any())
-                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"找不到訂單編號為 {orderId} 的資料明細", 404);
-
-                return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details);
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
-            }
+            return await _orderService.GetOrderDetailAsync(orderId);
         }
 
 
         // 取得ShippedDetailId的訂單資料
-        // GET: api/OrderApi/shippeddetail/{OrderdetailId}
-        [HttpGet("shippeddetail/{OrderdetailId}")]
-        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int orderDetailId)
+        // GET: api/OrderApi/shippeddetail/{OrderId}
+        [HttpGet("shippeddetail/{OrderId}")]
+        public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int OrderId)
         {
-            try
-            {
-                var results = await _context.ShippedDetail
-                    .Where(e => e.OrderdetailId == orderDetailId)
-                    .Select(e => new ShippedDTO
-                    {
-                        ShippedDate = e.ShippedDate,
-                        ArrivalDate = e.ArrivalDate,
-                        IsCompleted = e.IsCompleted,
-                        IsFailed = e.IsFailed,
-                        Remark = e.Remark,
-                        OrderdetailId = e.OrderdetailId,
-                        ProductId = e.Orderdetail.ProductId,
-                        ProductName = e.Orderdetail.Product.Name
-                    })
-                    .ToListAsync();
-
-                if (results == null || !results.Any())
-                    return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"找不到訂單明細ID為 {orderDetailId} 的出貨資料", 404);
-
-                return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
-            }
+            return await _orderService.GetShippedDetailAsync(OrderId);
         }
 
 
         // 新增訂單
         // POST: api/OrderApi/OrderPost
         [HttpPost("OrderPost")]
-        public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest Order)
+        public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest order)
         {
-            if (Order == null || Order.Items == null || !Order.Items.Any())
-                return ResultDTO<int>.Failure("無效的請求數據");
-
-            // 檢查 user 是否存在
-            var user = await _context.User.FindAsync(Order.UserId);
-            if (user == null)
-                return ResultDTO<int>.Failure($"找不到該會員{user}");
-
-            // 取得所有商品
-            var productIds = Order.Items.Select(i => i.ProductId).Distinct().ToList();
-            var productDict = await _context.Product
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToDictionaryAsync(p => p.ProductId);
-
-            // 檢查商品是否都存在
-            foreach (var item in Order.Items)
-            {
-                if (!productDict.TryGetValue(item.ProductId, out var prod))
-                    return ResultDTO<int>.Failure($"無此商品{item.ProductId}");
-
-                if (prod.Stock < item.Quantity)
-                    return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足");
-            }
-
-            // 交易建立訂單與明細
-            try
-            {
-                // 建立訂單主檔
-                var order = new Orders
-                {
-                    UserId = Order.UserId,
-                    Remark = Order.Remark ?? "",
-                    Status = "Pending", // 建議使用更正式的狀態
-                    OrderDate = DateTime.Now,
-                    TotalPoint = 0,
-                };
-
-                int totalPoints = 0;
-
-                // 5. 處理明細與庫存扣除
-                foreach (var item in Order.Items)
-                {
-                    var prod = productDict[item.ProductId];
-
-                    // 建立明細 (不需要手動填 OrderId，EF 會自動關聯)
-                    var detail = new Orderdetail
-                    {
-                        ProductId = prod.ProductId,
-                        Quantity = item.Quantity,
-                        UnitPointAtPurchase = prod.Point,
-                        RequiresShipping = prod.IsPhysical
-                    };
-
-                    order.Orderdetail.Add(detail);
-
-                    // 扣除庫存
-                    prod.Stock -= item.Quantity;
-
-                    totalPoints += item.Quantity * prod.Point;
-                }
-
-                order.TotalPoint = totalPoints;
-                _context.Orders.Update(order);
-
-                await _context.SaveChangesAsync();
-
-                return ResultDTO<int>.Success(order.OrderId, "訂單建立成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
+            order.UserId = userId;
+            return await _orderService.CreateOrderAsync(order);
         }
-
-
-        // 新增寄送資料
-        // POST: api/OrderApi/ShippedPost
-        [HttpPost("ShippedPost")]
-        public async Task<ResultDTO<int>> CreateShipped([FromBody] NewShippedRequest Shipped)
-        {
-            // 檢驗是否空
-            if (Shipped == null)
-                return ResultDTO<int>.Failure("無效的請求數據");
-
-            // 檢驗ID是否存在
-            var orderdetail = await _context.User.FindAsync(Shipped.OrderdetailId);
-            if (orderdetail == null)
-                return ResultDTO<int>.Failure($"找不到該訂單細項{orderdetail}");
-
-            // 檢查寄送資料
-            if (Shipped.RecipientName == "" || Shipped.RecipientPhone == "" || Shipped.RecipientAddress == "")
-                return ResultDTO<int>.Failure($"寄送資料不完整");
-
-            // 存入資料
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                // 建立訂單主檔
-                var shipped = new ShippedDetail
-                {
-                    OrderdetailId = Shipped.OrderdetailId,
-                    RecipientName = Shipped.RecipientName,
-                    RecipientAddress = Shipped.RecipientAddress,
-                    RecipientPhone = Shipped.RecipientPhone,
-                    IsFailed = false,
-                    Remark = Shipped.Remark ?? "",
-                    IsCompleted = false,
-                    ShippedDate = null,
-                    ArrivalDate = null,
-                };
-
-                _context.ShippedDetail.Update(shipped);
-
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                return ResultDTO<int>.Success(shipped.ShippedDetailId, "寄送資料建立成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
-        }
-
 
         // 修改寄送資料
         // PUT: api/OrderApi/ShippedPut/{ShippedDetailId}
         [HttpPut("ShippedPut/{ShippedDetailId}")]
-        public async Task<ResultDTO<int>> EditShipped(int ShippedDetailId,
-        [FromBody] NewShippedRequest Shipped)
+        public async Task<ResultDTO<int>> EditShipped(int ShippedDetailId, [FromBody] NewShippedRequest shipped)
         {
-            // 檢驗是否空
-            if (Shipped == null)
-                return ResultDTO<int>.Failure("無效的請求數據");
-
-            // 找出資料庫中現有的資料
-            var existingShipped = await _context.ShippedDetail.FindAsync(ShippedDetailId);
-
-            if (existingShipped == null)
-                return ResultDTO<int>.Failure($"找不到編號為 {ShippedDetailId} 的寄送資料");
-
-            // 檢查邏輯 (選填：例如已完成的訂單不可修改)
-            if (existingShipped.IsCompleted)
-                return ResultDTO<int>.Failure("已完成的寄送資料不可修改");
-
-            // 更新資料
-            try
-            {
-                // 更新欄位 (將新資料蓋過舊資料)
-                existingShipped.RecipientName = Shipped.RecipientName;
-                existingShipped.RecipientPhone = Shipped.RecipientPhone;
-                existingShipped.RecipientAddress = Shipped.RecipientAddress;
-                existingShipped.Remark = Shipped.Remark ?? existingShipped.Remark;
-
-                // 儲存變更 (EF Core 會自動追蹤 existingShipped 的變化)
-                await _context.SaveChangesAsync();
-
-                return ResultDTO<int>.Success(existingShipped.ShippedDetailId, "寄送資料修改成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
+            return await _orderService.EditShippedAsync(ShippedDetailId, shipped);
         }
 
 
         // 修改訂單資料
         // PUT: api/OrderApi/OrderPut/{OrderId}
         [HttpPut("OrderPut/{OrderId}")]
-        public async Task<ResultDTO<int>> EditOrder(int OrderId, [FromBody] OrderRequest Order)
+        public async Task<ResultDTO<int>> EditOrder(int OrderId, [FromBody] OrderRequest order)
         {
-            // 取得修改前訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
-
-
-            if (oldOrder == null)
-                return ResultDTO<int>.Failure("找不到該訂單");
-
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能修改");
-
-
-            // 開啟交易(一個存失敗全部不做)
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                // 更新備註
-                oldOrder.Remark = Order.Remark ?? "";
-
-                // 處理明細同步
-                // 取得前端傳來的 ProductId 集合
-                var productsdto = Order.Items.Select(i => i.ProductId).ToList();
-                var productDict = await _context.Product.Where(p => productsdto.Contains(p.ProductId)).ToDictionaryAsync(p => p.ProductId);
-
-                // A. 刪除：找出資料庫有但前端沒傳過來的項目
-                var itemsToRemove = oldOrder.Orderdetail
-                    .Where(d => !productsdto.Contains(d.ProductId)).ToList();
-
-                foreach (var removeItem in itemsToRemove)
-                {
-                    // 歸還庫存
-                    var prod = await _context.Product.FindAsync(removeItem.ProductId);
-                    if (prod != null) prod.Stock += removeItem.Quantity;
-
-                    _context.Orderdetail.Remove(removeItem);
-                }
-
-                // B. 更新與新增
-                int totalPoints = 0;
-                foreach (var itemDto in Order.Items)
-                {
-                    if (!productDict.TryGetValue(itemDto.ProductId, out var prod))
-                        return ResultDTO<int>.Failure($"找不到商品 {itemDto.ProductId}");
-
-                    var oldDetail = oldOrder.Orderdetail
-                        .FirstOrDefault(d => d.ProductId == itemDto.ProductId);
-
-                    if (oldDetail != null)
-                    {
-                        // --- 更新舊項目 ---
-                        // 處理庫存數量加減
-                        int diff = itemDto.Quantity - oldDetail.Quantity;
-                        if (prod.Stock < diff)
-                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
-
-                        prod.Stock -= diff;
-                        oldDetail.Quantity = itemDto.Quantity;
-                        oldDetail.UnitPointAtPurchase = prod.Point; // 更新當時點數
-                    }
-                    else
-                    {
-                        // --- 新增項目 ---
-                        if (prod.Stock < itemDto.Quantity)
-                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
-
-                        prod.Stock -= itemDto.Quantity;
-                        oldOrder.Orderdetail.Add(new Orderdetail
-                        {
-                            ProductId = itemDto.ProductId,
-                            Quantity = itemDto.Quantity,
-                            UnitPointAtPurchase = prod.Point,
-                            RequiresShipping = prod.IsPhysical
-                        });
-                    }
-                    totalPoints += itemDto.Quantity * prod.Point;
-                }
-
-                oldOrder.TotalPoint = totalPoints;
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync(); // 關閉交易
-                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單更新成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
+            
+            return await _orderService.EditOrderAsync(OrderId, order);
         }
 
         // 取消訂單
@@ -391,78 +85,7 @@ namespace incode2.ApiControllers
         [HttpPut("CancelOrder/{OrderId}")]
         public async Task<ResultDTO<int>> CancelOrder(int OrderId)
         {
-            // 取得修改前訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
-
-            if (oldOrder == null)
-                return ResultDTO<int>.Failure("找不到該訂單");
-
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能取消");
-
-            if (oldOrder.Status == "取消")
-                return ResultDTO<int>.Failure("訂單已取消");
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                // 回復庫存：一次查出相關商品避免每筆查詢
-                var productIds = oldOrder.Orderdetail.Select(d => d.ProductId).Distinct().ToList();
-                var productDict = await _context.Product
-                    .Where(p => productIds.Contains(p.ProductId))
-                    .ToDictionaryAsync(p => p.ProductId);
-
-                foreach (var detail in oldOrder.Orderdetail)
-                {
-                    if (productDict.TryGetValue(detail.ProductId, out var prod))
-                    {
-                        prod.Stock += detail.Quantity;
-                    }
-                }
-
-                //// 回復會員點數與建立點數記錄（若有 wallet）
-                //if (oldOrder.TotalPoint > 0)
-                //{
-                //    var wallet = await _context.UserPointWallet.FindAsync(oldOrder.UserId);
-                //    if (wallet != null)
-                //    {
-                //        wallet.CurrentPoints += oldOrder.TotalPoint;
-                //        wallet.UpdatedAt = DateTime.Now;
-
-                //        // 盡量找合適的 PointTypeDefinition，沒有就不建立 PointLog
-                //        var pointType = await _context.PointTypeDefinition
-                //            .FirstOrDefaultAsync(pt => pt.TypeName == "order_refund" || pt.TypeName == "order" || pt.TypeName == "refund");
-
-                //        if (pointType != null)
-                //        {
-                //            var pointLog = new PointLog
-                //            {
-                //                UserId = oldOrder.UserId,
-                //                SourceType = "order",
-                //                SourceId = oldOrder.OrderId,
-                //                PointTypeDefinitionId = pointType.PointTypeDefinitionId,
-                //                ChangeAmount = oldOrder.TotalPoint,
-                //                BalanceAfter = wallet.CurrentPoints,
-                //                CreatedAt = DateTime.Now
-                //            };
-                //            _context.PointLog.Update(pointLog);
-                //        }
-                //    }
-                //}
-
-                oldOrder.Status = "取消";
-                oldOrder.CanceledAt = DateTime.Now;
-
-                // 儲存變更
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功");
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
+            return await _orderService.CancelOrderAsync(OrderId);
         }
 
     }

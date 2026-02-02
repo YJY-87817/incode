@@ -7,20 +7,13 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="@Url.Action("Index")">商品列表</a></li>
-                    <li class="breadcrumb-item active">修改商品</li>
-                </ol>
-            </nav>
-
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-warning py-3">
                     <h4 class="mb-0 fs-5 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>商品修改</h4>
                 </div>
 
                 <div class="card-body p-4">
-                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    <form id="editForm" asp-action="Edit" method="post" enctype="multipart/form-data">
                         <input type="hidden" asp-for="ProductId" />
                         <input type="hidden" asp-for="ImageName" />
                         <input type="hidden" asp-for="CreatedAt" />
@@ -28,7 +21,7 @@
                         <div class="row">
                             <div class="col-md-7">
                                 <div class="mb-3">
-                                    <label asp-for="Name" class="form-label fw-bold">商品名稱</label>
+                                    <label asp-for="Name" class="form-label fw-bold">商品名稱 <span class="text-danger">*</span></label>
                                     <input asp-for="Name" class="form-control" required>
                                 </div>
 
@@ -39,8 +32,9 @@
 
                                 <div class="row g-3">
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="Type" class="form-label fw-bold">商品類別</label>
-                                        <select asp-for="Type" class="form-select border-warning-subtle">
+                                        <label asp-for="Type" class="form-label fw-bold">商品類別 <span class="text-danger">*</span></label>
+                                        <select asp-for="Type" class="form-select border-warning-subtle" required>
+                                            <option value="">-- 請選擇 --</option>
                                             <option value="兌換票券">兌換票券</option>
                                             <option value="電影周邊">電影周邊</option>
                                             <option value="造型">造型</option>
@@ -48,25 +42,25 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold text-primary">更換圖片</label>
-                                        <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
-                                        <small class="text-muted">若不更換請留空</small>
+                                        <label asp-for="Series" class="form-label fw-bold">系列 <span class="text-danger">*</span></label>
+                                        <input asp-for="Series" class="form-control" required>
                                     </div>
+
                                 </div>
 
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
-                                        <label asp-for="Point" class="form-label fw-bold text-danger">所需點數</label>
+                                        <label asp-for="Point" class="form-label fw-bold text-danger">所需點數 <span class="text-danger">*</span></label>
                                         <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-coin text-warning"></i></span>
-                                            <input asp-for="Point" type="number" class="form-control" min="0">
+                                            <span class="input-group-text">P</span>
+                                            <input asp-for="Point" type="number" class="form-control" min="0" required>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label asp-for="Stock" class="form-label fw-bold text-success">庫存數量</label>
+                                        <label asp-for="Stock" class="form-label fw-bold text-success">庫存數量 <span class="text-danger">*</span></label>
                                         <div class="input-group">
-                                            <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
-                                            <input asp-for="Stock" type="number" class="form-control" min="0">
+                                            <span class="input-group-text">件</span>
+                                            <input asp-for="Stock" type="number" class="form-control" min="0" required>
                                         </div>
                                     </div>
                                 </div>
@@ -98,6 +92,11 @@
                                         <div id="noImageText" class="py-5 text-muted"><i class="bi bi-image display-4"></i><p>暫無圖片</p></div>
                                     }
                                 </div>
+                                <div class=" mb-3">
+                                    <label class="form-label fw-bold text-primary">更換圖片</label>
+                                    <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
+                                    <small class="text-muted">若不更換請留空</small>
+                                </div>
 
                                 <div class="mt-4 px-4 text-start">
                                     <div class="form-check form-switch mb-2">
@@ -114,8 +113,15 @@
 
                         <hr class="my-4">
 
+                        <!-- 驗證提示訊息 -->
+                        <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            <strong>請檢查以下必填欄位：</strong>
+                            <ul id="errorList" class="mb-0 mt-2"></ul>
+                        </div>
+
                         <div class="d-flex gap-3">
-                            <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-dark">
+                            <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-dark" onclick="validateForm(event)">
                                 <i class="bi bi-check-circle me-1"></i> 儲存修改
                             </button>
                             <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">取消</a>
@@ -142,6 +148,58 @@
                     if (noImageText) noImageText.classList.add('d-none');
                 };
                 reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function validateForm(event) {
+            const form = document.getElementById('editForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const name = document.querySelector('input[name="Name"]');
+            if (!name.value.trim()) {
+                errors.push('商品名稱');
+            }
+
+            const type = document.querySelector('select[name="Type"]');
+            if (!type.value) {
+                errors.push('商品類別');
+            }
+
+            const series = document.querySelector('input[name="Series"]');
+            if (!series.value.trim()) {
+                errors.push('系列');
+            }
+
+            const point = document.querySelector('input[name="Point"]');
+            if (!point.value) {
+                errors.push('所需點數');
+            }
+
+            const stock = document.querySelector('input[name="Stock"]');
+            if (!stock.value) {
+                errors.push('庫存數量');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
             }
         }
     </script>
