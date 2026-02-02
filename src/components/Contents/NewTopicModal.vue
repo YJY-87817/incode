@@ -714,20 +714,18 @@ const submitNewTopic = async () => {
 
   try {
     await apiClient.post("/ContentApi", dto);
-    await Swal.fire({
-      icon: "success",
-      title: "發表成功",
-      showConfirmButton: false,
-      timer: 1500,
-    });
 
-    // 直接刷新主題列表而不是只觸發信號
+    // 立即關閉 modal 和重置內容，不顯示任何 banner
+    resetNewTopicDraft();
+    closeNewTopic();
+
+    // 在背景更新主題列表和詳情內容，不阻塞 UI
     forumStore.pagination.currentPage = 1;
-    await forumStore.fetchTopics();
+    forumStore.fetchTopics();
 
     // 若是回文/留言/回覆，且當前已開啟該主題，刷新詳情內容
     if (isReply && forumStore.selectedThread) {
-      await forumStore.fetchThreadDetail(forumStore.selectedThread);
+      forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
 
     // 如果是從草稿打開的，刪除該草稿
@@ -736,8 +734,16 @@ const submitNewTopic = async () => {
       forumStore.currentEditingDraftId = null;
     }
 
-    resetNewTopicDraft();
-    closeNewTopic();
+    // 顯示簡短的成功提示（不阻塞 UI）
+    Swal.fire({
+      icon: "success",
+      title: "發表成功",
+      showConfirmButton: false,
+      timer: 1500,
+      position: "top-end",
+      allowOutsideClick: true,
+      allowEscapeKey: true,
+    });
   } catch (error) {
     console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
     alert("發表失敗，請稍後再試");
