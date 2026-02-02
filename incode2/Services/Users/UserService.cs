@@ -1,4 +1,5 @@
-﻿using incode2.Models;
+﻿using incode2.Dtos.Users;
+using incode2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Users
@@ -36,17 +37,72 @@ namespace incode2.Services.Users
             return await _context.User.FindAsync(id);
         }
 
-        // 檢查 Email 是否存在 (單純的資料查詢)
+        // 檢查 Email 是否存在
         public async Task<bool> IsEmailExistAsync(string email)
         {
             return await _context.User.AnyAsync(u => u.Email == email);
         }
 
-        // 新增使用者 (單純的資料寫入)
+        // 新增使用者
         public async Task CreateUserAsync(User user)
         {
             _context.User.Add(user);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> IsUsernameExistAsync(string username)
+        {
+            return await _context.User.AnyAsync(u => u.Username == username);
+        }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {           
+            return await _context.User
+                                 .OrderByDescending(u => u.CreatedAt) // 建議排序
+                                 .ToListAsync();
+        }
+
+        // 2. 實作：取得登入紀錄
+        public async Task<List<LoginLogDto>> GetLoginLogsByUserIdAsync(int userId, int count)
+        {            
+            return await _context.UserLoginlog
+                                 .Where(log => log.UserId == userId) // 篩選該使用者的紀錄
+                                 .OrderByDescending(log => log.Logintime) // 最新時間在最上面
+                                 .Take(count) // 只抓前 N 筆 (例如前 10 筆)
+                                 .Select(log => new LoginLogDto
+                                 {
+                                     // 左邊是 DTO 的欄位 = 右邊是資料庫 Entity 的欄位
+
+                                     // 注意：因為資料庫 Logintime 是 DateTime? (可空)，DTO 是 DateTime (不可空)
+                                     // 所以要用 .GetValueOrDefault() 或 ?? DateTime.MinValue 處理 null
+                                     LoginTime = log.Logintime.GetValueOrDefault(),
+
+                                     IpAddress = log.IpAddress,
+
+                                     // IsSuspicious 資料庫沒有，先給預設值 false，
+                                     // 真正的判斷邏輯通常由 Controller 拿到資料後再計算，或是在這裡寫簡單邏輯
+                                     IsSuspicious = false
+                                 })
+                                 .ToListAsync();
+        }               
+
+        public async Task UpdateUserAsync(User user)
+        {
+            _context.User.Update(user);
+            await _context.SaveChangesAsync();
+        }
+        public async Task AddLoginLogAsync(int userId, string ipAddress)
+        {
+            var log = new UserLoginlog
+            {
+                UserId = userId,
+                IpAddress = ipAddress,
+                Logintime = DateTime.Now 
+            };
+
+            _context.UserLoginlog.Add(log);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

@@ -41,7 +41,7 @@ namespace incode2.Controllers.Users
             }
 
             // 2. 呼叫 Service 進行註冊 (使用您剛剛定義的 ServiceResult)
-            var result = await _authService.RegisterAsync(model.Email, model.Password);
+            var result = await _authService.RegisterAsync(model.Email, model.Password, model.Username);
 
             if (result != "Success")
             {
@@ -79,15 +79,15 @@ namespace incode2.Controllers.Users
             }
 
             // 1. 驗證帳密
-            var user = await _authService.ValidateUserAsync(model.Email, model.Password);
+            var result = await _authService.ValidateUserAsync(model.Email, model.Password);
 
-            if (user == null)
+            if (!result.IsSuccess)
             {
-                ModelState.AddModelError(string.Empty, "帳號或密碼錯誤");
+                ModelState.AddModelError(string.Empty, result.Message);
                 return View(model);
             }
 
-            // 2. 建立 Claims (身分證資訊)
+            var user = result.Member;
             string roleName = (user.RoleId == (int)RoleType.Admin) ? "Admin" : "Member";
 
             var claims = new List<Claim>
