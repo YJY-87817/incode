@@ -740,7 +740,7 @@ const submitNewTopic = async () => {
       title: "發表成功",
       showConfirmButton: false,
       timer: 1500,
-      position: "top-end",
+      position: "center",
       allowOutsideClick: true,
       allowEscapeKey: true,
     });
