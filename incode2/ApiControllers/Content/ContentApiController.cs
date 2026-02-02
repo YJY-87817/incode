@@ -43,7 +43,6 @@ namespace incode2.ApiControllers.Content
     {
       //這行可以取得當下登入的user所有資料
       var userId = User.GetId();
-        //int.Parse(User.Claims.FirstOrDefault().Value);
       dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
