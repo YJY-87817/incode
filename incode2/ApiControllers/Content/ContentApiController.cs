@@ -42,7 +42,6 @@ namespace incode2.ApiControllers.Content
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
       //這行可以取得當下登入的user所有資料
-      
       var userId = User.GetId();
         //int.Parse(User.Claims.FirstOrDefault().Value);
       dto.UserId = userId;
@@ -81,6 +80,86 @@ namespace incode2.ApiControllers.Content
         contentId = id,
         comments = comments,
         count = comments.Count
+      });
+    }
+
+    [HttpGet("me/posts")]
+    public async Task<IActionResult> GetMyPosts()
+    {
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 1 });
+      return Ok(new
+      {
+        userId,
+        type = 1,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("me/replies")]
+    public async Task<IActionResult> GetMyReplies()
+    {
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 2 });
+      return Ok(new
+      {
+        userId,
+        type = 2,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("me/comments")]
+    public async Task<IActionResult> GetMyComments()
+    {
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
+
+      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 });
+      return Ok(new
+      {
+        userId,
+        type = new[] { 3, 4 },
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("me/liked-contents")]
+    public async Task<IActionResult> GetMyLikedContents()
+    {
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
+
+      var contents = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" });
+      return Ok(new
+      {
+        userId,
+        interactionCategoryId = 1,
+        items = contents,
+        count = contents.Count
+      });
+    }
+
+    [HttpGet("me/bookmarked-contents")]
+    public async Task<IActionResult> GetMyBookmarkedContents()
+    {
+      var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
+
+      var contents = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" });
+      return Ok(new
+      {
+        userId,
+        interactionCategoryId = 2,
+        items = contents,
+        count = contents.Count
       });
     }
   }

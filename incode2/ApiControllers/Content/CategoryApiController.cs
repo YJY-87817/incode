@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using incode2.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace incode2.ApiControllers.Content
 {
@@ -77,6 +78,46 @@ namespace incode2.ApiControllers.Content
       }
     }
 
+    // POST: api/CategoryApi
+    [HttpPost]
+    public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto request)
+    {
+      if (request.ParentCategoryId.HasValue)
+      {
+        var parentExists = await _context.ContentCategory
+          .AsNoTracking()
+          .AnyAsync(c => c.ContentCategoryId == request.ParentCategoryId.Value);
+
+        if (!parentExists)
+        {
+          return BadRequest(new { message = "父分類不存在" });
+        }
+      }
+
+      var entity = new ContentCategory
+      {
+        ParentCategoryId = request.ParentCategoryId,
+        CategoryName = request.Name,
+        Description = request.Description,
+        IsActive = 1
+      };
+
+      _context.ContentCategory.Add(entity);
+      await _context.SaveChangesAsync();
+
+      var result = new CategoryDto
+      {
+        Id = entity.ContentCategoryId,
+        ParentCategoryId = entity.ParentCategoryId,
+        Name = entity.CategoryName,
+        Description = entity.Description,
+        TopicCount = 0,
+        PostCount = 0
+      };
+
+      return Ok(result);
+    }
+
     public class CategoryDto
     {
       public int Id { get; set; }
@@ -87,6 +128,18 @@ namespace incode2.ApiControllers.Content
       // 前端論壇用到的統計
       public int TopicCount { get; set; }
       public int PostCount { get; set; }
+    }
+
+    public class CreateCategoryDto
+    {
+      public int? ParentCategoryId { get; set; }
+
+      [Required]
+      [StringLength(100)]
+      public string Name { get; set; }
+
+      [StringLength(200)]
+      public string Description { get; set; }
     }
   }
 }

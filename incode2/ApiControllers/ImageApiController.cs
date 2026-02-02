@@ -15,6 +15,10 @@ namespace incode2.ApiControllers
     }
 
     [HttpPost("upload")]
+    // tim 預設不能上傳限制為約28.6 MB，改設定成 500 MB
+    // Program.cs設定後，在ImageApiController.cs內的上傳api要用[屬性類別]來解除預設限制
+    [RequestSizeLimit(524288000)] // 500 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 524288000)]
     public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
     {
       try
@@ -25,11 +29,6 @@ namespace incode2.ApiControllers
         }
 
         var urls = await _imageService.UploadImagesAsync(files);
-        if (urls.Count == 1)
-        {
-          return Ok(new { url = urls[0] });
-        }
-
         return Ok(new { urls });
       }
       catch (Exception ex)

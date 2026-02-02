@@ -1,4 +1,5 @@
-﻿using incode2.Dtos;
+﻿using System.Linq;
+using incode2.Dtos;
 using incode2.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,17 +50,23 @@ namespace incode2.ApiControllers.Content
     {
       if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
 
-      var interaction = await _contentInteractionService.GetUserInteraction(contentId, userId);
-      if (interaction == null)
-        return Ok(new { message = "此使用者尚未對該內容進行互動" });
+      var interactions = await _contentInteractionService.GetUserInteraction(contentId, userId);
+      if (interactions == null || interactions.Count == 0)
+        return Ok(new { message = "此使用者尚未對該內容進行互動", interactions = Array.Empty<object>() });
 
-      return Ok(interaction);
+      return Ok(new
+      {
+        ContentId = contentId,
+        UserId = userId,
+        Interactions = interactions,
+        interactions.Count
+      });
     }
 
 
     // 新增或移除互動（Toggle）
     // 同一個 content + user + category 按一次新增，再按一次移除
-    // 如果互動類型不同，則更新為新類型
+    // 不同互動類別彼此不互斥，可同時存在
     // URI: POST /api/contentinteractionapi
 
     // Request Body:
