@@ -1,60 +1,71 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace incode2.Hubs
 {
-    public class ChatHub : Hub // SignalR Hub 類別
+    // [Authorize] // 視需求開啟
+    public class ChatHub : Hub
     {
-        // ==========================================
-        // 連線事件
-        // ==========================================
-        // 當使用者連線時觸發
         public override async Task OnConnectedAsync()
         {
-            // 這裡可以記錄連線 ID (Context.ConnectionId)，目前先維持預設
+            // 連線時可以做紀錄 (選用)
             await base.OnConnectedAsync();
         }
 
-        // 當使用者斷線時觸發
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             await base.OnDisconnectedAsync(exception);
         }
 
         // ==========================================
-        // 1. 客服人員群組管理 (關鍵功能)
+        // 1. 客服專區 (配合 Controller)
         // ==========================================
-        // 當使用者(客服)進入後台介面時，前端呼叫此方法加入 "SupportAgents" 群組
-        // 這樣 Controller 才能透過 _hubContext.Clients.Group("SupportAgents") 推播訊息給他們
+
+        // 客服人員登入後台時呼叫此方法
         public async Task JoinSupportGroup()
         {
+            // ★ 修改 1: 名稱統一改為 "SupportAgents"，跟 Controller 一樣
             await Groups.AddToGroupAsync(Context.ConnectionId, "SupportAgents");
         }
 
-
-        // 當使用者離開或切換頁面時，退出群組
         public async Task LeaveSupportGroup()
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "SupportAgents");
         }
 
         // ==========================================
-        // 2. 一般訊息發送 (測試與備用)
+        // 2. 聊天室分流 (核心功能)
         // ==========================================
-        public async Task SendMessage(string user, string message)
+
+        // 使用者進入頁面，或客服點擊某個對話時呼叫
+        public async Task JoinSessionGroup(string sessionId)
         {
-            // 廣播給所有人 (通常用於公開聊天室，這裡作為備用)
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+            }
+        }
+
+        public async Task LeaveSessionGroup(string sessionId)
+        {
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
+            }
         }
 
         // ==========================================
-        // 3. 加入特定聊天室群組 (進階功能)
+        // 3. (選用) 僅轉發不存檔的訊息
         // ==========================================
-        // 如果未來要做「多裝置同步」或「多人同時觀看同一聊天室」，可使用此方法
-        public async Task JoinSessionGroup(string sessionId)
+
+        // 如果你的所有對話都走 API (存檔+推播)，其實不需要這個方法。
+        // 但保留它可以做為打字狀態提示 (Typing Indicator) 等不需存檔的功能。
+        public async Task SendMessage(string sessionId, string user, string message)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+            // ★ 修改 2: 只發給該房間的人，而不是 Clients.All
+            await Clients.Group(sessionId).SendAsync("ReceiveMessage", user, message);
         }
     }
 }
