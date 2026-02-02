@@ -17,6 +17,7 @@ const decrease = (item) => {
 
 <template>
   <!-- 購物車按鈕 -->
+<div>
 
   <button
     class="btn position-fixed end-0 top-50 translate-middle-y me-3 d-lg-none d-flex align-items-center position-relative"
@@ -91,6 +92,7 @@ const decrease = (item) => {
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <style scoped>

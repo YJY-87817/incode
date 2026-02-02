@@ -55,9 +55,9 @@ const decrease = (item) => {
                   @click="increase(item)">+</button>
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
                   @click="decrease(item)">−</button>
-                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;">
-                  <i class="bi bi-trash" style="font-size: 0.75rem;"
-                    @click="CartNow.removeFromCart(item.productId)"></i>
+                <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
+                  @click="CartNow.removeFromCart(item.productId)">
+                  <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
                 </button>
               </div>
             </div>
