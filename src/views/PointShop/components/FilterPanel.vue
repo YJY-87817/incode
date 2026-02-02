@@ -79,7 +79,7 @@ onMounted(() => {
       class="card-header text-white d-flex justify-content-between align-items-center collapsed"
       data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse"
       style="cursor: pointer; background-color: #86B0BD">
-      <h6 class="mb-0"><i class="bi bi-funnel"></i> 篩選商品</h6>
+      <h5 class="fw-bold mb-0"><i class="bi bi-funnel me-2"></i>篩選商品</h5>
       <i class="bi bi-chevron-down transition-icon"></i>
     </div>
 

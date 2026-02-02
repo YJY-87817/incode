@@ -1,11 +1,11 @@
 <script setup>
+import { ref } from 'vue';
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import OrderList from "@/views/PointShop/components/OrderList.vue";
-import NavbarsCard from "@/components/NavbarCard.vue";
+import FilterOrder from "@/views/PointShop/components/filterorder.vue";
 
-
-// const userId = 3; // 通常從登入資訊或 Pinia / Vuex 取得
+const selectedStatus = ref(''); // 預設顯示全部訂單
 </script>
 
 <template>
@@ -23,11 +23,11 @@ import NavbarsCard from "@/components/NavbarCard.vue";
       <div class="row">
 
         <div class="col-lg-3">
-          <NavbarsCard></NavbarsCard>
+          <FilterOrder v-model="selectedStatus" />
         </div>
         <div class="col-lg-9">
 
-          <OrderList></OrderList>
+          <OrderList :status="selectedStatus"></OrderList>
 
         </div>
       </div>

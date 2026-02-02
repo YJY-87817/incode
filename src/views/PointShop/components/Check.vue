@@ -4,7 +4,10 @@ import { useRouter } from 'vue-router';
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import { postCreateOrder } from "@/views/PointShop/services/PointShopApi";
 import checkoutSwal from 'sweetalert2';
+import { useAuthStore } from "@/stores/user/auth.js";
 
+const authStore = useAuthStore();
+const Islogin = authStore.isAuthenticated;
 const router = useRouter();
 const CartNow = useCartStore();
 const remark = ref('');
@@ -39,7 +42,10 @@ const validateShippingInfo = () => {
     checkoutSwal.fire({
       title: "必填欄位未完成",
       text: `請填寫: ${errors.join('、')}`,
-      icon: "warning"
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
     });
     return false;
   }
@@ -48,11 +54,22 @@ const validateShippingInfo = () => {
 };
 
 const checkout = async () => {
+  // 檢查是否登入
+  if (Islogin === false) {
+    checkoutSwal.fire({
+      title: "請先登入會員!",
+      text: "結帳前請先登入會員以建立訂單!",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return;
+  }
   // 驗證寄送資訊
   if (!validateShippingInfo()) {
     return;
   }
-
   const Neworder = {
     "userId": userid.value,
     "remark": remark.value,
@@ -69,7 +86,10 @@ const checkout = async () => {
     checkoutSwal.fire({
       title: "購物車為空!",
       text: "請先加入商品至購物車!",
-      icon: "warning"
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
     });
     return;
   }
@@ -87,7 +107,10 @@ const checkout = async () => {
       checkoutSwal.fire({
         title: "訂單新增成功!",
         text: "您的訂單已成立將盡快為您處理!",
-        icon: "success"
+        icon: "success",
+        didOpen: (modal) => {
+          modal.querySelector('.swal2-confirm').style.color = '#fff';
+        }
       }).then(() => {
         router.push('/PointShop/Order');
       });

@@ -17,13 +17,16 @@ const cartStore = useCartStore();
 const handleAddToCart = () => {
   cartStore.addToCart(props.product);
 
-  CartSwal.fire({
-    title: '成功！',
-    text: `${props.product.name}已成功加入購物車`,
-    icon: 'success',
-    confirmButtonText: '確定',
-    confirmButtonColor: '#145369'
-  });
+CartSwal.fire({
+  title: '成功！',
+  text: `${props.product.name}已成功加入購物車`,
+  icon: 'success',
+  confirmButtonText: '確定',
+  confirmButtonColor: '#145369',
+  didOpen: (modal) => {
+    modal.querySelector('.swal2-confirm').style.color = '#fff';
+  }
+});
 };
 </script>
 

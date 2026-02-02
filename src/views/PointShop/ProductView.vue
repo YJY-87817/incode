@@ -136,7 +136,7 @@ onMounted(() => {
 <template>
   <DefaultNavbar light />
 
-  <div class="min-vh-100 pb-5 " style="">
+  <div class="min-vh-100 pb-5 ">
     <div class="container pt-5 mb-5">
       <!-- <div class="col-12 mb-4">
         <div class="card border-0 shadow-sm" style="background-color: #86B0BD;">
@@ -150,7 +150,6 @@ onMounted(() => {
         <div class="col-lg-3">
           <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
             @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
-          <!-- <NavbarsCard></NavbarsCard> -->
         </div>
 
         <div class="col-lg-9">
@@ -161,8 +160,6 @@ onMounted(() => {
             </transition>
           </router-view>
         </div>
-
-
       </div>
     </div>
   </div>

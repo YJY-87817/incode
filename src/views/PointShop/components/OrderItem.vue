@@ -49,6 +49,10 @@ const cancelOrder = (orderId) => {
     cancelButtonColor: "#d33",
     confirmButtonText: "是, 我要取消!",
     cancelButtonText: "返回",
+    didOpen: (modal) => {
+      modal.querySelector('.swal2-confirm').style.color = '#fff';
+      modal.querySelector('.swal2-cancel').style.color = '#fff';
+    }
   }).then(async (result) => {
     // 修正：只有在點擊「確認」後才呼叫 API
     if (result.isConfirmed) {
@@ -58,7 +62,10 @@ const cancelOrder = (orderId) => {
         await CartSwal.fire({
           title: "取消成功!",
           text: "您的訂單已取消",
-          icon: "success"
+          icon: "success",
+          didOpen: (modal) => {
+            modal.querySelector('.swal2-confirm').style.color = '#fff';
+          }
         });
 
         emit('refresh'); // 通知父元件重整
@@ -68,7 +75,10 @@ const cancelOrder = (orderId) => {
         await CartSwal.fire({
           title: "取消失敗!",
           text: "請稍後再試",
-          icon: "error"
+          icon: "error",
+          didOpen: (modal) => {
+            modal.querySelector('.swal2-confirm').style.color = '#fff';
+          }
         });
       }
     }
@@ -166,7 +176,7 @@ const cancelOrder = (orderId) => {
 
             <!-- Actions Footer (In column) -->
             <div class="mt-auto pt-3 border-top">
-              <div v-if="order.status == '取消'" class="d-flex gap-2">
+              <div v-if="order.status == '已取消'" class="d-flex gap-2">
                 <button class="btn btn-secondary disabled flex-fill" disabled>訂單修改</button>
                 <button class="btn btn-secondary disabled flex-fill" disabled>訂單已取消</button>
               </div>
