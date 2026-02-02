@@ -212,7 +212,7 @@ const submitDraft = async (draft) => {
     await apiClient.post("/ContentApi", dto);
     await Swal.fire({
       icon: "success",
-      title: "發表成功",
+      title: "發佈成功",
       showConfirmButton: false,
       timer: 1500,
     });
@@ -227,11 +227,11 @@ const submitDraft = async (draft) => {
     // 刪除這個草稿
     forumStore.removeDraft(draft.id);
   } catch (error) {
-    console.error("[NewTopicSidebar] submit - 發表失敗:", error);
+    console.error("[NewTopicSidebar] submit - 發佈失敗:", error);
     await Swal.fire({
       icon: "error",
-      title: "發表失敗",
-      text: "發表失敗，請稍後再試",
+      title: "發佈失敗",
+      text: "發佈失敗，請稍後再試",
       confirmButtonText: "確定",
       confirmButtonColor: "#145369",
     });

@@ -18,7 +18,7 @@ const modalTitle = computed(() => {
     case "commentReply":
       return "詳細回覆";
     default:
-      return "發表新主題";
+      return "發佈新主題";
   }
 });
 const submitLabel = computed(() =>
@@ -49,7 +49,7 @@ const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showTitleBodyRequiredModal = ref(false);
 
-const NO_REPLY_LABEL = "無(發表新主題)";
+const NO_REPLY_LABEL = "無(發佈新主題)";
 
 const getCategoryIdValue = (cat) =>
   cat?.id ??
@@ -737,7 +737,7 @@ const submitNewTopic = async () => {
     // 顯示簡短的成功提示（不阻塞 UI）
     Swal.fire({
       icon: "success",
-      title: "發表成功",
+      title: "發佈成功",
       showConfirmButton: false,
       timer: 1500,
       position: "center",
@@ -745,8 +745,8 @@ const submitNewTopic = async () => {
       allowEscapeKey: true,
     });
   } catch (error) {
-    console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
-    alert("發表失敗，請稍後再試");
+    console.error("[NewTopicModal] submitNewTopic - 發佈失敗:", error);
+    alert("發佈失敗，請稍後再試");
   }
 };
 
