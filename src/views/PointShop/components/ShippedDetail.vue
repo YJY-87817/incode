@@ -69,20 +69,41 @@ onMounted(async () => {
           <div class="col-6">
             <span class="d-block text-muted">出貨日期</span>
             <span class="text-dark">
-              {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleDateString("zh-TW") : "尚未出貨" }}
+              {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleString("zh-TW", { 
+                year: 'numeric', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false, 
+                month: '2-digit', 
+                }) : "尚未出貨" }}
             </span>
           </div>
           <div class="col-6">
             <span class="d-block text-muted">預計到貨</span>
             <span class="text-dark">
-              {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleDateString("zh-TW") : "未定" }}
+              {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleString("zh-TW", { 
+                year: 'numeric', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false, 
+                month: '2-digit', 
+                }) : "未定" }}
             </span>
           </div>
         </div>
-
-        <div class="alert alert-light mt-2 mb-0 p-2 small text-muted border">
-          <i class="bi bi-info-circle me-1"></i>備註：
-          {{ ship.remark }}
+        <div>
+          <div class="alert alert-light mt-2 mb-0 p-2 small text-muted border">
+            <i class="bi bi-geo-alt me-1"></i>收件人姓名：
+            {{ ship.maskedName }} <br>
+            <i class="bi bi-telephone me-1"></i>收件人電話：
+            {{ ship.maskedPhone }} <br>
+            <i class="bi bi-house-door me-1"></i>收件地址：
+            {{ ship.maskedAddress }} <br>
+            <i class="bi bi-info-circle me-1"></i>備註：
+            {{ ship.remark }}
+          </div>
         </div>
       </div>
     </div>

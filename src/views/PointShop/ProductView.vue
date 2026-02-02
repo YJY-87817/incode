@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
-import NavbarsCard from "@/components/NavbarCard.vue";
 
 // 套版範例
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -32,7 +31,6 @@ const fetchProducts = () => {
     .then((response) => {
       // 成功處理邏輯
       products.value = response.data.data;
-
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
       const uniqueSeries = new Set();
@@ -77,21 +75,17 @@ const filteredProducts = computed(() => {
     const priceCheck =
       product.point >= filters.value.minPrice &&
       product.point <= filters.value.maxPrice;
-
     // 類別篩選（使用 Type）
     const categoryCheck =
       filters.value.categories.length === 0 ||
       filters.value.categories.includes(product.type);
-
     // 系列篩選（使用 series）
     const seriesCheck =
       filters.value.series.length === 0 ||
       filters.value.series.includes(product.series);
-
     // 庫存篩選
     const stockCheck =
       !filters.value.inStock || (product.stock && product.stock > 0);
-
     return priceCheck && categoryCheck && seriesCheck && stockCheck;
   });
 });
@@ -135,7 +129,6 @@ onMounted(() => {
 
 <template>
   <DefaultNavbar light />
-
   <div class="min-vh-100 pb-5 ">
     <div class="container pt-5 mb-5">
       <!-- <div class="col-12 mb-4">
@@ -145,13 +138,11 @@ onMounted(() => {
           </div>
         </div>
       </div> -->
-
       <div class="row">
         <div class="col-lg-3">
           <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
             @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
         </div>
-
         <div class="col-lg-9">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
@@ -163,7 +154,6 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
   <DefaultFooter />
 </template>
 

@@ -56,7 +56,7 @@ onMounted(() => {
       <i class="bi bi-chevron-down"></i>
     </div>
     <div class="collapse" id="filterCollapse" ref="filterCollapseRef">
-      <div class="card-body p-1 ">
+      <div class="card-body p-0">
         <div class="list-group list-group-flush">
           <button
             v-for="status in statuses"

@@ -10,7 +10,6 @@ const selectedStatus = ref(''); // 預設顯示全部訂單
 
 <template>
   <DefaultNavbar light />
-
   <div class="min-vh-100 pb-5">
     <div class="container pt-5 mb-5">
       <!-- <div class="col-12 mb-4">
@@ -21,14 +20,11 @@ const selectedStatus = ref(''); // 預設顯示全部訂單
         </div>
       </div> -->
       <div class="row">
-
         <div class="col-lg-3">
           <FilterOrder v-model="selectedStatus" />
         </div>
         <div class="col-lg-9">
-
           <OrderList :status="selectedStatus"></OrderList>
-
         </div>
       </div>
     </div>

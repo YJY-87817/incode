@@ -96,7 +96,7 @@ const cancelOrder = (orderId) => {
       <div class="d-flex align-items-center gap-4">
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-chevron-right text-secondary transition-icon"></i>
-          <span class="fw-bold fs-5 text-dark">#{{ order.orderId }}</span>
+          <span class="fw-bold fs-5 text-dark">訂單編號#{{ order.orderId }}</span>
         </div>
         <span class="text-secondary small d-none d-md-inline">
           <i class="bi bi-calendar3 me-1"></i>
@@ -123,7 +123,7 @@ const cancelOrder = (orderId) => {
 
         <div v-else class="row g-4">
           <!-- Main: Product List -->
-          <div class="col-lg-8 border-end-lg">
+          <div class="col-lg-7 border-end-lg">
             <h6 class="card-title fw-bold mb-3 text-secondary">
               <i class="bi bi-box-seam me-2"></i>訂購商品
             </h6>
@@ -165,7 +165,7 @@ const cancelOrder = (orderId) => {
           </div>
 
           <!-- Sidebar: Shipping & Actions -->
-          <div class="col-lg-4 d-flex flex-column">
+          <div class="col-lg-5 d-flex flex-column">
             <!-- Shipping Section -->
             <div class="mb-4 flex-grow-1">
               <h6 class="card-title fw-bold mb-3 text-secondary">

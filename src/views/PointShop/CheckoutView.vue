@@ -18,7 +18,6 @@ import DefaultFooter from "@/examples/footers/FooterCentered.vue";
           </div>
         </div>
       </div> -->
-
       <div class="row">
         <div class="col-12 mb-4 col-md-8">
           <CheckoutItem></CheckoutItem>
