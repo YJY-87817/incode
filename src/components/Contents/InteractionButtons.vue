@@ -13,9 +13,7 @@ const props = defineProps({
   },
 });
 
-onMounted(() => {
-  console.log("InteractionButtons mounted for contentId:", props.contentId);
-});
+onMounted(() => {});
 
 const emit = defineEmits(["interaction-success", "interaction-error"]);
 
@@ -122,15 +120,18 @@ function getButtonClass(categoryId) {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 20;
 }
 
 /* 基礎互動按鈕樣式 */
 .btn-interaction-button {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25;
-  height: fit-content;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  height: 28px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -138,24 +139,28 @@ function getButtonClass(categoryId) {
   white-space: nowrap;
 }
 
+.btn-interaction-button i {
+  font-size: 0.8rem;
+}
+
 /* 未激活狀態 */
 .btn-interaction {
   background-color: transparent;
   border: 1px solid #86b0bd;
-  color: #432f28;
+  color: #145369;
 }
 
 .btn-interaction:hover:not(:disabled) {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #fff0dd;
+  color: #fff;
 }
 
 /* 激活狀態 */
 .btn-interaction-active {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #fff0dd;
+  color: #fff;
 }
 
 .btn-interaction-active:hover:not(:disabled) {

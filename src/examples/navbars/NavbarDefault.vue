@@ -129,7 +129,7 @@ watch(
         props.transparent,
       'my-3 blur border-radius-lg z-index-3 py-2 shadow py-2 start-0 end-0 mx-4 position-absolute mt-4':
         props.sticky,
-      'navbar-light bg-white py-3': props.light,
+      'navbar-light py-3': props.light,
       ' navbar-dark bg-gradient-dark z-index-3 py-3': props.dark,
     }"
   >
@@ -468,22 +468,10 @@ watch(
                         <span>討論區</span>
                       </RouterLink>
                       <RouterLink
-                        :to="{ name: 'presentation' }"
+                        :to="{ name: 'forum' }"
                         class="dropdown-item border-radius-md"
                       >
-                        <span>預設首頁</span>
-                      </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'tmdb' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>下載TMDB海報</span>
-                      </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'imagetest' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>上傳圖測試</span>
+                        <span>討論區</span>
                       </RouterLink>
                     </div>
                   </div>
@@ -498,22 +486,10 @@ watch(
                   <span>討論區</span>
                 </RouterLink>
                 <RouterLink
-                  :to="{ name: 'presentation' }"
+                  :to="{ name: 'forum' }"
                   class="dropdown-item border-radius-md"
                 >
-                  <span>預設首頁</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'tmdb' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>下載TMDB海報</span>
-                </RouterLink>
-                <RouterLink
-                  :to="{ name: 'imagetest' }"
-                  class="dropdown-item border-radius-md"
-                >
-                  <span>上傳圖測試</span>
+                  <span>討論區</span>
                 </RouterLink>
               </div>
             </div>
@@ -532,7 +508,8 @@ watch(
               >會員中心
             </RouterLink>
           </li>
-          <div
+          <!-- 未知的多於導覽列項目 -->
+          <!-- <div
             class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md dropdown-md-responsive p-3 border-radius-lg mt-0 mt-lg-3"
             aria-labelledby="dropdownMenuBlocks"
           >
@@ -1121,7 +1098,7 @@ watch(
                 </div>
               </div>
             </div>
-          </li>
+          </li> -->
         </ul>
         <ul class="navbar-nav d-lg-block d-none">
           <li class="nav-item" v-if="!authStore.isAuthenticated">

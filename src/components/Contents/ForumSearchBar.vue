@@ -124,8 +124,8 @@ input.form-control:focus {
 }
 
 .btn-forum-primary {
-  background-color: #432f28;
-  border-color: #432f28;
+  background-color: #145369;
+  border-color: #145369;
   color: #fff0dd;
   transition: all 0.3s ease;
 }
@@ -133,7 +133,7 @@ input.form-control:focus {
 .btn-forum-primary:hover {
   background-color: #86b0bd;
   border-color: #86b0bd;
-  color: #432f28;
+  color: #fff;
 }
 
 .search-info {
