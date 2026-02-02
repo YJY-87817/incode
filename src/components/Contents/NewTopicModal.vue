@@ -748,6 +748,24 @@ const closeNewTopic = () => {
   forumStore.toggleNewTopicModal(false);
 };
 
+const resetNewTopicDraft = () => {
+  newTopicState.title = "";
+  newTopicState.body = "";
+  newTopicState.categoryId = null;
+  newTopicState.parentContentId = null;
+  selectedSubCategoryId.value = null;
+  categorySearch.value = "";
+  subCategorySearch.value = "";
+  replySearch.value = "";
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = null;
+  forumStore.newTopic.parentContentId = null;
+  forumStore.newTopic.categorySearch = "";
+  forumStore.newTopic.mode = "post";
+  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+};
+
 const handleModalCancel = () => {
   const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
   const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
