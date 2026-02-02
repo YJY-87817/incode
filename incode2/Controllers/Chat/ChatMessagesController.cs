@@ -1,30 +1,24 @@
 ﻿using incode2.Models;
-using incode2.Dtos; // 修正命名空間 DTO -> Dtos (配合之前的檔案)
-using incode2.Hubs;
-using incode2.Services;
 using incode2.ViewModels;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization; 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace incode2.Controllers.Chat
 {
+   
+    [Authorize]
     public class ChatMessagesController : Controller
     {
         private readonly incodedatabaseContext _context;
-        private readonly IConfiguration _configuration;
 
-        public ChatMessagesController(incodedatabaseContext context, IConfiguration configuration)
+        public ChatMessagesController(incodedatabaseContext context)
         {
             _context = context;
-            _configuration = configuration;
         }
 
         // ==========================================
@@ -35,16 +29,16 @@ namespace incode2.Controllers.Chat
             var viewModel = new ChatIndexViewModel();
 
             // 1. 抓取左側列表 (包含 User 資訊)
-            // 注意：這裡 EF Core 會自動撈取 Ishumanmode 欄位
+            // ★ 關鍵：Include(s => s.User) 讓 View 可以讀取 s.User.Username
             viewModel.Sessions = await _context.ChatSession
-                                           .Include(s => s.User)
-                                           .OrderByDescending(s => s.CreatedAt)
-                                           .ToListAsync();
+                .Include(s => s.User)
+                .OrderByDescending(s => s.UpdatedAt) // 通常按更新時間排序比較好
+                .ToListAsync();
 
             // 2. 決定當前要顯示哪個 Session
+            // 如果網址有 id 就用 id，沒有就預設抓第一筆
             int? targetId = id ?? viewModel.Sessions.FirstOrDefault()?.ChatSessionId;
 
-            // 預設為 AI 模式 (false)，若找不到 Session 則維持 false
             bool isHumanMode = false;
 
             if (targetId.HasValue)
@@ -56,27 +50,27 @@ namespace incode2.Controllers.Chat
 
                 if (currentSession != null)
                 {
+                    // ★ 設定 TargetUser，讓 View 可以顯示「正在與 XXX 對話」
                     viewModel.TargetUser = currentSession.User;
 
-                    // ★ 關鍵修改：取得當前模式狀態
+                    // 讀取當前模式狀態
                     isHumanMode = currentSession.Ishumanmode;
                 }
 
                 // 3. 抓取該 Session 的所有訊息
                 viewModel.CurrentMessages = await _context.ChatMessage
-                                                  .Where(m => m.SessionId == targetId)
-                                                  .OrderBy(m => m.CreatedAt)
-                                                  .ToListAsync();
+                    .Where(m => m.SessionId == targetId)
+                    .OrderBy(m => m.CreatedAt)
+                    .ToListAsync();
             }
             else
             {
                 viewModel.CurrentMessages = new List<ChatMessage>();
             }
 
-            // ★ 將狀態傳給 View，前端 JS 初始化時會讀取這個變數
-            // 用於決定顯示 "真人客服" 按鈕還是 "結束對話" 按鈕
+            // ★ 將狀態傳給 View
             ViewBag.IsHumanMode = isHumanMode;
-            ViewBag.CurrentSessionId = targetId; // 方便前端抓取 ID
+            ViewBag.CurrentSessionId = targetId;
 
             return View(viewModel);
         }

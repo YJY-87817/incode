@@ -93,6 +93,7 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.Embedding).HasColumnName("embedding");
             entity.Property(e => e.Role)
                 .IsRequired()
                 .HasMaxLength(20)
