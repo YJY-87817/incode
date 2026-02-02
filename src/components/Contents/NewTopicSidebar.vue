@@ -250,41 +250,9 @@ const updateDraftBody = (draft, value) => {
 
 <template>
   <div class="new-topic-sidebar-stack">
-    <!-- 所有最小化的 banner 放在一個固定容器中 -->
-    <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
-      <div v-for="draft in allDrafts" :key="`banner-${draft.id}`">
-        <div
-          v-if="draft.isMinimized"
-          class="new-topic-banner"
-          @click="expandDraft(draft)"
-        >
-          <div class="banner-content">
-            <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
-              <i class="fa-solid fa-people-pulling"></i>
-            </div>
-            <div class="banner-left">
-              <div class="banner-title">
-                <span v-if="draft.title.trim()">{{ draft.title }}</span>
-                <span v-else class="text-muted">未命名的草稿</span>
-              </div>
-            </div>
-            <div class="banner-right">
-              <button
-                type="button"
-                class="btn btn-sm banner-close-btn"
-                @click.stop="closeDraft(draft)"
-              >
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- 所有展開的編輯器 -->
     <div class="editors-container">
-      <div v-for="draft in allDrafts" :key="`editor-${draft.id}`">
+      <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
         <div
           v-if="!draft.isMinimized"
           class="card shadow-sm mb-4 new-topic-sidebar"
@@ -349,13 +317,45 @@ const updateDraftBody = (draft, value) => {
             </div>
           </div>
         </div>
-      </div>
+      </template>
+    </div>
+
+    <!-- 所有最小化的 banner 放在底部固定容器中 -->
+    <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
+      <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
+        <div
+          v-if="draft.isMinimized"
+          class="new-topic-banner"
+          @click="expandDraft(draft)"
+        >
+          <div class="banner-content">
+            <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
+              <i class="fa-solid fa-people-pulling"></i>
+            </div>
+            <div class="banner-left">
+              <div class="banner-title">
+                <span v-if="draft.title.trim()">{{ draft.title }}</span>
+                <span v-else class="text-muted">未命名的草稿</span>
+              </div>
+            </div>
+            <div class="banner-right">
+              <button
+                type="button"
+                class="btn btn-sm banner-close-btn"
+                @click.stop="closeDraft(draft)"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Banner 容器：固定在頂部 */
+/* Banner 容器：固定在底部 */
 .new-topic-sidebar-stack {
   position: relative;
   display: flex;
@@ -367,14 +367,15 @@ const updateDraftBody = (draft, value) => {
 
 .banners-container {
   position: sticky;
-  top: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   z-index: 50;
   background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding-top: 0.25rem;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  padding-bottom: 0.25rem;
+  margin-top: auto;
 }
 
 .editors-container {
