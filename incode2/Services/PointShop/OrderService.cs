@@ -349,7 +349,7 @@ namespace incode2.Services.PointShop
             if (oldOrder.Status == "已完成")
                 return ResultDTO<int>.Failure("訂單已完成不能取消");
 
-            if (oldOrder.Status == "取消")
+            if (oldOrder.Status == "已取消")
                 return ResultDTO<int>.Failure("訂單已取消");
 
             await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -369,7 +369,7 @@ namespace incode2.Services.PointShop
                     }
                 }
 
-                oldOrder.Status = "取消";
+                oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
 
                 // 儲存變更
