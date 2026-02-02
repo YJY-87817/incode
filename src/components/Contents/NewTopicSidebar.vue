@@ -252,7 +252,7 @@ const updateDraftBody = (draft, value) => {
   <div class="new-topic-sidebar-stack">
     <!-- 所有最小化的 banner 放在一個固定容器中 -->
     <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
-      <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
+      <div v-for="draft in allDrafts" :key="`banner-${draft.id}`">
         <div
           v-if="draft.isMinimized"
           class="new-topic-banner"
@@ -279,12 +279,12 @@ const updateDraftBody = (draft, value) => {
             </div>
           </div>
         </div>
-      </template>
+      </div>
     </div>
 
     <!-- 所有展開的編輯器 -->
     <div class="editors-container">
-      <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
+      <div v-for="draft in allDrafts" :key="`editor-${draft.id}`">
         <div
           v-if="!draft.isMinimized"
           class="card shadow-sm mb-4 new-topic-sidebar"
@@ -349,7 +349,7 @@ const updateDraftBody = (draft, value) => {
             </div>
           </div>
         </div>
-      </template>
+      </div>
     </div>
   </div>
 </template>
