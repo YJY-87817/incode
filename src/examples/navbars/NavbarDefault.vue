@@ -467,12 +467,6 @@ watch(
                       >
                         <span>討論區</span>
                       </RouterLink>
-                      <RouterLink
-                        :to="{ name: 'forum' }"
-                        class="dropdown-item border-radius-md"
-                      >
-                        <span>討論區</span>
-                      </RouterLink>
                     </div>
                   </div>
                 </div>
