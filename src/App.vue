@@ -1,18 +1,18 @@
 <script setup>
   /*
-    =========================================================
-    * Vue Material Kit 2 - v2.0.0
-    =========================================================
-    
-    * Product Page: https://www.creative-tim.com/product/vue-material-kit
-    * Copyright 2022 Creative Tim (https://www.creative-tim.com)
-    
-    Coded by www.creative-tim.com
-    
-     =========================================================
-    
-    * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-    */
+      =========================================================
+      * Vue Material Kit 2 - v2.0.0
+      =========================================================
+      
+      * Product Page: https://www.creative-tim.com/product/vue-material-kit
+      * Copyright 2022 Creative Tim (https://www.creative-tim.com)
+      
+      Coded by www.creative-tim.com
+      
+       =========================================================
+      
+      * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+      */
 
   /*ertrtre*/
   import { RouterView } from "vue-router";
@@ -23,11 +23,10 @@
 
   const authStore = useAuthStore();
 
-  onMounted(() => {
+  onMounted(async () => {
     console.log("App 啟動，檢查登入狀態...");
-    // authStore.checkLoginStatus(); //之後接api
+    await authStore.checkAuth();
   });
-
 </script>
 
 <template>

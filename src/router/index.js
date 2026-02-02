@@ -223,13 +223,13 @@ const router = createRouter({
       name: "UserSettings",
       component: UserSettings,
     },
-    {
-      path: "/userprofile/:username",//每個使用者不同
-      name: "UserProfile",
-      component: UserProfile,
-    },
-
-
+   {
+    path: '/profile/:username', 
+    name: 'UserProfile',
+    // 建議使用動態載入 (Lazy loading)
+    component: () => import('@/views/user/UserProfile.vue'),
+    props: true 
+  },
     {
       path: "/userindex",
       name: "UserIndex",

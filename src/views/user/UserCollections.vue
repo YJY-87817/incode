@@ -1,9 +1,14 @@
 <template>
-  <v-container class=" ma-4">
-    <h1>我的討論區</h1>
-    <p>掛Api</p>
-    <hr class="horizontal dark my-4" />
-    <nav class="mt-5 text-center" style="font-size: 24px">
+  <div>
+    <div class="mt-4 px-4">
+      <h3>我的討論區</h3>
+      <p>掛Api</p>
+    </div>
+
+    <nav
+      class="text-center py-3 w-100"
+      style="font-size: 24px; background-color: #86b0bd"
+    >
       <router-link :to="{ name: 'UserPost' }">發文</router-link> |
       <router-link :to="{ name: 'UserSave' }">收藏</router-link> |
       <router-link :to="{ name: 'UserLike' }">點讚</router-link>
@@ -12,10 +17,10 @@
     <div class="nested-content">
       <router-view></router-view>
     </div>
-  </v-container>
+  </div>
 </template>
 
 <script setup>
-  import { onMounted, onUnmounted, ref, computed } from "vue";
-  import { useRouter } from "vue-router";
+import { onMounted, onUnmounted, ref, computed } from "vue";
+import { useRouter } from "vue-router";
 </script>
