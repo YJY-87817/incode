@@ -588,7 +588,22 @@ function selectDetailedReply() {
   }
   replyTab.value = "detailed";
   showQuickReply.value = false;
-  openDetailedReplyModal();
+
+  // 檢查是否已經有針對這個帖文的詳細回覆草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === props.post.id
+  );
+
+  if (existingDraft) {
+    // 如果已存在草稿，則 toggle 其最小化狀態
+    forumStore.toggleDraftMinimize(
+      existingDraft.id,
+      !existingDraft.isMinimized
+    );
+  } else {
+    // 如果不存在草稿，創建新的草稿
+    openDetailedReplyModal();
+  }
 }
 
 const getCategoryIdValue = (cat) =>
