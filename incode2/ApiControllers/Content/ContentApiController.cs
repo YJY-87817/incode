@@ -42,7 +42,6 @@ namespace incode2.ApiControllers.Content
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
       //這行可以取得當下登入的user所有資料
-      
       var userId = User.GetId();
         //int.Parse(User.Claims.FirstOrDefault().Value);
       dto.UserId = userId;
