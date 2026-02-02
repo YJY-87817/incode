@@ -1,5 +1,5 @@
-﻿// forum_李宥廷
-// 內容(我的部分)
+﻿// forum_tim
+// 內容
 table content {
   content_id int [pk, increment]
   parent_content_id int [ref: > content.content_id, note: "CONSTRAINT FK_content_content 自我關聯，支援巢狀結構"]
@@ -7,11 +7,11 @@ table content {
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_user"]
   title nvarchar(200) [not null, note: "內容標題"]
   body nvarchar(max) [not null, note: "內容內文"]
-  type int [not null, note: "1:貼文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:留言回覆"]
+  type int [not null, note: "1:發文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
   is_active int [not null, note: "1:顯示, 2:隱藏"]
-  note {"發文、留言、回文、留言回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從回覆提升成發文(因為下面討論熱烈)"}
+  note {"發文、回文、留言、回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從留言提升成發文(因為下面討論熱烈)"}
 }
 
 // 內容分類
@@ -20,14 +20,14 @@ table content_category {
   parent_category_id int [ref: > content_category.content_category_id, note: "CONSTRAINT FK_content_category_content_category 自我關聯，支援巢狀結構"]
   category_name nvarchar(100) [not null]
   description nvarchar(200)
-  is_active int [not null, note: "1:會員新增待審核, 2:會員新增成功, 3:官方提供, 4:不再使用"]
-  note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增，官方審核，通過後給點"}
+  is_active int [not null, note: "1:會員新增, 2:官方提供, 3:不再使用"]
+  note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增"}
 }
 
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:like、block、bookmark、隱藏自己的內容"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
   created_at datetime [default:`current_timestamp`]
@@ -43,7 +43,7 @@ table interaction_category {
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
   is_active int [not null, note: "1:啟用, 2:不再使用"]
-  note {"互動分類:like、block、bookmark、隱藏自己的內容; 通知分類:有人留言、按讚"}
+  note {"互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容; 通知分類:(5)有人留言、(6)按讚"}
 }
 
 // 內容歷史紀錄(編輯版控)
@@ -84,7 +84,7 @@ table user_image {
   note {"圖片管理"}
 }
 
-// User_凃恩雯
+// user_owen
 // 使用者主表
 table user{ 
   user_id integer [primary key, increment]
@@ -151,7 +151,7 @@ table user_status{
    created_at datetime [default: `CURRENT_TIMESTAMP`]
    }
 
-//Point_Mission_Wallet_邱揚雅
+//Point_Mission_Wallet_qiu
 //功能:點數/任務/金流
 // 點數交易明細
 Table point_log {
@@ -282,7 +282,7 @@ Table notifications {
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-// PointShop_嚴家胤 
+// PointShop_yjy 
 // 商品資料管理
 table product {
   product_id INT [pk, increment, note: '商品ID (主鍵)']
@@ -363,7 +363,7 @@ table shipaddress{
   note {'先建立出來備用'}
 }
 
-// chatroom_林宜蒨
+// chatroom_lin
 // 對話工作階段
 Table chat_session {
   chat_session_id int [pk, increment, note: "對話房間的唯一識別碼"]
@@ -375,12 +375,14 @@ Table chat_session {
   note { "聊天室列表與狀態紀錄" }
 }
 
+
 // 對話訊息內容
 Table chat_message {
   chat_message_id bigint [pk, increment, note: "訊息唯一識別碼"]
   session_id int [not null, ref: > chat_session.chat_session_id, note: "所屬對話ID(FK)"]
   role varchar(20) [not null, note: "角色: system, user, assistant"]
   body nvarchar(max) [not null, note: "訊息內容"]
-  created_at datetime [default: `current_timestamp`, note: "當下發送的時間"] 
+  created_at datetime [default: `current_timestamp`, note: "當下發送的時間"]
+  embedding nvarchar(max) [null, note: "資料庫搜尋"]
   note { "對話內容紀錄" }
 }
