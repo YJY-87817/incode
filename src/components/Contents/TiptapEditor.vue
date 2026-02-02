@@ -231,6 +231,7 @@ const insertImage = async (event) => {
         setTimeout(() => {
           const html = currentEditor.getHTML();
           if (html.includes("<img")) {
+            adjustEditorHeight();
           } else {
             console.warn(
               "[TiptapEditor] insertImage - ✗ 圖片插入後未找到 <img 標籤"
@@ -252,6 +253,7 @@ const insertImage = async (event) => {
   } finally {
     isUploadingImages.value = false;
     if (event.target) event.target.value = "";
+    nextTick(() => adjustEditorHeight());
   }
 };
 
@@ -376,6 +378,7 @@ const insertCroppedImage = async () => {
   } finally {
     isUploadingImages.value = false;
     closeCropper();
+    nextTick(() => adjustEditorHeight());
   }
 };
 
