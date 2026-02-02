@@ -42,82 +42,64 @@ namespace incode2.ApiController.user
                 .ToListAsync();
         }
 
-        // GET: api/User/5
-        // 取得特定使用者資料
-        //管理者或本人
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<UserDto>> GetUser(int id)
-        {
-            var user = await _context.User
-                .Include(u => u.Role)
-                .Where(u => u.UserId == id)
-                .Select(u => new UserDto // 同樣轉成 DTO
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    Username = u.Username,
-                    ImageUrl = u.ImageUrl,
-                    Role = u.Role.RoleName ?? "Member"
-                })
-                .FirstOrDefaultAsync();
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return user;
-        }
-
-        // GET: api/User/profile
+        // GET: api/User/profile??username={test2CQ}
         [HttpGet("profile")]
-        public async Task<ActionResult<UserDto>> GetProfile()
+        public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
-            // 1. 利用擴充方法取得當前登入者的 ID
-            int userId = User.GetId();
+            User user = null; // 定義一個變數來存「找到的使用者」
 
-            // 2. 去資料庫查詢完整資料，並轉換成 UserDto (不包含密碼)
-            var user = await _context.User
-                .Include(u => u.Role) // 關聯角色表，為了拿到 RoleName
-                .Where(u => u.UserId == userId)
-                .Select(u => new UserDto
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    Username = u.Username,
-                    ImageUrl = u.ImageUrl,
-                    // 如果 Role 是 null 就給預設值 "Member"
-                    Role = u.Role.RoleName ?? "Member"
-                })
-                .FirstOrDefaultAsync();
-
-            if (user == null)
+            if (!string.IsNullOrEmpty(username))
             {
-                return NotFound("找不到會員資料");
+                // 情境 A: 有傳 username -> 查詢該 username 的資料
+                user = await _context.User
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Username == username);
+            }
+            else
+            {
+                // 情境 B: 沒傳 username -> 查詢當前登入者 (查自己)
+                int currentUserId = User.GetId();
+                user = await _context.User
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
             }
 
-            return Ok(user);
+            // 檢查是否找到資料
+            if (user == null)
+            {
+                return NotFound("找不到該會員資料");
+            }
+
+            // 轉換成 DTO 回傳
+            return Ok(new UserDto
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Username = user.Username,
+                ImageUrl = user.ImageUrl,
+                Role = user.Role.RoleName ?? "Member",
+                Phone = user.Phone,
+                Address = user.Address,
+                Birthday = user.Birthday,
+            });
         }
 
-        // PUT: api/User/5
-        // 修改資料 (只允許修改 UpdateUserDto 裡定義的欄位)
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, UpdateUserDto dto)
+        // PUT: api/User/profile
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserDto dto)
         {
             // 1. 安全檢查：確保登入者只能改自己的資料 (除非是管理員)
             int currentUserId = User.GetId();
-            if (id != currentUserId)
-            {
-                // 這裡也可以判斷如果 User.IsInRole("Admin") 則允許修改
-                return Forbid();
-            }   
-
-            var user = await _context.User.FindAsync(id);
-            if (user == null) return NotFound();
+            var user = await _context.User.FindAsync(currentUserId);
+            if (user == null) return NotFound("找不到使用者");
 
             // 1. Username 比較特別，通常資料庫不允許為 null，且不能是空字串
             if (!string.IsNullOrWhiteSpace(dto.Username))
             {
+                if (await _context.User.AnyAsync(u => u.Username == dto.Username && u.UserId != currentUserId))
+                {
+                    return BadRequest("此暱稱已被使用");
+                }
                 user.Username = dto.Username;
             }
 
@@ -128,19 +110,17 @@ namespace incode2.ApiController.user
             if (dto.Phone != null) user.Phone = dto.Phone;
             if (dto.Address != null) user.Address = dto.Address;
             if (dto.Birthday != null) user.Birthday = dto.Birthday;
-
-            // 4. 存檔
+           
             try
             {
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(id)) return NotFound();
-                else throw;
+                throw;
             }
 
-            return NoContent();
+            return Ok(new { message = "更新成功", user = user });
         }        
 
         // DELETE: api/User/5

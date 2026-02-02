@@ -6,7 +6,6 @@ namespace incode2.ViewModels
 {
     public class CommunityViewModel
     {
-        //再整理 加裝備
         public int UserId { get; set; }
 
         [Display(Name = "使用者")]
@@ -16,14 +15,15 @@ namespace incode2.ViewModels
         public int? FollowerId { get; set; }
 
         [Display(Name = "被誰追蹤")]
-        public int? FolloweeId { get; set; }
+        public int? FolloweeId { get; set; }        
 
-        [Display(Name = "經驗值")]
-        public int? Experience { get; set; }
+        public List<SocialLinkItem> SocialLinks { get; set; } = new List<SocialLinkItem>();
+        public class SocialLinkItem
+                {
+                    public int FolloweeId { get; set; }
+                    public string? Username { get; set; }
+                }
+     }
 
-        [Display(Name = "等級")]
-        public int? Rank { get; set; }
-
-        public IEnumerable<CommunityViewModel>? SocialLinks { get; set; }
-    }
+    
 }

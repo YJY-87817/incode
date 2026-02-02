@@ -5,6 +5,7 @@ namespace incode2.DTO.user
     public class UpdateUserDto
     {
         [Required]
+        public string Email { get; set; }
         public string? Username { get; set; }
         public string? ImageUrl { get; set; }
         public string? Phone { get; set; }
