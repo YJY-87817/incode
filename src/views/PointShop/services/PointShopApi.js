@@ -1,18 +1,22 @@
 import axios from "axios";
 
-const api = axios.create({
-  baseURL: "https://localhost:7190/api",
-});
-
-export const getOrdersByUser = (userId) => api.get(`/OrderApi/order/${userId}`);
+export const getOrdersByUser = () => axios.get(`/OrderApi/order`);
 
 export const getOrderDetails = (orderId) =>
-  api.get(`/OrderApi/orderdetail/${orderId}`);
+  axios.get(`/OrderApi/orderdetail/${orderId}`);
 
-export const getShippedDetails = (orderDetailId) =>
-  api.get(`/OrderApi/shippeddetail/${orderDetailId}`);
+export const getShippedDetails = (orderId) =>
+  axios.get(`/OrderApi/shippeddetail/${orderId}`);
 
 export const putCancelOrder = (orderId) =>
-  api.put(`/OrderApi/CancelOrder/${orderId}`);
+  axios.put(`/OrderApi/CancelOrder/${orderId}`);
 
-export const getProducts = () => api.get("/ProductApi");
+export const getProducts = () => axios.get("/ProductApi");
+
+export const postCreateOrder = (neworder) =>
+  axios.post(`/OrderApi/OrderPost`, neworder, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+  );

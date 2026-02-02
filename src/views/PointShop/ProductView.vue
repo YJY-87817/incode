@@ -2,9 +2,11 @@
 import { ref, onMounted, computed } from "vue";
 import { getProducts } from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
-import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
+import NavbarsCard from "@/components/NavbarCard.vue";
+
+// 套版範例
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
 const products = ref([]);
 const loading = ref(true);
@@ -14,11 +16,13 @@ const filters = ref({
   minPrice: 0,
   maxPrice: 10000,
   categories: [],
+  series: [],
   inStock: false,
 });
 
 // 可用的類別列表（從產品資料動態生成）
 const categories = ref([]);
+const series = ref([]);
 
 const fetchProducts = () => {
   // 開始抓取前，通常會手動開啟 loading (原本 async 函式通常也會在開頭設定)
@@ -27,13 +31,17 @@ const fetchProducts = () => {
   getProducts()
     .then((response) => {
       // 成功處理邏輯
-      products.value = response.data;
+      products.value = response.data.data;
 
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
-      response.data.forEach((product) => {
+      const uniqueSeries = new Set();
+      response.data.data.forEach((product) => {
         if (product.type) {
           uniqueCategories.add(product.type);
+        }
+        if (product.series) {
+          uniqueSeries.add(product.series);
         }
       });
 
@@ -43,8 +51,13 @@ const fetchProducts = () => {
         name: name,
       }));
 
+      series.value = Array.from(uniqueSeries).map((name, index) => ({
+        id: index + 1,
+        name: name,
+      }));
+
       // 設定最大價格
-      const maxPrice = Math.max(...response.data.map((p) => p.point || 0));
+      const maxPrice = Math.max(...response.data.data.map((p) => p.point || 0));
       filters.value.maxPrice = maxPrice;
     })
     .catch((error) => {
@@ -70,11 +83,16 @@ const filteredProducts = computed(() => {
       filters.value.categories.length === 0 ||
       filters.value.categories.includes(product.type);
 
+    // 系列篩選（使用 series）
+    const seriesCheck =
+      filters.value.series.length === 0 ||
+      filters.value.series.includes(product.series);
+
     // 庫存篩選
     const stockCheck =
       !filters.value.inStock || (product.stock && product.stock > 0);
 
-    return priceCheck && categoryCheck && stockCheck;
+    return priceCheck && categoryCheck && seriesCheck && stockCheck;
   });
 });
 
@@ -87,11 +105,21 @@ const toggleCategory = (categoryName) => {
   }
 };
 
+const toggleSeries = (seriesName) => {
+  const index = filters.value.series.indexOf(seriesName);
+  if (index > -1) {
+    filters.value.series.splice(index, 1);
+  } else {
+    filters.value.series.push(seriesName);
+  }
+};
+
 const resetFilters = () => {
   filters.value = {
     minPrice: 0,
     maxPrice: 10000,
     categories: [],
+    series: [],
     inStock: false,
   };
 };
@@ -106,45 +134,35 @@ onMounted(() => {
 </script>
 
 <template>
-  <DefaultNavbar darkText />
+  <DefaultNavbar light />
 
-  <div class="min-vh-100 pb-5 bg" style="">
+  <div class="min-vh-100 pb-5 " style="">
     <div class="container pt-5 mb-5">
-      <div class="col-12 mb-4">
-        <div class="card border-0 bg-light shadow-sm">
+      <!-- <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm" style="background-color: #86B0BD;">
           <div class="card-body p-4">
             <h2 class="fw-bold mb-1">點數商城</h2>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div class="row">
         <div class="col-lg-3">
-          <FilterPanel :filters="filters" :categories="categories" @update:filters="handleFilterUpdate"
-            @toggle-category="toggleCategory" @reset-filters="resetFilters" />
+          <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
+            @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
+          <!-- <NavbarsCard></NavbarsCard> -->
         </div>
 
         <div class="col-lg-9">
-          <ProductGrid :products="products" :filtered-products="filteredProducts" :loading="loading"
-            @reset-filters="resetFilters" />
-          <div class="d-flex justify-content-center mt-5">
-            <nav aria-label="Page navigation pointshop">
-              <ul class="pagination">
-                <li class="page-item">
-                  <a class="page-link" href="#" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                  </a>
-                </li>
-                <li class="page-item"><a class="page-link" href="#">1</a></li>
-                <li class="page-item">
-                  <a class="page-link" href="#" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          </div>
+          <router-view v-slot="{ Component }">
+            <transition name="fade" mode="out-in">
+              <component :is="Component" :products="products" :filtered-products="filteredProducts" :loading="loading"
+                @reset-filters="resetFilters" />
+            </transition>
+          </router-view>
         </div>
+
+
       </div>
     </div>
   </div>
@@ -152,9 +170,4 @@ onMounted(() => {
   <DefaultFooter />
 </template>
 
-<style scoped>
-.bg {
-background-color: #bfc6c4;
-background-image: url("data:image/svg+xml,%3Csvg width='84' height='16' viewBox='0 0 84 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M78 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM30 7V4h-2v3h-3v2h3v3h2V9h3V7h-3zM10 0h2v16h-2V0zm6 0h4v16h-4V0zM2 0h4v16H2V0zm50 0h2v16h-2V0zM38 0h2v16h-2V0zm28 0h2v16h-2V0zm-8 0h6v16h-6V0zM42 0h6v16h-6V0z' fill='%23e8e2d8' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
-}
-</style>
+<style scoped></style>

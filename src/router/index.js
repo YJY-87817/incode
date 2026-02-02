@@ -6,7 +6,6 @@ import FirstView from "@/views/FirstView.vue";
 import Register from "@/views/user/register.vue";
 import Login from "@/views/user/login.vue";
 import UserIndex from "@/views/user/userindex.vue";
-import UserProfile from "@/views/user/UserProfile.vue"
 import UserSettings from "@/views/user/UserSettings.vue"
 import UserCollections from "@/views/user/UserCollections.vue"
 import UserPost from "@/views/user/UserPost.vue"
@@ -14,17 +13,37 @@ import UserLike from "@/views/user/UserLike.vue"
 import UserSave from "@/views/user/UserSave.vue"
 import UserMission from "@/views/user/UserMission.vue"
 // owen
-
+// qiu以下
 import Task from "../views/point/Task.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
-import PointShopView from "@/views/PointShop/PointShopView.vue";
+// qiu以上
+// yjy 以下
+import ProductView from "@/views/PointShop/ProductView.vue";
 import OrderView from "@/views/PointShop/OrderView.vue";
 import Checkout from "@/views/PointShop/CheckoutView.vue";
+import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
+import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
+// yjy 以上
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  /**
+   * 控制路由切換時的滾動行為
+   * @param {Object} to - 目標路由對象
+   * @param {Object} from - 來源路由對象
+   * @param {Object|null} savedPosition - 儲存的滾動位置（僅在使用瀏覽器前進/後退按鈕時存在）
+   * @returns {Object} 滾動位置對象，包含 left 和 top 屬性
+   * @description 如果存在儲存的位置則返回該位置，否則滾動到頁面頂部
+   */
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { left: 0, top: 0 };
+    }
+  },
   routes: [
     {
       // 首頁改成這個_tim
@@ -142,9 +161,21 @@ const router = createRouter({
 
     // yjy 以下
     {
-      path: "/PointShop/PointShop",
-      name: "PointShop",
-      component: PointShopView,
+      path: "/PointShop/Product",
+      component: ProductView,
+      children: [
+        {
+          path: '',
+          name: "PointShop",
+          component: ProductGrid,
+        },
+        {
+          path: ':id',
+          name: "ProductDetail",
+          component: ProductDetail,
+          props: true,
+        }
+      ]
     },
     {
       path: "/PointShop/Order",

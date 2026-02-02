@@ -43,6 +43,7 @@
     "vue-count-to": "1.0.13",
     "vue-prism-editor": "2.0.0-alpha.2",
     "vue-router": "^4.6.4",
+    "vue-sweetalert2": "^5.0.11",
     "vue3-bootstrap-paginate": "^1.0.0",
     "vuetify": "^3.11.7"
   },
