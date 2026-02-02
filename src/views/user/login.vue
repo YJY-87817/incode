@@ -1,4 +1,5 @@
 <script setup>
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
   import { ref } from "vue";
   import { useRouter } from "vue-router";
   import { useAuthStore } from "@/stores/user/auth";
@@ -56,6 +57,7 @@
 </script>
 
 <template>
+  <DefaultNavbar />
   <v-container fluid class="fill-height bg-grey-lighten-5">
     <div class="d-flex flex-column align-center w-100">
       <div class="text-center mb-4">

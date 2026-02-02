@@ -1,4 +1,5 @@
 <script setup>
+  import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
   import { ref, onMounted } from "vue";
   import { useRouter } from "vue-router";
   import axios from "axios";
@@ -101,6 +102,7 @@
 </script>
 
 <template>
+  <DefaultNavbar />
   <v-container fluid class="fill-height bg-grey-lighten-5">
     <v-row justify="center" align="center">
       <v-col cols="12" sm="10" md="10" lg="8">
