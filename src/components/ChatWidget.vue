@@ -484,7 +484,7 @@ onUnmounted(() => {
       title="打開 AI 助手"
     >
       <img :src="aiAvatarGif" class="side-btn-gif" alt="AI" />
-      <span class="btn-text">客服</span>
+      <span class="btn-text">AI助手</span>
     </button>
 
     <transition name="popup-anim">
@@ -579,49 +579,46 @@ onUnmounted(() => {
 .side-hidden-btn {
   position: fixed;
   top: 90%;
-  right: 0; /* 貼齊右側，透過 transform 控制突出 */
-  transform: translateY(-50%) translateX(25px); /* 向右偏移，讓它看起來掛在邊緣 */
-  
-  /* 背景與顏色 */
+  right: 0;
+  transform: translateY(-50%) translateX(68px); 
   background: linear-gradient(135deg, #4398a5 0%, #3a5f54 100%);
   color: white;
   border: none;
-  
-  /* 尺寸設定：確保是圓形 */
-  width: 70px;
+  width: 120px; 
   height: 40px;
   border-radius: 30px 0 0 30px;
-  
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  
-  /* 層次感陰影 */
+  justify-content: flex-start; /* 靠左 */
+  padding-left: 10px; /* 左邊留白 */
+  gap: 4px; /* 圖片跟字的距離 */
   box-shadow: -4px 0 15px rgba(67, 152, 165, 0.4);
   z-index: 9998;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease;
 }
 
-
-/* 懸停效果：滑鼠移上去時向左滑出更多 */
+/* 懸停效果 */
 .side-hidden-btn:hover {
-  transform: translateY(-50%) translateX(3px);
+  transform: translateY(-50%) translateX(0); /* 滑鼠移上去完全滑出 */
   box-shadow: -6px 0 20px rgba(67, 152, 165, 0.6);
 }
-
 .side-btn-gif {
   width: 33px;
   height: 33px;
   border-radius: 50%;
   background: transparent;
   object-fit: cover;
-  transform: translateX(-10px);
-  z-index: 1; /* 確保在偽元素之上 */
+  transform: none; 
+  z-index: 1;
 }
-
 .btn-text {
-  display: none; /* 圓形掛式按鈕不建議放文字 */
+  display: block; 
+  font-size: 16px; 
+  font-weight: bold;
+  color: white;
+  white-space: nowrap; 
+  margin-left: 6px;
 }
 
 /* 視窗主體 */
