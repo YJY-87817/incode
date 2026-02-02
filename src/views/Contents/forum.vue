@@ -22,7 +22,7 @@ const tryScrollToPendingTarget = async () => {
   await nextTick();
   const targetEl = document.getElementById(`content-${targetId}`);
   if (targetEl) {
-    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
     forumStore.pendingScrollTargetId = null;
   }
 };
