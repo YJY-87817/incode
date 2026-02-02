@@ -50,6 +50,7 @@
   "devDependencies": {
     "@rushstack/eslint-patch": "1.15.0",
     "@types/node": "^25.0.9",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/eslint-config-prettier": "10.2.0",
     "eslint": "^9.39.2",
