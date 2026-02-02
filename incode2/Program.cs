@@ -9,13 +9,14 @@ using incode2.Services.Chat;
 using incode2.Services.Users;
 using incode2.Services.Contents;
 using incode2.Services.Point;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<incodedatabaseContext>(options => {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
+builder.Services.AddDbContext<incodedatabaseContext>(options =>
+{
+  options.UseSqlServer(builder.Configuration.GetConnectionString("incodedatabase"));
 });
-
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -24,22 +25,40 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // ==========================================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("VueApp", policy =>
-    {
-        policy.WithOrigins(
-          "https://localhost:5173",
-          "https://localhost:5174",
-          "http://localhost:5173",
-          "http://localhost:5174",
-          "http://localhost:8080",
-          "http://localhost:3000",
-          "http://localhost:7190",
-          "http://localhost:3001"
-        )
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
-    });
+  options.AddPolicy("VueApp", policy =>
+  {
+    policy.WithOrigins(
+        "https://localhost:5173",
+        "https://localhost:5174",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://localhost:7190",
+        "http://localhost:3001"
+      )
+      .AllowAnyMethod()
+      .AllowAnyHeader()
+      .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
+  });
+});
+
+// ==========================================
+// 2.5 Configure request size limits for file uploads
+// ==========================================
+// tim 預設不能上傳限制為約28.6 MB，改設定成 500 MB
+// Program.cs設定後，在ImageApiController.cs內的上傳api要用[屬性類別]來解除預設限制
+builder.Services.Configure<FormOptions>(options =>
+{
+  options.MultipartBodyLengthLimit = 524288000; // 500 MB (允許上傳多張圖片)
+  options.ValueLengthLimit = int.MaxValue;
+  options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
+// Configure Kestrel server limits
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+  serverOptions.Limits.MaxRequestBodySize = 524288000; // 500 MB
 });
 
 // Gemini服務
@@ -145,18 +164,51 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
+
+//以下tim的
+// 在 app.UseStaticFiles(); 之前添加
+app.UseStaticFiles(new StaticFileOptions
+{
+  OnPrepareResponse = ctx =>
+  {
+    var origin = ctx.Context.Request.Headers["Origin"].ToString();
+    var allowed = new[]
+    {
+      "https://localhost:5173",
+      "https://localhost:5174",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:8080",
+      "http://localhost:3000",
+      "http://localhost:7190",
+      "http://localhost:3001"
+    };
+
+    var ext = Path.GetExtension(ctx.File.Name);
+    var isAllowed = allowed.Contains(origin);
+    var isStatic = ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".html";
+
+    if (isAllowed && isStatic)
+    {
+      ctx.Context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+      ctx.Context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+      ctx.Context.Response.Headers["Vary"] = "Origin";
+    }
+  }
+});
+//以上tim的
 app.UseStaticFiles();
 app.UseRouting(); 
 app.UseCors("VueApp");
 app.UseAuthentication(); //  Cookie)
 app.UseAuthorization();  //  Role)
-
 // https://localhost:xxxx/img/
 app.MapStaticAssets();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
 //lin
 app.MapRazorPages()
    .WithStaticAssets();

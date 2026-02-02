@@ -11,5 +11,8 @@ namespace incode2.Services.Contents
     Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
     Task<bool> DeleteContent(int id);
     Task<List<ContentDto>> GetCommentsByContentId(int contentId);
+    Task<List<ContentDto>> GetUserContents(int userId);
+    Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types);
+    Task<List<ContentDto>> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames);
   }
 }
