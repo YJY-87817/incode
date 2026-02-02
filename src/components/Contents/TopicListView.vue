@@ -336,6 +336,31 @@ const openDetailedReply = () => {
     replyingToThreadId: forumStore.threadDetail.id,
   });
 };
+
+// 主文是否為正在回覆的目標（檢查所有草稿）
+const isThreadReplyingTarget = computed(() => {
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return false;
+  return forumStore.drafts.some(
+    (draft) => draft.replyingToContentId === targetId
+  );
+});
+
+// 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
+function handleThreadReplyingTargetClick() {
+  if (!isThreadReplyingTarget.value) return;
+
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return;
+
+  const targetDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === targetId
+  );
+
+  if (targetDraft) {
+    forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
+  }
+}
 </script>
 
 <template>
@@ -380,7 +405,14 @@ const openDetailedReply = () => {
         </div>
 
         <!-- 帖文內容 -->
-        <div class="card-body">
+        <div
+          class="card-body thread-detail-card"
+          :class="{
+            'replying-target': isThreadReplyingTarget,
+            'cursor-pointer': isThreadReplyingTarget,
+          }"
+          @click="handleThreadReplyingTargetClick"
+        >
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
@@ -985,6 +1017,56 @@ const openDetailedReply = () => {
   color: #0f3c4d;
   letter-spacing: 0.2px;
   font-size: 1.35rem;
+}
+
+/* 主文正在回覆的目標內容高亮效果 */
+.thread-detail-card.replying-target {
+  border: 2px solid #145369;
+  box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.08) 0%,
+    rgba(20, 83, 105, 0.03) 100%
+  );
+  position: relative;
+  animation: pulse-border 2s ease-in-out infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.thread-detail-card.replying-target:hover {
+  box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.12) 0%,
+    rgba(20, 83, 105, 0.06) 100%
+  );
+}
+
+.thread-detail-card.replying-target::before {
+  content: "✍️ 正在回覆此內容";
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: linear-gradient(135deg, #145369 0%, #0f3c4d 100%);
+  color: #fff0dd;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
+  z-index: 10;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  }
 }
 
 .quick-reply-toggle {
