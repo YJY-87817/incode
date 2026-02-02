@@ -286,10 +286,11 @@ Table notifications {
 // 商品資料管理
 table product {
   product_id INT [pk, increment, note: '商品ID (主鍵)']
-  name NVARCHAR(50) [not null, note: '商品名稱']
-  description NVARCHAR(300) [note: '商品詳細描述']
-  image_name NVARCHAR(50) [note: '圖片檔案名稱']
-  type NVARCHAR(30) [note: '商品分類']
+  name NVARCHAR(100) [not null, note: '商品名稱']
+  description NVARCHAR(500) [note: '商品詳細描述']
+  image_name NVARCHAR(100) [note: '圖片檔案名稱']
+  type NVARCHAR(100) [note: '商品分類']
+  series NVARCHAR(100) [note: '商品系列']
   is_physical BIT [not null, note: '是否為實體商品 (1=實體, 0=虛擬)']
   point INT [not null, note: '商品點數']
   stock INT [not null, default: 0, note: '庫存數量']
@@ -324,7 +325,7 @@ table orderdetail {
 // 寄送Detail
 table shipped_detail{
   shipped_detail_id INT [pk, increment, note: 'ID (主鍵)']
-  orderdetail_id INT [not null, ref:> orderdetail.orderdetail_id , note: 'CONSTRAINT FK_shippeddetail_orderdetail']
+  order_id INT [not null, ref:> orders.order_id , note: 'CONSTRAINT FK_shippeddetail_orders']
   recipient_name NVARCHAR(50) [not null, note: '收件人姓名']
   recipient_address NVARCHAR(50) [not null, note: '收件人地址']
   recipient_phone NVARCHAR(50) [not null, note: '收件人電話']

@@ -816,23 +816,26 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description)
-                .HasMaxLength(300)
+                .HasMaxLength(500)
                 .HasColumnName("description");
             entity.Property(e => e.ImageName)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("image_name");
             entity.Property(e => e.IsPhysical).HasColumnName("is_physical");
             entity.Property(e => e.Name)
                 .IsRequired()
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("name");
             entity.Property(e => e.OnSale)
                 .HasDefaultValue(true)
                 .HasColumnName("on_sale");
             entity.Property(e => e.Point).HasColumnName("point");
+            entity.Property(e => e.Series)
+                .HasMaxLength(100)
+                .HasColumnName("series");
             entity.Property(e => e.Stock).HasColumnName("stock");
             entity.Property(e => e.Type)
-                .HasMaxLength(30)
+                .HasMaxLength(100)
                 .HasColumnName("type");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -913,7 +916,7 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnName("arrival_date");
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed");
             entity.Property(e => e.IsFailed).HasColumnName("is_failed");
-            entity.Property(e => e.OrderdetailId).HasColumnName("orderdetail_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.RecipientAddress)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -933,8 +936,8 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("shipped_date");
 
-            entity.HasOne(d => d.Orderdetail).WithMany(p => p.ShippedDetail)
-                .HasForeignKey(d => d.OrderdetailId)
+            entity.HasOne(d => d.Order).WithMany(p => p.ShippedDetail)
+                .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__shipped_d__order__5D95E53A");
         });

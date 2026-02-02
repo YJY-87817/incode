@@ -10,7 +10,7 @@
             <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>編輯訂單 - 單號: @Model.OrderId</h4>
         </div>
         <div class="card-body p-4">
-            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            <form id="editOrderForm" asp-action="Edit" method="post" enctype="multipart/form-data">
 
                 <input type="hidden" asp-for="OrderId" />
 
@@ -27,12 +27,13 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label asp-for="Status" class="form-label fw-bold text-secondary">訂單狀態</label>
-                        <select asp-for="Status" class="form-select border-primary-subtle">
+                        <label asp-for="Status" class="form-label fw-bold text-secondary">訂單狀態 <span class="text-danger">*</span></label>
+                        <select asp-for="Status" class="form-select border-primary-subtle" required>
+                            <option value="">-- 請選擇 --</option>
                             <option value="待處理">待處理</option>
                             <option value="已完成">已完成</option>
                             <option value="已取消">已取消</option>
-                            <option value="已出貨">已取消</option>
+                            <option value="已出貨">已出貨</option>
                             <option value="其他">其他</option>
                         </select>
                     </div>
@@ -113,8 +114,15 @@
                     </table>
                 </div>
 
+                <!-- 驗證提示訊息 -->
+                <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    <strong>請檢查以下必填欄位：</strong>
+                    <ul id="errorList" class="mb-0 mt-2"></ul>
+                </div>
+
                 <div class="mt-5 d-flex gap-3">
-                    <button id="BtnUpdate" type="submit" class="btn btn-warning px-5 py-2 fw-bold shadow-sm">
+                    <button id="BtnUpdate" type="submit" class="btn btn-warning px-5 py-2 fw-bold shadow-sm" onclick="validateEditOrderForm(event)">
                         儲存修改
                     </button>
                     <a href="@Url.Action("Index")" class="btn btn-light px-4 py-2 border">取消返回</a>
@@ -128,9 +136,9 @@
 {
     <script>
         function newOrderList() {
-        let index = $("#shoppingList tr").length; // 取得目前列數作為索引
-        let newRow =
-            `<tr class="text-center">
+            let index = $("#shoppingList tr").length; // 取得目前列數作為索引
+            let newRow =
+                `<tr class="text-center">
                 <td>
                    <select id="select[${index}]" class="form-select" name="orderdetails[${index}].ProductId" onchange="PointChange(this)" required>
                         <option value="">-- 請選擇商品 --</option>
@@ -164,23 +172,23 @@
                     </button>
                 </td>
             </tr>`
-        $("#shoppingList").append(newRow);
+            $("#shoppingList").append(newRow);
         }
 
         function removeRow(btn) {
-        $(btn).closest('tr').remove();
-        reIndexTable(); // 重新排序索引以確保連續性
-        updateTotalPoint();
+            $(btn).closest('tr').remove();
+            reIndexTable(); // 重新排序索引以確保連續性
+            updateTotalPoint();
         }
 
         function reIndexTable() {
-        $("#shoppingList tr").each(function(i) {
-            $(this).find("[name]").each(function() {
-                var name = $(this).attr("name");
-                // 將 orderdetails[x].Prop 替換為 orderdetails[i].Prop
-                $(this).attr("name", name.replace(/\[\d+\]/, "[" + i + "]"));
+            $("#shoppingList tr").each(function(i) {
+                $(this).find("[name]").each(function() {
+                    var name = $(this).attr("name");
+                    // 將 orderdetails[x].Prop 替換為 orderdetails[i].Prop
+                    $(this).attr("name", name.replace(/\[\d+\]/, "[" + i + "]"));
+                });
             });
-        });
         }
 
         function updateRowTotal($row) {
@@ -193,13 +201,13 @@
         }
 
         function PointChange(select) {
-             // 取得選中 option 的 data-point 屬性
-             var point = parseFloat($(select).find(':selected').data('point')) || 0;
-             var $row = $(select).closest('tr');
-             // 找到同一列的單價輸入框並賦值
-             $row.find('input[name*="UnitPointAtPurchase"]').val(point);
-             // 計算並更新該列總點數
-             updateRowTotal($row);
+            // 取得選中 option 的 data-point 屬性
+            var point = parseFloat($(select).find(':selected').data('point')) || 0;
+            var $row = $(select).closest('tr');
+            // 找到同一列的單價輸入框並賦值
+            $row.find('input[name*="UnitPointAtPurchase"]').val(point);
+            // 計算並更新該列總點數
+            updateRowTotal($row);
         }
 
         function quantity(count) {
@@ -215,6 +223,52 @@
             });
             // 更新表單上的 TotalPoint 欄位（name 為 TotalPoint）
             $('input[name="TotalPoint"]').val(sum);
+        }
+
+        function validateEditOrderForm(event) {
+            const form = document.getElementById('editOrderForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const status = document.querySelector('select[name="Status"]');
+            if (!status.value) {
+                errors.push('訂單狀態');
+            }
+
+            // 驗證是否至少有一個商品
+            const productRows = document.querySelectorAll('#shoppingList tr');
+            let hasValidProduct = false;
+            productRows.forEach(row => {
+                const productSelect = row.querySelector('select[name*="ProductId"]');
+                if (productSelect && productSelect.value) {
+                    hasValidProduct = true;
+                }
+            });
+
+            if (!hasValidProduct) {
+                errors.push('至少需要選擇一項商品');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
+            }
         }
 
         // 初始化：在頁面載入時計算一次（若你希望）
