@@ -12,5 +12,8 @@ namespace incode2.Dtos.Chat
 
         [Required]
         public string ConnectionId { get; set; } // SignalR ID
+
+        public string UserContent { get; set; }  // 用來接收前端使用者輸入的文字 (例如幫我分析這張圖)
     }
 }
+    

@@ -1,11 +1,16 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Hosting; // 新增：用於存取伺服器路徑
+﻿using Google.GenAI;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using System;
-using System.IO; // 新增：用於檔案操作
+using System.IO;
+using System.Linq; // ★ 新增
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Collections.Generic; // ★ 新增
 
 namespace incode2.Services.Chat
 {
@@ -13,92 +18,100 @@ namespace incode2.Services.Chat
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private readonly IWebHostEnvironment _webHostEnvironment; // 新增：環境變數
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        // 修改建構子：注入 IWebHostEnvironment
         public GeminiService(HttpClient httpClient, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _httpClient = httpClient;
             _configuration = configuration;
-            _webHostEnvironment = webHostEnvironment; // 賦值
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // ==========================================
-        // 1. 純文字對話功能 (接收 Controller 組好的完整 Prompt)
+        // ★ [核心新增] 文字向量化 (Embedding)
+        // ==========================================
+        public async Task<float[]> GetEmbeddingAsync(string text)
+        {
+            string geminiApiKey = _configuration["GeminiApiKey"];
+            // 使用專門的 Embedding 模型：text-embedding-004
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={geminiApiKey}";
+
+            var payload = new
+            {
+                model = "models/text-embedding-004",
+                content = new { parts = new[] { new { text = text } } }
+            };
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync(url, jsonContent);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(jsonResponse);
+                    // 解析回傳的向量陣列 (values)
+                    var values = doc.RootElement.GetProperty("embedding").GetProperty("values");
+
+                    return values.EnumerateArray().Select(v => v.GetSingle()).ToArray();
+                }
+
+                throw new Exception($"Embedding API 失敗: {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                // 若失敗，回傳空陣列或拋出異常供 Controller 處理
+                return Array.Empty<float>();
+            }
+        }
+
+        // ==========================================
+        // 1. 純文字對話功能 (更新模型名稱)
         // ==========================================
         public async Task<string> GetGeminiReplyAsync(string fullPrompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
             if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定";
 
-            // 使用 gemini-1.5-flash，速度快且穩定
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
-
-            // 注意：這裡不再硬編碼 System Instruction，因為 Controller 已經讀取 .md 並傳進來了
+            // 改用 1.5-flash，這是目前效能與速度最平衡的版本
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={geminiApiKey}";
 
             var payload = new
             {
-                contents = new[]
-                {
-                    new
-                    {
-                        parts = new[] { new { text = fullPrompt } }
-                    }
-                },
-                generationConfig = new
-                {
-                    temperature = 0.7,
-                    maxOutputTokens = 800, //稍微增加 token 數，避免回答被截斷
-                }
+                contents = new[] { new { parts = new[] { new { text = fullPrompt } } } },
+                generationConfig = new { temperature = 0.7, maxOutputTokens = 1000 }
             };
 
             return await SendToGemini(url, payload);
         }
 
-
-        // AI 生圖功能
-        public async Task<string> GenerateImageAsync(string prompt)
+        // ==========================================
+        // 2. 圖片分析 (Controller 呼叫的入口)
+        // ==========================================
+        public async Task<string> AnalyzeImageAsync(IFormFile imageFile, string prompt)
         {
-            // 1. 模擬 AI 思考時間
-            await Task.Delay(1000);
+            if (imageFile == null || imageFile.Length == 0) return "錯誤：接收到的圖片為空";
 
-            try
+            string base64Image;
+            using (var ms = new MemoryStream())
             {
-                // 2. 優化提示詞
-                // 加上 "cinematic" 等詞彙提升品質
-                string enhancedPrompt = $"cinematic lighting, high quality, 8k, detailed, {prompt}";
-                string safePrompt = Uri.EscapeDataString(enhancedPrompt);
-
-                // 3. 組合 Pollinations API 網址 (修正版)
-                // ★ 關鍵修改：
-                // 1. 移除了 'nologo=true' (這通常需要 API Key)
-                // 2. 移除了 'model=flux' (部分時段需要 Key，改用預設或 turbo)
-                // 3. 加入 'seed' 隨機數，避免快取導致圖片不更新
-
-                int randomSeed = new Random().Next(0, 999999);
-                string imageUrl = $"https://image.pollinations.ai/prompt/{safePrompt}?width=1280&height=720&seed={randomSeed}&model=turbo";
-
-                // 4. 回傳圖片標籤
-                return $"<img src='{imageUrl}' alt='AI Generated Image' style='border-radius: 12px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);' />";
+                await imageFile.CopyToAsync(ms);
+                base64Image = Convert.ToBase64String(ms.ToArray());
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Pollinations Error]: {ex.Message}");
-                // 萬一真的失敗，回傳一張靜態錯誤圖
-                return "https://placehold.co/600x400?text=Service+Busy";
-            }
+
+            return await GetGeminiImageReplyAsync(base64Image, imageFile.ContentType, prompt);
         }
+        
 
         // ==========================================
-        // 3. 以圖搜圖功能
+        // 3. 核心：影像生成內容 (Gemini Vision)
         // ==========================================
         public async Task<string> GetGeminiImageReplyAsync(string base64Image, string mimeType, string prompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
-            if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] API Key 未設定";
-
-            // 使用支援 Vision 的模型
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={geminiApiKey}";
 
             var payload = new
             {
@@ -108,15 +121,8 @@ namespace incode2.Services.Chat
                     {
                         parts = new object[]
                         {
-                            new
-                            {
-                                inline_data = new
-                                {
-                                    mime_type = mimeType,
-                                    data = base64Image
-                                }
-                            },
-                            new { text = prompt }
+                            new { text = prompt },
+                            new { inline_data = new { mime_type = mimeType, data = base64Image } }
                         }
                     }
                 }
@@ -126,72 +132,81 @@ namespace incode2.Services.Chat
         }
 
         // ==========================================
-        // 4. [Helper] 存檔 Base64 圖片並回傳 URL
+        // 4. AI 生圖功能 (ModelsLab)
         // ==========================================
-        private async Task<string> SaveBase64ImageAsync(string base64String)
+        public async Task<string> GenerateImageAsync(string prompt)
         {
-            // 1. 設定路徑: wwwroot/img/generated
-            string folderPath = Path.Combine(_webHostEnvironment.WebRootPath, "img", "generated");
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+            string endpointUrl = "https://modelslab.com/api/v7/images/text-to-image";
+            string apiKey = _configuration["imgapikey"];
 
-            // 2. 產生檔名
-            string fileName = $"gen_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString().Substring(0, 4)}.png";
-            string filePath = Path.Combine(folderPath, fileName);
+            try
+            {
+                var requestData = new
+                {
+                    prompt = $"cinematic lighting, high quality, {prompt}",
+                    model_id = "nano-banana-pro",
+                    aspect_ratio = "1:1",
+                    key = apiKey
+                };
 
-            // 3. 寫入檔案
-            byte[] imageBytes = Convert.FromBase64String(base64String);
-            await File.WriteAllBytesAsync(filePath, imageBytes);
+                var content = new StringContent(JsonSerializer.Serialize(requestData), Encoding.UTF8, "application/json");
+                HttpResponseMessage response = await _httpClient.PostAsync(endpointUrl, content);
+                string responseBody = await response.Content.ReadAsStringAsync();
 
-            // 4. 回傳相對網址 (給前端用)
-            return $"/img/generated/{fileName}";
+                using var doc = JsonDocument.Parse(responseBody);
+                var root = doc.RootElement;
+                string status = root.TryGetProperty("status", out var s) ? s.GetString() : "";
+
+                if (status == "success" && root.TryGetProperty("output", out var output) && output.GetArrayLength() > 0)
+                {
+                    string imageUrl = output[0].GetString();
+                    return $"<img src='{imageUrl}' referrerpolicy='no-referrer' alt='AI Generated' style='border-radius: 12px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.15);' />";
+                }
+
+                return status == "processing" ? "圖片生成中，請稍候 20 秒。" : "生圖服務暫時忙碌。";
+            }
+            catch (Exception ex) { return $"生成異常：{ex.Message}"; }
         }
 
         // ==========================================
-        // 5. [Helper] 通用發送 (Text/Vision)
+        // 5. [Helper] 通用發送
         // ==========================================
         private async Task<string> SendToGemini(string url, object payload)
         {
             try
             {
-                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, IgnoreNullValues = true };
-                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
 
+                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
                 var response = await _httpClient.PostAsync(url, jsonContent);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = await response.Content.ReadAsStringAsync();
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+
+                    if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
                     {
-                        // 嘗試安全地解析 Gemini 回傳結構
-                        if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
+                        var candidate = candidates[0];
+                        if (candidate.TryGetProperty("content", out var content) &&
+                            content.TryGetProperty("parts", out var parts) && parts.GetArrayLength() > 0)
                         {
-                            var candidate = candidates[0];
-
-                            // 檢查是否因為安全性被阻擋 (SafetyRatings)
-                            if (candidate.TryGetProperty("finishReason", out var finishReason) && finishReason.GetString() == "SAFETY")
-                            {
-                                return "抱歉，您的請求內容涉及敏感議題，AI 無法回答。";
-                            }
-
-                            if (candidate.TryGetProperty("content", out var content) &&
-                                content.TryGetProperty("parts", out var parts) &&
-                                parts.GetArrayLength() > 0)
-                            {
-                                return parts[0].GetProperty("text").GetString();
-                            }
+                            return parts[0].GetProperty("text").GetString();
                         }
-                        return "AI 思考中，但沒有產生回應。";
                     }
+                    return "AI 思考中，但沒有回傳文字內容。";
                 }
-
-                string errorMsg = await response.Content.ReadAsStringAsync();
-                return $"[API 錯誤] {response.StatusCode}";
+                else
+                {
+                    string errorDetails = await response.Content.ReadAsStringAsync();
+                    return $"[API 錯誤] 代碼: {response.StatusCode}\n詳細訊息: {errorDetails}";
+                }
             }
-            catch (Exception ex)
-            {
-                return $"[連線錯誤] {ex.Message}";
-            }
+            catch (Exception ex) { return $"[連線錯誤] {ex.Message}"; }
         }
     }
 }
