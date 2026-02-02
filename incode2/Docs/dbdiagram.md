@@ -161,6 +161,7 @@ Table point_log {
   source_id int [ note: '點數異動來源類型的 id']
   point_type_definition_id int [not null, ref: > point_type_definition.point_type_definition_id, note: '點數異動類型']
   change_amount int [not null, note: '本次變動點數（正數＝收入，負數＝支出）']
+  balance_after int [not null, note: '變動後餘額（建議改用觸發器自動計算或 VIEW 即時計算，避免手動維護出錯）']
   status nvarchar(50) [not null,check: `[status] IN ('pending','success','failed','cancelled','system')`, default: 'success', note: 'pending, success, failed, cancelled, system']  
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
@@ -168,7 +169,7 @@ Table point_log {
 // 點數類型定義
 Table point_type_definition {
   point_type_definition_id int [pk, increment, note: '點數類型主鍵']
-  type_name nvarchar(50) [ not null, note: '程式用代碼，例如：recharge, mission, shopping']
+  type_name nvarchar(50) [ not null, check:`[type_name] IN ('mission','entrust_mission','entrust_mission_point_reserve','point_recharge','order','system')` , note: '程式用代碼，例如：recharge, mission, shopping']
   display_name nvarchar(100) [not null, note: '前台顯示名稱，例如：儲值點數、任務獎勵']
   description nvarchar(100) [note: '後台管理員看的詳細說明']
   is_active bit [not null, default: 1]
@@ -186,9 +187,16 @@ Table mission {
   target_count int [not null, check: `[target_count] >= 1`, note: '需要達成的次數/數量']
   reward_points int [not null, check: `[reward_points] >= 0`, note: '完成後獎勵點數']
   reward_exp int [not null, check: `[reward_exp] >= 0`, note: '完成後獎勵經驗值']
+  category nvarchar(50) [not null, note: '基礎、內容創作、社群互動、觀影實踐、電影知識 等']
+  difficulty nvarchar(20) [default: '簡單', note: '簡單、中等、高難度']
+  estimated_duration nvarchar(50) [note: '預估完成時間，例如：每日、3-7 天、7-14 天']
   reset_type NVARCHAR(50) [not null, check: `[reset_type] IN ('none','daily','weekly','monthly','yearly','quarterly')`, default: 'none', note: '重置週期']
+  participant_count int [default: 0, note: '總參與人數（累計或當期）']
+  is_featured bit [default: 0,note: '是否為特色/推薦任務']
+  last_reset_at datetime [note: '上次重置時間，用來判斷是否需要重置']
   is_active bit [not null, default: 1]
   created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime
 }
 
 Table mission_progress {
@@ -211,10 +219,15 @@ Table entrust_mission {
   title nvarchar(150) [not null, note: '委託任務標題']
   detail nvarchar(500) [not null, note: '委託任務詳細內容']
   reward_points int [not null, check: `[reward_points] >= 0`, note: '完成可得點數']
+  category nvarchar(50) [not null, note: '任務類別，例如：字幕、尋片、資源、解析、票務、社交']
+  deadline datetime [note: '預計完成期限，可為 null 表示無期限']
   max_participants int [not null, default: 1, note: '接取任務人數限制']
-  status nvarchar(50) [not null, check: `[status] IN ('open','closed','cancelled')`, default: 'open', note: '任務狀態']
+  current_participants int [default: 0 , note: '目前已接取人數']
+  status nvarchar(50) [not null, check: `[status] IN ('open','in_progress','completed','cancelled','expired')`, default: 'open', note: '任務狀態']
+  is_urgent bit [default: 0,note: '是否標記為急件，由發布者主動設定']
   is_active bit [not null, default: 1]
   created_at datetime [default: `CURRENT_TIMESTAMP`, note: '發布時間']
+  updated_at datetime [note: '最後更新時間，可用 trigger 自動更新']
 }
 
 Table entrust_mission_progress {
