@@ -411,6 +411,11 @@ function handleThreadReplyingTargetClick() {
             'replying-target': isThreadReplyingTarget,
             'cursor-pointer': isThreadReplyingTarget,
           }"
+          :id="
+            forumStore.threadDetail?.id != null
+              ? `content-${forumStore.threadDetail.id}`
+              : null
+          "
           @click="handleThreadReplyingTargetClick"
         >
           <div
