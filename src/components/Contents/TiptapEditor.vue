@@ -30,6 +30,23 @@ const cropImageEl = ref(null);
 const selectedImageNode = ref(null);
 const selectedImagePos = ref(null);
 const editorContentRef = ref(null);
+let imageClickTimer = null;
+
+const ResizableImage = ImageExtension.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: "25%",
+        parseHTML: (element) =>
+          element.style.width || element.getAttribute("width") || "25%",
+        renderHTML: (attributes) => ({
+          style: `width: ${attributes.width};`,
+        }),
+      },
+    };
+  },
+});
 
 const adjustEditorHeight = () => {
   if (!editorContentRef.value) return;
@@ -83,7 +100,7 @@ const editor = useEditor({
     }),
     PreserveImageOnShiftEnter,
     Underline,
-    ImageExtension.configure({
+    ResizableImage.configure({
       allowBase64: true,
     }),
     YouTube.configure({
@@ -104,77 +121,114 @@ const editor = useEditor({
   onCreate: ({ editor: editorInstance }) => {
     // 添加雙擊圖片事件監聽
     const editorElement = editorInstance.view.dom;
+    editorElement.addEventListener("click", handleImageClick);
     editorElement.addEventListener("dblclick", handleImageDoubleClick);
     nextTick(() => adjustEditorHeight());
   },
 });
 
-// 處理雙擊圖片事件
-const handleImageDoubleClick = async (event) => {
-  const target = event.target;
-  if (target.tagName === "IMG" && editor.value) {
-    event.preventDefault();
-
-    // 獲取圖片的 src
-    const imgSrc = target.getAttribute("src");
-    if (!imgSrc) return;
-
-    try {
-      // 保存當前選中的圖片節點位置，以便替換
-      const pos = editor.value.view.posAtDOM(target, 0);
-      selectedImagePos.value = pos;
-      selectedImageNode.value = target;
-
-      // 重新創建一個帶 crossorigin 的圖片元素，避免 canvas 污染
+const getImageFileFromSrc = async (imgSrc) => {
+  try {
+    const response = await fetch(imgSrc, { mode: "cors" });
+    if (!response.ok) throw new Error("fetch failed");
+    const blob = await response.blob();
+    return new File([blob], "image.jpg", {
+      type: blob.type || "image/jpeg",
+    });
+  } catch (error) {
+    return await new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = "anonymous";
-
       img.onload = () => {
         try {
-          // 使用 canvas 將圖片轉換為 Blob
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
-
-          // 設置 canvas 大小與圖片相同
           canvas.width = img.naturalWidth || img.width;
           canvas.height = img.naturalHeight || img.height;
-
-          // 繪製圖片到 canvas
           ctx.drawImage(img, 0, 0);
-
-          // 將 canvas 轉換為 Blob
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                throw new Error("無法創建圖片 Blob");
+                reject(new Error("無法創建圖片 Blob"));
+                return;
               }
-              const file = new File([blob], "image.jpg", {
-                type: "image/jpeg",
-              });
-              // 打開裁切器
-              openCropperForEdit(file);
+              resolve(
+                new File([blob], "image.jpg", {
+                  type: "image/jpeg",
+                })
+              );
             },
             "image/jpeg",
             0.95
           );
-        } catch (error) {
-          console.error("[TiptapEditor] Canvas 處理失敗", error);
-          alert("無法載入圖片，請稍後再試");
+        } catch (canvasError) {
+          reject(canvasError);
         }
       };
-
-      img.onerror = () => {
-        console.error("[TiptapEditor] 圖片載入失敗");
-        alert("無法載入圖片，請稍後再試");
-      };
-
-      // 開始載入圖片
+      img.onerror = () => reject(new Error("圖片載入失敗"));
       img.src = imgSrc;
-    } catch (error) {
-      console.error("[TiptapEditor] 無法載入圖片進行編輯", error);
-      alert("無法載入圖片，請稍後再試");
-    }
+    });
   }
+};
+
+const openCropperFromEvent = async (event) => {
+  if (!editor.value) return;
+  const target = event.target?.closest?.("img");
+  if (!target) return;
+  event.preventDefault();
+
+  const imgSrc = target.getAttribute("src");
+  if (!imgSrc) return;
+
+  try {
+    const pos = editor.value.view.posAtDOM(target, 0);
+    selectedImagePos.value = pos;
+    selectedImageNode.value = target;
+    editor.value.commands.setNodeSelection(pos);
+
+    const file = await getImageFileFromSrc(imgSrc);
+    openCropperForEdit(file);
+  } catch (error) {
+    console.error("[TiptapEditor] 無法載入圖片進行編輯", error);
+    alert("無法載入圖片，請稍後再試");
+  }
+};
+
+const resizeImageFromEvent = (event) => {
+  if (!editor.value) return;
+  const target = event.target?.closest?.("img");
+  if (!target) return;
+  event.preventDefault();
+
+  const pos = editor.value.view.posAtDOM(target, 0);
+  editor.value.commands.setNodeSelection(pos);
+
+  const currentWidth =
+    target.style.width || target.getAttribute("width") || "25%";
+  const widthList = ["25%", "50%", "100%"];
+  const index = widthList.indexOf(currentWidth);
+  const nextWidth = widthList[(index + 1) % widthList.length];
+
+  editor.value.commands.updateAttributes("image", { width: nextWidth });
+  nextTick(() => adjustEditorHeight());
+};
+
+// 單擊圖片 -> 調整大小
+const handleImageClick = (event) => {
+  if (imageClickTimer) return;
+  imageClickTimer = window.setTimeout(() => {
+    resizeImageFromEvent(event);
+    imageClickTimer = null;
+  }, 200);
+};
+
+// 雙擊圖片
+const handleImageDoubleClick = (event) => {
+  if (imageClickTimer) {
+    clearTimeout(imageClickTimer);
+    imageClickTimer = null;
+  }
+  openCropperFromEvent(event);
 };
 
 // 監聽 props.modelValue 變化，同步到編輯器
@@ -386,6 +440,7 @@ const insertCroppedImage = async () => {
 onBeforeUnmount(() => {
   if (editor.value) {
     const editorElement = editor.value.view.dom;
+    editorElement.removeEventListener("click", handleImageClick);
     editorElement.removeEventListener("dblclick", handleImageDoubleClick);
     editor.value.destroy();
   }
@@ -600,6 +655,8 @@ onBeforeUnmount(() => {
   height: auto;
   margin: 0.5rem 0;
   border-radius: 0.25rem;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 :deep(.ProseMirror iframe) {
