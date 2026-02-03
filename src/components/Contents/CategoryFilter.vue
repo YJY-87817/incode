@@ -134,16 +134,6 @@ const handleClearCategory = () => {
             <p>目前沒有分類</p>
           </div>
         </div>
-
-        <!-- 取消分類按鈕 -->
-        <button
-          v-if="forumStore.selectedCategory !== null"
-          @click="handleClearCategory"
-          class="btn btn-sm btn-clear-category flex-shrink-0"
-          title="取消分類"
-        >
-          <i class="fas fa-times"></i>
-        </button>
       </div>
     </div>
   </div>
@@ -254,34 +244,6 @@ const handleClearCategory = () => {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #d1d3d4 #f0f0f0;
-}
-
-/* 取消分類按鈕 */
-.btn-clear-category {
-  background-color: #d1d3d4;
-  border-color: #d1d3d4;
-  color: #432f28;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  margin-top: 1px;
-}
-
-.btn-clear-category:hover {
-  background-color: #b8babf;
-  border-color: #b8babf;
-  color: #432f28;
-  transform: scale(1.08);
-}
-
-.btn-clear-category:active {
-  background-color: #a0a2a7;
-  border-color: #a0a2a7;
 }
 
 .category-container::-webkit-scrollbar {
