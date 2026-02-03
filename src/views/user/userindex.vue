@@ -130,7 +130,7 @@ onUnmounted(() => {
                   class="border border-4 border-white elevation-2"
                 >
                   <v-img
-                    src="https://cdn.vuetifyjs.com/images/john.jpg"
+                    :src="userStore.displayAvatar"
                     alt="User Avatar"
                     cover
                   ></v-img>
@@ -259,7 +259,7 @@ onUnmounted(() => {
                           :rules="[rules.required]"
                         ></v-text-field>
                       </v-col>
-                      <v-col cols="12" sm="6">
+                      <!-- Email先不能改 <v-col cols="12" sm="6">
                         <v-text-field
                           v-model="editForm.email"
                           label="Email"
@@ -267,7 +267,7 @@ onUnmounted(() => {
                           density="comfortable"
                           :rules="[rules.required, rules.email]"
                         ></v-text-field>
-                      </v-col>
+                      </v-col> -->
                       <v-col cols="12" sm="6">
                         <v-text-field
                           v-model="editForm.phone"
@@ -289,7 +289,7 @@ onUnmounted(() => {
                           :active="true"
                         ></v-text-field>
                       </v-col>
-                      <v-col cols="12">
+                      <v-col cols="12" sm="6">
                         <v-text-field
                           v-model="editForm.address"
                           label="地址"
