@@ -32,9 +32,6 @@ const selectedImagePos = ref(null);
 const editorContentRef = ref(null);
 let imageClickTimer = null;
 
-// 臨時圖片存儲：key = base64 URL, value = File 對象
-const pendingImages = ref(new Map());
-
 const ResizableImage = ImageExtension.extend({
   addAttributes() {
     return {
@@ -251,16 +248,6 @@ watch(
   { flush: "post" },
 );
 
-// 將檔案轉換為 base64
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 const insertImage = async (event) => {
   const files = event.target?.files;
   if (!files || !files.length) return;
@@ -274,19 +261,18 @@ const insertImage = async (event) => {
 
   isUploadingImages.value = true;
   try {
-    // 將圖片轉換為 base64，先暫存在客戶端
-    const base64Promises = Array.from(files).map(async (file) => {
-      const base64 = await fileToBase64(file);
-      // 儲存檔案對象以便後續上傳
-      pendingImages.value.set(base64, file);
-      return base64;
-    });
+    const urls = await uploadImage(files);
+    const urlList = Array.isArray(urls) ? urls : [urls];
 
-    const base64List = await Promise.all(base64Promises);
+    const validUrls = urlList.filter(Boolean);
+    if (!validUrls.length) {
+      console.warn("[TiptapEditor] insertImage - 所有 URL 皆為空");
+      return;
+    }
 
-    const content = base64List.flatMap((base64, index) => {
-      const nodes = [{ type: "image", attrs: { src: base64 } }];
-      if (index < base64List.length - 1) {
+    const content = validUrls.flatMap((url, index) => {
+      const nodes = [{ type: "image", attrs: { src: url } }];
+      if (index < validUrls.length - 1) {
         nodes.push({ type: "paragraph" });
       }
       return nodes;
@@ -311,8 +297,13 @@ const insertImage = async (event) => {
       console.error("[TiptapEditor] insertImage - 插入圖片失敗:", err);
     }
   } catch (error) {
-    console.error("[TiptapEditor] insertImage - 處理失敗:", error);
-    alert("圖片處理失敗，請稍後再試");
+    console.error("[TiptapEditor] insertImage - 上傳失敗:", error);
+    console.error("[TiptapEditor] insertImage - 錯誤詳情:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    alert("圖片上傳失敗，請稍後再試");
   } finally {
     isUploadingImages.value = false;
     if (event.target) event.target.value = "";
@@ -388,10 +379,20 @@ const insertCroppedImage = async () => {
       canvas.toBlob(resolve, "image/jpeg", 0.9),
     );
 
-    // 裁剪後的圖片也先轉為 base64，暫存在客戶端
-    const croppedFile = new File([blob], "cropped.jpg", { type: "image/jpeg" });
-    const src = canvas.toDataURL("image/jpeg", 0.9);
-    pendingImages.value.set(src, croppedFile);
+    // 嘗試上傳圖片
+    let src;
+    try {
+      const urls = await uploadImage([
+        new File([blob], "cropped.jpg", { type: "image/jpeg" }),
+      ]);
+      src = Array.isArray(urls) ? urls[0] : urls;
+    } catch (uploadError) {
+      console.error(
+        "[TiptapEditor] 裁剪圖片上傳失敗，使用 base64:",
+        uploadError,
+      );
+      src = canvas.toDataURL("image/jpeg", 0.9);
+    }
 
     // 如果有選中的圖片位置，則替換該圖片，否則插入新圖片
     if (selectedImagePos.value !== null) {
@@ -445,61 +446,6 @@ onBeforeUnmount(() => {
   }
   if (cropper.value) cropper.value.destroy();
   if (cropSource.value) URL.revokeObjectURL(cropSource.value);
-});
-
-// 暴露方法給父組件：上傳所有待處理的圖片
-const uploadPendingImages = async () => {
-  if (!editor.value || pendingImages.value.size === 0) {
-    return props.modelValue; // 沒有待上傳的圖片，直接返回當前內容
-  }
-
-  let html = editor.value.getHTML();
-  const uploadPromises = [];
-
-  // 收集所有需要上傳的圖片
-  for (const [base64Url, file] of pendingImages.value.entries()) {
-    if (html.includes(base64Url)) {
-      uploadPromises.push({ base64Url, file });
-    }
-  }
-
-  if (uploadPromises.length === 0) {
-    pendingImages.value.clear();
-    return html;
-  }
-
-  try {
-    // 批量上傳圖片
-    const files = uploadPromises.map((item) => item.file);
-    const urls = await uploadImage(files);
-    const urlList = Array.isArray(urls) ? urls : [urls];
-
-    // 替換 base64 為實際 URL
-    uploadPromises.forEach((item, index) => {
-      if (urlList[index]) {
-        html = html.replaceAll(item.base64Url, urlList[index]);
-        pendingImages.value.delete(item.base64Url);
-      }
-    });
-
-    // 更新編輯器內容
-    editor.value.commands.setContent(html);
-    return html;
-  } catch (error) {
-    console.error("[TiptapEditor] 上傳待處理圖片失敗:", error);
-    throw error;
-  }
-};
-
-// 清除所有待上傳的圖片（例如取消發文時）
-const clearPendingImages = () => {
-  pendingImages.value.clear();
-};
-
-// 暴露方法給父組件
-defineExpose({
-  uploadPendingImages,
-  clearPendingImages,
 });
 </script>
 

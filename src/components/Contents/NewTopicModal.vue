@@ -10,9 +10,6 @@ const forumStore = useForumStore();
 const { getModeTitle, validatePost, publishPost, hasDraftContent } =
   useForumPost();
 
-// 編輯器 ref
-const editorRef = ref(null);
-
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isPostMode = computed(() => modalMode.value === "post");
 const modalTitle = computed(() => getModeTitle(modalMode.value));
@@ -685,50 +682,31 @@ const closeTitleBodyRequiredModal = () => {
 };
 
 const submitNewTopic = async () => {
-  try {
-    // 先上傳圖片，獲取含實際 URL 的內容
-    const finalBody = editorRef.value
-      ? await editorRef.value.uploadPendingImages()
-      : newTopicState.body;
+  // 使用 composable 的 publishPost 進行驗證和提交
+  const success = await publishPost({
+    title: newTopicState.title,
+    body: newTopicState.body,
+    categoryId: effectiveCategoryId.value,
+    parentContentId: newTopicState.parentContentId,
+    contentType: forumStore.newTopic?.contentType,
+  });
 
-    // 使用 composable 的 publishPost 進行驗證和提交
-    const success = await publishPost({
-      title: newTopicState.title,
-      body: finalBody, // 使用包含實際圖片 URL 的內容
-      categoryId: effectiveCategoryId.value,
-      parentContentId: newTopicState.parentContentId,
-      contentType: forumStore.newTopic?.contentType,
-    });
-
-    if (!success) {
-      return;
-    }
-
-    // 如果是從草稿打開的，刪除該草稿
-    if (forumStore.currentEditingDraftId) {
-      forumStore.removeDraft(forumStore.currentEditingDraftId);
-      forumStore.currentEditingDraftId = null;
-    }
-
-    // 關閉 modal 和重置內容
-    resetNewTopicDraft();
-    closeNewTopic();
-  } catch (error) {
-    console.error("發佈失敗:", error);
-    Swal.fire({
-      title: "發佈失敗",
-      text: "圖片上傳失敗，請稍後再試",
-      icon: "error",
-    });
+  if (!success) {
+    return;
   }
+
+  // 如果是從草稿打開的，刪除該草稿
+  if (forumStore.currentEditingDraftId) {
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
+    forumStore.currentEditingDraftId = null;
+  }
+
+  // 關閉 modal 和重置內容
+  resetNewTopicDraft();
+  closeNewTopic();
 };
 
 const closeNewTopic = () => {
-  // 清除待上傳的圖片
-  if (editorRef.value) {
-    editorRef.value.clearPendingImages();
-  }
-
   forumStore.toggleNewTopicModal(false);
 };
 
@@ -1105,7 +1083,6 @@ const handleModalCancel = () => {
               <div class="mb-3">
                 <label class="form-label">內容</label>
                 <TiptapEditor
-                  ref="editorRef"
                   v-model="newTopicState.body"
                   placeholder="請輸入貼文內容..."
                 />
