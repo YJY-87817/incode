@@ -20,6 +20,17 @@ const handleSelectCategory = (categoryId) => {
     router.push({ name: "forum" });
   }
 };
+
+const handleClearCategory = () => {
+  forumStore.selectedCategory = null;
+  forumStore.newTopic.categoryId = null;
+  forumStore.pagination.currentPage = 1;
+  forumStore.fetchTopics();
+  const isDetailPage = Boolean(route.params?.id);
+  if (isDetailPage) {
+    router.push({ name: "forum" });
+  }
+};
 </script>
 
 <template>
@@ -36,6 +47,25 @@ const handleSelectCategory = (categoryId) => {
 
     <!-- 分類內容 -->
     <div class="p-2 p-md-3">
+      <!-- 取消分類按鈕 -->
+      <div v-if="forumStore.selectedCategory !== null" class="mb-3">
+        <button
+          @click="handleClearCategory"
+          class="btn btn-sm w-100"
+          style="
+            background-color: #d1d3d4;
+            border-color: #d1d3d4;
+            color: #432f28;
+            transition: all 0.2s ease;
+          "
+          @mouseover="$event.target.style.backgroundColor = '#b8babf'; $event.target.style.borderColor = '#b8babf';"
+          @mouseout="$event.target.style.backgroundColor = '#d1d3d4'; $event.target.style.borderColor = '#d1d3d4';"
+        >
+          <i class="fas fa-times"></i>
+          <span class="ms-2">取消分類</span>
+        </button>
+      </div>
+
       <!-- 載入中提示 -->
       <div
         v-if="forumStore.isLoading && forumStore.categories.length === 0"
