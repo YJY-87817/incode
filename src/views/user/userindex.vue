@@ -372,7 +372,7 @@ onUnmounted(() => {
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="4">
+        <!-- <v-col cols="12" md="4">
           <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">
             最新通知
           </h3>
@@ -409,7 +409,7 @@ onUnmounted(() => {
               </div>
             </v-card>
           </div>
-        </v-col>
+        </v-col> -->
       </v-row>
       <v-row>
         <v-col cols="12">
