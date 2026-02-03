@@ -41,5 +41,7 @@ public partial class Content
 
     public virtual Content ParentContent { get; set; }
 
+    public virtual ICollection<PointTip> PointTip { get; set; } = new List<PointTip>();
+
     public virtual User User { get; set; }
 }

@@ -40,7 +40,7 @@ namespace incode2.Services.Point
                         ? (_context.EntrustMission.Where(e => e.EntrustMissionId == l.SourceId).Select(e => e.Title).FirstOrDefault() ?? "委託任務獎勵")
                         : l.SourceType == "entrust_mission_point_reserve"
                         ? (_context.EntrustMission.Where(e => e.EntrustMissionId == l.SourceId).Select(e => "[預扣] " + e.Title).FirstOrDefault() ?? "委託發布預扣")
-                        : l.SourceType == "order"
+                        : l.SourceType == "orders"
                         ? "商城商品兌換"
                         : l.SourceType == "point_recharge"
                         ? "點數儲值"
@@ -79,7 +79,7 @@ namespace incode2.Services.Point
             var missionIds = logs.Where(l => l.SourceType == "mission").Select(l => l.SourceId).Distinct().ToList();
             var entrustIds = logs.Where(l => l.SourceType == "entrust_mission" || l.SourceType == "entrust_mission_point_reserve")
                                  .Select(l => l.SourceId).Distinct().ToList();
-            var orderIds = logs.Where(l => l.SourceType == "order").Select(l => l.SourceId).Distinct().ToList();
+            var orderIds = logs.Where(l => l.SourceType == "orders").Select(l => l.SourceId).Distinct().ToList();
             var rechargeIds = logs.Where(l => l.SourceType == "point_recharge").Select(l => l.SourceId).Distinct().ToList();
 
             // 2. 執行批量查詢並轉換為 Dictionary
@@ -97,7 +97,8 @@ namespace incode2.Services.Point
                 .Where(o => orderIds.Contains(o.OrderId))
                 .ToDictionaryAsync(o => o.OrderId, o => o);
 
-            return logs.Select(log => {
+            return logs.Select(log =>
+            {
                 // 抓取具體項目名稱（如：每日登入）
                 string specificTitle = log.SourceType switch
                 {
@@ -105,7 +106,7 @@ namespace incode2.Services.Point
                     "entrust_mission" => entrusts.GetValueOrDefault(log.SourceId ?? 0, "委託任務獎勵"),
                     "entrust_mission_point_reserve" => entrusts.TryGetValue(log.SourceId ?? 0, out var t) ? $"[預扣] {t}" : "委託預扣",
                     "point_recharge" => "點數儲值",
-                    "order" => orders.TryGetValue(log.SourceId ?? 0, out var o) ? GetOrderDisplayText(o) : "商城消費",
+                    "orders" => orders.TryGetValue(log.SourceId ?? 0, out var o) ? GetOrderDisplayText(o) : "商城消費",
                     _ => "系統調整" // 只有完全對不到類型時才顯示這個
                 };
 
@@ -132,6 +133,150 @@ namespace incode2.Services.Point
             return totalItems > 1
                 ? $"購買 {firstProduct} 等 {totalItems} 件商品"
                 : $"購買 {firstProduct}";
+        }
+
+        //儲值成功 => 入帳（綠界 ReturnURL 用）
+        public async Task RechargeSuccessAsync(string orderNo)
+        {
+            using var tx = await _context.Database.BeginTransactionAsync();
+
+            var order = await _context.PointRecharge
+                .FirstOrDefaultAsync(o => o.OrderNo == orderNo);
+
+            if (order == null)
+                throw new Exception("訂單不存在");
+
+            if (order.Status == "success")
+                return; // 防重送（超重要）
+
+            // 取得最新餘額
+            var lastLog = await _context.PointLog
+                .Where(l => l.UserId == order.UserId)
+                .OrderByDescending(l => l.CreatedAt)
+                .ThenByDescending(l => l.PointLogId)
+                .Select(l => (int?)l.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            var newBalance = (lastLog ?? 0) + order.PointsGranted;
+
+            _context.PointLog.Add(new PointLog
+            {
+                UserId = order.UserId,
+                PointTypeDefinitionId = 4, // recharge
+                SourceType = "point_recharge",
+                SourceId = order.PointRechargeId,
+                ChangeAmount = order.PointsGranted,
+                BalanceAfter = newBalance,
+                Status = "success",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            // 更新訂單狀態
+            order.Status = "success";
+            order.CreatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+
+
+        //兌換商品（扣點）
+        public async Task ConsumeAsync(int userId, int points, int OrderId)
+        {
+            using var tx = await _context.Database.BeginTransactionAsync();
+
+            // 取得最新點數餘額
+            var lastLog = await _context.PointLog
+                .Where(l => l.UserId == userId)
+                .OrderByDescending(l => l.CreatedAt)
+                .ThenByDescending(l => l.PointLogId)
+                .Select(l => (int?)l.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            var currentBalance = lastLog ?? 0;
+
+            if (currentBalance < points)
+                throw new Exception("點數不足");
+
+            var newBalance = currentBalance - points;
+
+            _context.PointLog.Add(new PointLog
+            {
+                UserId = userId,
+                PointTypeDefinitionId = 5, // order
+                SourceType = "orders",
+                SourceId = OrderId,
+                ChangeAmount = -points,
+                BalanceAfter = newBalance,
+                Status = "success",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+
+
+        public async Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount)
+        {
+            if (fromUserId == toUserId)
+                throw new Exception("不能打賞自己");
+
+            using var tx = await _context.Database.BeginTransactionAsync();
+
+            // 取得雙方最新餘額
+            var fromLast = await _context.PointLog
+                .Where(l => l.UserId == fromUserId)
+                .OrderByDescending(l => l.CreatedAt)
+                .ThenByDescending(l => l.PointLogId)
+                .Select(l => (int?)l.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            var toLast = await _context.PointLog
+                .Where(l => l.UserId == toUserId)
+                .OrderByDescending(l => l.CreatedAt)
+                .ThenByDescending(l => l.PointLogId)
+                .Select(l => (int?)l.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            var fromBalance = fromLast ?? 0;
+            var toBalance = toLast ?? 0;
+
+            if (fromBalance < amount)
+                throw new Exception("點數不足");
+
+            var fromNewBalance = fromBalance - amount;
+            var toNewBalance = toBalance + amount;
+
+            // 新增兩筆 PointLog
+            _context.PointLog.AddRange(
+                new PointLog
+                {
+                    UserId = fromUserId,
+                    PointTypeDefinitionId = 6, // tip_out
+                    SourceType = "content",
+                    SourceId = ContentId,
+                    ChangeAmount = -amount,
+                    BalanceAfter = fromNewBalance,
+                    Status = "success",
+                    CreatedAt = DateTime.UtcNow
+                },
+                new PointLog
+                {
+                    UserId = toUserId,
+                    PointTypeDefinitionId = 7, // tip_in
+                    SourceType = "content",
+                    SourceId = ContentId,
+                    ChangeAmount = amount,
+                    BalanceAfter = toNewBalance,
+                    Status = "success",
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
+
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+
         }
     }
 }
