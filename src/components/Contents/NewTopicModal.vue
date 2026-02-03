@@ -289,9 +289,10 @@ watch(
 );
 
 const checkAndRemoveEmptyDraft = () => {
-  const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
-  const hasBody = newTopicState.body && newTopicState.body.trim().length > 0;
-  if (!hasTitle && !hasBody && forumStore.currentEditingDraftId) {
+  if (
+    !hasDraftContent(newTopicState.title, newTopicState.body) &&
+    forumStore.currentEditingDraftId
+  ) {
     forumStore.removeDraft(forumStore.currentEditingDraftId);
     forumStore.currentEditingDraftId = null;
   }

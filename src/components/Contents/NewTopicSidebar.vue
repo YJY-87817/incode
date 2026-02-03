@@ -135,6 +135,10 @@ const closeDraft = (draft) => {
   forumStore.removeDraft(draft.id);
 };
 
+const hasVisibleDraftContent = (draft) => {
+  return hasDraftContent(draft.title, draft.body);
+};
+
 const openLargeEditor = (draft) => {
   // 將草稿內容複製到 newTopic，然後打開 modal
   forumStore.newTopic.title = draft.title;
@@ -188,9 +192,7 @@ const updateDraftBody = (draft, value) => {
 };
 
 const checkAndRemoveEmptyDraft = (draftId, title, body) => {
-  const hasTitle = title && title.trim().length > 0;
-  const hasBody = body && body.trim().length > 0;
-  if (!hasTitle && !hasBody) {
+  if (!hasDraftContent(title, body)) {
     forumStore.removeDraft(draftId);
   }
 };
@@ -270,21 +272,12 @@ const checkAndRemoveEmptyDraft = (draftId, title, body) => {
 
     <!-- 所有最小化的 banner 放在底部固定容器中 -->
     <div
-      v-if="
-        allDrafts.some(
-          (d) =>
-            d.isMinimized &&
-            (d.title?.trim().length > 0 || d.body?.trim().length > 0),
-        )
-      "
+      v-if="allDrafts.some((d) => d.isMinimized && hasVisibleDraftContent(d))"
       class="banners-container"
     >
       <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
         <div
-          v-if="
-            draft.isMinimized &&
-            (draft.title?.trim().length > 0 || draft.body?.trim().length > 0)
-          "
+          v-if="draft.isMinimized && hasVisibleDraftContent(draft)"
           class="new-topic-banner"
           @click="expandDraft(draft)"
         >

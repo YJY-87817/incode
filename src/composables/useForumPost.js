@@ -164,8 +164,26 @@ export function useForumPost() {
    */
   const hasDraftContent = (title, body) => {
     const hasTitle = title && title.trim().length > 0;
-    const hasContent = body && body.trim().length > 0;
-    return hasTitle || hasContent;
+
+    if (!body || !body.trim()) {
+      return hasTitle;
+    }
+
+    const raw = body.trim();
+    const looksLikeHtml = /<[^>]+>/.test(raw);
+
+    if (!looksLikeHtml) {
+      const text = raw.replace(/\u00a0/g, " ").trim();
+      return hasTitle || text.length > 0;
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(raw, "text/html");
+    const text = (doc.body.textContent || "").replace(/\u00a0/g, " ").trim();
+    const hasMedia =
+      doc.body.querySelector("img, video, audio, iframe") !== null;
+
+    return hasTitle || text.length > 0 || hasMedia;
   };
 
   /**
