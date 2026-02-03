@@ -323,10 +323,22 @@ const updateDraftBody = (draft, value) => {
     </div>
 
     <!-- 所有最小化的 banner 放在底部固定容器中 -->
-    <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
+    <div
+      v-if="
+        allDrafts.some(
+          (d) =>
+            d.isMinimized &&
+            (d.title?.trim().length > 0 || d.body?.trim().length > 0)
+        )
+      "
+      class="banners-container"
+    >
       <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
         <div
-          v-if="draft.isMinimized"
+          v-if="
+            draft.isMinimized &&
+            (draft.title?.trim().length > 0 || draft.body?.trim().length > 0)
+          "
           class="new-topic-banner"
           @click="expandDraft(draft)"
         >
@@ -374,9 +386,7 @@ const updateDraftBody = (draft, value) => {
   flex-direction: column;
   gap: 0.25rem;
   z-index: 50;
-  background: white;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-  padding-bottom: 0.25rem;
+  background: transparent;
   margin-top: auto;
 }
 
@@ -391,7 +401,7 @@ const updateDraftBody = (draft, value) => {
 /* 最小化的 banner 樣式 */
 .new-topic-banner {
   position: relative;
-  background: white;
+  background: transparent;
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
