@@ -1,6 +1,7 @@
 ﻿using incode2.DTO.user;
 using incode2.Extensions;
 using incode2.Models;
+using incode2.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,13 @@ namespace incode2.ApiController.user
     public class UserController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
+        private readonly IUserService _userService;
 
-    public UserController(incodedatabaseContext context)
+        public UserController(incodedatabaseContext context, IUserService userService)
     {
       _context = context;
-    }
+            _userService = userService;
+        }
 
         // GET: api/User
         // 取得所有使用者列表
@@ -147,6 +150,23 @@ namespace incode2.ApiController.user
         private bool UserExists(int id)
         {
             return _context.User.Any(e => e.UserId == id);
+        }
+
+        // user/41/stats
+        [HttpGet("{userId}/stats")]
+        public async Task<ActionResult<UserProfileStatsDto>> GetUserStats(int userId)
+        {
+            // 呼叫 Service
+            var stats = await _userService.GetUserStatsAsync(userId);
+
+            // 判斷 Service 是否回傳 null (代表找不到該用戶)
+            if (stats == null)
+            {
+                return NotFound(new { message = "找不到該使用者或是使用者不存在" });
+            }
+
+            // 回傳 200 OK 與數據
+            return Ok(stats);
         }
     }
 }
