@@ -4,17 +4,24 @@ import { getShippedDetails } from "@/views/PointShop/services/PointShopApi";
 
 const props = defineProps({
   orderId: Number,
+  shippedId: Number
 });
+
+const emit = defineEmits(['update:shippedId']);
 
 const loading = ref(false);
 const shipped = ref([]);
 const error = ref(null);
 
-onMounted(async () => {
+const loadShippedDetails = async () => {
+  loading.value = true;
+  error.value = null;
   try {
     const res = await getShippedDetails(props.orderId);
     if (res.data.ok) {
       shipped.value = res.data.data || [];
+      const newShippedId = shipped.value.length > 0 ? shipped.value[0].shippedDetailId : 0;
+      emit('update:shippedId', newShippedId);
     }
   } catch (err) {
     error.value = "載入出貨資料失敗，請稍後重試";
@@ -22,8 +29,15 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-}
-);
+};
+
+onMounted(async () => {
+  await loadShippedDetails();
+});
+
+defineExpose({
+  loadShippedDetails
+});
 </script>
 
 
@@ -69,27 +83,27 @@ onMounted(async () => {
           <div class="col-6">
             <span class="d-block text-muted">出貨日期</span>
             <span class="text-dark">
-              {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleString("zh-TW", { 
-                year: 'numeric', 
-                day: '2-digit', 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false, 
-                month: '2-digit', 
-                }) : "尚未出貨" }}
+              {{ ship.shippedDate ? new Date(ship.shippedDate).toLocaleString("zh-TW", {
+                year: 'numeric',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                month: '2-digit',
+              }) : "尚未出貨" }}
             </span>
           </div>
           <div class="col-6">
             <span class="d-block text-muted">預計到貨</span>
             <span class="text-dark">
-              {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleString("zh-TW", { 
-                year: 'numeric', 
-                day: '2-digit', 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false, 
-                month: '2-digit', 
-                }) : "未定" }}
+              {{ ship.arrivalDate ? new Date(ship.arrivalDate).toLocaleString("zh-TW", {
+                year: 'numeric',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                month: '2-digit',
+              }) : "未定" }}
             </span>
           </div>
         </div>

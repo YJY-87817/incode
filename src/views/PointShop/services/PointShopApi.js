@@ -20,3 +20,6 @@ export const postCreateOrder = (neworder) =>
     }
   }
   );
+
+export const putShippedOrder = (shippeddetail, shippedId) =>
+  axios.put(`/OrderApi/ShippedPut/${shippedId}`, shippeddetail);

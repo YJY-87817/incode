@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import ShippedDetail from "@/views/PointShop/components/ShippedDetail.vue";
-import { getOrderDetails, putCancelOrder } from "@/views/PointShop/services/PointShopApi";
+import { getOrderDetails, putCancelOrder, putShippedOrder } from "@/views/PointShop/services/PointShopApi";
 
 // 引入 SweetAlert2 的套件
 import CartSwal from 'sweetalert2';
@@ -14,6 +14,8 @@ const props = defineProps({
 
 const details = ref([]);
 const loading = ref(true);
+const shippedId = ref(0);
+const shippedDetailRef = ref(null);
 
 onMounted(async () => {
   try {
@@ -84,6 +86,108 @@ const cancelOrder = (orderId) => {
     }
   });
 };
+
+const shippedchange = (shippedid) => {
+  console.log("shippedId:", shippedId.value);
+  CartSwal.fire({
+    title: "修改寄送資料",
+    html: `
+      <div class="mb-3">
+        <label for="swal-name" class="form-label">收件人姓名</label>
+        <input type="text" id="swal-name" class="form-control" placeholder="請輸入收件人姓名">
+      </div>
+      <div class="mb-3">
+        <label for="swal-phone" class="form-label">收件人電話</label>
+        <input type="tel" id="swal-phone" class="form-control" placeholder="請輸入收件人電話">
+      </div>
+      <div class="mb-3">
+        <label for="swal-address" class="form-label">收件地址</label>
+        <input type="text" id="swal-address" class="form-control" placeholder="請輸入收件地址">
+      </div>
+      <div class="mb-3">
+        <label for="swal-remark" class="form-label">備註</label>
+        <input type="text" id="swal-remark" class="form-control" placeholder="請輸入備註（可選）">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "確認",
+    cancelButtonText: "取消",
+    showLoaderOnConfirm: true,
+    focusConfirm: false,
+    preConfirm: () => {
+      const name = document.getElementById('swal-name').value;
+      const phone = document.getElementById('swal-phone').value;
+      const address = document.getElementById('swal-address').value;
+      const remark = document.getElementById('swal-remark').value;
+
+      if (!name || !phone || !address) {
+        CartSwal.showValidationMessage('請填寫姓名、電話和地址');
+        return false;
+      }
+
+      // 驗證電話格式（台灣手機號碼）
+      const phoneRegex = /^09\d{8}$/;
+      if (!phoneRegex.test(phone)) {
+        CartSwal.showValidationMessage('請輸入正確的手機號碼格式（09xxxxxxxx）');
+        return false;
+      }
+
+      return { name, phone, address, remark };
+    },
+    allowOutsideClick: () => !CartSwal.isLoading(),
+    didOpen: (modal) => {
+      modal.querySelector('.swal2-confirm').style.color = '#fff';
+      modal.querySelector('.swal2-cancel').style.color = '#fff';
+    }
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const shippedDetail = {
+          RecipientName: result.value.name,
+          RecipientAddress: result.value.address,
+          RecipientPhone: result.value.phone,
+          Remark: result.value.remark || ""
+        };
+
+        await putShippedOrder(shippedDetail, shippedId.value);
+
+        await CartSwal.fire({
+          title: "修改成功!",
+          html: `
+            <div class="text-start">
+              <p><strong>姓名：</strong>${result.value.name}</p>
+              <p><strong>電話：</strong>${result.value.phone}</p>
+              <p><strong>地址：</strong>${result.value.address}</p>
+              ${result.value.remark ? `<p><strong>備註：</strong>${result.value.remark}</p>` : ''}
+            </div>
+          `,
+          icon: "success",
+          didOpen: (modal) => {
+            modal.querySelector('.swal2-confirm').style.color = '#fff';
+          }
+        });
+
+        // 重新載入出貨資料
+        if (shippedDetailRef.value) {
+          await shippedDetailRef.value.loadShippedDetails();
+        }
+
+        emit('refresh'); // 通知父元件重整
+      } catch (error) {
+        console.error("修改失敗:", error);
+        await CartSwal.fire({
+          title: "修改失敗!",
+          text: "請稍後再試",
+          icon: "error",
+          didOpen: (modal) => {
+            modal.querySelector('.swal2-confirm').style.color = '#fff';
+          }
+        });
+      }
+    }
+  });
+};
+
 </script>
 
 
@@ -171,7 +275,7 @@ const cancelOrder = (orderId) => {
               <h6 class="card-title fw-bold mb-3 text-secondary">
                 <i class="bi bi-truck me-2"></i>配送狀態
               </h6>
-              <ShippedDetail :orderId="order.orderId" />
+              <ShippedDetail ref="shippedDetailRef" :orderId="order.orderId" v-model:shipped-id="shippedId" />
             </div>
 
             <!-- Actions Footer (In column) -->
@@ -181,12 +285,16 @@ const cancelOrder = (orderId) => {
                 <button class="btn btn-secondary disabled flex-fill" disabled>訂單已取消</button>
               </div>
               <div v-else-if="order.status == '待處理'" class="d-flex gap-2">
-                <button class="btn btn-outline-danger flex-fill">
+                <button class="btn btn-outline-danger flex-fill" @click="shippedchange(shippedId)">
                   訂單修改
                 </button>
                 <button class="btn btn-outline-danger flex-fill" @click="cancelOrder(order.orderId)">
                   取消訂單
                 </button>
+              </div>
+              <div v-else-if="order.status == '已出貨'" class="d-flex gap-2">
+                <button class="btn btn-secondary disabled flex-fill" disabled>訂單修改</button>
+                <button class="btn btn-secondary disabled flex-fill" disabled>訂單已出貨</button>
               </div>
               <div v-else class="d-flex gap-2">
                 <!-- Placeholder for other statuses, usually no action needed -->

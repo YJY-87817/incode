@@ -27,21 +27,76 @@ const validateShippingInfo = () => {
     return true; // 沒有實體商品，不需要驗證
   }
 
-  const errors = [];
+  // 檢查必填欄位
   if (!name.value.trim()) {
-    errors.push('收件人姓名');
-  }
-  if (!phone.value.trim()) {
-    errors.push('聯絡電話');
-  }
-  if (!address.value.trim()) {
-    errors.push('寄送地址');
-  }
-
-  if (errors.length > 0) {
     checkoutSwal.fire({
       title: "必填欄位未完成",
-      text: `請填寫: ${errors.join('、')}`,
+      text: "請填寫收件人姓名",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return false;
+  }
+
+  if (!phone.value.trim()) {
+    checkoutSwal.fire({
+      title: "必填欄位未完成",
+      text: "請填寫聯絡電話",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return false;
+  }
+
+  if (!address.value.trim()) {
+    checkoutSwal.fire({
+      title: "必填欄位未完成",
+      text: "請填寫寄送地址",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return false;
+  }
+
+  // 驗證姓名格式（2-10個中文或英文字符）
+  const nameRegex = /^[\u4e00-\u9fa5a-zA-Z\s]{2,10}$/;
+  if (!nameRegex.test(name.value.trim())) {
+    checkoutSwal.fire({
+      title: "姓名格式錯誤",
+      text: "姓名請輸入2-10個中文或英文字元",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return false;
+  }
+
+  // 驗證電話格式（台灣手機號碼：09開頭共10碼）
+  const phoneRegex = /^09\d{8}$/;
+  if (!phoneRegex.test(phone.value.trim())) {
+    checkoutSwal.fire({
+      title: "電話格式錯誤",
+      text: "請輸入正確的手機號碼格式（09xxxxxxxx）",
+      icon: "warning",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
+    return false;
+  }
+
+  // 驗證地址格式（至少5個字符）
+  if (address.value.trim().length < 5) {
+    checkoutSwal.fire({
+      title: "地址格式錯誤",
+      text: "地址至少需要5個字元",
       icon: "warning",
       didOpen: (modal) => {
         modal.querySelector('.swal2-confirm').style.color = '#fff';
