@@ -1,12 +1,95 @@
 ﻿@{
-  ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "首頁";
 }
 
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2>
+                incode後臺管理
+            </h2>
+        </div>
+        <!-- 會員Card  -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                目前會員數
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">20</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa-solid fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- 文章Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                目前文章
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">20</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 會員發布任務數Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                會員發布任務數
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">100</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa-solid fa-exclamation fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品數Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                商品數量
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fa-brands fa-product-hunt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
 
 @section Scripts
 {
-  <script>
-    // @Html.Raw(@ViewBag.JS)
-  </script>
 }
