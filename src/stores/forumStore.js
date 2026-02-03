@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import apiClient from '@/api/request.js'
 import contentInteractionApi from '@/api/contentInteractionApi.js'
-import { calculateReplyStats } from '@/components/Contents/forumUtils'
+import { calculateReplyStats, fetchBodyHtml, toAbsoluteUrl } from '@/utils/contentBody.js'
 import { normalizeRichContent } from '@/utils/sanitizeHtml.js'
-import { fetchBodyHtml, toAbsoluteUrl } from '@/utils/contentBody.js'
 
 // Content types according to database schema
 export const CONTENT_TYPES = {
@@ -98,7 +97,7 @@ export const useForumStore = defineStore('forum', {
     showNewTopicSidebar: false,
     isNewTopicSidebarMinimized: false,
     lastRefreshTime: 0,
-    
+
     // ========== 視覺連結 ==========
     replyingToContentId: null,
     replyingToContentData: null,
@@ -383,17 +382,17 @@ export const useForumStore = defineStore('forum', {
 
         // 處理主題詳情
         const detail = detailRes?.contentId ? detailRes : detailRes?.data
-        
+
         if (detail && detail.contentId) {
           const detailBodyHtml = await fetchBodyHtml(detail.body)
           const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
             detailBodyHtml,
             toAbsoluteUrl
           )
-          
+
           // 嘗試多個可能的 categoryId 字段名
           let categoryId = detail.categoryId ?? detail.category_id ?? detail.cateId ?? detail.cate_id ?? null;
-          
+
           // 如果 detail 中沒有 categoryId，嘗試從主題列表中查找
           if (!categoryId && this.topics && this.topics.length > 0) {
             const matchedTopic = this.topics.find(t => String(t.id) === String(threadId));
@@ -401,7 +400,7 @@ export const useForumStore = defineStore('forum', {
               categoryId = matchedTopic.categoryId ?? matchedTopic.category_id ?? null;
             }
           }
-          
+
           // 如果仍然沒有，嘗試從 allContentsRes 中查找
           if (!categoryId && allContentsRes?.items) {
             const allItems = Array.isArray(allContentsRes.items) ? allContentsRes.items : [];
@@ -410,7 +409,7 @@ export const useForumStore = defineStore('forum', {
               categoryId = matchedItem.categoryId ?? matchedItem.category_id ?? null;
             }
           }
-          
+
           this.threadDetail = {
             id: detail.contentId,
             title: detail.title,
@@ -427,12 +426,12 @@ export const useForumStore = defineStore('forum', {
 
         // 處理留言 - 只保留 COMMENT 類型（不包含其他類型）
         const commentsData = commentsRes?.comments || []
-        
+
         // 獲取所有內容用於查找留言回覆
         const allItems = Array.isArray(allContentsRes?.items)
           ? allContentsRes.items
           : (Array.isArray(allContentsRes) ? allContentsRes : [])
-        
+
         this.threadComments = await Promise.all(
           commentsData
             .filter(c => c.type === CONTENT_TYPES.COMMENT || !c.type) // 信任 API 返回的類型，或默認為 COMMENT
@@ -442,14 +441,14 @@ export const useForumStore = defineStore('forum', {
                 commentHtml,
                 toAbsoluteUrl
               )
-              
+
               // 為每個留言獲取其留言回覆 (type=4 且 parent_content_id 為該留言 ID)
               const commentId = comment.contentId
               const commentReplies = allItems.filter(cr =>
                 cr.type === CONTENT_TYPES.COMMENT_REPLY &&
                 Number(cr.parentContentId) === commentId
               )
-              
+
               let replies = []
               try {
                 replies = await Promise.all(
@@ -475,7 +474,7 @@ export const useForumStore = defineStore('forum', {
               } catch (error) {
                 console.error(`獲取留言 ${comment.contentId} 的回覆失敗:`, error)
               }
-              
+
               return {
                 id: comment.contentId,
                 author: comment.username,
@@ -533,14 +532,14 @@ export const useForumStore = defineStore('forum', {
                     rcHtml,
                     toAbsoluteUrl
                   )
-                  
+
                   // 為回文下的每個留言獲取其留言回覆 (type=4)
                   const commentId = rc.contentId
                   const commentReplies = allItems.filter(cr =>
                     cr.type === CONTENT_TYPES.COMMENT_REPLY &&
                     Number(cr.parentContentId) === commentId
                   )
-                  
+
                   let replies = []
                   try {
                     replies = await Promise.all(
@@ -566,7 +565,7 @@ export const useForumStore = defineStore('forum', {
                   } catch (error) {
                     console.error(`獲取留言 ${rc.contentId} 的回覆失敗:`, error)
                   }
-                  
+
                   return {
                     id: rc.contentId,
                     author: rc.username,
