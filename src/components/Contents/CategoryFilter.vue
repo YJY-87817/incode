@@ -58,7 +58,6 @@ const handleClearCategory = () => {
             ✕
           </span>
         </h5>
-        <small class="text-muted">點擊分類篩選主題</small>
       </div>
     </div>
 
