@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
@@ -14,6 +14,9 @@ const { getModeTitle, publishPost, hasDraftContent } = useForumPost();
 
 // 獲取所有草稿
 const allDrafts = computed(() => forumStore.drafts || []);
+
+// 存儲每個草稿的編輯器 ref
+const editorRefs = ref({});
 
 const submitLabel = "發布";
 
@@ -118,6 +121,12 @@ const resolveThreadIdByContentId = async (contentId) => {
 
 // 處理草稿操作
 const handleCancelClick = (draft) => {
+  // 清除待上傳的圖片
+  const editorRef = editorRefs.value[draft.id];
+  if (editorRef) {
+    editorRef.clearPendingImages();
+  }
+
   if (hasDraftContent(draft.title, draft.body)) {
     // 如果有內容，最小化
     forumStore.toggleDraftMinimize(draft.id, true);
@@ -140,6 +149,12 @@ const expandDraft = (draft) => {
 };
 
 const closeDraft = (draft) => {
+  // 清除待上傳的圖片
+  const editorRef = editorRefs.value[draft.id];
+  if (editorRef) {
+    editorRef.clearPendingImages();
+  }
+
   forumStore.removeDraft(draft.id);
 };
 
@@ -169,21 +184,36 @@ const openLargeEditor = (draft) => {
 };
 
 const submitDraft = async (draft) => {
-  // 使用 composable 的 publishPost 進行驗證和提交
-  const success = await publishPost({
-    title: draft.title,
-    body: draft.body,
-    categoryId: draft.categoryId,
-    parentContentId: draft.parentContentId,
-    contentType: draft.contentType,
-  });
+  try {
+    // 先上傳圖片，獲取含實際 URL 的內容
+    const editorRef = editorRefs.value[draft.id];
+    const finalBody = editorRef
+      ? await editorRef.uploadPendingImages()
+      : draft.body;
 
-  if (!success) {
-    return;
+    // 使用 composable 的 publishPost 進行驗證和提交
+    const success = await publishPost({
+      title: draft.title,
+      body: finalBody, // 使用包含實際圖片 URL 的內容
+      categoryId: draft.categoryId,
+      parentContentId: draft.parentContentId,
+      contentType: draft.contentType,
+    });
+
+    if (!success) {
+      return;
+    }
+
+    // 刪除這個草稿
+    forumStore.removeDraft(draft.id);
+  } catch (error) {
+    console.error("發佈失敗:", error);
+    Swal.fire({
+      title: "發佈失敗",
+      text: "圖片上傳失敗，請稍後再試",
+      icon: "error",
+    });
   }
-
-  // 刪除這個草稿
-  forumStore.removeDraft(draft.id);
 };
 
 // 更新草稿內容的函數
@@ -241,6 +271,11 @@ const updateDraftBody = (draft, value) => {
               <label class="form-label">內容</label>
               <div class="editor-wrapper">
                 <TiptapEditor
+                  :ref="
+                    (el) => {
+                      if (el) editorRefs[draft.id] = el;
+                    }
+                  "
                   :modelValue="draft.body"
                   @update:modelValue="updateDraftBody(draft, $event)"
                   placeholder="請輸入貼文內容..."
