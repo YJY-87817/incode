@@ -276,6 +276,7 @@ watch(
   () => newTopicState.title,
   (value) => {
     forumStore.newTopic.title = value;
+    checkAndRemoveEmptyDraft();
   },
 );
 
@@ -283,8 +284,18 @@ watch(
   () => newTopicState.body,
   (value) => {
     forumStore.newTopic.body = value;
+    checkAndRemoveEmptyDraft();
   },
 );
+
+const checkAndRemoveEmptyDraft = () => {
+  const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
+  const hasBody = newTopicState.body && newTopicState.body.trim().length > 0;
+  if (!hasTitle && !hasBody && forumStore.currentEditingDraftId) {
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
+    forumStore.currentEditingDraftId = null;
+  }
+};
 
 watch(
   () => newTopicState.categoryId,
