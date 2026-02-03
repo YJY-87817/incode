@@ -78,11 +78,11 @@ const threadTotalPages = computed(() => forumStore.threadTotalPages);
 const paginatedThreadPosts = computed(() => forumStore.paginatedThreadPosts);
 
 const threadCommentsTotalPages = computed(
-  () => forumStore.threadCommentsTotalPages
+  () => forumStore.threadCommentsTotalPages,
 );
 
 const paginatedThreadComments = computed(
-  () => forumStore.paginatedThreadComments
+  () => forumStore.paginatedThreadComments,
 );
 
 /**
@@ -115,7 +115,7 @@ const nextThreadPage = () => {
 const prevCommentPage = () => {
   if (forumStore.threadCommentsCurrentPage > 1) {
     forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage - 1
+      forumStore.threadCommentsCurrentPage - 1,
     );
   }
 };
@@ -123,7 +123,7 @@ const prevCommentPage = () => {
 const nextCommentPage = () => {
   if (forumStore.threadCommentsCurrentPage < threadCommentsTotalPages.value) {
     forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage + 1
+      forumStore.threadCommentsCurrentPage + 1,
     );
   }
 };
@@ -240,25 +240,35 @@ const openDetailedComment = () => {
 
   // 檢查是否已經有針對這個主文的詳細留言草稿
   const existingDraft = forumStore.drafts.find(
-    (draft) => 
+    (draft) =>
       draft.replyingToContentId === forumStore.threadDetail.id &&
-      draft.mode === "comment"
+      draft.mode === "comment",
   );
 
   if (existingDraft) {
-    // 如果已存在草稿，則 toggle 其最小化狀態
-    forumStore.toggleDraftMinimize(
-      existingDraft.id,
-      !existingDraft.isMinimized
-    );
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
   } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+
     // 如果不存在草稿，創建新的草稿
     const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
 
     const categories = forumStore.categories || [];
 
     const matchedCategory = categories.find(
-      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
     );
 
     const parentCategoryId = matchedCategory
@@ -267,7 +277,7 @@ const openDetailedComment = () => {
 
     const parentCategory = parentCategoryId
       ? categories.find(
-          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
         )
       : null;
 
@@ -309,24 +319,34 @@ const openDetailedReply = () => {
 
   // 檢查是否已經有針對這個主文的詳細回文草稿
   const existingDraft = forumStore.drafts.find(
-    (draft) => 
+    (draft) =>
       draft.replyingToContentId === forumStore.threadDetail.id &&
-      draft.mode === "reply"
+      draft.mode === "reply",
   );
 
   if (existingDraft) {
-    // 如果已存在草稿，則 toggle 其最小化狀態
-    forumStore.toggleDraftMinimize(
-      existingDraft.id,
-      !existingDraft.isMinimized
-    );
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
   } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+
     // 如果不存在草稿，創建新的草稿
     const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
     const categories = forumStore.categories || [];
 
     const matchedCategory = categories.find(
-      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
     );
 
     const parentCategoryId = matchedCategory
@@ -335,7 +355,7 @@ const openDetailedReply = () => {
 
     const parentCategory = parentCategoryId
       ? categories.find(
-          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
         )
       : null;
 
@@ -374,7 +394,7 @@ const isThreadReplyingTarget = computed(() => {
   const targetId = forumStore.threadDetail?.id;
   if (!targetId) return false;
   return forumStore.drafts.some(
-    (draft) => draft.replyingToContentId === targetId
+    (draft) => draft.replyingToContentId === targetId,
   );
 });
 
@@ -386,7 +406,7 @@ function handleThreadReplyingTargetClick() {
   if (!targetId) return;
 
   const targetDraft = forumStore.drafts.find(
-    (draft) => draft.replyingToContentId === targetId
+    (draft) => draft.replyingToContentId === targetId,
   );
 
   if (targetDraft) {

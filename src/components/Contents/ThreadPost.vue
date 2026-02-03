@@ -315,7 +315,7 @@ const NESTED_COLLAPSED_MAX_HEIGHT = 200;
 // 檢查是否為正在回覆的目標（檢查所有草稿）
 const isReplyingTarget = computed(() => {
   return forumStore.drafts.some(
-    (draft) => draft.replyingToContentId === props.post.id
+    (draft) => draft.replyingToContentId === props.post.id,
   );
 });
 
@@ -333,22 +333,22 @@ const typeLabel = computed(() => {
 });
 
 const replyButtonLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆",
 );
 
 const canReply = computed(
-  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY
+  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY,
 );
 
 // 巢狀子層(展開留言/回覆內)不顯示回覆按鈕
 const canReplyHere = computed(() => canReply.value && !props.isReply);
 
 const quickReplyLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆",
 );
 
 const detailedReplyLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "詳細留言" : "詳細回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "詳細留言" : "詳細回覆",
 );
 
 const nestedLabel = computed(() => {
@@ -453,11 +453,11 @@ function togglePreview() {
 }
 
 const showCollapsedIframe = computed(
-  () => previewToggleEnabled.value && !isPreviewExpanded.value
+  () => previewToggleEnabled.value && !isPreviewExpanded.value,
 );
 
 const showExpandedIframe = computed(
-  () => !previewToggleEnabled.value || isPreviewExpanded.value
+  () => !previewToggleEnabled.value || isPreviewExpanded.value,
 );
 
 const measurePreviewHeight = () => {
@@ -500,7 +500,7 @@ watch(
   [safeContent, previewImages, hasInlineImages, () => props.previewOnly],
   () => {
     updatePreviewToggleState();
-  }
+  },
 );
 
 // ========== 巢狀回覆展開/收起邏輯 ==========
@@ -552,7 +552,7 @@ watch(
     if (isNestedExpanded.value) {
       updateNestedToggleState();
     }
-  }
+  },
 );
 
 function autoResizeTextarea(event) {
@@ -591,17 +591,26 @@ function selectDetailedReply() {
 
   // 檢查是否已經有針對這個帖文的詳細回覆草稿
   const existingDraft = forumStore.drafts.find(
-    (draft) => draft.replyingToContentId === props.post.id
+    (draft) => draft.replyingToContentId === props.post.id,
   );
 
   if (existingDraft) {
-    // 如果已存在草稿，則 toggle 其最小化狀態
-    forumStore.toggleDraftMinimize(
-      existingDraft.id,
-      !existingDraft.isMinimized
-    );
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
   } else {
-    // 如果不存在草稿，創建新的草稿
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 然後創建新的草稿
     openDetailedReplyModal();
   }
 }
@@ -628,7 +637,7 @@ const openDetailedReplyModal = () => {
   const categories = forumStore.categories || [];
 
   const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(categoryId)
+    (cat) => String(getCategoryIdValue(cat)) === String(categoryId),
   );
 
   const parentCategoryId = matchedCategory
@@ -637,7 +646,7 @@ const openDetailedReplyModal = () => {
 
   const parentCategory = parentCategoryId
     ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
       )
     : null;
 
@@ -752,7 +761,7 @@ function handleReplyingTargetClick() {
 
   // 找到正在回覆此內容的草稿
   const targetDraft = forumStore.drafts.find(
-    (draft) => draft.replyingToContentId === props.post.id
+    (draft) => draft.replyingToContentId === props.post.id,
   );
 
   if (targetDraft) {
