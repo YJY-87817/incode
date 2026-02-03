@@ -276,7 +276,6 @@ watch(
   () => newTopicState.title,
   (value) => {
     forumStore.newTopic.title = value;
-    checkAndRemoveEmptyDraft();
   },
 );
 
@@ -284,19 +283,8 @@ watch(
   () => newTopicState.body,
   (value) => {
     forumStore.newTopic.body = value;
-    checkAndRemoveEmptyDraft();
   },
 );
-
-const checkAndRemoveEmptyDraft = () => {
-  if (
-    !hasDraftContent(newTopicState.title, newTopicState.body) &&
-    forumStore.currentEditingDraftId
-  ) {
-    forumStore.removeDraft(forumStore.currentEditingDraftId);
-    forumStore.currentEditingDraftId = null;
-  }
-};
 
 watch(
   () => newTopicState.categoryId,

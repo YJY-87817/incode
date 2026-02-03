@@ -181,20 +181,10 @@ const submitDraft = async (draft) => {
 // 更新草稿內容的函數
 const updateDraftTitle = (draft, value) => {
   forumStore.updateDraft(draft.id, { title: value });
-  // 檢查是否標題和內容都為空，如果是則刪除草稿
-  checkAndRemoveEmptyDraft(draft.id, value, draft.body);
 };
 
 const updateDraftBody = (draft, value) => {
   forumStore.updateDraft(draft.id, { body: value });
-  // 檢查是否標題和內容都為空，如果是則刪除草稿
-  checkAndRemoveEmptyDraft(draft.id, draft.title, value);
-};
-
-const checkAndRemoveEmptyDraft = (draftId, title, body) => {
-  if (!hasDraftContent(title, body)) {
-    forumStore.removeDraft(draftId);
-  }
 };
 </script>
 
