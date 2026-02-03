@@ -80,6 +80,7 @@ namespace incode2.Services.PointShop
                     .Where(e => e.OrderId == orderId)
                     .Select(e => new ShippedDTO
                     {
+                        ShippedDetailId = e.ShippedDetailId,
                         ShippedDate = e.ShippedDate,
                         ArrivalDate = e.ArrivalDate,
                         IsCompleted = e.IsCompleted,

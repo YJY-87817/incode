@@ -41,6 +41,7 @@ namespace incode2.Dtos.PointShop
     // 給使用者查看ShippedDetail用
     public class ShippedDTO
     {
+        public int ShippedDetailId { get; set; }
         public DateTime? ShippedDate { get; set; }
 
         public DateTime? ArrivalDate { get; set; }

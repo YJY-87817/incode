@@ -60,6 +60,14 @@ namespace incode2.Controllers
                     orderdetail.UnitPointAtPurchase = item.UnitPointAtPurchase;
                     orderdetail.RequiresShipping = item.RequiresShipping;
                     _context.Add(orderdetail);
+
+                    // 扣除庫存
+                    var product = await _context.Product.FindAsync(item.ProductId);
+                    if (product != null)
+                    {
+                        product.Stock -= item.Quantity;
+                        _context.Update(product);
+                    }
                 }
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -120,9 +128,31 @@ namespace incode2.Controllers
             orders.Remark = EditOrder.Remark;
 
             // 若狀態為取消，設定取消時間；否則清除（或保留原值視需求）
-            if (orders.Status == "取消")
+            if (orders.Status == "已取消")
             {
-                orders.CanceledAt = DateTime.Now;
+                // 只有當原本不是取消狀態（CanceledAt 為 null）時才執行退貨邏輯
+                // 這樣可以避免重複操作導致庫存重複增加
+                if (orders.CanceledAt == null)
+                {
+                    orders.CanceledAt = DateTime.Now;
+
+                    // 取出目前資料庫中的明細，不管前端傳來的修改，直接將原單庫存全數退還
+                    var currentDetails = await _context.Orderdetail
+                        .Where(od => od.OrderId == OrderId)
+                        .ToListAsync();
+
+                    foreach (var detail in currentDetails)
+                    {
+                        var product = await _context.Product.FindAsync(detail.ProductId);
+                        if (product != null)
+                        {
+                            product.Stock += detail.Quantity;
+                        }
+                    }
+                }
+                _context.Orders.Update(orders);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
             else
             {
@@ -130,7 +160,7 @@ namespace incode2.Controllers
             }
 
             _context.Orders.Update(orders);
-            await _context.SaveChangesAsync();
+            // 這裡可以先不SaveChanges，等明細處理完一次Save
 
             // ===== 同步 OrderDetail（比較並執行 CRUD） =====
             // 取得 DB 的原始明細（tracked entities）
@@ -151,6 +181,40 @@ namespace incode2.Controllers
                     var exist = existingDetails.FirstOrDefault(e => e.OrderdetailId == item.OrderdetailId);
                     if (exist != null)
                     {
+                        // --- 庫存處理邏輯 (Edit) ---
+                        if (exist.ProductId != item.ProductId)
+                        {
+                            // 情境A：商品換了 (例如從 A商品 換成 B商品)
+                            // 1. 把舊商品的庫存補回來
+                            var oldProduct = await _context.Product.FindAsync(exist.ProductId);
+                            if (oldProduct != null)
+                            {
+                                oldProduct.Stock += exist.Quantity; 
+                            }
+                            
+                            // 2. 扣除新商品的庫存
+                            var newProduct = await _context.Product.FindAsync(item.ProductId);
+                            if (newProduct != null)
+                            {
+                                newProduct.Stock -= item.Quantity;
+                            }
+                        }
+                        else
+                        {
+                            // 情境B：商品沒變，只改數量
+                            var diff = item.Quantity - exist.Quantity; // 差異量 (例如原本 2 改成 5，diff = 3)
+                            
+                            if (diff != 0)
+                            {
+                                var product = await _context.Product.FindAsync(exist.ProductId);
+                                if (product != null)
+                                {
+                                    product.Stock -= diff; // 扣除差異 (若 diff 為負，即代表退回庫存)
+                                }
+                            }
+                        }
+                        // -------------------------
+
                         // 更新欄位（entity 已被 context 追蹤）
                         exist.ProductId = item.ProductId;
                         exist.Quantity = item.Quantity;
@@ -162,6 +226,14 @@ namespace incode2.Controllers
                     else
                     {
                         // 傳來 ID 但 DB 找不到，視為新增（容錯）
+                        // --- 庫存處理 (Add) ---
+                        var product = await _context.Product.FindAsync(item.ProductId);
+                        if (product != null)
+                        {
+                            product.Stock -= item.Quantity;
+                        }
+                        // ---------------------
+
                         var newDetail = new Orderdetail
                         {
                             OrderId = OrderId,
@@ -177,6 +249,14 @@ namespace incode2.Controllers
                 else
                 {
                     // 新增明細
+                    // --- 庫存處理 (Add) ---
+                    var product = await _context.Product.FindAsync(item.ProductId);
+                    if (product != null)
+                    {
+                        product.Stock -= item.Quantity;
+                    }
+                    // ---------------------
+
                     var newDetail = new Orderdetail
                     {
                         OrderId = OrderId,
@@ -196,6 +276,18 @@ namespace incode2.Controllers
 
             if (toDelete.Any())
             {
+                // --- 庫存處理 (Delete) ---
+                foreach (var del in toDelete)
+                {
+                    // 刪除訂單明細，需把庫存加回去
+                    var product = await _context.Product.FindAsync(del.ProductId);
+                    if (product != null)
+                    {
+                        product.Stock += del.Quantity;
+                    }
+                }
+                // -------------------------
+
                 _context.Orderdetail.RemoveRange(toDelete);
             }
 
