@@ -19,7 +19,7 @@ public partial class PointRecharge
 
     public string PaymentMethod { get; set; }
 
-    public string RelatedOrderId { get; set; }
+    public string PaymentTradeNo { get; set; }
 
     public string Status { get; set; }
 
