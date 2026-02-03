@@ -106,6 +106,7 @@ const baseCss = computed(() => {
       font-family: inherit;
       background: transparent;
     }
+    img:not([style*="width"]) { width: 100%; }
     img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
     p { margin: 0 0 0.5rem 0; }
     a { color: inherit; }
@@ -119,7 +120,7 @@ const stripScripts = (html) => {
   // 先用正則移除可能的 script 標籤（避免不完整標記被 DOMParser 保留）
   const withoutScripts = html.replace(
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-    ""
+    "",
   );
 
   const parser = new DOMParser();
@@ -149,7 +150,7 @@ const stripScripts = (html) => {
 };
 
 const bodyHtml = computed(() =>
-  props.allowScripts ? props.html || "" : stripScripts(props.html || "")
+  props.allowScripts ? props.html || "" : stripScripts(props.html || ""),
 );
 
 const srcdoc = computed(() => {
@@ -195,7 +196,7 @@ watch(
   async () => {
     await nextTick();
     updateSize();
-  }
+  },
 );
 
 onBeforeUnmount(() => {

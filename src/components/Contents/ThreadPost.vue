@@ -398,7 +398,7 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "body { white-space: pre-wrap; } img:not([style*='width']) { width: 100%; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
   return `${baseIframeCss} img { display: none; }`;

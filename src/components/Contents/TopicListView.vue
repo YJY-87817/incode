@@ -506,7 +506,7 @@ function handleThreadReplyingTargetClick() {
             :min-height="120"
             text-color="#432f28"
             :allow-scripts="true"
-            :extra-css="'body { white-space: pre-wrap; } img { width: 30%; max-width: 30%; height: auto; object-fit: contain; }'"
+            :extra-css="`body { white-space: pre-wrap; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; height: auto; object-fit: contain; }`"
           />
           <!-- 改圖片大小在上面這裡 -->
 
