@@ -4,7 +4,6 @@ import axios from "axios";
 
 const items = ref([]);
 const isLoading = ref(false);
-const BACKEND_BASE_URL = axios.defaults.baseURL || "https://localhost:7190";
 
 const extractFirstImage = (htmlContent) => {
   if (!htmlContent) return null;

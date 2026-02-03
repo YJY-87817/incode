@@ -43,34 +43,6 @@ const rules = {
   },
 };
 
-// 模擬通知資料
-const notifications = ref([
-  {
-    id: 1,
-    title: "系統",
-    subtitle: "您的密碼已成功修改",
-    time: "剛剛",
-    icon: "mdi-cog",
-    color: "grey-darken-1",
-  },
-  {
-    id: 2,
-    title: "任務",
-    subtitle: "恭喜完成新手任務！點數已發放。",
-    time: "1小時前",
-    icon: "mdi-check-circle",
-    color: "success",
-  },
-  {
-    id: 3,
-    title: "好友",
-    subtitle: "小明 回覆了您的文章",
-    time: "昨天",
-    icon: "mdi-account-multiple",
-    color: "primary",
-  },
-]);
-
 // 開啟編輯視窗時，把現有資料複製進表單
 const openEditDialog = () => {
   editForm.value = {
