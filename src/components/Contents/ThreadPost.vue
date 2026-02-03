@@ -19,9 +19,8 @@
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
                   <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
                   <small
-                    class="text-muted post-time"
-                    :class="{ clickable: post.type === 2 || post.type === 3 }"
-                    @click="goToPostDetail"
+                    class="text-muted post-time clickable"
+                    @click.stop="goToPostDetail"
                   >
                     {{ post.createdAt }}
                   </small>
@@ -741,16 +740,16 @@ function cancelReply() {
 }
 
 /**
- * 點擊發文時間跳轉到該回文/留言的詳細頁面
+ * 點擊發文時間跳轉到該篇內容的詳細頁面
  */
-function goToPostDetail() {
-  // 只有回文(type=2)或留言(type=3)可以跳轉
-  if (
-    props.post.type === CONTENT_TYPES.REPLY ||
-    props.post.type === CONTENT_TYPES.COMMENT
-  ) {
-    router.push({ name: "forum-thread", params: { id: props.post.id } });
+function goToPostDetail(event) {
+  // 阻止事件冒泡，避免觸發其他點擊事件
+  if (event) {
+    event.stopPropagation();
   }
+
+  // 所有類型的 content 都可以點擊進入詳情頁
+  router.push({ name: "forum-thread", params: { id: props.post.id } });
 }
 
 /**
@@ -892,6 +891,8 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  z-index: 10;
 }
 
 .post-time {
@@ -899,6 +900,8 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  position: relative;
+  z-index: 11;
 }
 
 .post-time.clickable {
