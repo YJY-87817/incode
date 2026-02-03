@@ -128,6 +128,14 @@ const handleCancelClick = (draft) => {
 };
 
 const expandDraft = (draft) => {
+  // 最小化所有其他展開的編輯器
+  allDrafts.value.forEach((d) => {
+    if (d.id !== draft.id && !d.isMinimized) {
+      forumStore.toggleDraftMinimize(d.id, true);
+    }
+  });
+
+  // 展開當前編輯器
   forumStore.toggleDraftMinimize(draft.id, false);
 };
 
