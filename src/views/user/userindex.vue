@@ -17,6 +17,7 @@ const alertStore = useAlertStore();
 
 const dialog = shallowRef(false);
 const isLoading = ref(false);
+const stats = ref({});
 
 // 3. 編輯表單用的資料 (避免直接修改顯示資料)
 const editForm = ref({

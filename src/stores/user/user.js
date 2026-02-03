@@ -8,13 +8,12 @@ export const useUserStore = defineStore("user", () => {
   const userProfile = ref({
     id: 0,
     name: "載入中...",
-    imageUrl: ""
-    //  預設統計數據，避免畫面報錯
-    // articleCount: 0,
-    // missionCount: 0,
-    // points: 0,
-    // followers: 0,
-    // following: 0
+    imageUrl: "",
+    articleCount: 0,
+    missionCount: 0,
+    points: 0,
+    followers: 0,
+    following: 0,
   });
   const followingList = ref([]); //關注 追蹤
   const followersList = ref([]); //粉絲
@@ -39,9 +38,11 @@ export const useUserStore = defineStore("user", () => {
 
       const response = await axios.get(url);
       const data = response.data;
+      const currentUserId = data.userId || data.UserId || data.id || 0;
 
       userProfile.value = {
-        id: data.userId || data.UserId || data.id || 0,
+        ...userProfile.value, // 保留舊資料以免畫面閃爍
+        id: currentUserId,
         username: data.username || data.Username || "載入中...",
         email: data.email || data.Email || "",
         phone: data.phone || data.Phone || "",
@@ -51,14 +52,28 @@ export const useUserStore = defineStore("user", () => {
           data.birthday || data.Birthday
             ? (data.birthday || data.Birthday).split("T")[0]
             : "",
-
-        // 統計數據 (若後端有回傳)
-        // articleCount: data.articleCount || data.ArticleCount || 0,
-        // missionCount: data.missionCount || data.MissionCount || 0,
-        // points:       data.points       || data.Points       || 0,
-        // followers:    data.followers    || data.Followers    || 0,
-        // following:    data.following    || data.Following    || 0,
-      };
+};
+   if (currentUserId) {
+        try {
+          const statsRes = await axios.get(`/User/${currentUserId}/stats`);
+          
+          userProfile.value.articleCount = statsRes.data.articleCount;
+          userProfile.value.missionCount = statsRes.data.missionCount;
+          userProfile.value.points = statsRes.data.pointBalance;
+          userProfile.value.followers = statsRes.data.followerCount;
+          userProfile.value.following = statsRes.data.followingCount;
+          
+          console.log("統計數據載入成功", statsRes.data);
+        } catch (statsErr) {
+          console.warn("統計數據載入失敗 (不影響主流程)", statsErr);
+          // 失敗時可以歸零或保持原樣
+          userProfile.value.articleCount = 0;
+          userProfile.value.missionCount = 0;
+          userProfile.value.points = 0;
+          userProfile.value.followers = 0;
+          userProfile.value.following = 0;
+        }
+      }    
 
     } catch (error) {
       console.error(error);
@@ -144,6 +159,6 @@ export const useUserStore = defineStore("user", () => {
     fetchFollowingList,
     fetchFollowersList,
     followUser,
-    unfollowUser
+    unfollowUser,
   };
 });
