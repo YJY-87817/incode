@@ -13,11 +13,13 @@ public partial class PointTip
 
     public int ToUserId { get; set; }
 
-    public int ReviewId { get; set; }
+    public int ContentId { get; set; }
 
     public int Amount { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Content Content { get; set; }
 
     public virtual User FromUser { get; set; }
 
