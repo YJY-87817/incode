@@ -828,7 +828,7 @@ async function handleInteractionError(data) {
   font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
-  z-index: 10;
+  z-index: 7;
 }
 
 @keyframes pulse-border {
@@ -892,7 +892,7 @@ async function handleInteractionError(data) {
   align-items: center;
   gap: 0.5rem;
   position: relative;
-  z-index: 10;
+  z-index: 4;
 }
 
 .post-time {
@@ -901,7 +901,7 @@ async function handleInteractionError(data) {
   align-items: center;
   line-height: 1;
   position: relative;
-  z-index: 11;
+  z-index: 5;
 }
 
 .post-time.clickable {
@@ -1031,7 +1031,7 @@ async function handleInteractionError(data) {
 
 .interaction-container {
   position: relative;
-  z-index: 20;
+  z-index: 6;
 }
 
 /* 隱藏留言/回文區塊內的所有滾動條（保留可滾動） */
