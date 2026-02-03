@@ -188,6 +188,12 @@ const router = createRouter({
       component: Checkout,
     },
     // yjy 以上
+    // 沒設定的路由導向NotFound頁面、放最下面
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'notFound',
+      component: () => import('@/views/error404.vue'),
+    },
   ],
 });
 
