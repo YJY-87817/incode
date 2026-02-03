@@ -47,25 +47,6 @@ const handleClearCategory = () => {
 
     <!-- 分類內容 -->
     <div class="p-2 p-md-3">
-      <!-- 取消分類按鈕 -->
-      <div v-if="forumStore.selectedCategory !== null" class="mb-3">
-        <button
-          @click="handleClearCategory"
-          class="btn btn-sm w-100"
-          style="
-            background-color: #d1d3d4;
-            border-color: #d1d3d4;
-            color: #432f28;
-            transition: all 0.2s ease;
-          "
-          @mouseover="$event.target.style.backgroundColor = '#b8babf'; $event.target.style.borderColor = '#b8babf';"
-          @mouseout="$event.target.style.backgroundColor = '#d1d3d4'; $event.target.style.borderColor = '#d1d3d4';"
-        >
-          <i class="fas fa-times"></i>
-          <span class="ms-2">取消分類</span>
-        </button>
-      </div>
-
       <!-- 載入中提示 -->
       <div
         v-if="forumStore.isLoading && forumStore.categories.length === 0"
@@ -79,58 +60,73 @@ const handleClearCategory = () => {
         </div>
       </div>
 
-      <!-- 分類列表 -->
+      <!-- 分類列表容器與取消按鈕 -->
       <div
         v-else
-        class="d-flex flex-wrap align-content-start p-0 category-container"
+        class="d-flex gap-2 align-items-flex-start category-wrapper"
       >
-        <!-- 分類卡片 -->
+        <!-- 分類列表 -->
         <div
-          v-for="category in forumStore.categories"
-          :key="category.id"
-          class="m-1"
+          class="d-flex flex-wrap align-content-start p-0 category-container flex-grow-1"
         >
+          <!-- 分類卡片 -->
           <div
-            class="category-card p-2 border rounded cursor-pointer"
-            :class="{
-              'border-primary bg-light':
-                forumStore.selectedCategory === category.id,
-              'border-light': forumStore.selectedCategory !== category.id,
-            }"
-            @click="handleSelectCategory(category.id)"
-            :title="category.description || category.name"
-            role="button"
-            tabindex="0"
-            @keydown.enter="handleSelectCategory(category.id)"
-            @keydown.space.prevent="handleSelectCategory(category.id)"
+            v-for="category in forumStore.categories"
+            :key="category.id"
+            class="m-1"
           >
-            <!-- 分類名稱 -->
-            <h6 class="mb-2 fw-bold text-truncate">{{ category.name }}</h6>
-
-            <!-- 分類統計標籤 -->
             <div
-              class="category-tags small"
+              class="category-card p-2 border rounded cursor-pointer"
               :class="{
-                'text-primary': forumStore.selectedCategory === category.id,
+                'border-primary bg-light':
+                  forumStore.selectedCategory === category.id,
+                'border-light': forumStore.selectedCategory !== category.id,
               }"
+              @click="handleSelectCategory(category.id)"
+              :title="category.description || category.name"
+              role="button"
+              tabindex="0"
+              @keydown.enter="handleSelectCategory(category.id)"
+              @keydown.space.prevent="handleSelectCategory(category.id)"
             >
-              <span class="d-inline-block me-2"
-                >📝 {{ category.topicCount ?? 0 }}</span
+              <!-- 分類名稱 -->
+              <h6 class="mb-2 fw-bold text-truncate">{{ category.name }}</h6>
+
+              <!-- 分類統計標籤 -->
+              <div
+                class="category-tags small"
+                :class="{
+                  'text-primary': forumStore.selectedCategory === category.id,
+                }"
               >
-              <span class="d-inline-block"
-                >💬 {{ category.postCount ?? 0 }}</span
-              >
+                <span class="d-inline-block me-2"
+                  >📝 {{ category.topicCount ?? 0 }}</span
+                >
+                <span class="d-inline-block"
+                  >💬 {{ category.postCount ?? 0 }}</span
+                >
+              </div>
             </div>
+          </div>
+
+          <!-- 空狀態提示 -->
+          <div
+            v-if="!forumStore.isLoading && forumStore.categories.length === 0"
+            class="w-100 text-center text-muted py-3 small"
+          >
+            <p>目前沒有分類</p>
           </div>
         </div>
 
-        <!-- 空狀態提示 -->
-        <div
-          v-if="!forumStore.isLoading && forumStore.categories.length === 0"
-          class="w-100 text-center text-muted py-3 small"
+        <!-- 取消分類按鈕 -->
+        <button
+          v-if="forumStore.selectedCategory !== null"
+          @click="handleClearCategory"
+          class="btn btn-sm btn-clear-category flex-shrink-0"
+          title="取消分類"
         >
-          <p>目前沒有分類</p>
-        </div>
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -206,6 +202,34 @@ const handleClearCategory = () => {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #d1d3d4 #f0f0f0;
+}
+
+/* 取消分類按鈕 */
+.btn-clear-category {
+  background-color: #d1d3d4;
+  border-color: #d1d3d4;
+  color: #432f28;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-top: 1px;
+}
+
+.btn-clear-category:hover {
+  background-color: #b8babf;
+  border-color: #b8babf;
+  color: #432f28;
+  transform: scale(1.08);
+}
+
+.btn-clear-category:active {
+  background-color: #a0a2a7;
+  border-color: #a0a2a7;
 }
 
 .category-container::-webkit-scrollbar {
