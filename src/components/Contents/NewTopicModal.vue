@@ -4,25 +4,17 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import Swal from "sweetalert2";
+import { useForumPost } from "@/composables/useForumPost";
 
 const forumStore = useForumStore();
+const { getModeTitle, validatePost, publishPost, hasDraftContent } =
+  useForumPost();
 
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isPostMode = computed(() => modalMode.value === "post");
-const modalTitle = computed(() => {
-  switch (modalMode.value) {
-    case "comment":
-      return "詳細留言";
-    case "reply":
-      return "詳細回文";
-    case "commentReply":
-      return "詳細回覆";
-    default:
-      return "發佈新主題";
-  }
-});
+const modalTitle = computed(() => getModeTitle(modalMode.value));
 const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發佈" : "發佈"
+  modalMode.value === "post" ? "發佈" : "發佈",
 );
 
 const newTopicState = reactive({
@@ -87,7 +79,7 @@ const filteredCategories = computed(() => {
   return categories.filter((cat) =>
     String(getCategoryName(cat) || "")
       .toLowerCase()
-      .includes(keyword)
+      .includes(keyword),
   );
 });
 
@@ -105,7 +97,7 @@ const childCategories = computed(() => {
   if (!newTopicState.categoryId) return [];
   const parentKey = toCategoryKey(newTopicState.categoryId);
   return (forumStore.categories || []).filter(
-    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey,
   );
 });
 
@@ -116,7 +108,7 @@ const filteredSubCategories = computed(() => {
   return categories.filter((cat) =>
     String(getCategoryName(cat) || "")
       .toLowerCase()
-      .includes(keyword)
+      .includes(keyword),
   );
 });
 
@@ -138,7 +130,7 @@ const filteredReplyTopics = computed(() => {
     filtered = filtered.filter((topic) =>
       String(getTopicTitle(topic) || "")
         .toLowerCase()
-        .includes(keyword)
+        .includes(keyword),
     );
   }
 
@@ -175,7 +167,7 @@ const replySuggestions = computed(() => {
 });
 
 const effectiveCategoryId = computed(
-  () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null
+  () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null,
 );
 
 const fetchTopics = (categoryId = null) => {
@@ -195,14 +187,14 @@ const fetchTopics = (categoryId = null) => {
         const replies = allItems.filter(
           (c) =>
             c.parentContentId === item.contentId &&
-            (c.type === 2 || c.type === 3 || c.type === 4)
+            (c.type === 2 || c.type === 3 || c.type === 4),
         );
 
         let lastReplyTime = null;
         if (replies.length > 0) {
           const sortedReplies = replies.sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
           lastReplyTime = sortedReplies[0].createdAt;
         }
@@ -231,7 +223,7 @@ const syncCategorySelection = (categoryId) => {
   const categories = forumStore.categories || [];
   const targetKey = toCategoryKey(categoryId);
   const target = categories.find(
-    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey,
   );
 
   if (!target) {
@@ -252,7 +244,7 @@ const syncCategorySelection = (categoryId) => {
   const parentMatch = categories.find(
     (cat) =>
       toCategoryKey(getCategoryIdValue(cat)) ===
-      toCategoryKey(newTopicState.categoryId)
+      toCategoryKey(newTopicState.categoryId),
   );
   if (parentMatch?.name) {
     categorySearch.value = getCategoryName(parentMatch);
@@ -272,7 +264,7 @@ onMounted(() => {
     const match = (forumStore.categories || []).find(
       (cat) =>
         toCategoryKey(getCategoryIdValue(cat)) ===
-        toCategoryKey(newTopicState.categoryId)
+        toCategoryKey(newTopicState.categoryId),
     );
     if (match?.name) {
       categorySearch.value = getCategoryName(match);
@@ -284,14 +276,14 @@ watch(
   () => newTopicState.title,
   (value) => {
     forumStore.newTopic.title = value;
-  }
+  },
 );
 
 watch(
   () => newTopicState.body,
   (value) => {
     forumStore.newTopic.body = value;
-  }
+  },
 );
 
 watch(
@@ -299,14 +291,14 @@ watch(
   (value) => {
     selectedSubCategoryId.value = null;
     subCategorySearch.value = "";
-  }
+  },
 );
 
 watch(
   () => effectiveCategoryId.value,
   (value) => {
     forumStore.newTopic.categoryId = value;
-  }
+  },
 );
 
 watch(
@@ -321,12 +313,12 @@ watch(
       return;
     }
     const match = (newTopicState.topics || []).find(
-      (topic) => String(topic.id) === String(value)
+      (topic) => String(topic.id) === String(value),
     );
     if (match) {
       replySearch.value = getTopicTitle(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -341,10 +333,11 @@ watch(
 
     const match = (newTopicState.topics || []).find(
       (topic) =>
-        String(getTopicTitle(topic) || "").toLowerCase() === input.toLowerCase()
+        String(getTopicTitle(topic) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     newTopicState.parentContentId = match ? match.id : null;
-  }
+  },
 );
 
 // 監聽 store 的 selectedCategory 變化
@@ -354,7 +347,7 @@ watch(
     if (newCategory) {
       syncCategorySelection(newCategory);
     }
-  }
+  },
 );
 
 watch(
@@ -367,13 +360,13 @@ watch(
       const match = (categories || []).find(
         (cat) =>
           toCategoryKey(getCategoryIdValue(cat)) ===
-          toCategoryKey(newTopicState.categoryId)
+          toCategoryKey(newTopicState.categoryId),
       );
       if (match?.name) {
         categorySearch.value = getCategoryName(match);
       }
     }
-  }
+  },
 );
 
 watch(
@@ -384,12 +377,12 @@ watch(
       return;
     }
     const match = childCategories.value.find(
-      (cat) => toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value)
+      (cat) => toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value),
     );
     if (match) {
       subCategorySearch.value = getCategoryName(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -403,10 +396,11 @@ watch(
 
     const match = childCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     selectedSubCategoryId.value = match ? getCategoryIdValue(match) : null;
-  }
+  },
 );
 
 watch(
@@ -425,7 +419,7 @@ watch(
     } else {
       newTopicState.topics = [];
     }
-  }
+  },
 );
 
 watch(
@@ -434,7 +428,7 @@ watch(
     if (modalMode.value !== "post") return;
     if (!newTopicState.parentContentId) return;
     const match = (topics || []).find(
-      (topic) => String(topic.id) === String(newTopicState.parentContentId)
+      (topic) => String(topic.id) === String(newTopicState.parentContentId),
     );
     if (!match) {
       newTopicState.parentContentId = null;
@@ -444,7 +438,7 @@ watch(
     if (!replySearch.value) {
       replySearch.value = getTopicTitle(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -459,10 +453,11 @@ watch(
 
     const match = rootCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     newTopicState.categoryId = match ? getCategoryIdValue(match) : null;
-  }
+  },
 );
 
 // 監聽 modal 打開時同步分類選擇
@@ -506,7 +501,7 @@ watch(
       forumStore.newTopic.contentType = CONTENT_TYPES.POST;
     }
   },
-  { immediate: false, flush: "post" }
+  { immediate: false, flush: "post" },
 );
 
 // 監聽 newTopicState.topics 加載完成後，自動填充 replySearch
@@ -516,13 +511,13 @@ watch(
     if (forumStore.showNewTopicModal && forumStore.newTopic.parentContentId) {
       const parentId = forumStore.newTopic.parentContentId;
       const match = (newTopicState.topics || []).find(
-        (topic) => String(topic.id) === String(parentId)
+        (topic) => String(topic.id) === String(parentId),
       );
       if (match && !replySearch.value) {
         replySearch.value = getTopicTitle(match) || "";
       }
     }
-  }
+  },
 );
 
 const selectCategoryFromDropdown = (category) => {
@@ -575,7 +570,7 @@ const createCategoryFromSearch = async () => {
 
   const existing = (forumStore.categories || []).find(
     (cat) =>
-      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase(),
   );
   if (existing) {
     newTopicState.categoryId = getCategoryIdValue(existing);
@@ -595,7 +590,7 @@ const createSubCategoryFromSearch = async () => {
 
   const existing = childCategories.value.find(
     (cat) =>
-      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase(),
   );
   if (existing) {
     selectedSubCategoryId.value = getCategoryIdValue(existing);
@@ -632,7 +627,7 @@ const submitCreateCategory = async () => {
     const created = await forumStore.createCategory(
       name,
       description,
-      parentId
+      parentId,
     );
 
     if (parentId) {
@@ -651,7 +646,7 @@ const submitCreateCategory = async () => {
       categorySearch.value = created.name || name;
     } else {
       const fallback = (forumStore.categories || []).find(
-        (cat) => cat.name === name
+        (cat) => cat.name === name,
       );
       if (fallback) {
         newTopicState.categoryId = fallback.id;
@@ -687,67 +682,28 @@ const closeTitleBodyRequiredModal = () => {
 };
 
 const submitNewTopic = async () => {
-  if (!newTopicState.title || !newTopicState.body) {
-    showTitleBodyRequiredModal.value = true;
-    return;
-  }
-
-  // 若有 parentContentId，不需檢查 categoryId（會使用 parent 的 category）
-  // 若無 parentContentId，需檢查 categoryId
-  if (!newTopicState.parentContentId && !effectiveCategoryId.value) {
-    alert("請選擇分類");
-    return;
-  }
-
-  const isReply = Boolean(newTopicState.parentContentId);
-  const resolvedContentType =
-    forumStore.newTopic?.contentType ??
-    (isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
-  const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: effectiveCategoryId.value,
-    parentContentId: newTopicState.parentContentId,
+  // 使用 composable 的 publishPost 進行驗證和提交
+  const success = await publishPost({
     title: newTopicState.title,
     body: newTopicState.body,
-    type: resolvedContentType,
-  };
+    categoryId: effectiveCategoryId.value,
+    parentContentId: newTopicState.parentContentId,
+    contentType: forumStore.newTopic?.contentType,
+  });
 
-  try {
-    await apiClient.post("/ContentApi", dto);
-
-    // 立即關閉 modal 和重置內容，不顯示任何 banner
-    resetNewTopicDraft();
-    closeNewTopic();
-
-    // 在背景更新主題列表和詳情內容，不阻塞 UI
-    forumStore.pagination.currentPage = 1;
-    forumStore.fetchTopics();
-
-    // 若是回文/留言/回覆，且當前已開啟該主題，刷新詳情內容
-    if (isReply && forumStore.selectedThread) {
-      forumStore.fetchThreadDetail(forumStore.selectedThread);
-    }
-
-    // 如果是從草稿打開的，刪除該草稿
-    if (forumStore.currentEditingDraftId) {
-      forumStore.removeDraft(forumStore.currentEditingDraftId);
-      forumStore.currentEditingDraftId = null;
-    }
-
-    // 顯示簡短的成功提示（不阻塞 UI）
-    Swal.fire({
-      icon: "success",
-      title: "發佈成功",
-      showConfirmButton: false,
-      timer: 1500,
-      position: "center",
-      allowOutsideClick: true,
-      allowEscapeKey: true,
-    });
-  } catch (error) {
-    console.error("[NewTopicModal] submitNewTopic - 發佈失敗:", error);
-    alert("發佈失敗，請稍後再試");
+  if (!success) {
+    return;
   }
+
+  // 如果是從草稿打開的，刪除該草稿
+  if (forumStore.currentEditingDraftId) {
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
+    forumStore.currentEditingDraftId = null;
+  }
+
+  // 關閉 modal 和重置內容
+  resetNewTopicDraft();
+  closeNewTopic();
 };
 
 const closeNewTopic = () => {
@@ -773,10 +729,7 @@ const resetNewTopicDraft = () => {
 };
 
 const handleModalCancel = () => {
-  const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
-  const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
-
-  if (hasTitle || hasContent) {
+  if (hasDraftContent(newTopicState.title, newTopicState.body)) {
     // 檢查是否是從草稿打開的
     if (forumStore.currentEditingDraftId) {
       // 同步內容回原草稿
@@ -1100,7 +1053,7 @@ const handleModalCancel = () => {
                             <small class="text-muted">{{
                               topic.lastReplyTime
                                 ? new Date(
-                                    topic.lastReplyTime
+                                    topic.lastReplyTime,
                                   ).toLocaleDateString("zh-TW")
                                 : "無回文"
                             }}</small>

@@ -5,27 +5,15 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import Swal from "sweetalert2";
+import { useForumPost } from "@/composables/useForumPost";
 
 const forumStore = useForumStore();
 const router = useRouter();
 const route = useRoute();
+const { getModeTitle, publishPost, hasDraftContent } = useForumPost();
 
 // 獲取所有草稿
 const allDrafts = computed(() => forumStore.drafts || []);
-
-// 獲取模式標題
-const getModalTitle = (mode) => {
-  switch (mode) {
-    case "comment":
-      return "詳細留言";
-    case "reply":
-      return "詳細回文";
-    case "commentReply":
-      return "詳細回覆";
-    default:
-      return "詳細發布";
-  }
-};
 
 const submitLabel = "發布";
 
@@ -130,10 +118,7 @@ const resolveThreadIdByContentId = async (contentId) => {
 
 // 處理草稿操作
 const handleCancelClick = (draft) => {
-  const hasTitle = draft.title && draft.title.trim().length > 0;
-  const hasContent = draft.body && draft.body.trim().length > 0;
-
-  if (hasTitle || hasContent) {
+  if (hasDraftContent(draft.title, draft.body)) {
     // 如果有內容，最小化
     forumStore.toggleDraftMinimize(draft.id, true);
   } else {
@@ -172,72 +157,21 @@ const openLargeEditor = (draft) => {
 };
 
 const submitDraft = async (draft) => {
-  if (!draft.title || !draft.body) {
-    await Swal.fire({
-      icon: "warning",
-      title: "提醒",
-      text: "請輸入標題與內容",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
-    return;
-  }
-
-  const parentContentId = draft.parentContentId ?? null;
-  const categoryId = draft.categoryId ?? null;
-
-  if (!parentContentId && !categoryId) {
-    await Swal.fire({
-      icon: "warning",
-      title: "提醒",
-      text: "請選擇分類",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
-    return;
-  }
-
-  const resolvedContentType =
-    draft.contentType ??
-    (parentContentId ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
-
-  const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
-    categoryId,
-    parentContentId,
+  // 使用 composable 的 publishPost 進行驗證和提交
+  const success = await publishPost({
     title: draft.title,
     body: draft.body,
-    type: resolvedContentType,
-  };
+    categoryId: draft.categoryId,
+    parentContentId: draft.parentContentId,
+    contentType: draft.contentType,
+  });
 
-  try {
-    await apiClient.post("/ContentApi", dto);
-    await Swal.fire({
-      icon: "success",
-      title: "發佈成功",
-      showConfirmButton: false,
-      timer: 1500,
-    });
-
-    forumStore.pagination.currentPage = 1;
-    await forumStore.fetchTopics();
-
-    if (parentContentId && forumStore.selectedThread) {
-      await forumStore.fetchThreadDetail(forumStore.selectedThread);
-    }
-
-    // 刪除這個草稿
-    forumStore.removeDraft(draft.id);
-  } catch (error) {
-    console.error("[NewTopicSidebar] submit - 發佈失敗:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "發佈失敗",
-      text: "發佈失敗，請稍後再試",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
+  if (!success) {
+    return;
   }
+
+  // 刪除這個草稿
+  forumStore.removeDraft(draft.id);
 };
 
 // 更新草稿內容的函數
@@ -262,7 +196,7 @@ const updateDraftBody = (draft, value) => {
           <div class="card-header bg-white">
             <div class="d-flex align-items-start justify-content-between gap-2">
               <div>
-                <h6 class="mb-1">{{ getModalTitle(draft.mode) }}</h6>
+                <h6 class="mb-1">{{ getModeTitle(draft.mode) }}</h6>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <button
@@ -328,7 +262,7 @@ const updateDraftBody = (draft, value) => {
         allDrafts.some(
           (d) =>
             d.isMinimized &&
-            (d.title?.trim().length > 0 || d.body?.trim().length > 0)
+            (d.title?.trim().length > 0 || d.body?.trim().length > 0),
         )
       "
       class="banners-container"
