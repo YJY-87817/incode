@@ -238,51 +238,67 @@ const openDetailedComment = () => {
     return;
   }
 
-  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-
-  const categories = forumStore.categories || [];
-
-  const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+  // 檢查是否已經有針對這個主文的詳細留言草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) => 
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "comment"
   );
 
-  const parentCategoryId = matchedCategory
-    ? getParentCategoryIdValue(matchedCategory)
-    : null;
+  if (existingDraft) {
+    // 如果已存在草稿，則 toggle 其最小化狀態
+    forumStore.toggleDraftMinimize(
+      existingDraft.id,
+      !existingDraft.isMinimized
+    );
+  } else {
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
 
-  const parentCategory = parentCategoryId
-    ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
-      )
-    : null;
+    const categories = forumStore.categories || [];
 
-  const categorySearchName = parentCategory
-    ? getCategoryName(parentCategory)
-    : matchedCategory
-      ? getCategoryName(matchedCategory)
-      : "";
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+    );
 
-  forumStore.selectedCategory = threadCategoryId;
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
 
-  // 創建新的草稿
-  forumStore.createDraft({
-    title: "",
-    body: "",
-    categoryId: threadCategoryId,
-    parentContentId: forumStore.threadDetail.id,
-    categorySearch: categorySearchName,
-    mode: "comment",
-    contentType: CONTENT_TYPES.COMMENT,
-    replyingToContentId: forumStore.threadDetail.id,
-    replyingToContentData: {
-      id: forumStore.threadDetail.id,
-      title: forumStore.threadDetail.title,
-      author: forumStore.threadDetail.author,
-      createdAt: forumStore.threadDetail.createdAt,
-      contentText: forumStore.threadDetail.contentText,
-    },
-    replyingToThreadId: forumStore.threadDetail.id,
-  });
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+        )
+      : null;
+
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: "",
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "comment",
+      contentType: CONTENT_TYPES.COMMENT,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
 };
 
 const openDetailedReply = () => {
@@ -291,50 +307,66 @@ const openDetailedReply = () => {
     return;
   }
 
-  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-  const categories = forumStore.categories || [];
-
-  const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+  // 檢查是否已經有針對這個主文的詳細回文草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) => 
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "reply"
   );
 
-  const parentCategoryId = matchedCategory
-    ? getParentCategoryIdValue(matchedCategory)
-    : null;
+  if (existingDraft) {
+    // 如果已存在草稿，則 toggle 其最小化狀態
+    forumStore.toggleDraftMinimize(
+      existingDraft.id,
+      !existingDraft.isMinimized
+    );
+  } else {
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+    const categories = forumStore.categories || [];
 
-  const parentCategory = parentCategoryId
-    ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
-      )
-    : null;
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+    );
 
-  const categorySearchName = parentCategory
-    ? getCategoryName(parentCategory)
-    : matchedCategory
-      ? getCategoryName(matchedCategory)
-      : "";
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
 
-  forumStore.selectedCategory = threadCategoryId;
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+        )
+      : null;
 
-  // 創建新的草稿
-  forumStore.createDraft({
-    title: "",
-    body: "",
-    categoryId: threadCategoryId,
-    parentContentId: forumStore.threadDetail.id,
-    categorySearch: categorySearchName,
-    mode: "reply",
-    contentType: CONTENT_TYPES.REPLY,
-    replyingToContentId: forumStore.threadDetail.id,
-    replyingToContentData: {
-      id: forumStore.threadDetail.id,
-      title: forumStore.threadDetail.title,
-      author: forumStore.threadDetail.author,
-      createdAt: forumStore.threadDetail.createdAt,
-      contentText: forumStore.threadDetail.contentText,
-    },
-    replyingToThreadId: forumStore.threadDetail.id,
-  });
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: "",
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "reply",
+      contentType: CONTENT_TYPES.REPLY,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
 };
 
 // 主文是否為正在回覆的目標（檢查所有草稿）
