@@ -75,7 +75,7 @@ watch(
   () => forumStore.lastRefreshTime,
   () => {
     forumStore.fetchTopics();
-  }
+  },
 );
 
 watch(
@@ -88,7 +88,7 @@ watch(
       forumStore.closeThread();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -97,7 +97,7 @@ watch(
     if (forumStore.pendingScrollTargetId) {
       tryScrollToPendingTarget();
     }
-  }
+  },
 );
 
 watch(
@@ -110,7 +110,7 @@ watch(
     if (forumStore.pendingScrollTargetId) {
       tryScrollToPendingTarget();
     }
-  }
+  },
 );
 </script>
 
@@ -118,8 +118,6 @@ watch(
   <DefaultNavbar light />
 
   <div class="container mt-5 mb-5">
-    <!-- <ForumHeader /> -->
-
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
       <div class="col-lg-9 order-2 order-lg-1">
@@ -164,7 +162,6 @@ watch(
       </div>
     </div>
   </div>
-
   <DefaultFooter />
 </template>
 

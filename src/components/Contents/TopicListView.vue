@@ -36,6 +36,7 @@ const threadHasInlineImages = computed(() => {
 
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
+const replyTab = ref(null);
 const quickReplyContent = ref("");
 const isSubmittingQuickReply = ref(false);
 
@@ -135,11 +136,24 @@ const resetQuickReply = () => {
   quickReplyContent.value = "";
 };
 
-const toggleQuickReply = () => {
-  showQuickReply.value = !showQuickReply.value;
-  if (!showQuickReply.value) {
+const selectQuickReply = () => {
+  replyTab.value = "quick";
+  showQuickReply.value = true;
+};
+
+const selectDetailedComment = () => {
+  replyTab.value = "detailed";
+  if (showQuickReply.value) {
     resetQuickReply();
   }
+  showQuickReply.value = false;
+  openDetailedComment();
+};
+
+const closeQuickReply = () => {
+  showQuickReply.value = false;
+  replyTab.value = null;
+  resetQuickReply();
 };
 
 const submitQuickReply = async () => {
@@ -194,6 +208,7 @@ const submitQuickReply = async () => {
 
     resetQuickReply();
     showQuickReply.value = false;
+    replyTab.value = null;
   } catch (error) {
     console.error("送出留言/回文失敗:", error);
     await Swal.fire({
@@ -536,29 +551,29 @@ function handleThreadReplyingTargetClick() {
             <div
               class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle border-bottom pb-3"
             >
-              <div class="reply-mode-tabs">
+              <div class="reply-mode-actions">
+                <div class="reply-mode-tabs">
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'quick' }"
+                    @click="selectQuickReply"
+                  >
+                    <i class="fas fa-pen me-1"></i>
+                    簡易留言
+                  </button>
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'detailed' }"
+                    @click="selectDetailedComment"
+                  >
+                    <i class="fas fa-feather-alt me-1"></i>
+                    詳細留言
+                  </button>
+                </div>
                 <button
-                  class="nav-link"
-                  type="button"
-                  :class="{ active: showQuickReply }"
-                  @click="toggleQuickReply"
-                >
-                  <i
-                    class="fas me-1"
-                    :class="showQuickReply ? 'fa-times' : 'fa-pen'"
-                  ></i>
-                  {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-                </button>
-                <button
-                  class="nav-link"
-                  type="button"
-                  @click="openDetailedComment"
-                >
-                  <i class="fas fa-feather-alt me-1"></i>
-                  詳細留言
-                </button>
-                <button
-                  class="nav-link"
+                  class="nav-link reply-standalone-btn"
                   type="button"
                   @click="openDetailedReply"
                 >
@@ -573,7 +588,7 @@ function handleThreadReplyingTargetClick() {
               v-model="quickReplyContent"
               :is-submitting="isSubmittingQuickReply"
               @submit="submitQuickReply"
-              @cancel="toggleQuickReply"
+              @cancel="closeQuickReply"
               @textarea-input="autoResizeTextarea"
             />
 
@@ -1134,57 +1149,67 @@ function handleThreadReplyingTargetClick() {
   min-width: 120px;
 }
 
-.reply-mode-tabs {
+.reply-mode-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px 8px 8px;
-  border-radius: 12px;
-  height: auto;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  overflow: visible;
-  margin: 0;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.reply-mode-tabs .nav-link {
-  border: 2px solid #86b0bd;
+.reply-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 3px;
   background: #fff;
+  border: 1px solid #d1d3d4;
+  border-radius: 999px;
+  height: 32px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  margin: 0;
+}
+
+.reply-mode-tabs .nav-link,
+.reply-standalone-btn {
+  border: none;
+  background: transparent;
   color: #145369;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 700;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: auto;
-  line-height: 1.5;
-  transition: all 0.3s ease;
+  height: 26px;
+  line-height: 26px;
+  transition: all 0.2s ease;
   margin: 0;
-  min-width: 140px;
-  box-shadow: 0 2px 4px rgba(20, 83, 105, 0.1);
 }
 
-.reply-mode-tabs .nav-link i {
-  font-size: 1.1rem;
+.reply-standalone-btn {
+  border: 1px solid #d1d3d4;
+  background: #fff;
+  height: 32px;
+  padding: 0 0.9rem;
+}
+
+.reply-mode-tabs .nav-link i,
+.reply-standalone-btn i {
+  font-size: 0.95rem;
   margin-right: 6px;
 }
 
-.reply-mode-tabs .nav-link:hover {
-  background: #fff0dd;
-  border-color: #145369;
-  color: #145369;
-  box-shadow: 0 4px 8px rgba(20, 83, 105, 0.2);
-  transform: translateY(-2px);
+.reply-mode-tabs .nav-link:hover,
+.reply-standalone-btn:hover {
+  background: #f8f9fa;
 }
 
 .reply-mode-tabs .nav-link.active {
   background: #145369;
-  color: #fff0dd;
-  border-color: #145369;
-  box-shadow: 0 4px 12px rgba(20, 83, 105, 0.3);
+  color: #fff;
 }
 
 .quick-reply-box {
