@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
+import AuthView from '@/views/user/AuthView.vue'
 import Register from "@/views/user/register.vue";
 import Login from "@/views/user/login.vue";
 import UserIndex from "@/views/user/userindex.vue";
@@ -74,14 +75,19 @@ const router = createRouter({
       component: () => import("@/views/user/userindex.vue"),
     },
     {
+      path: '/auth',
+      name: 'Auth',
+      component: AuthView,
+    },
+    {
       path: "/register",
-      name: "Register",
-      component: Register,
+      redirect: to => {
+        return { path: '/auth', query: { tab: 'register' } }
+      }
     },
     {
       path: "/login",
-      name: "Login",
-      component: Login,
+      redirect: '/auth'
     },
     {
       path: "/usersettings",
