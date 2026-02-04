@@ -475,7 +475,7 @@ const updateDraftBody = (draft, value) => {
   position: sticky;
   height: auto;
   max-height: calc(100vh - 120px);
-  z-index: 40;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   top: 0;
