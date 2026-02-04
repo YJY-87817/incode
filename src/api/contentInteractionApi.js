@@ -56,12 +56,12 @@ const contentInteractionApi = {
   /**
    * Convenience helpers for common actions.
    * These simply call postInteraction with the appropriate category ID.
-   * Category IDs: 1=Like, 3=Bookmark, 4=Block, 5=Hide
+   * Category IDs: 1=Like, 2=Hide, 3=Bookmark, 4=Report
    */
   like(contentId) {
     return this.postInteraction({ interactionCategoryId: 1, contentId });
   },
-  
+
   bookmark(contentId) {
     return this.postInteraction({ interactionCategoryId: 3, contentId });
   },
@@ -69,7 +69,7 @@ const contentInteractionApi = {
     return this.postInteraction({ interactionCategoryId: 4, contentId });
   },
   hide(contentId) {
-    return this.postInteraction({ interactionCategoryId: 5, contentId });
+    return this.postInteraction({ interactionCategoryId: 2, contentId });
   },
 
   /**
