@@ -23,23 +23,23 @@ const emit = defineEmits(["interaction-success", "interaction-error"]);
 const categories = ref([
   { id: 1, name: "like", label: "讚", icon: "fas fa-thumbs-up" },
   { id: 3, name: "bookmark", label: "收藏", icon: "fas fa-bookmark" },
+  { id: 2, name: "hide", label: "隱藏", icon: "fas fa-eye-slash" },
   { id: 4, name: "block", label: "檢舉", icon: "fas fa-ban" },
-  { id: 5, name: "hide", label: "隱藏", icon: "fas fa-eye-slash" },
 ]);
 
 // 追蹤互動狀態
 const interactionStates = ref({
   1: false,
+  2: false,
   3: false,
   4: false,
-  5: false,
 });
 
 const isLoading = ref({
   1: false,
+  2: false,
   3: false,
   4: false,
-  5: false,
 });
 
 /**
