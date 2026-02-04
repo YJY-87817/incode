@@ -10,7 +10,6 @@
     const authStore = useAuthStore();
     const isLoading = ref(false);
 
-
     // 0 = 登入, 1 = 註冊
     const step = ref(0);
 

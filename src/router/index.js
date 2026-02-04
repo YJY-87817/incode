@@ -3,16 +3,14 @@ import { createRouter, createWebHistory } from "vue-router";
 import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
-import AuthView from '@/views/user/AuthView.vue'
-import Register from "@/views/user/register.vue";
-import Login from "@/views/user/login.vue";
+import AuthView from '@/views/user/AuthView.vue';
 import UserIndex from "@/views/user/userindex.vue";
-import UserSettings from "@/views/user/UserSettings.vue"
-import UserCollections from "@/views/user/UserCollections.vue"
-import UserPost from "@/views/user/UserPost.vue"
-import UserLike from "@/views/user/UserLike.vue"
-import UserSave from "@/views/user/UserSave.vue"
-import UserMission from "@/views/user/UserMission.vue"
+import UserSettings from "@/views/user/UserSettings.vue";
+import UserCollections from "@/views/user/UserCollections.vue";
+import UserPost from "@/views/user/UserPost.vue";
+import UserLike from "@/views/user/UserLike.vue";
+import UserSave from "@/views/user/UserSave.vue";
+import UserMission from "@/views/user/UserMission.vue";
 // owen
 // qiu以下
 import Task from "../views/point/Task.vue";
