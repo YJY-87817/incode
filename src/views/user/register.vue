@@ -50,11 +50,11 @@
     if (files && files.length > 0) {
       const file = files[0]; // Vuetify 3 的 file-input 回傳的是陣列
       if (file.size > 2 * 1024 * 1024) {
-        alertStore.open({
-          type: "warning",
-          title: "檔案過大",
-          text: "請選擇小於 2MB 的圖片",
-        });
+        // alertStore.open({
+        //   type: "warning",
+        //   title: "檔案過大",
+        //   text: "請選擇小於 2MB 的圖片",
+        // });
         // 清空選擇
         selectedFile.value = null;
         previewUrl.value = null;
@@ -73,13 +73,13 @@
   // 模擬上傳圖片 (或是您的實際邏輯)
   const uploadImage = async () => {
     if (!selectedFile.value)
-      alertStore.open({ type: "info", text: "請先選擇一張圖片" });
-    return;
+      // alertStore.open({ type: "info", text: "請先選擇一張圖片" });
+      return;
     isUploading.value = true;
     // 這裡放入您的上傳 API 邏輯
     setTimeout(() => {
       isUploading.value = false;
-      alertStore.showSuccess("圖片上傳成功！");
+      // alertStore.showSuccess("圖片上傳成功！");
     }, 1000);
   };
 
