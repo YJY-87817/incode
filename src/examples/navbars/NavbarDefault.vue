@@ -138,7 +138,8 @@ watch(
           ? 'text-dark font-weight-bolder ms-sm-3'
           : 'text-white font-weight-bolder ms-sm-3',
       ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
-        <i class="fas fa-hat-cowboy-side"></i>
+        <img src="@/assets/img/okapi.svg" alt="logo" style="height: 40px; width: auto; margin-right: 8px; vertical-align: middle;" 
+      />
         incode影庫
       </router-link>
       <router-link class="navbar-brand d-block d-md-none" :class="props.transparent || props.dark
