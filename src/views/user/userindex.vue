@@ -118,7 +118,7 @@
       </div>
 
       <v-row>
-        <v-col cols="12" md="8">
+        <v-col cols="12">
           <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">
             我的資料
           </h3>

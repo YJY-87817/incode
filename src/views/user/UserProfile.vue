@@ -53,7 +53,11 @@
     try {
       if (isFollowingCurrentUser.value) {
         await userStore.unfollowUser(targetId);
-        alertStore.showSuccess("已取消追蹤");
+        Swal.fire({
+          title: "已取消追蹤",
+          icon: "success",
+          draggable: true
+        });
       } else {
         await userStore.followUser(targetId);
         Swal.fire({
