@@ -108,7 +108,9 @@ const baseCss = computed(() => {
     }
     img:not([style*="width"]) { width: 100%; }
     img { max-width: 100%; height: auto; display: block; margin: 0.5rem 0; }
-    p { margin: 0 0 0.5rem 0; }
+    p { margin: 0 0 0.5rem 0; min-height: 1em; }
+    p:empty::before { content: '\\200b'; }
+    br { display: block; content: ''; margin-top: 0.5em; }
     a { color: inherit; }
     ${props.extraCss || ""}
   `;
