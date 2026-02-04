@@ -274,11 +274,10 @@ watch(
 
           <li class="nav-item dropdown dropdown-hover mx-2" v-else>
             <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center justify-content-center"
-              id="dropdownMenuUser" data-bs-toggle="dropdown" aria-expanded="false"
-              style="height: 100%; min-height: 40px">
+              id="dropdownMenuUser" data-bs-toggle="dropdown" aria-expanded="false">
               <div class="d-flex align-items-center justify-content-center bg-white shadow-sm" style="
-                  width: 40px;
-                  height: 40px;
+                  width: 32px;
+                  height: 32px;
                   border-radius: 50%;
                   border: 2px solid #fff;
                   overflow: hidden;
