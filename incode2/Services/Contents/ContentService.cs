@@ -17,7 +17,7 @@ namespace incode2.Services.Contents
       _environment = environment;
     }
 
-    public async Task<object> GetContents(int? categoryId, int page, int pageSize)
+    public async Task<object> GetContents(int? categoryId, int page, int pageSize, int? userId)
     {
       var query = _context.Content
       .Include(c => c.User)
@@ -25,6 +25,12 @@ namespace incode2.Services.Contents
       .Where(c => c.IsActive != 4)
       .OrderByDescending(c => c.CreatedAt)
       .AsQueryable();
+
+      if (userId.HasValue && userId.Value > 0)
+      {
+        const int hideCategoryId = 2;
+        query = query.Where(c => !_context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId.Value && ci.CategoryId == hideCategoryId));
+      }
 
       if (categoryId.HasValue)
       {

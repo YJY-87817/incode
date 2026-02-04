@@ -24,7 +24,8 @@ namespace incode2.ApiControllers.Content
     [HttpGet]
     public async Task<IActionResult> GetContents([FromQuery] int? categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-      var result = await _contentService.GetContents(categoryId, page, pageSize);
+      var userId = User.GetId();
+      var result = await _contentService.GetContents(categoryId, page, pageSize, userId > 0 ? userId : null);
       return Ok(result);
     }
 
