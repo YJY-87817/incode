@@ -1152,7 +1152,7 @@ function handleThreadReplyingTargetClick() {
 .reply-mode-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -1160,12 +1160,12 @@ function handleThreadReplyingTargetClick() {
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 3px;
+  padding: 6px;
   background: #fff;
-  border: 1px solid #d1d3d4;
+  border: 2px solid #d1d3d4;
   border-radius: 999px;
-  height: 32px;
-  font-size: 0.875rem;
+  height: 42px;
+  font-size: 1rem;
   transition: all 0.2s ease;
   overflow: hidden;
   margin: 0;
@@ -1176,30 +1176,30 @@ function handleThreadReplyingTargetClick() {
   border: none;
   background: transparent;
   color: #145369;
-  padding: 0 0.75rem;
+  padding: 0 1rem;
   border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 26px;
-  line-height: 26px;
+  height: 32px;
+  line-height: 32px;
   transition: all 0.2s ease;
   margin: 0;
 }
 
 .reply-standalone-btn {
-  border: 1px solid #d1d3d4;
+  border: 2px solid #d1d3d4;
   background: #fff;
-  height: 32px;
-  padding: 0 0.9rem;
+  height: 42px;
+  padding: 0 1.1rem;
 }
 
 .reply-mode-tabs .nav-link i,
 .reply-standalone-btn i {
-  font-size: 0.95rem;
-  margin-right: 6px;
+  font-size: 1.05rem;
+  margin-right: 8px;
 }
 
 .reply-mode-tabs .nav-link:hover,
