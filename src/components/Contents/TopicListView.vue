@@ -137,8 +137,14 @@ const resetQuickReply = () => {
 };
 
 const selectQuickReply = () => {
-  replyTab.value = "quick";
-  showQuickReply.value = true;
+  // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
+  if (replyTab.value === "quick" && showQuickReply.value) {
+    showQuickReply.value = false;
+    replyTab.value = null;
+  } else {
+    replyTab.value = "quick";
+    showQuickReply.value = true;
+  }
 };
 
 const selectDetailedComment = () => {
