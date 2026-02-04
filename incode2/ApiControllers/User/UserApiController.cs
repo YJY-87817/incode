@@ -13,7 +13,7 @@ namespace incode2.ApiController.user
   //localhost:7190/api/User
   [Route("api/[controller]")]
   [ApiController]
-  [Authorize]
+  //[Authorize]
     public class UserController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
