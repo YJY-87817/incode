@@ -1,5 +1,5 @@
 <script setup>
-  import { onMounted, onUnmounted, ref, shallowRef } from "vue";
+  import { onMounted, onUnmounted, ref, shallowRef, computed } from "vue";
   import { useRouter } from "vue-router";
   import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
   import DefaultFooter from "@/examples/footers/FooterCentered.vue";
@@ -7,14 +7,13 @@
   import { useAuthStore } from "@/stores/user/auth";
   import { storeToRefs } from "pinia";
   import axios from "axios";
+  import UserProfileCard from "@/views/user/components/UserProfileCard.vue";
 
   const userStore = useUserStore();
   const authStore = useAuthStore();
   const router = useRouter();
-  const { userProfile } = storeToRefs(userStore);
-
+  const { userProfile, displayAvatar, isLoading, isFollowingCurrentUser } = storeToRefs(userStore);
   const dialog = shallowRef(false);
-  const isLoading = ref(false);
   const stats = ref({});
 
   // 3. 編輯表單用的資料 (避免直接修改顯示資料)
@@ -56,6 +55,10 @@
     dialog.value = true;
   };
 
+  const handleEditClick = () => {
+    openEditDialog();
+  }
+
   // 5. 送出更新
   const handleUpdate = async () => {
     if (!formValid.value) return;
@@ -96,16 +99,34 @@
     }
   };
 
-  // Hooks
-  onMounted(() => {
-    const body = document.getElementsByTagName("body")[0];
-    body.classList.add("bg-grey-lighten-5"); // 全局背景色
-    userStore.fetchUserProfile();
+  const isSelf = computed(() => {
+    // 這裡需要你自己實作判斷是否為本人的邏輯，
+    // 例如比較 store 裡的 userProfile.id 和登入者的 ID
+    return true; // 暫時假設是本人
   });
 
-  onUnmounted(() => {
-    const body = document.getElementsByTagName("body")[0];
-    body.classList.remove("bg-grey-lighten-5");
+  const buttonLabel = computed(() => {
+    if (isSelf.value) return "編輯資料";
+    return isFollowingCurrentUser.value ? "已追蹤" : "追蹤";
+  });
+
+  const handleCardAction = () => {
+    if (isSelf.value) {
+      // 跳轉去編輯頁面
+      console.log("前往編輯頁面...");
+    } else {
+      // 執行追蹤或取消追蹤
+      if (isFollowingCurrentUser.value) {
+        userStore.unfollowUser(userProfile.value.id);
+      } else {
+        userStore.followUser(userProfile.value.id);
+      }
+    }
+  };
+
+  onMounted(() => {
+    userStore.fetchUserProfile();
+    username: userStore.fetchUserProfile('otherUser');
   });
 </script>
 
@@ -113,30 +134,33 @@
   <DefaultNavbar light />
   <div class="container">
     <v-container class="mt-5 position-relative" style="min-height: 85vh; z-index: 1">
-      <div class="text-center mb-3">
+      <div class="text-center mb-6">
         <h1 class="text-h3 font-weight-bold text-grey-darken-4">會員中心</h1>
       </div>
 
       <v-row>
-        <v-col cols="12">
-          <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">
-            我的資料
-          </h3>
-          <v-card class="rounded-xl overflow-hidden" elevation="0" border>
-            <div class="d-flex align-center pa-6" style="background-color: #86b0bd">
-              <div style="position: relative" class="mb-0 mr-6">
-                <v-avatar size="120" class="border border-4 border-white elevation-2">
-                  <v-img :src="userStore.displayAvatar" alt="User Avatar" cover></v-img>
-                  <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
-                    style="position: absolute; bottom: 0; right: 0"></v-btn>
-                </v-avatar>
-              </div>
-              <div class="d-flex flex-column justify-center w-100">
-                <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
-                  {{ userStore.userProfile.username }}
-                </h2>
-                <div class="d-flex flex-wrap align-center gap-4 mt-2">
-                  <div class="text-center mr-4">
+        <UserProfileCard :profile="userProfile" :avatar-url="displayAvatar" :loading="isLoading"
+          :show-contact-info="true" action-label="編輯資料" @click-action="handleEditClick" />
+
+        <!-- <v-card class="rounded-xl overflow-hidden" elevation="0" border>
+          <div class="d-flex align-center pa-6" style="background-color: #86b0bd">
+            <div style="position: relative" class="mb-0 mr-6">
+              <v-avatar size="120" class="border border-4 border-white elevation-2">
+                <v-img :src="userStore.displayAvatar" alt="User Avatar" cover></v-img>
+                <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
+                  style="position: absolute; bottom: 0; right: 0"></v-btn>
+              </v-avatar>
+            </div>
+            <div class="d-flex flex-column justify-center w-100">
+              <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
+                {{ userStore.userProfile.username }}
+              </h2>
+              <div class="d-flex flex-wrap align-center gap-4 mt-2">
+                <div class="page-container">
+                  <UserProfileCard :profile="userProfile" :avatar-url="displayAvatar" :loading="isLoading"
+                    :action-label="buttonLabel" @click-action="handleCardAction" />
+                </div> -->
+        <!-- <div class="text-center mr-4">
                     <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.articleCount
                       }}</span>
                     <span class="text-caption text-white ml-1">文章</span>
@@ -163,60 +187,59 @@
                     <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.following
                       }}</span>
                     <span class="text-caption text-white ml-1">粉絲</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </div> -->
 
-            <v-row class="text-body-2 mt-2 pa-4">
-              <v-col cols="12" sm="6" class="d-flex align-center py-2">
-                <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
-                <span class="text-grey-darken-1">Email：</span>
-                <span class="font-weight-medium ml-1">{{
-                  userStore.userProfile.email
-                  }}</span>
-              </v-col>
-              <v-col cols="12" sm="6" class="d-flex align-center py-2">
-                <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
-                <span class="text-grey-darken-1">手機：</span>
-                <span class="font-weight-medium ml-1">{{
-                  userStore.userProfile.phone || "未設定"
-                  }}</span>
-              </v-col>
-              <v-col cols="12" sm="6" class="d-flex align-center py-2">
-                <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
-                <span class="text-grey-darken-1">地址：</span>
-                <span class="font-weight-medium ml-1">{{
-                  userStore.userProfile.address || "未設定"
-                  }}</span>
-              </v-col>
-              <v-col cols="12" sm="6" class="d-flex align-center py-2">
-                <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
-                <span class="text-grey-darken-1">生日：</span>
-                <span class="font-weight-medium ml-1">{{
-                  userStore.userProfile.birthday || "未設定"
-                  }}</span>
-              </v-col>
-            </v-row>
-            <div class="mt-2 mb-2 d-flex justify-content-end">
-              <v-btn prepend-icon="mdi-pencil-outline" variant="flat" color="#145369" class="text-white" rounded="pill"
-                size="small" @click="openEditDialog">
-                編輯資料
-              </v-btn>
-              <v-dialog v-model="dialog" max-width="600">
-                <v-card rounded="xl" class="pa-6">
-                  <div class="d-flex justify-space-between align-center mb-4">
-                    <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
-                    <v-btn icon="mdi-close" variant="text" @click="dialog = false"></v-btn>
-                  </div>
+      </v-row>
 
-                  <v-form v-model="formValid">
-                    <v-row dense>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editForm.username" label="暱稱" variant="outlined" density="comfortable"
-                          :rules="[rules.required]"></v-text-field>
-                      </v-col>
-                      <!-- Email先不能改 <v-col cols="12" sm="6">
+      <!-- <v-row class="text-body-2 mt-2 pa-4">
+        <v-col cols="12" sm="6" class="d-flex align-center py-2">
+          <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
+          <span class="text-grey-darken-1">Email：</span>
+          <span class="font-weight-medium ml-1">{{
+            userStore.userProfile.email
+            }}</span>
+        </v-col>
+        <v-col cols="12" sm="6" class="d-flex align-center py-2">
+          <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
+          <span class="text-grey-darken-1">手機：</span>
+          <span class="font-weight-medium ml-1">{{
+            userStore.userProfile.phone || "未設定"
+            }}</span>
+        </v-col>
+        <v-col cols="12" sm="6" class="d-flex align-center py-2">
+          <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
+          <span class="text-grey-darken-1">地址：</span>
+          <span class="font-weight-medium ml-1">{{
+            userStore.userProfile.address || "未設定"
+            }}</span>
+        </v-col>
+        <v-col cols="12" sm="6" class="d-flex align-center py-2">
+          <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
+          <span class="text-grey-darken-1">生日：</span>
+          <span class="font-weight-medium ml-1">{{
+            userStore.userProfile.birthday || "未設定"
+            }}</span>
+        </v-col>
+      </v-row> -->
+      <!--<div class="mt-2 mb-2 d-flex justify-content-end">
+             <v-btn prepend-icon="mdi-pencil-outline" variant="flat" color="#145369" class="text-white" rounded="pill"
+              size="small" @click="openEditDialog">
+              編輯資料
+            </v-btn>-->
+      <v-dialog v-model="dialog" max-width="600">
+        <v-card rounded="xl" class="pa-6">
+          <div class="d-flex justify-space-between align-center mb-4">
+            <h3 class="text-h6 font-weight-bold">編輯個人資料</h3>
+            <v-btn icon="mdi-close" variant="text" @click="dialog = false"></v-btn>
+          </div>
+
+          <v-form v-model="formValid">
+            <v-row dense>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="editForm.username" label="暱稱" variant="outlined" density="comfortable"
+                  :rules="[rules.required]"></v-text-field>
+              </v-col>
+              <!-- Email先不能改 <v-col cols="12" sm="6">
                         <v-text-field
                           v-model="editForm.email"
                           label="Email"
@@ -225,47 +248,45 @@
                           :rules="[rules.required, rules.email]"
                         ></v-text-field>
                       </v-col> -->
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editForm.phone" label="手機" variant="outlined" density="comfortable"
-                          :rules="[rules.phone]" maxlength="10" counter></v-text-field>
-                      </v-col>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editForm.birthday" label="生日" type="date" variant="outlined"
-                          density="comfortable" :active="true"></v-text-field>
-                      </v-col>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editForm.address" label="地址" variant="outlined"
-                          density="comfortable"></v-text-field>
-                      </v-col>
-                    </v-row>
-                  </v-form>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="editForm.phone" label="手機" variant="outlined" density="comfortable"
+                  :rules="[rules.phone]" maxlength="10" counter></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="editForm.birthday" label="生日" type="date" variant="outlined"
+                  density="comfortable" :active="true"></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field v-model="editForm.address" label="地址" variant="outlined"
+                  density="comfortable"></v-text-field>
+              </v-col>
+            </v-row>
+          </v-form>
 
-                  <v-card-actions class="pa-0 mt-4">
-                    <v-spacer></v-spacer>
-                    <v-hover v-slot="{ isHovering, props }">
-                      <v-btn variant="flat" v-bind="props" class="text-body-1 font-weight-bold mb-4"
-                        :loading="isLoading" :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
+          <v-card-actions class="pa-0 mt-4">
+            <v-spacer></v-spacer>
+            <v-hover v-slot="{ isHovering, props }">
+              <v-btn variant="flat" v-bind="props" class="text-body-1 font-weight-bold mb-4" :loading="isLoading"
+                :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
                           color: isHovering
                             ? '#145369 !important'
                             : '#FFFFFF !important',
                           border: '1px solid #145369',
                         }" @click="dialog = false">取消</v-btn></v-hover>
-                    <v-hover v-slot="{ isHovering, props }">
-                      <v-btn v-bind="props" variant="flat" class="text-body-1 font-weight-bold mb-4"
-                        :loading="isLoading" :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
+            <v-hover v-slot="{ isHovering, props }">
+              <v-btn v-bind="props" variant="flat" class="text-body-1 font-weight-bold mb-4" :loading="isLoading"
+                :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
                           color: isHovering
                             ? '#145369 !important'
                             : '#FFFFFF !important',
                           border: '1px solid #145369',
                         }" :disabled="!formValid" @click="handleUpdate">保存變更</v-btn></v-hover>
-                  </v-card-actions>
-                </v-card>
-              </v-dialog>
-            </div>
-          </v-card>
-        </v-col>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
-        <!-- <v-col cols="12" md="4">
+
+      <!-- <v-col cols="12" md="4">
           <h3 class="text-h6 font-weight-bold text-grey-darken-3 mb-4">
             最新通知
           </h3>
@@ -303,7 +324,7 @@
             </v-card>
           </div>
         </v-col> -->
-      </v-row>
+
       <v-row>
         <v-col cols="12">
           <v-card class="rounded-xl overflow-hidden" border flat>

@@ -1,17 +1,20 @@
 <script setup>
   import { ref, computed, onMounted, watch } from "vue";
-  import { useRoute } from "vue-router";
+  import { useRoute, useRouter } from "vue-router";
   import { useUserStore } from "@/stores/user/user.js";
   import { useAuthStore } from "@/stores/user/auth.js";
   import { storeToRefs } from "pinia";
   import axios from "axios";
+  import Swal from "sweetalert2";
   import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
   import DefaultFooter from "@/examples/footers/FooterCentered.vue";
   import FollowListDialog from "@/views/user/components/FollowListDialog.vue";
+  import UserProfileCard from "@/views/user/components/UserProfileCard.vue";
 
   const authStore = useAuthStore();
   const userStore = useUserStore();
   const route = useRoute();
+  const router = useRouter();
   const {
     userProfile,
     displayAvatar,
@@ -19,15 +22,23 @@
     isFollowingCurrentUser,
     isLoading,
   } = storeToRefs(userStore);
-
   const showFollowDialog = ref(false);
   const followDialogTab = ref("following");
-  const openFollowDialog = (tab) => {
-    // 如果資料還在載入中，或是沒有 User ID，就不打開
+  const postsItems = ref([]);
+  const isPostsLoading = ref(false);
+
+  const openFollowDialog = async (tab) => {
     if (isLoading.value || !userProfile.value.id) return;
 
     followDialogTab.value = tab;
     showFollowDialog.value = true;
+
+    // 當打開視窗時，依據 tab 去載入對應清單
+    if (tab === 'following') {
+      await userStore.fetchUserFollowingList(userProfile.value.id);
+    } else {
+      await userStore.fetchUserFollowersList(userProfile.value.id);
+    }
   };
 
   const isSelf = computed(() => {
@@ -37,12 +48,30 @@
     return String(currentUserId) === String(profileUserId);
   });
 
+  const buttonLabel = computed(() => {
+    if (isSelf.value) return "編輯資料";
+    return isFollowingCurrentUser.value ? "已追蹤" : "追蹤";
+  });
+
+  const handleCardAction = async () => {
+    if (isSelf.value) {
+      // 如果是自己 -> 跳轉到編輯頁面
+      router.push({ name: 'UserIndex' });
+    } else {
+      // 如果是別人 -> 執行追蹤/取消追蹤
+      await handleFollowToggle();
+    }
+  };
+
   const loadData = async () => {
-    const targetUsername = route.params.username; // 從網址取得 username
-    await Promise.all([
-      userStore.fetchUserProfile(targetUsername), // 這裡會處理 API
-      userStore.fetchFollowingList(),
-    ]);
+    const targetUsername = route.params.username;
+    await userStore.fetchUserProfile(targetUsername);
+    if (authStore.user?.id) {
+      await userStore.fetchMyFollowingList();
+    }
+    if (userProfile.value.id) {
+      await fetchUserPosts(userProfile.value.id);
+    }
   };
 
   // 處理按鈕點擊
@@ -56,7 +85,8 @@
         Swal.fire({
           title: "已取消追蹤",
           icon: "success",
-          draggable: true
+          timer: 1500,
+          showConfirmButton: false
         });
       } else {
         await userStore.followUser(targetId);
@@ -64,19 +94,19 @@
           title: "追蹤成功",
           text: `你已經開始追蹤 ${userProfile.value.username} 了！`,
           icon: "success",
-          draggable: true
+          timer: 1500,
+          showConfirmButton: false
         });
       }
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "追蹤失敗",
+        title: "操作失敗",
         text: "請稍後再試一次",
       });
     }
   };
 
-  const items = ref([]);
   const extractFirstImage = (htmlContent) => {
     if (!htmlContent) return null;
     const parser = new DOMParser();
@@ -91,21 +121,32 @@
     return doc.body.textContent || "";
   };
 
-  const fetchMyPosts = async () => {
-    isLoading.value = true;
+  const fetchUserPosts = async (userId) => {
+    isPostsLoading.value = true;
     try {
-      const response = await axios.get("/contentapi/me/posts");
-      const listData = response.data.items || [];
+      const response = await axios.get("/ContentApi");
+
+      // 假設回傳結構是 response.data 或 response.data.items
+      const listData = Array.isArray(response.data) ? response.data : (response.data.items || []);
       const STATIC_BASE_URL = "https://localhost:7190";
+
+      // 2. 只撈出 userId 符合目標對象的文章
+      const targetUserId = String(userId);
+      const filteredList = listData.filter(post => {
+        // 比對文章的 userId 是否等於目前頁面的 userId 
+        // 假設 API 回傳的欄位是 userId 或 UserId
+        return String(post.userId || post.UserId) === targetUserId;
+      });
+
+      console.log(`從 ${listData.length} 篇文章中，篩選出 ${filteredList.length} 篇屬於 User ${userId} 的文章`);
+
+      // 3. 後續處理 (下載 HTML 圖片等等)，只針對篩選後的結果
       const processedItems = await Promise.all(
-        listData.map(async (post) => {
-          let rawHtml = "";
+        filteredList.map(async (post) => {
           let extractedImg = null;
           let displayText = "載入中...";
-          let bodyPath = post.body;
-
-          const defaultImage =
-            "https://cdn.vuetifyjs.com/images/cards/forest.jpg";
+          let bodyPath = post.body || post.Body; // 注意後端大小寫可能不同
+          const defaultImage = "https://cdn.vuetifyjs.com/images/cards/forest.jpg";
 
           if (bodyPath && bodyPath.toLowerCase().endsWith(".html")) {
             try {
@@ -114,8 +155,6 @@
                 : bodyPath;
 
               const targetUrl = `${STATIC_BASE_URL}/${cleanPath}`;
-
-              console.log("嘗試下載:", targetUrl);
 
               const htmlRes = await axios.get(targetUrl);
               const rawHtml = htmlRes.data;
@@ -155,17 +194,13 @@
         }),
       );
 
-      items.value = processedItems;
+      postsItems.value = processedItems;
     } catch (error) {
       console.error("列表取得失敗:", error);
     } finally {
-      isLoading.value = false;
+      isPostsLoading.value = false;
     }
   };
-
-  onMounted(() => {
-    fetchMyPosts();
-  });
 
   watch(
     () => route.params.username,
@@ -180,7 +215,12 @@
   <DefaultNavbar light />
   <div class="container">
     <v-container class="mt-5 position-relative" style="min-height: 85vh; margin-top: -60px; z-index: 1">
-      <v-card class="rounded-xl overflow-hidden mb-5" elevation="0" border>
+      <v-row>
+        <UserProfileCard :profile="userProfile" :avatar-url="displayAvatar" :loading="isLoading"
+          :action-label="buttonLabel" @click-action="handleCardAction" />
+      </v-row>
+
+      <!-- <v-card class="rounded-xl overflow-hidden mb-5" elevation="0" border>
         <div class="d-flex flex-column flex-md-row align-center align-md-end pa-6" style="background-color: #86b0bd">
           <div class="mr-md-6 mb-4 mb-md-0" style="margin-top: -10px">
             <v-avatar size="140" class="border border-4 border-white elevation-3 bg-white">
@@ -249,9 +289,9 @@
             </v-row>
           </div>
         </div>
-      </v-card>
+      </v-card> -->
 
-      <div class="mb-6">
+      <div class="mt-6 mb-6">
         <div class="d-flex justify-space-between align-end mb-4 px-2">
           <div>
             <h2 class="text-h5 font-weight-bold text-grey-darken-3">
@@ -262,7 +302,16 @@
         </div>
 
         <v-row>
-          <v-col v-for="(item, index) in items" :key="item.id" cols="12" sm="6" md="4">
+          <v-col v-if="isPostsLoading" cols="12" class="text-center">
+            <v-progress-circular indeterminate color="primary"></v-progress-circular>
+          </v-col>
+
+          <v-col v-else-if="postsItems.length === 0" cols="12" class="text-center text-grey">
+            此使用者尚未發佈文章
+          </v-col>
+
+          <v-col v-else v-for="(item, index) in postsItems" :key="item.id" cols="12" sm="6" md="4">
+
             <v-card class="h-100 d-flex flex-column rounded-lg" border flat hover elevation="0">
               <v-img :src="item.img" height="200" cover class="rounded-t-lg align-end"
                 gradient="to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%">
@@ -307,19 +356,6 @@
           </v-col>
         </v-row>
       </div>
-
-      <v-container class="d-flex flex-column align-center mt-8">
-        <!-- 換成分頁 
-        <v-btn
-          variant="text"
-          color="primary"
-          rounded="pill"
-          class="text-body-2"
-        >
-          載入更多文章
-          <v-icon end icon="mdi-chevron-down"></v-icon>
-        </v-btn> -->
-      </v-container>
     </v-container>
   </div>
   <FollowListDialog v-if="userProfile.id" v-model="showFollowDialog" :user-id="userProfile.id"
