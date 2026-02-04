@@ -73,13 +73,20 @@
   // 模擬上傳圖片 (或是您的實際邏輯)
   const uploadImage = async () => {
     if (!selectedFile.value)
-      // alertStore.open({ type: "info", text: "請先選擇一張圖片" });
-      return;
+      Swal.fire({
+        icon: "info",
+        text: "請先選擇一張圖片",
+      });
+    return;
     isUploading.value = true;
     // 這裡放入您的上傳 API 邏輯
     setTimeout(() => {
       isUploading.value = false;
-      // alertStore.showSuccess("圖片上傳成功！");
+      Swal.fire({
+        title: "圖片上傳成功！",
+        icon: "success",
+        draggable: true
+      });
     }, 1000);
   };
 
@@ -98,7 +105,7 @@
         error.response?.data?.message || "註冊發生錯誤，請稍後再試";
       Swal.fire({
         icon: "error",
-        title: "登入失敗",
+        title: "註冊失敗",
         text: errorMsg,
       });
     }

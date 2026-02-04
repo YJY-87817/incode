@@ -80,10 +80,17 @@
       });
 
       dialog.value = false;
-      alertStore.showSuccess("個人資料更新成功！");
+      Swal.fire({
+        title: "個人資料更新成功！",
+        icon: "success",
+        draggable: true
+      });
     } catch (error) {
-      console.error("更新失敗", error);
-      alertStore.showError("更新失敗，請稍後再試");
+      Swal.fire({
+        icon: "error",
+        title: "更新失敗",
+        text: "請稍後再試一次",
+      });
     } finally {
       isLoading.value = false;
     }

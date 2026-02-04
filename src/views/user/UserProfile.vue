@@ -56,15 +56,19 @@
         alertStore.showSuccess("已取消追蹤");
       } else {
         await userStore.followUser(targetId);
-        // alertStore.open({
-        //   type: "success",
-        //   title: "追蹤成功",
-        //   text: `你已經開始追蹤 ${userProfile.value.username} 了！`,
-        // });
+        Swal.fire({
+          title: "追蹤成功",
+          text: `你已經開始追蹤 ${userProfile.value.username} 了！`,
+          icon: "success",
+          draggable: true
+        });
       }
     } catch (error) {
-      console.error(error);
-      // alertStore.showError("操作失敗，請稍後再試");
+      Swal.fire({
+        icon: "error",
+        title: "追蹤失敗",
+        text: "請稍後再試一次",
+      });
     }
   };
 
