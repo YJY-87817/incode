@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -212,22 +212,21 @@
         </div>
     </div>
 
-    <!-- Bootstrap core JavaScript-->
+    <!-- JavaScript 區塊 - 修正順序和重複問題 -->
+    <!-- jQuery 必須最先載入 -->
     <script src="~/vendor/jquery/jquery.min.js"></script>
+    
+    <!-- Bootstrap -->
     <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Core plugin JavaScript-->
+    <!-- 插件 -->
     <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="~/vendor/chart.js/chart.min.js"></script>
-    <!-- Custom scripts for all pages-->
+    
+    <!-- 自訂腳本 -->
     <script src="~/js/sb-admin-2.min.js"></script>
 
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-
-
-
-    @* 設定enviroment，開發環境顯示詳細style, script，不要顯示min的 *@
+    <!-- 環境相關的 site.js -->
     <environment include="Development">
         <script src="~/js/site.js" asp-append-version="true"></script>
     </environment>
