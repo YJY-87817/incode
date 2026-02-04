@@ -81,9 +81,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
       options.Cookie.SameSite = SameSiteMode.None; // 
       options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //
       options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        options.SlidingExpiration = true; // 有使用會自動展延 60 分鐘。
 
-      // 設定後台 MVC 用的導向路徑
-      options.LoginPath = "/Auth/Login";
+        // 設定後台 MVC 用的導向路徑
+        options.LoginPath = "/Auth/Login";
       options.AccessDeniedPath = "/Auth/AccessDenied";
 
       // 區分 API 還是 網頁
