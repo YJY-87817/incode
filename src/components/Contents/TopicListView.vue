@@ -577,7 +577,7 @@ function handleThreadReplyingTargetClick() {
                   type="button"
                   @click="openDetailedReply"
                 >
-                  <i class="fas fa-feather-alt me-1"></i>
+                  <i class="fas fa-solid fa-retweet me-1"></i>
                   詳細回文
                 </button>
               </div>
