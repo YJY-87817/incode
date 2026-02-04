@@ -1,193 +1,193 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>@ViewData["Title"] - incode</title>
-  <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
-  <!-- Custom fonts for this template-->
-  <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet" />
-  <!-- Custom styles for this template-->
-  <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
-  @await RenderSectionAsync("Styles", required: false)
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - incode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+    <!-- Custom fonts for this template-->
+    <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet" />
+    <!-- Custom styles for this template-->
+    <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-  <div id="wrapper">
-    <!-- Sidebar -->
-    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
-      <!-- Sidebar - Brand -->
-      <a class="sidebar-brand d-flex align-items-center justify-content-center" asp-area="" asp-controller="Home" asp-action="Index">
-        <div class="sidebar-brand-icon rotate-n-15">
-          @* <i class="fa-solid fa-poo fa-bounce"></i> *@
-        </div>
-        <div class="sidebar-brand-text mx-3">Incode</div>
-      </a>
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" asp-area="" asp-controller="Home" asp-action="Index">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    @* <i class="fa-solid fa-poo fa-bounce"></i> *@
+                </div>
+                <div class="sidebar-brand-text mx-3">Incode</div>
+            </a>
 
-      <!-- Divider -->
-      <hr class="sidebar-divider my-0">
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
 
-      <!-- Nav Item - Dashboard -->
-      <li class="nav-item">
-        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
-          <span>首頁</span>
-        </a>
-      </li>
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span>首頁</span>
+                </a>
+            </li>
 
-      <!-- Divider -->
-      <hr class="sidebar-divider">
+            <!-- Divider -->
+            <hr class="sidebar-divider">
 
-      <!-- Heading -->
-      <div class="sidebar-heading">
-        管理
-      </div>
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                管理
+            </div>
 
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUser"
-           aria-expanded="true" aria-controls="collapseUser">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>會員</span>
-        </a>
-        <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" asp-area="" asp-controller="user" asp-action="Index">會員管理</a>         
-            <a class="collapse-item" asp-area="" asp-controller="member" asp-action="Index">異常情況管理</a>
-          </div>
-        </div>
-      </li>
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUser"
+                   aria-expanded="true" aria-controls="collapseUser">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>會員</span>
+                </a>
+                <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="user" asp-action="Index">會員管理</a>
+                        <a class="collapse-item" asp-area="" asp-controller="member" asp-action="Index">異常情況管理</a>
+                    </div>
+                </div>
+            </li>
 
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePost"
-           aria-expanded="true" aria-controls="collapsePost">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>討論區</span>
-        </a>
-        <div id="collapsePost" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" asp-area="" asp-controller="Content" asp-action="Index">所有貼文</a>
-            <a class="collapse-item" asp-area="" asp-controller="ContentHistory" asp-action="Index">所有貼文歷史修改紀錄</a>
-            <a class="collapse-item" asp-area="" asp-controller="Home" asp-action="Contact">聯絡資訊</a>
-            <a class="collapse-item" asp-area="" asp-controller="ContentCategory" asp-action="Index">所有ContentCategory</a>
-          </div>
-        </div>
-      </li>
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePost"
+                   aria-expanded="true" aria-controls="collapsePost">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>討論區</span>
+                </a>
+                <div id="collapsePost" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="Content" asp-action="Index">所有貼文</a>
+                        <a class="collapse-item" asp-area="" asp-controller="ContentHistory" asp-action="Index">所有貼文歷史修改紀錄</a>
+                        <a class="collapse-item" asp-area="" asp-controller="Home" asp-action="Contact">聯絡資訊</a>
+                        <a class="collapse-item" asp-area="" asp-controller="ContentCategory" asp-action="Index">所有ContentCategory</a>
+                    </div>
+                </div>
+            </li>
 
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMisson"
-           aria-expanded="true" aria-controls="collapseMisson">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>任務點數</span>
-        </a>
-        <div id="collapseMisson" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="Index">會員點數</a>
-            <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="PointLogsDetail">會員點數查詢</a>
-            <a class="collapse-item" asp-area="" asp-controller="Mission" asp-action="Index">平台任務</a>
-            <a class="collapse-item" asp-area="" asp-controller="EntrustMission" asp-action="Index">委託任務</a>
-            <a class="collapse-item" asp-area="" asp-controller="PointRecharge" asp-action="Index">點數儲值</a>
-        </div>
-        </div>
-      </li>
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMisson"
+                   aria-expanded="true" aria-controls="collapseMisson">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>任務點數</span>
+                </a>
+                <div id="collapseMisson" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="Index">會員點數</a>
+                        <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="PointLogsDetail">會員點數查詢</a>
+                        <a class="collapse-item" asp-area="" asp-controller="Mission" asp-action="Index">平台任務</a>
+                        <a class="collapse-item" asp-area="" asp-controller="EntrustMission" asp-action="Index">委託任務</a>
+                        <a class="collapse-item" asp-area="" asp-controller="PointRecharge" asp-action="Index">點數儲值</a>
+                    </div>
+                </div>
+            </li>
 
-       <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseShop"
-           aria-expanded="true" aria-controls="collapseShop">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>商城</span>
-        </a>
-        <div id="collapseShop" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" asp-area="" asp-controller="Product" asp-action="Index" >商品管理</a>
-            <a class="collapse-item" asp-area="" asp-controller="Order" asp-action="Index">訂單管理</a>
-            <a class="collapse-item" asp-area="" asp-controller="Shipped" asp-action="Index">寄送管理</a>
-          </div>
-        </div>
-      </li>
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseShop"
+                   aria-expanded="true" aria-controls="collapseShop">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>商城</span>
+                </a>
+                <div id="collapseShop" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="Product" asp-action="Index">商品管理</a>
+                        <a class="collapse-item" asp-area="" asp-controller="Order" asp-action="Index">訂單管理</a>
+                        <a class="collapse-item" asp-area="" asp-controller="Shipped" asp-action="Index">寄送管理</a>
+                    </div>
+                </div>
+            </li>
 
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMessage"
-            aria-expanded="true" aria-controls="collapseMessage">
-            <i class="fas fa-fw fa-cog"></i>
-            <span>聊天室</span>
-        </a>
-      <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" asp-area="" asp-controller="ChatMessages" asp-action="Index">訊息管理</a>
-          </div>
-      </div>
-      </li>
-
-
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMessage"
+                   aria-expanded="true" aria-controls="collapseMessage">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>聊天室</span>
+                </a>
+                <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="ChatMessages" asp-action="Index">訊息管理</a>
+                    </div>
+                </div>
+            </li>
 
 
-      <!-- Nav Item - Charts -->
-      @* <li class="nav-item">
+
+
+            <!-- Nav Item - Charts -->
+            @* <li class="nav-item">
                 <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Privacy</span>
                 </a>
             </li> *@
-      
 
-      <!-- Divider -->
-      <hr class="sidebar-divider d-none d-md-block">
 
-      <!-- Sidebar Toggler (Sidebar) -->
-      <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
-      </div>
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
 
-    </ul>
-    <!-- End of Sidebar -->
-    <!-- Content Wrapper -->
-    <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
 
-      <!-- Main Content -->
-      <div id="content">
-        <!-- Topbar -->
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-          <!-- Sidebar Toggle (Topbar) -->
-          <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-            <i class="fa fa-bars"></i>
-          </button>
+        </ul>
+        <!-- End of Sidebar -->
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
 
-          <!-- Topbar Navbar -->
-          <partial name="_LoginPartial" />
-        </nav>
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
 
-        <!-- 內容 -->
-        <div class="container-fluid">
-          @* 這行最重要 *@
-          @RenderBody()
+                    <!-- Topbar Navbar -->
+                    <partial name="_LoginPartial" />
+                </nav>
+
+                <!-- 內容 -->
+                <div class="container-fluid">
+                    @* 這行最重要 *@
+                    @RenderBody()
+                </div>
+            </div>
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Your Website 2020</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
         </div>
-      </div>
-      <!-- Footer -->
-      <footer class="sticky-footer bg-white">
-        <div class="container my-auto">
-          <div class="copyright text-center my-auto">
-            <span>Copyright &copy; Your Website 2020</span>
-          </div>
-        </div>
-      </footer>
-      <!-- End of Footer -->
+        <!-- End of Content Wrapper -->
 
     </div>
-    <!-- End of Content Wrapper -->
+    <!-- End of Page Wrapper -->
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
 
-  </div>
-  <!-- End of Page Wrapper -->
-  <!-- Scroll to Top Button-->
-  <a class="scroll-to-top rounded" href="#page-top">
-    <i class="fas fa-angle-up"></i>
-  </a>
-
-  <!-- Logout Modal-->
+    <!-- Logout Modal-->
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
          aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -212,27 +212,30 @@
         </div>
     </div>
 
-  <!-- Bootstrap core JavaScript-->
-  <script src="~/vendor/jquery/jquery.min.js"></script>
-  <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap core JavaScript-->
+    <script src="~/vendor/jquery/jquery.min.js"></script>
+    <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Core plugin JavaScript-->
-  <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <!-- Core plugin JavaScript-->
+    <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="~/vendor/chart.js/chart.min.js"></script>
+    <!-- Custom scripts for all pages-->
+    <script src="~/js/sb-admin-2.min.js"></script>
 
-  <!-- Custom scripts for all pages-->
-  <script src="~/js/sb-admin-2.min.js"></script>
-
-  <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="~/js/site.js" asp-append-version="true"></script>
-
-  @* 設定enviroment，開發環境顯示詳細style, script，不要顯示min的 *@
-  <environment include="Development">
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-  </environment>
-  <environment exclude="Development">
-    <script src="~/js/site.min.js" asp-append-version="true"></script>
-  </environment>
 
-  @await RenderSectionAsync("Scripts", required: false)
+
+
+
+    @* 設定enviroment，開發環境顯示詳細style, script，不要顯示min的 *@
+    <environment include="Development">
+        <script src="~/js/site.js" asp-append-version="true"></script>
+    </environment>
+    <environment exclude="Development">
+        <script src="~/js/site.min.js" asp-append-version="true"></script>
+    </environment>
+
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
