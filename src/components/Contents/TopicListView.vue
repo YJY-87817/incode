@@ -565,8 +565,7 @@ function handleThreadReplyingTargetClick() {
                     :class="{ active: replyTab === 'quick' }"
                     @click="selectQuickReply"
                   >
-                    <i class="fas fa-pen me-1"></i>
-                    簡易留言
+                    留言
                   </button>
                   <button
                     class="nav-link"
@@ -574,7 +573,7 @@ function handleThreadReplyingTargetClick() {
                     :class="{ active: replyTab === 'detailed' }"
                     @click="selectDetailedComment"
                   >
-                    <i class="fas fa-feather-alt me-1"></i>
+                    <i class="fas fa-pen me-1"></i>
                     詳細留言
                   </button>
                 </div>
@@ -584,7 +583,7 @@ function handleThreadReplyingTargetClick() {
                   @click="openDetailedReply"
                 >
                   <i class="fas fa-solid fa-retweet me-1"></i>
-                  詳細回文
+                  回文
                 </button>
               </div>
             </div>

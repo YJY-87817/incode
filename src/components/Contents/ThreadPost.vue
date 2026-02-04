@@ -134,7 +134,6 @@
             :class="{ active: replyTab === 'quick' }"
             @click="selectQuickReply"
           >
-            <i class="fas fa-pen me-1"></i>
             {{ quickReplyLabel }}
           </button>
           <button
@@ -143,7 +142,7 @@
             :class="{ active: replyTab === 'detailed' }"
             @click="selectDetailedReply"
           >
-            <i class="fas fa-feather-alt me-1"></i>
+            <i class="fas fa-pen me-1"></i>
             {{ detailedReplyLabel }}
           </button>
         </div>
@@ -225,7 +224,6 @@
           :class="{ active: replyTab === 'quick' }"
           @click="selectQuickReply"
         >
-          <i class="fas fa-pen me-1"></i>
           {{ quickReplyLabel }}
         </button>
         <button
@@ -234,7 +232,7 @@
           :class="{ active: replyTab === 'detailed' }"
           @click="selectDetailedReply"
         >
-          <i class="fas fa-feather-alt me-1"></i>
+          <i class="fas fa-pen me-1"></i>
           {{ detailedReplyLabel }}
         </button>
       </div>
@@ -343,7 +341,7 @@ const canReply = computed(
 const canReplyHere = computed(() => canReply.value && !props.isReply);
 
 const quickReplyLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆",
+  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆",
 );
 
 const detailedReplyLabel = computed(() =>
