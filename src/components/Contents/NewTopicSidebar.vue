@@ -182,9 +182,6 @@ const submitDraft = async (draft) => {
     return;
   }
 
-  // 成功後等待一段時間確保 sweetalert 完全顯示和消失
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
   // 刪除這個草稿
   forumStore.removeDraft(draft.id);
 };
