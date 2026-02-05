@@ -122,6 +122,9 @@ export const useForumStore = defineStore("forum", {
 
     // ========== 快速回覆相關 ==========
     quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
+
+    // ========== 更多菜單相關 ==========
+    openMoreMenuId: null, // 當前打開的"更多"菜單的 contentId
   }),
 
   getters: {
@@ -1103,6 +1106,36 @@ export const useForumStore = defineStore("forum", {
       if (this.quickReplies[contentId]) {
         this.quickReplies[contentId].content = "";
       }
+    },
+
+    // ========== 更多菜單管理 ==========
+    /**
+     * 切換"更多"菜單
+     * @param {number} contentId - 內容 ID
+     */
+    toggleMoreMenu(contentId) {
+      if (this.openMoreMenuId === contentId) {
+        // 如果當前菜單已打開，關閉它
+        this.openMoreMenuId = null;
+      } else {
+        // 打開新菜單，自動關閉其他菜單
+        this.openMoreMenuId = contentId;
+      }
+    },
+
+    /**
+     * 關閉"更多"菜單
+     */
+    closeMoreMenu() {
+      this.openMoreMenuId = null;
+    },
+
+    /**
+     * 檢查是否為指定內容的菜單打開
+     * @param {number} contentId - 內容 ID
+     */
+    isMoreMenuOpen(contentId) {
+      return this.openMoreMenuId === contentId;
     },
   },
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import contentInteractionApi from "@/api/contentInteractionApi";
 import { useAuthStore } from "@/stores/user/auth";
 import { useForumStore } from "@/stores/forumStore";
@@ -123,20 +123,22 @@ function getButtonClass(categoryId) {
 /**
  * 更多選單的顯示狀態
  */
-const showMoreMenu = ref(false);
+const showMoreMenu = computed(() => {
+  return forumStore.isMoreMenuOpen(props.contentId);
+});
 
 /**
  * 切換更多選單
  */
 function toggleMoreMenu() {
-  showMoreMenu.value = !showMoreMenu.value;
+  forumStore.toggleMoreMenu(props.contentId);
 }
 
 /**
  * 處理編輯操作
  */
 function handleEdit() {
-  showMoreMenu.value = false;
+  forumStore.closeMoreMenu();
   emit("edit-content", props.contentId);
 }
 
@@ -144,7 +146,7 @@ function handleEdit() {
  * 處理刪除操作
  */
 async function handleDelete() {
-  showMoreMenu.value = false;
+  forumStore.closeMoreMenu();
 
   if (!confirm("確定要刪除這則內容嗎？")) {
     return;
@@ -172,20 +174,17 @@ async function handleDelete() {
  * 點擊外部關閉選單
  */
 function handleClickOutside(event) {
-  const moreMenu = document.querySelector(".more-menu-container");
-  if (moreMenu && !moreMenu.contains(event.target)) {
-    showMoreMenu.value = false;
+  // 如果點擊在當前 contentId 的菜單外部，則關閉這個菜單
+  if (forumStore.isMoreMenuOpen(props.contentId)) {
+    const moreMenu = document.querySelector(".more-menu-container");
+    if (moreMenu && !moreMenu.contains(event.target)) {
+      forumStore.closeMoreMenu();
+    }
   }
 }
 
 onMounted(() => {
   document.addEventListener("click", handleClickOutside);
-});
-
-// 清理事件監聽器
-import { onUnmounted } from "vue";
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
 });
 </script>
 
