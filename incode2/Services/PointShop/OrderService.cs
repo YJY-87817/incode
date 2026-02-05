@@ -107,8 +107,6 @@ namespace incode2.Services.PointShop
         // 新增訂單
         public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order)
         {
-            if (order == null || order.Items == null || !order.Items.Any())
-                return ResultDTO<int>.Failure("無效的請求數據");
 
             // 檢查 user 是否存在
             var user = await _context.User.FindAsync(order.UserId);
@@ -209,10 +207,6 @@ namespace incode2.Services.PointShop
         // 修改寄送資料
         public async Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped)
         {
-            // 檢驗是否空
-            if (shipped == null)
-                return ResultDTO<int>.Failure("無效的請求數據");
-
             // 找出資料庫中現有的資料
             var existingShipped = await _context.ShippedDetail.FindAsync(shippedDetailId);
 
