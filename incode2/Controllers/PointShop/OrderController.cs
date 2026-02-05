@@ -122,6 +122,12 @@ namespace incode2.Controllers
                 return NotFound();
             }
 
+            if (orders.Status == "已取消" && EditOrder.Status != "已取消")
+            {
+                // 從已取消改回其他狀態，清除取消時間
+                orders.CanceledAt = null;
+            }
+
             orders.UserId = EditOrder.UserId;
             orders.TotalPoint = EditOrder.TotalPoint;
             orders.Status = EditOrder.Status;

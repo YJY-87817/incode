@@ -60,7 +60,7 @@ namespace incode2.ApiControllers
         {
             order.UserId = userId;
             if (order == null || order.Items == null || !order.Items.Any())
-            return ResultDTO<int>.Failure("無效的請求數據");
+            return ResultDTO<int>.Failure("訂單資料有誤");
 
             return await _orderService.CreateOrderAsync(order);
         }
@@ -72,7 +72,7 @@ namespace incode2.ApiControllers
         {
             // 檢驗是否空
             if (shipped == null)
-                return ResultDTO<int>.Failure("無效的請求數據");
+                return ResultDTO<int>.Failure("寄送資料錯誤");
             return await _orderService.EditShippedAsync(ShippedDetailId, shipped);
         }
 
