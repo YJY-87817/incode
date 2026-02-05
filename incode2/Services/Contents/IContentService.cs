@@ -9,7 +9,7 @@ namespace incode2.Services.Contents
     Task<ContentDto?> GetContent(int id);
     Task<Content> CreateContent(CreateContentDto dto);
     Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
-    Task<bool> DeleteContent(int id);
+    Task<bool> DeleteContent(int id, int currentUserId);
     Task<List<ContentDto>> GetCommentsByContentId(int contentId);
     Task<List<ContentDto>> GetUserContents(int userId);
     Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types);

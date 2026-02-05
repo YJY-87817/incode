@@ -63,11 +63,18 @@ namespace incode2.ApiControllers.Content
       return Ok(updated);
     }
 
+    //刪除context(軟刪除)
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteContent(int id)
     {
-      var success = await _contentService.DeleteContent(id);
-      if (!success) return NotFound(new { message = "找不到此內容" });
+      var currentUserId = User.GetId();
+      if (currentUserId <= 0)
+      {
+        return Unauthorized(new { message = "請先登入" });
+      }
+
+      var success = await _contentService.DeleteContent(id, currentUserId);
+      if (!success) return NotFound(new { message = "找不到此內容或無權限刪除" });
       return Ok(new { message = "刪除成功" });
     }
 
