@@ -61,6 +61,10 @@ export function useForumPost() {
   ) => {
     // 檢查標題和內容
     if (!title || !body) {
+      // 临时下陋 modal 的 z-index
+      const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+      if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
       await Swal.fire({
         icon: "warning",
         title: "提醒",
@@ -68,6 +72,9 @@ export function useForumPost() {
         confirmButtonText: "確定",
         confirmButtonColor: "#145369",
       });
+
+      // 恢複 modal 的 z-index
+      if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
       return false;
     }
 
@@ -78,6 +85,10 @@ export function useForumPost() {
 
     // 如果不是回文，需要檢查分類
     if (!parentContentId && !categoryId) {
+      // 临时下陋 modal 的 z-index
+      const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+      if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
       await Swal.fire({
         icon: "warning",
         title: "提醒",
@@ -85,6 +96,9 @@ export function useForumPost() {
         confirmButtonText: "確定",
         confirmButtonColor: "#145369",
       });
+
+      // 恢複 modal 的 z-index
+      if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
       return false;
     }
 
@@ -147,6 +161,10 @@ export function useForumPost() {
    * 顯示發佈成功訊息
    */
   const showSuccessMessage = async () => {
+    // 临时下陋 modal 的 z-index
+    const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+    if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
     await Swal.fire({
       icon: "success",
       title: "發佈成功",
@@ -156,12 +174,19 @@ export function useForumPost() {
       allowOutsideClick: true,
       allowEscapeKey: true,
     });
+
+    // 恢複 modal 的 z-index
+    if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
   };
 
   /**
    * 顯示發佈失敗訊息
    */
   const showErrorMessage = async () => {
+    // 临时下陋 modal 的 z-index
+    const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+    if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
     await Swal.fire({
       icon: "error",
       title: "發佈失敗",
@@ -169,6 +194,9 @@ export function useForumPost() {
       confirmButtonText: "確定",
       confirmButtonColor: "#145369",
     });
+
+    // 恢複 modal 的 z-index
+    if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
   };
 
   /**
@@ -270,6 +298,10 @@ export function useForumPost() {
       // 刷新資料
       await refreshAfterPost(params.parentContentId);
 
+      // 临时下陋 modal 的 z-index
+      const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+      if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
       // 顯示成功訊息
       await Swal.fire({
         icon: "success",
@@ -281,12 +313,19 @@ export function useForumPost() {
         allowEscapeKey: true,
       });
 
+      // 恢複 modal 的 z-index
+      if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
+
       // 清除編輯模式
       forumStore.clearEditMode();
 
       return true;
     } catch (error) {
       console.error("[useForumPost] 更新失敗:", error);
+      // 临时下陋 modal 的 z-index
+      const modalBackdrop = document.querySelector(".custom-modal-backdrop");
+      if (modalBackdrop) modalBackdrop.style.zIndex = "500";
+
       await Swal.fire({
         icon: "error",
         title: "更新失敗",
@@ -294,6 +333,9 @@ export function useForumPost() {
         confirmButtonText: "確定",
         confirmButtonColor: "#145369",
       });
+
+      // 恢複 modal 的 z-index
+      if (modalBackdrop) modalBackdrop.style.zIndex = "2000";
       return false;
     }
   };

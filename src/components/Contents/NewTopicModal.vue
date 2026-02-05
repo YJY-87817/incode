@@ -723,6 +723,9 @@ const submitNewTopic = async () => {
     return;
   }
 
+  // 成功後等待一段時間確保 sweetalert 完全顯示和消失
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
   // 如果是從草稿打開的，刪除該草稿
   if (forumStore.currentEditingDraftId) {
     forumStore.removeDraft(forumStore.currentEditingDraftId);
