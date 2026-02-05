@@ -49,9 +49,16 @@ export function useForumPost() {
    * @param {string} body - 內容
    * @param {number|null} categoryId - 分類 ID
    * @param {number|null} parentContentId - 父內容 ID
+   * @param {boolean} isEdit - 是否編輯模式
    * @returns {Promise<boolean>} 是否驗證通過
    */
-  const validatePost = async (title, body, categoryId, parentContentId) => {
+  const validatePost = async (
+    title,
+    body,
+    categoryId,
+    parentContentId,
+    isEdit = false,
+  ) => {
     // 檢查標題和內容
     if (!title || !body) {
       await Swal.fire({
@@ -62,6 +69,11 @@ export function useForumPost() {
         confirmButtonColor: "#145369",
       });
       return false;
+    }
+
+    // 編輯模式下不需要驗證分類，因為編輯時分類已經綁定
+    if (isEdit) {
+      return true;
     }
 
     // 如果不是回文，需要檢查分類
@@ -236,12 +248,13 @@ export function useForumPost() {
    * @returns {Promise<boolean>} 是否更新成功
    */
   const updatePost = async (params) => {
-    // 驗證
+    // 驗證 - 編輯模式下不驗證分類
     const isValid = await validatePost(
       params.title,
       params.body,
       params.categoryId,
       params.parentContentId,
+      true, // isEdit = true
     );
 
     if (!isValid) {

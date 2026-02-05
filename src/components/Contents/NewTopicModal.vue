@@ -469,6 +469,25 @@ watch(
     if (isOpen) {
       newTopicState.title = forumStore.newTopic.title || "";
       newTopicState.body = forumStore.newTopic.body || "";
+
+      // 編輯模式下，直接同步分類（不依賴於搜索）
+      if (
+        forumStore.newTopic.mode === "edit" &&
+        forumStore.newTopic.categoryId
+      ) {
+        newTopicState.categoryId = forumStore.newTopic.categoryId;
+        selectedSubCategoryId.value = null;
+        // 同時更新搜索框以顯示當前分類
+        const currentCategory = (forumStore.categories || []).find(
+          (cat) =>
+            toCategoryKey(getCategoryIdValue(cat)) ===
+            toCategoryKey(forumStore.newTopic.categoryId),
+        );
+        if (currentCategory?.name) {
+          categorySearch.value = getCategoryName(currentCategory);
+        }
+        return;
+      }
     }
 
     if (isOpen && forumStore.newTopic.categoryId) {
