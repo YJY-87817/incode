@@ -21,7 +21,7 @@ const emit = defineEmits(["reset-filters"]);
 
 // --- 分頁相關邏輯 ---
 const currentPage = ref(1);        // 目前頁碼
-const pageSize = ref(6);           // 每頁顯示幾筆
+const pageSize = ref(8);           // 每頁顯示幾筆
 
 // 計算總頁數
 const totalPages = computed(() => {
@@ -64,15 +64,15 @@ const changePage = (page) => {
         <nav aria-label="Page navigation" class="mt-4">
           <ul class="pagination">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">&laquo;</a>
+              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(currentPage - 1)">&laquo;</a>
             </li>
 
             <li v-for="page in totalPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
-              <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(page)">{{ page }}</a>
             </li>
 
             <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">&raquo;</a>
+              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(currentPage + 1)">&raquo;</a>
             </li>
           </ul>
         </nav>
@@ -84,10 +84,51 @@ const changePage = (page) => {
 </template>
 
 <style scoped>
-.spinner-border {
-  animation: spinner 0.75s linear infinite;
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
 }
 
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
+}
+
+/* 1. 基礎樣式：讓所有分頁按鈕符合你的自定義風格 */
+:deep(.pagination .page-link) {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369;
+  transition: all 0.2s ease-in-out;
+  /* 增加一點平滑過渡感 */
+}
+
+/* 2. 選中狀態：當前頁碼填滿顏色 */
+:deep(.pagination .page-item.active .page-link) {
+  background-color: #145369;
+  border-color: #145369;
+  color: #ffffff;
+  z-index: 3;
+}
+
+/* 3. 滑鼠懸停樣式 (Hover) */
+:deep(.pagination .page-link:hover) {
+  background-color: #145369;
+  color: #ffffff;
+  border-color: #145369;
+}
+
+/* 4. 禁用狀態 (例如在第一頁時的「上一頁」按鈕) */
+:deep(.pagination .page-item.disabled .page-link) {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: transparent;
+  border-color: #dee2e6;
+}
+
+/* 原有的動畫 */
 @keyframes spinner {
   to {
     transform: rotate(360deg);
