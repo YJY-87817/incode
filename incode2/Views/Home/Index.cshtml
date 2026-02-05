@@ -132,25 +132,42 @@
     <script>
         var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay));
 
+        var userContentCount = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userContentCounts));
+
+        console.log(userContentCount);
+
         const reportChart = document.getElementById('reportChart');
 
         new Chart(reportChart, {
           type: 'bar',
           data: {
-            labels: ['User1', 'User2', 'User3', 'User4', 'User5', 'User6', 'User7' ,'User8', 'User9' ,'User10' ],
+            labels: userContentCount.map(item => item.UserName),
             datasets: [{
-              label: '# of Votes',
-              data: [15, 10, 7, 6, 4, 3, 2, 1, 1, 1],
+              label: '發文數',
+              data: userContentCount.map(item => item.ContentCount),
               backgroundColor: 'rgba(255, 0, 0, 0.5)',
               borderWidth: 1
             }]
           },
           options: {
             maintainAspectRatio: false,
-            indexAxis: 'y',
+            indexAxis: 'y', // 橫向長條圖
             scales: {
               x: {
-                beginAtZero: true
+                beginAtZero: true,
+                // 1. 讓最大刻度比資料最大值多出一段空間 (例如 10% 或 固定數值)
+                grace: '10%',
+                ticks: {
+                  // 2. 強制只顯示整數，不顯示小數點（如 1.5, 2.5）
+                  precision: 0,
+                  stepSize: 1 // 確保跳號是以 1 為單位
+                }
+              }
+            },
+            plugins: {
+              // 如果你想在長條圖上方直接顯示數字，可以考慮加上這個提示
+              legend: {
+                display: true
               }
             }
           }
