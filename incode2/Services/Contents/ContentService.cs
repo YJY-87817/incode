@@ -162,14 +162,21 @@ namespace incode2.Services.Contents
       return new UpdateContentDto
       {
         Title = content.Title,
-        Body = content.Body
+        Body = content.Body,
+        UpdatedAt = content.UpdatedAt  // 添加更新時間
       };
     }
 
-    public async Task<bool> DeleteContent(int id)
+    public async Task<bool> DeleteContent(int id, int currentUserId)
     {
       var content = await _context.Content.FindAsync(id);
       if (content == null) return false;
+
+      // 添加權限檢查
+      if (content.UserId != currentUserId)
+      {
+        return false; // 不是作者，無權刪除
+      }
 
       content.IsActive = 2;
       content.UpdatedAt = DateTime.Now;
