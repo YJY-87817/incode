@@ -45,12 +45,12 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUser"
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseUser"
                    aria-expanded="true" aria-controls="collapseUser">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>會員</span>
                 </a>
-                <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-parent="#accordionSidebar">
+                <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="user" asp-action="Index">會員管理</a>
                         <a class="collapse-item" asp-area="" asp-controller="member" asp-action="Index">異常情況管理</a>
@@ -60,16 +60,15 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePost"
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePost"
                    aria-expanded="true" aria-controls="collapsePost">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>討論區</span>
                 </a>
-                <div id="collapsePost" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div id="collapsePost" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="Content" asp-action="Index">所有貼文</a>
                         <a class="collapse-item" asp-area="" asp-controller="ContentHistory" asp-action="Index">所有貼文歷史修改紀錄</a>
-                        <a class="collapse-item" asp-area="" asp-controller="Home" asp-action="Contact">聯絡資訊</a>
                         <a class="collapse-item" asp-area="" asp-controller="ContentCategory" asp-action="Index">所有ContentCategory</a>
                     </div>
                 </div>
@@ -77,12 +76,12 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMisson"
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMisson"
                    aria-expanded="true" aria-controls="collapseMisson">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>任務點數</span>
                 </a>
-                <div id="collapseMisson" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div id="collapseMisson" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="Index">會員點數</a>
                         <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="PointLogsDetail">會員點數查詢</a>
@@ -95,12 +94,12 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseShop"
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseShop"
                    aria-expanded="true" aria-controls="collapseShop">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>商城</span>
                 </a>
-                <div id="collapseShop" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div id="collapseShop" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="Product" asp-action="Index">商品管理</a>
                         <a class="collapse-item" asp-area="" asp-controller="Order" asp-action="Index">訂單管理</a>
@@ -111,12 +110,12 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMessage"
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMessage"
                    aria-expanded="true" aria-controls="collapseMessage">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>聊天室</span>
                 </a>
-                <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div id="collapseMessage" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="ChatMessages" asp-action="Index">訊息管理</a>
                     </div>
@@ -171,7 +170,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Your Website 2020</span>
+                        <span>Copyright &copy; Your Website 2026</span>
                     </div>
                 </div>
             </footer>
@@ -194,15 +193,13 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">確定要登出嗎?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">若您準備好結束目前的連線，請點選下方的「登出」。</div>
+                <div class="modal-body">若您準備好結束目前的連線,請點選下方的「登出」。</div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+                    <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">取消</button>
 
-                    @* 修改這裡：改成 Form 表單提交 *@
+                    @* 修改這裡:改成 Form 表單提交 *@
                     <form asp-controller="Account" asp-action="Logout" method="post">
                         <button type="submit" class="btn btn-primary">登出</button>
                     </form>
@@ -212,21 +209,21 @@
         </div>
     </div>
 
-    <!-- JavaScript 區塊 - 修正順序和重複問題 -->
-    <!-- jQuery 必須最先載入 -->
-    <script src="~/vendor/jquery/jquery.min.js"></script>
+    <!-- JavaScript 區塊 -->
+    <!-- jQuery -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-easing/jquery.easing.min.js"></script>
     
-    <!-- Bootstrap -->
-    <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap 5 -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- 插件 -->
-    <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="~/vendor/chart.js/chart.min.js"></script>
+    <!-- Chart.js -->
+    <script src="~/lib/chart.js/chart.umd.min.js"></script>
     
-    <!-- 自訂腳本 -->
-    <script src="~/js/sb-admin-2.min.js"></script>
+    <!-- 自訂腳本 (更新為 Bootstrap 5 版本) -->
+    <script src="~/js/sb-admin-2.js"></script>
 
-    <!-- 環境相關的 site.js -->
+    <!-- 環境相關的 site.js -->                                                          
     <environment include="Development">
         <script src="~/js/site.js" asp-append-version="true"></script>
     </environment>
