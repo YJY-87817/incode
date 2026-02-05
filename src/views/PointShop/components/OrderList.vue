@@ -105,7 +105,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-
 .btn-custom-primary {
   color: #145369;
   background-color: transparent;
@@ -117,5 +116,4 @@ onMounted(() => {
   background-color: #145369;
   border-color: #145369;
 }
-
 </style>
