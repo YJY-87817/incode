@@ -123,6 +123,9 @@ const handleFilterUpdate = (newFilters) => {
 };
 
 onMounted(() => {
+  const body = document.getElementsByTagName("body")[0];
+  body.classList.add("bg-grey-lighten-5"); // 全局背景色
+
   fetchProducts();
 });
 </script>

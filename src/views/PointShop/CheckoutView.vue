@@ -3,7 +3,12 @@ import CheckoutItem from "@/views/PointShop/components/Checkitem.vue";
 import CheckoutPoint from "@/views/PointShop/components/Check.vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
+import { onMounted } from "vue";
 
+onMounted(() => {
+  const body = document.getElementsByTagName("body")[0];
+  body.classList.add("bg-grey-lighten-5"); // 全局背景色
+});
 </script>
 
 <template>
