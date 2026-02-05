@@ -12,6 +12,12 @@ import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
 import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
+// 可以抓到前端userID pinia
+import { useAuthStore } from "@/stores/user/auth.js";
+const authStore = useAuthStore();
+console.log(authStore.user?.id);
+// 可以抓到前端userID pinia
+
 const forumStore = useForumStore();
 const route = useRoute();
 
