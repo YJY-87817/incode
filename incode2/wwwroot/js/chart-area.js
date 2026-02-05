@@ -50,8 +50,8 @@ years.forEach(year => {
 });
 
 // 初始化圖表
-var ctx = document.getElementById("UserChart");
-var myLineChart = new Chart(ctx, {
+var UserChart = document.getElementById("UserChart");
+var myLineChart = new Chart(UserChart, {
     type: 'line',
     data: {
         labels: monthNames,

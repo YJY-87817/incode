@@ -87,8 +87,9 @@
         </div>
     </div>
     <!-- 儀錶板 -->
+
     <!-- UserChart -->
-    <div class="col-lg-6">
+    <div class="col-lg-7">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">會員數量</h6>
@@ -106,20 +107,20 @@
         </div>
     </div>
 
-    <!-- Bar Chart -->
-    <div class="col-lg-6">
+    <!-- ReportChart -->
+    <div class="col-lg-5">
         <div class="card shadow mb-4">
             <!-- Card Header - Dropdown -->
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">發文類型</h6>
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">被檢舉發文</h6>
             </div>
             <!-- Card Body -->
             <div class="card-body">
-                <div class="chart-pie pt-4">
-                    <canvas id="myPieChart"></canvas>
+                <div class="chart-area">
+                    <canvas id="reportChart"></canvas>
                 </div>
                 <hr>
-                發文類型
+                發文者
             </div>
         </div>
     </div>
@@ -128,11 +129,32 @@
 
 @section Scripts
 {
-    <!-- Bar Chart -->
-    <script src="~/js/chart-pie.js"></script>
     <script>
         var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay));
 
+        const reportChart = document.getElementById('reportChart');
+
+        new Chart(reportChart, {
+          type: 'bar',
+          data: {
+            labels: ['User1', 'User2', 'User3', 'User4', 'User5', 'User6', 'User7' ,'User8', 'User9' ,'User10' ],
+            datasets: [{
+              label: '# of Votes',
+              data: [15, 10, 7, 6, 4, 3, 2, 1, 1, 1],
+              backgroundColor: 'rgba(255, 0, 0, 0.5)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
     </script>
     <script src="~/js/chart-area.js"></script>
 }
