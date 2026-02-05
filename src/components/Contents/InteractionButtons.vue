@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
+import Swal from "sweetalert2";
 import contentInteractionApi from "@/api/contentInteractionApi";
 import { useAuthStore } from "@/stores/user/auth";
 import { useForumStore } from "@/stores/forumStore";
@@ -148,7 +149,18 @@ function handleEdit() {
 async function handleDelete() {
   forumStore.closeMoreMenu();
 
-  if (!confirm("確定要刪除這則內容嗎？")) {
+  const result = await Swal.fire({
+    title: "確定要刪除嗎？",
+    text: "刪除後無法復原",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "刪除",
+    cancelButtonText: "取消",
+  });
+
+  if (!result.isConfirmed) {
     return;
   }
 
