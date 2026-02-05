@@ -87,8 +87,8 @@
         </div>
     </div>
     <!-- 儀錶板 -->
-    <!-- Area Chart -->
-    <div class="col-lg-7">
+    <!-- UserChart -->
+    <div class="col-lg-6">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">會員數量</h6>
@@ -98,7 +98,7 @@
             </div>
             <div class="card-body">
                 <div class="chart-area">
-                    <canvas id="myAreaChart"></canvas>
+                    <canvas id="UserChart"></canvas>
                 </div>
                 <hr>
                 每月新增會員數量
@@ -107,7 +107,7 @@
     </div>
 
     <!-- Bar Chart -->
-    <div class="col-lg-5">
+    <div class="col-lg-6">
         <div class="card shadow mb-4">
             <!-- Card Header - Dropdown -->
             <div class="card-header py-3">
@@ -132,6 +132,7 @@
     <script src="~/js/chart-pie.js"></script>
     <script>
         var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay));
+
     </script>
     <script src="~/js/chart-area.js"></script>
 }

@@ -7,15 +7,6 @@
       "destination": "wwwroot/lib/font-awesome/"
     },
     {
-      "library": "datatables@2.2.1",
-      "destination": "wwwroot/lib/datatables/",
-      "files": [
-        "css/dataTables.bootstrap5.min.css",
-        "js/dataTables.min.js",
-        "js/dataTables.bootstrap5.min.js"
-      ]
-    },
-    {
       "library": "Chart.js@4.5.0",
       "destination": "wwwroot/lib/chart.js/",
       "files": [
@@ -23,8 +14,9 @@
       ]
     },
     {
-      "library": "jquery-easing@1.4.1",
-      "destination": "wwwroot/lib/jquery-easing/"
+      "provider": "cdnjs",
+      "library": "datatables@1.10.21",
+      "destination": "wwwroot/lib/datatables/"
     }
   ]
 }

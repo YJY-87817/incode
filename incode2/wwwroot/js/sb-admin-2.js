@@ -1,7 +1,7 @@
 /*!
- * Start Bootstrap - SB Admin 2 (Bootstrap 5 更新版)
- * 原版 Copyright 2013-2021 Start Bootstrap
- * 更新為 Bootstrap 5 兼容
+ * Start Bootstrap - SB Admin 2 (Bootstrap 5 版本)
+ * 版權 Copyright 2013-2021 Start Bootstrap
+ * 更新為 Bootstrap 5 內容
  */
 
 (function ($) {
@@ -65,12 +65,12 @@
     }
   });
 
-  // Smooth scrolling using jQuery easing
+  // Smooth scrolling using jQuery animate (移除 easing 依賴)
   $(document).on('click', 'a.scroll-to-top', function (e) {
     var $anchor = $(this);
     $('html, body').stop().animate({
       scrollTop: ($($anchor.attr('href')).offset().top)
-    }, 1000, 'easeInOutExpo');
+    }, 1000); // 移除 'easeInOutExpo'，使用預設的 'swing' 效果
     e.preventDefault();
   });
 
