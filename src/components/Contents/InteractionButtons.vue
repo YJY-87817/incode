@@ -190,7 +190,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="interaction-buttons d-inline-flex align-items-center gap-2">
+  <div
+    class="interaction-buttons d-inline-flex align-items-center gap-2"
+    :class="{ 'more-menu-open': showMoreMenu }"
+  >
     <button
       v-for="cat in categories"
       :key="cat.id"
@@ -245,6 +248,10 @@ onUnmounted(() => {
   gap: 0.35rem;
   position: relative;
   z-index: 20;
+}
+
+.interaction-buttons.more-menu-open {
+  z-index: 3000;
 }
 
 /* 基礎互動按鈕樣式 */
@@ -310,6 +317,7 @@ onUnmounted(() => {
 /* 更多選單容器 */
 .more-menu-container {
   position: relative;
+  z-index: 2100;
 }
 
 /* 下拉選單 */
@@ -318,13 +326,15 @@ onUnmounted(() => {
   top: 100%;
   right: 0;
   margin-top: 0.25rem;
-  background: white;
+  background-color: #fff;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 2200;
   min-width: 120px;
   overflow: hidden;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* 選單項目 */

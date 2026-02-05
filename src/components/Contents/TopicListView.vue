@@ -1076,6 +1076,10 @@ function handleThreadReplyingTargetClick() {
   margin-bottom: 0;
 }
 
+.table-responsive {
+  overflow-y: visible;
+}
+
 .table thead {
   font-weight: 600;
   font-size: 0.9rem;
@@ -1125,7 +1129,6 @@ function handleThreadReplyingTargetClick() {
   display: inline-flex;
   align-items: center;
   position: relative;
-  z-index: 10;
 }
 
 .thread-detail-title {
