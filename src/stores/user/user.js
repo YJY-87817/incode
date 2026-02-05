@@ -110,70 +110,71 @@ export const useUserStore = defineStore("user", () => {
   // 取得「目前查看對象」的關注清單 -> 用於 Dialog 顯示
   const fetchUserFollowingList = async (targetUserId) => {
     if (!targetUserId) return;
-    try {
-      // 假設後端支援 /Follow/following/{userId} 或是 query param
-      // 如果後端路徑不同，請依據 Swagger 修改，例如 `/Follow/${targetUserId}/following`
+    try {     
       const response = await axios.get(`/Follow/following/${targetUserId}`);
       profileFollowingList.value = response.data || [];
     } catch (error) {
-      console.error("取得該用戶關注清單失敗", error);
+      console.error(`取得用戶 ${targetUserId} 的關注清單失敗`, error);
       profileFollowingList.value = [];
+    }    finally {
+      isLoading.value = false; 
     }
   };
 
   // 取得「目前查看對象」的粉絲清單 -> 用於 Dialog 顯示
   const fetchUserFollowersList = async (targetUserId) => {
     if (!targetUserId) return;
+    isLoading.value = true;
     try {
       const response = await axios.get(`/Follow/followers/${targetUserId}`);
       profileFollowersList.value = response.data || [];
     } catch (error) {
-      console.error("取得該用戶粉絲清單失敗", error);
+      console.error(`取得用戶 ${targetUserId} 的粉絲清單失敗`, error);
       profileFollowersList.value = [];
+    }finally {
+      isLoading.value = false; 
     }
   };
 
   // 追蹤用戶 (Action)
   const followUser = async (targetId) => {
-    if (!targetId) return;
-    isLoading.value = true;
+    if (!targetId) return;   
     try {
       await axios.post(`/Follow/${targetId}`);
 
       // 追蹤成功後更新「我的關注清單」，按鈕變 "已追蹤"
       await fetchMyFollowingList();
 
-      // 卡片上的粉絲數字 +1
-      userProfile.value.followers += 1;
-
+// 當「我追蹤的人」就是「目前頁面顯示的人」時，才更新數字
+      if (userProfile.value && String(userProfile.value.id) === String(targetId)) {
+         userProfile.value.followers = (userProfile.value.followers || 0) + 1;
+      }
     } catch (error) {
       console.error("追蹤失敗", error);
-      // alert(error.response?.data || "追蹤失敗");
-    } finally {
-      isLoading.value = false;
-    }
+    } 
   };
 
   // 取消追蹤 (Action)
   const unfollowUser = async (targetId) => {
     if (!targetId) return;
-    isLoading.value = true;
     try {
       await axios.delete(`/Follow/${targetId}`);
 
       // 成功後，從「我的關注清單」移除該 ID，讓按鈕變回 "追蹤"
-      myFollowingList.value = myFollowingList.value.filter(u => u.followeeId !== targetId);
+     myFollowingList.value = myFollowingList.value.filter(u => {
+          const uid = u.id || u.followeeId || u.Id; // 抓取各種可能的 ID 欄位
+          return String(uid) !== String(targetId);
+      });
 
-      // 選項：手動調整卡片數字
-      if (userProfile.value.followers > 0) {
-        userProfile.value.followers -= 1;
+      if (userProfile.value && String(userProfile.value.id) === String(targetId)) {
+         if (userProfile.value.followers > 0) {
+            userProfile.value.followers -= 1;
+         }
       }
-
     } catch (error) {
       console.error("取消關注失敗", error);
-    } finally {
-      isLoading.value = false;
-    }
+      await fetchMyFollowingList();
+    } 
   };
 
   return {
