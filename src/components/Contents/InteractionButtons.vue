@@ -1,21 +1,43 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import contentInteractionApi from "@/api/contentInteractionApi";
+import { useAuthStore } from "@/stores/user/auth";
 
 /**
  * Props
  *  - contentId: the ID of the content (post) to interact with
+ *  - authorUserId: the user ID of the content author
  */
 const props = defineProps({
   contentId: {
     type: Number,
     required: true,
   },
+  authorUserId: {
+    type: Number,
+    default: null,
+  },
+});
+
+const authStore = useAuthStore();
+
+// 檢查是否為當前使用者的內容
+const isOwnContent = computed(() => {
+  return (
+    authStore.user?.id &&
+    props.authorUserId &&
+    authStore.user.id === props.authorUserId
+  );
 });
 
 onMounted(() => {});
 
-const emit = defineEmits(["interaction-success", "interaction-error"]);
+const emit = defineEmits([
+  "interaction-success",
+  "interaction-error",
+  "edit-content",
+  "delete-content",
+]);
 
 /**
  * Interaction categories with UI details.
@@ -94,6 +116,74 @@ function getButtonClass(categoryId) {
   const isActive = interactionStates.value[categoryId];
   return isActive ? "btn-interaction-active" : "btn-interaction";
 }
+
+/**
+ * 更多選單的顯示狀態
+ */
+const showMoreMenu = ref(false);
+
+/**
+ * 切換更多選單
+ */
+function toggleMoreMenu() {
+  showMoreMenu.value = !showMoreMenu.value;
+}
+
+/**
+ * 處理編輯操作
+ */
+function handleEdit() {
+  showMoreMenu.value = false;
+  emit("edit-content", props.contentId);
+}
+
+/**
+ * 處理刪除操作
+ */
+async function handleDelete() {
+  showMoreMenu.value = false;
+
+  if (!confirm("確定要刪除這則內容嗎？")) {
+    return;
+  }
+
+  try {
+    await contentInteractionApi.deleteContent(props.contentId);
+    emit("delete-content", props.contentId);
+    emit("interaction-success", {
+      categoryId: null,
+      categoryName: "delete",
+      message: "內容已刪除",
+    });
+  } catch (error) {
+    console.error("刪除失敗:", error);
+    emit("interaction-error", {
+      categoryId: null,
+      categoryName: "delete",
+      error: error.message || "刪除失敗，請稍後再試",
+    });
+  }
+}
+
+/**
+ * 點擊外部關閉選單
+ */
+function handleClickOutside(event) {
+  const moreMenu = document.querySelector(".more-menu-container");
+  if (moreMenu && !moreMenu.contains(event.target)) {
+    showMoreMenu.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+
+// 清理事件監聽器
+import { onUnmounted } from "vue";
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <template>
@@ -111,6 +201,35 @@ function getButtonClass(categoryId) {
       <i :class="[cat.icon, { 'fa-spin': isLoading[cat.id] }]"></i>
       <span class="ms-1">{{ cat.label }}</span>
     </button>
+
+    <!-- 更多選單 (僅當為自己的內容時顯示) -->
+    <div v-if="isOwnContent" class="more-menu-container position-relative">
+      <button
+        class="btn btn-sm btn-interaction-button btn-interaction"
+        @click.stop="toggleMoreMenu"
+        type="button"
+        title="更多"
+      >
+        <i class="fas fa-ellipsis-h"></i>
+        <span class="ms-1">更多</span>
+      </button>
+
+      <!-- 下拉選單 -->
+      <div v-if="showMoreMenu" class="more-menu-dropdown" @click.stop>
+        <button class="more-menu-item" @click="handleEdit" type="button">
+          <i class="fas fa-edit me-2"></i>
+          編輯
+        </button>
+        <button
+          class="more-menu-item more-menu-item-danger"
+          @click="handleDelete"
+          type="button"
+        >
+          <i class="fas fa-trash-alt me-2"></i>
+          刪除
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -183,5 +302,59 @@ function getButtonClass(categoryId) {
 
 .fa-spin {
   animation: spin 1s linear infinite;
+}
+
+/* 更多選單容器 */
+.more-menu-container {
+  position: relative;
+}
+
+/* 下拉選單 */
+.more-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+/* 選單項目 */
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: white;
+  color: #145369;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.more-menu-item:hover {
+  background-color: #f8f9fa;
+  color: #86b0bd;
+}
+
+.more-menu-item-danger {
+  color: #dc3545;
+}
+
+.more-menu-item-danger:hover {
+  background-color: #ffe6e6;
+  color: #c82333;
+}
+
+.more-menu-item i {
+  width: 1rem;
+  text-align: center;
 }
 </style>

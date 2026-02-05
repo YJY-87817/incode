@@ -30,8 +30,11 @@
                 <InteractionButtons
                   :key="`interactions-${post.id}`"
                   :contentId="post.id"
+                  :authorUserId="post.userId"
                   @interaction-success="handleInteractionSuccess"
                   @interaction-error="handleInteractionError"
+                  @edit-content="handleEditContent"
+                  @delete-content="handleDeleteContent"
                 />
               </div>
             </div>
@@ -786,6 +789,25 @@ async function handleInteractionError(data) {
     confirmButtonText: "確定",
     confirmButtonColor: "#145369",
   });
+}
+
+/**
+ * 處理編輯內容
+ */
+function handleEditContent(contentId) {
+  // 開啟編輯模式 - 使用 NewTopicModal 或 NewTopicSidebar 進行編輯
+  forumStore.openEditMode(contentId, props.post);
+}
+
+/**
+ * 處理刪除內容
+ */
+function handleDeleteContent(contentId) {
+  // 刪除成功後重新載入數據
+  forumStore.fetchTopics();
+  if (forumStore.threadDetail.id) {
+    forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+  }
 }
 </script>
 

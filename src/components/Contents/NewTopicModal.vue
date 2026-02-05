@@ -12,10 +12,12 @@ const { getModeTitle, validatePost, publishPost, hasDraftContent } =
 
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isPostMode = computed(() => modalMode.value === "post");
+const isEditMode = computed(() => modalMode.value === "edit");
 const modalTitle = computed(() => getModeTitle(modalMode.value));
-const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發佈" : "發佈",
-);
+const submitLabel = computed(() => {
+  if (modalMode.value === "edit") return "更新";
+  return modalMode.value === "post" ? "發佈" : "發佈";
+});
 
 const newTopicState = reactive({
   title: forumStore.newTopic.title || "",
@@ -682,14 +684,21 @@ const closeTitleBodyRequiredModal = () => {
 };
 
 const submitNewTopic = async () => {
+  // 判斷是否為編輯模式
+  const isEdit = modalMode.value === "edit";
+
   // 使用 composable 的 publishPost 進行驗證和提交
-  const success = await publishPost({
-    title: newTopicState.title,
-    body: newTopicState.body,
-    categoryId: effectiveCategoryId.value,
-    parentContentId: newTopicState.parentContentId,
-    contentType: forumStore.newTopic?.contentType,
-  });
+  const success = await publishPost(
+    {
+      title: newTopicState.title,
+      body: newTopicState.body,
+      categoryId: effectiveCategoryId.value,
+      parentContentId: newTopicState.parentContentId,
+      contentType: forumStore.newTopic?.contentType,
+      editingContentId: forumStore.newTopic?.editingContentId,
+    },
+    isEdit,
+  );
 
   if (!success) {
     return;
@@ -726,6 +735,7 @@ const resetNewTopicDraft = () => {
   forumStore.newTopic.categorySearch = "";
   forumStore.newTopic.mode = "post";
   forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  forumStore.newTopic.editingContentId = null;
 };
 
 const handleModalCancel = () => {

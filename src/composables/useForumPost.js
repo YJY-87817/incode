@@ -1,5 +1,6 @@
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
+import contentInteractionApi from "@/api/contentInteractionApi";
 import Swal from "sweetalert2";
 
 /**
@@ -11,11 +12,13 @@ export function useForumPost() {
 
   /**
    * 獲取模式對應的標題
-   * @param {string} mode - 模式 ('post', 'comment', 'reply', 'commentReply')
+   * @param {string} mode - 模式 ('post', 'comment', 'reply', 'commentReply', 'edit')
    * @returns {string} 對應的標題文字
    */
   const getModeTitle = (mode) => {
     switch (mode) {
+      case "edit":
+        return "編輯內容";
       case "comment":
         return "詳細留言";
       case "reply":
@@ -189,9 +192,15 @@ export function useForumPost() {
   /**
    * 完整的發文流程（含驗證、提交、刷新、提示）
    * @param {Object} params - 發文參數
+   * @param {boolean} isEdit - 是否為編輯模式
    * @returns {Promise<boolean>} 是否發佈成功
    */
-  const publishPost = async (params) => {
+  const publishPost = async (params, isEdit = false) => {
+    // 如果是編輯模式，調用編輯 API
+    if (isEdit && params.editingContentId) {
+      return await updatePost(params);
+    }
+
     // 驗證
     const isValid = await validatePost(
       params.title,
@@ -221,11 +230,67 @@ export function useForumPost() {
     return true;
   };
 
+  /**
+   * 更新內容（編輯模式）
+   * @param {Object} params - 編輯參數
+   * @returns {Promise<boolean>} 是否更新成功
+   */
+  const updatePost = async (params) => {
+    // 驗證
+    const isValid = await validatePost(
+      params.title,
+      params.body,
+      params.categoryId,
+      params.parentContentId,
+    );
+
+    if (!isValid) {
+      return false;
+    }
+
+    try {
+      await contentInteractionApi.updateContent(params.editingContentId, {
+        title: params.title,
+        body: params.body,
+      });
+
+      // 刷新資料
+      await refreshAfterPost(params.parentContentId);
+
+      // 顯示成功訊息
+      await Swal.fire({
+        icon: "success",
+        title: "更新成功",
+        showConfirmButton: false,
+        timer: 1500,
+        position: "center",
+        allowOutsideClick: true,
+        allowEscapeKey: true,
+      });
+
+      // 清除編輯模式
+      forumStore.clearEditMode();
+
+      return true;
+    } catch (error) {
+      console.error("[useForumPost] 更新失敗:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "更新失敗",
+        text: "更新失敗，請稍後再試",
+        confirmButtonText: "確定",
+        confirmButtonColor: "#145369",
+      });
+      return false;
+    }
+  };
+
   return {
     getModeTitle,
     resolveContentType,
     validatePost,
     submitPost,
+    updatePost,
     refreshAfterPost,
     showSuccessMessage,
     showErrorMessage,

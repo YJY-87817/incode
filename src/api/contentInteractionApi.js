@@ -88,6 +88,45 @@ const contentInteractionApi = {
   getComments(contentId) {
     return apiClient.get(`/ContentApi/${contentId}/comments`);
   },
+
+  /**
+   * Update (edit) a content item.
+   *
+   * PUT /ContentApi/{contentId}
+   *
+   * Request body (JSON):
+   * {
+   *   "title": string,      // 新的標題
+   *   "body": string,       // 新的內容
+   * }
+   *
+   * @param {number} contentId - The ID of the content to update
+   * @param {Object} payload - The updated content data
+   * @param {string} payload.title - New title
+   * @param {string} payload.body - New body content
+   * @returns {Promise<Object>} The updated content record
+   */
+  updateContent(contentId, { title, body }) {
+    return apiClient.put(`/ContentApi/${contentId}`, {
+      title,
+      body,
+    });
+  },
+
+  /**
+   * Delete (soft delete) a content item.
+   *
+   * DELETE /ContentApi/{contentId}
+   *
+   * This performs a soft delete by setting is_active to 2 (hidden).
+   * The content will still exist in the database but won't be displayed.
+   *
+   * @param {number} contentId - The ID of the content to delete
+   * @returns {Promise<Object>} Success response
+   */
+  deleteContent(contentId) {
+    return apiClient.delete(`/ContentApi/${contentId}`);
+  },
 };
 
 export default contentInteractionApi;
