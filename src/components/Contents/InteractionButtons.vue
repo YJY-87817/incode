@@ -336,7 +336,7 @@ onMounted(() => {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 0.25rem;
+  margin-top: 0.05rem;
   background-color: #fff;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
