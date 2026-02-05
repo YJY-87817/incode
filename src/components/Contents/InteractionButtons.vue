@@ -334,9 +334,9 @@ onMounted(() => {
 /* 下拉選單 */
 .more-menu-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% - 0.7rem);
   right: 0;
-  margin-top: 0.05rem;
+  margin-top: 0;
   background-color: #fff;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
@@ -353,7 +353,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 1rem;
   border: none;
   background: white;
   color: #145369;
