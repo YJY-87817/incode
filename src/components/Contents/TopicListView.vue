@@ -60,6 +60,36 @@ const handleTopicInteractionError = async (data) => {
 };
 
 /**
+ * 處理主題編輯操作
+ */
+const handleTopicEditContent = (contentId) => {
+  // 尋找對應的主題或回文進行編輯
+  const targetContent =
+    forumStore.threadDetail?.id === contentId
+      ? forumStore.threadDetail
+      : forumStore.topics.find((t) => t.id === contentId);
+
+  if (targetContent) {
+    forumStore.openEditMode(contentId, targetContent);
+  }
+};
+
+/**
+ * 處理主題刪除操作
+ */
+const handleTopicDeleteContent = (contentId) => {
+  // 刪除成功後重新載入數據
+  forumStore.fetchTopics();
+  if (forumStore.threadDetail?.id === contentId) {
+    // 如果刪除的是當前詳情中的主題，返回列表
+    goToList();
+  } else if (forumStore.threadDetail?.id) {
+    // 否則重新載入詳情
+    forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+  }
+};
+
+/**
  * 分頁相關計算
  */
 const displayPages = computed(() => forumStore.displayPages);
@@ -509,8 +539,11 @@ function handleThreadReplyingTargetClick() {
                 v-if="forumStore.threadDetail?.id != null"
                 :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
                 :contentId="Number(forumStore.threadDetail.id)"
+                :authorUserId="forumStore.threadDetail.userId"
                 @interaction-success="handleTopicInteractionSuccess"
                 @interaction-error="handleTopicInteractionError"
+                @edit-content="handleTopicEditContent"
+                @delete-content="handleTopicDeleteContent"
               />
             </div>
           </div>
@@ -796,8 +829,11 @@ function handleThreadReplyingTargetClick() {
                           <InteractionButtons
                             :key="`topic-interactions-${topic.id}`"
                             :contentId="topic.id"
+                            :authorUserId="topic.userId"
                             @interaction-success="handleTopicInteractionSuccess"
                             @interaction-error="handleTopicInteractionError"
+                            @edit-content="handleTopicEditContent"
+                            @delete-content="handleTopicDeleteContent"
                           />
                         </div>
                       </div>
