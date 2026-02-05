@@ -166,7 +166,14 @@ namespace incode2.ApiController.user
             }
 
             // 回傳 200 OK 與數據
-            return Ok(stats);
+            return Ok(new
+            {
+                articleCount = stats.ArticleCount,
+                followers = stats.FollowerCount, 
+                following = stats.FollowingCount,
+                missionCount = stats.MissionCount,
+                points = stats.PointBalance
+            });
         }
     }
 }

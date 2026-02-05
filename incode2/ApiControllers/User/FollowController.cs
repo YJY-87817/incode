@@ -56,6 +56,40 @@ namespace incode2.ApiController
             return Ok(following);
         }
 
+        // GET: api/Follow/followers/5
+        [HttpGet("followers/{userId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetUserFollowers(int userId)
+        {
+            var followers = await _context.Follow
+                .Where(f => f.FolloweeId == userId) // 這裡改用傳進來的 userId
+                .Select(f => new {
+                    Id = f.FollowerId,              // 注意：這裡回傳的是粉絲的 ID
+                    Username = f.Follower.Username,
+                    ImageUrl = f.Follower.ImageUrl,
+                    CreatedAt = f.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(followers);
+        }
+
+        // GET: api/Follow/following/5
+        [HttpGet("following/{userId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetUserFollowing(int userId)
+        {
+            var following = await _context.Follow
+                .Where(f => f.FollowerId == userId) // 這裡改用傳進來的 userId
+                .Select(f => new {
+                    Id = f.FolloweeId,              // 注意：這裡回傳的是被追蹤者的 ID
+                    Username = f.Followee.Username,
+                    ImageUrl = f.Followee.ImageUrl,
+                    CreatedAt = f.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(following);
+        }
+
         // POST: api/Follow/{targetId}
         [HttpPost("{targetId}")]
         public async Task<IActionResult> FollowUser(int targetId)
