@@ -21,13 +21,13 @@ table content_category {
   category_name nvarchar(100) [not null]
   description nvarchar(200)
   is_active int [not null, note: "1:會員新增, 2:官方提供, 3:不再使用"]
-  note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增"}
+  note {"先選好再發文，類似麵包屑，電影>動畫片、影城>屏東縣。可以讓使用者自己新增"}
 }
 
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)有人回覆、(6)官方公告"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
   created_at datetime [default:`current_timestamp`]
