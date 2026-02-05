@@ -113,6 +113,15 @@ export const useForumStore = defineStore("forum", {
     replyingToContentData: null,
     replyingToThreadId: null,
     pendingScrollTargetId: null,
+
+    // ========== 互動按鈕相關 ==========
+    currentInteractionContentId: null,
+    currentInteractionAuthorUserId: null,
+    interactionStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
+    interactionLoadingStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
+
+    // ========== 快速回覆相關 ==========
+    quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
   }),
 
   getters: {
@@ -909,6 +918,191 @@ export const useForumStore = defineStore("forum", {
     clearEditMode() {
       this.newTopic.editingContentId = null;
       this.newTopic.mode = "post";
+    },
+
+    // ========== 互動按鈕相關 ==========
+    /**
+     * 設置當前互動的內容
+     * @param {number} contentId - 內容 ID
+     * @param {number} authorUserId - 作者用戶 ID
+     */
+    setCurrentInteractionContent(contentId, authorUserId) {
+      this.currentInteractionContentId = contentId;
+      this.currentInteractionAuthorUserId = authorUserId;
+
+      // 初始化互動狀態
+      if (!this.interactionStates[contentId]) {
+        this.interactionStates[contentId] = {
+          1: false, // like
+          2: false, // hide
+          3: false, // bookmark
+          4: false, // block
+        };
+      }
+
+      // 初始化載入狀態
+      if (!this.interactionLoadingStates[contentId]) {
+        this.interactionLoadingStates[contentId] = {
+          1: false,
+          2: false,
+          3: false,
+          4: false,
+        };
+      }
+    },
+
+    /**
+     * 執行互動
+     * @param {number} contentId - 內容 ID
+     * @param {number} categoryId - 互動分類 ID
+     */
+    async handleInteraction(contentId, categoryId) {
+      if (!this.interactionLoadingStates[contentId]) {
+        this.setCurrentInteractionContent(contentId, null);
+      }
+
+      if (this.interactionLoadingStates[contentId][categoryId]) return;
+
+      this.interactionLoadingStates[contentId][categoryId] = true;
+
+      try {
+        const response = await contentInteractionApi.postInteraction({
+          interactionCategoryId: categoryId,
+          contentId: contentId,
+        });
+
+        if (response.isRemoved) {
+          this.interactionStates[contentId][categoryId] = false;
+          return { success: true, isRemoved: true, message: "互動已移除" };
+        } else {
+          this.interactionStates[contentId][categoryId] = true;
+          const categoryNames = {
+            1: "讚",
+            2: "隱藏",
+            3: "收藏",
+            4: "檢舉",
+          };
+          return {
+            success: true,
+            isRemoved: false,
+            message: `已${categoryNames[categoryId]}`,
+          };
+        }
+      } catch (error) {
+        console.error("互動操作失敗:", error);
+        return { success: false, error: error.message };
+      } finally {
+        this.interactionLoadingStates[contentId][categoryId] = false;
+      }
+    },
+
+    /**
+     * 獲取互動狀態
+     * @param {number} contentId - 內容 ID
+     * @param {number} categoryId - 互動分類 ID
+     */
+    getInteractionState(contentId, categoryId) {
+      return this.interactionStates[contentId]?.[categoryId] ?? false;
+    },
+
+    /**
+     * 獲取載入狀態
+     * @param {number} contentId - 內容 ID
+     * @param {number} categoryId - 互動分類 ID
+     */
+    getInteractionLoadingState(contentId, categoryId) {
+      return this.interactionLoadingStates[contentId]?.[categoryId] ?? false;
+    },
+
+    // ========== 快速回覆相關 ==========
+    /**
+     * 初始化快速回覆狀態
+     * @param {number} contentId - 內容 ID
+     */
+    initQuickReply(contentId) {
+      if (!this.quickReplies[contentId]) {
+        this.quickReplies[contentId] = {
+          content: "",
+          isSubmitting: false,
+          show: false,
+        };
+      }
+    },
+
+    /**
+     * 設置快速回覆內容
+     * @param {number} contentId - 內容 ID
+     * @param {string} content - 回覆內容
+     */
+    setQuickReplyContent(contentId, content) {
+      this.initQuickReply(contentId);
+      this.quickReplies[contentId].content = content;
+    },
+
+    /**
+     * 獲取快速回覆內容
+     * @param {number} contentId - 內容 ID
+     */
+    getQuickReplyContent(contentId) {
+      return this.quickReplies[contentId]?.content ?? "";
+    },
+
+    /**
+     * 設置快速回覆提交狀態
+     * @param {number} contentId - 內容 ID
+     * @param {boolean} isSubmitting - 是否正在提交
+     */
+    setQuickReplySubmitting(contentId, isSubmitting) {
+      this.initQuickReply(contentId);
+      this.quickReplies[contentId].isSubmitting = isSubmitting;
+    },
+
+    /**
+     * 獲取快速回覆提交狀態
+     * @param {number} contentId - 內容 ID
+     */
+    getQuickReplySubmitting(contentId) {
+      return this.quickReplies[contentId]?.isSubmitting ?? false;
+    },
+
+    /**
+     * 顯示快速回覆框
+     * @param {number} contentId - 內容 ID
+     */
+    showQuickReply(contentId) {
+      this.initQuickReply(contentId);
+      this.quickReplies[contentId].show = true;
+    },
+
+    /**
+     * 隱藏快速回覆框
+     * @param {number} contentId - 內容 ID
+     */
+    hideQuickReply(contentId) {
+      if (this.quickReplies[contentId]) {
+        this.quickReplies[contentId].show = false;
+      }
+    },
+
+    /**
+     * 取消快速回覆
+     * @param {number} contentId - 內容 ID
+     */
+    cancelQuickReply(contentId) {
+      if (this.quickReplies[contentId]) {
+        this.quickReplies[contentId].content = "";
+        this.quickReplies[contentId].show = false;
+      }
+    },
+
+    /**
+     * 清除快速回覆
+     * @param {number} contentId - 內容 ID
+     */
+    clearQuickReply(contentId) {
+      if (this.quickReplies[contentId]) {
+        this.quickReplies[contentId].content = "";
+      }
     },
   },
 

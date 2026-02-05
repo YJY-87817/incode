@@ -37,8 +37,6 @@ const threadHasInlineImages = computed(() => {
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
 const replyTab = ref(null);
-const quickReplyContent = ref("");
-const isSubmittingQuickReply = ref(false);
 
 /**
  * 處理主題互動成功
@@ -132,10 +130,6 @@ const nextCommentPage = () => {
 /**
  * 留言/回文輸入框相關
  */
-const resetQuickReply = () => {
-  quickReplyContent.value = "";
-};
-
 const selectQuickReply = () => {
   // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
   if (replyTab.value === "quick" && showQuickReply.value) {
@@ -149,8 +143,8 @@ const selectQuickReply = () => {
 
 const selectDetailedComment = () => {
   replyTab.value = "detailed";
-  if (showQuickReply.value) {
-    resetQuickReply();
+  if (showQuickReply.value && forumStore.threadDetail?.id) {
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
   }
   showQuickReply.value = false;
   openDetailedComment();
@@ -159,7 +153,9 @@ const selectDetailedComment = () => {
 const closeQuickReply = () => {
   showQuickReply.value = false;
   replyTab.value = null;
-  resetQuickReply();
+  if (forumStore.threadDetail?.id) {
+    forumStore.cancelQuickReply(forumStore.threadDetail.id);
+  }
 };
 
 const submitQuickReply = async () => {
@@ -174,7 +170,11 @@ const submitQuickReply = async () => {
     return;
   }
 
-  if (!quickReplyContent.value.trim()) {
+  const quickReplyContent = forumStore.getQuickReplyContent(
+    forumStore.threadDetail.id,
+  );
+
+  if (!quickReplyContent.trim()) {
     await Swal.fire({
       icon: "warning",
       title: "提醒",
@@ -185,15 +185,19 @@ const submitQuickReply = async () => {
     return;
   }
 
-  if (isSubmittingQuickReply.value) return;
-  isSubmittingQuickReply.value = true;
+  const isSubmitting = forumStore.getQuickReplySubmitting(
+    forumStore.threadDetail.id,
+  );
+  if (isSubmitting) return;
+
+  forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, true);
 
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
     title: `留言: ${forumStore.threadDetail.title}`,
-    body: quickReplyContent.value.trim(),
+    body: quickReplyContent.trim(),
     type: CONTENT_TYPES.COMMENT,
   };
 
@@ -212,7 +216,7 @@ const submitQuickReply = async () => {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
 
-    resetQuickReply();
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
     showQuickReply.value = false;
     replyTab.value = null;
   } catch (error) {
@@ -225,7 +229,7 @@ const submitQuickReply = async () => {
       confirmButtonColor: "#145369",
     });
   } finally {
-    isSubmittingQuickReply.value = false;
+    forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, false);
   }
 };
 
@@ -590,8 +594,7 @@ function handleThreadReplyingTargetClick() {
 
             <QuickReplyBox
               v-if="showQuickReply"
-              v-model="quickReplyContent"
-              :is-submitting="isSubmittingQuickReply"
+              :content-id="forumStore.threadDetail.id"
               @submit="submitQuickReply"
               @cancel="closeQuickReply"
               @textarea-input="autoResizeTextarea"

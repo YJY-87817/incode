@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import contentInteractionApi from "@/api/contentInteractionApi";
 import { useAuthStore } from "@/stores/user/auth";
+import { useForumStore } from "@/stores/forumStore";
 
 /**
  * Props
@@ -20,6 +21,18 @@ const props = defineProps({
 });
 
 const authStore = useAuthStore();
+const forumStore = useForumStore();
+
+// 初始化當前內容的互動狀態
+watch(
+  () => props.contentId,
+  (newId) => {
+    if (newId) {
+      forumStore.setCurrentInteractionContent(newId, props.authorUserId);
+    }
+  },
+  { immediate: true },
+);
 
 // 檢查是否為當前使用者的內容
 const isOwnContent = computed(() => {
@@ -49,19 +62,27 @@ const categories = ref([
   { id: 4, name: "block", label: "檢舉", icon: "fas fa-ban" },
 ]);
 
-// 追蹤互動狀態
-const interactionStates = ref({
-  1: false,
-  2: false,
-  3: false,
-  4: false,
+// 從 Pinia store 獲取互動狀態
+const interactionStates = computed(() => {
+  return (
+    forumStore.interactionStates[props.contentId] || {
+      1: false,
+      2: false,
+      3: false,
+      4: false,
+    }
+  );
 });
 
-const isLoading = ref({
-  1: false,
-  2: false,
-  3: false,
-  4: false,
+const isLoading = computed(() => {
+  return (
+    forumStore.interactionLoadingStates[props.contentId] || {
+      1: false,
+      2: false,
+      3: false,
+      4: false,
+    }
+  );
 });
 
 /**
@@ -70,42 +91,24 @@ const isLoading = ref({
 async function handleInteraction(categoryId, categoryName) {
   if (isLoading.value[categoryId]) return;
 
-  isLoading.value[categoryId] = true;
+  const result = await forumStore.handleInteraction(
+    props.contentId,
+    categoryId,
+  );
 
-  try {
-    const response = await contentInteractionApi.postInteraction({
-      interactionCategoryId: categoryId,
-      contentId: props.contentId,
+  if (result.success) {
+    emit("interaction-success", {
+      categoryId,
+      categoryName,
+      isRemoved: result.isRemoved,
+      message: result.message,
     });
-
-    if (response.isRemoved) {
-      // 移除互動
-      interactionStates.value[categoryId] = false;
-      emit("interaction-success", {
-        categoryId,
-        categoryName,
-        isRemoved: true,
-        message: "互動已移除",
-      });
-    } else {
-      // 新增或更新互動
-      interactionStates.value[categoryId] = true;
-      emit("interaction-success", {
-        categoryId,
-        categoryName,
-        isRemoved: false,
-        message: `已${categoryName}`,
-      });
-    }
-  } catch (error) {
-    console.error("互動失敗:", error);
+  } else {
     emit("interaction-error", {
       categoryId,
       categoryName,
-      error: error.message || "操作失敗，請稍後再試",
+      error: result.error || "操作失敗，請稍後再試",
     });
-  } finally {
-    isLoading.value[categoryId] = false;
   }
 }
 

@@ -169,8 +169,7 @@
       <QuickReplyBox
         v-if="showReply && canReplyHere"
         v-show="showQuickReply"
-        v-model="replyContent"
-        :is-submitting="isSubmittingReply"
+        :content-id="props.post.id"
         @submit="submitReply"
         @cancel="cancelReply"
         @textarea-input="autoResizeTextarea"
@@ -244,8 +243,7 @@
       <QuickReplyBox
         v-if="showReply && canReplyHere"
         v-show="showQuickReply"
-        v-model="replyContent"
-        :is-submitting="isSubmittingReply"
+        :content-id="props.post.id"
         @submit="submitReply"
         @cancel="cancelReply"
         @textarea-input="autoResizeTextarea"
@@ -294,8 +292,6 @@ const props = defineProps({
 });
 
 const showReply = ref(false);
-const replyContent = ref("");
-const isSubmittingReply = ref(false);
 const isPreviewExpanded = ref(false);
 const showQuickReply = ref(false);
 const replyTab = ref(null);
@@ -565,7 +561,7 @@ function autoResizeTextarea(event) {
 function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
-    replyContent.value = "";
+    forumStore.cancelQuickReply(props.post.id);
     showQuickReply.value = false;
     replyTab.value = null;
     return;
@@ -680,7 +676,9 @@ const openDetailedReplyModal = () => {
 };
 
 async function submitReply() {
-  if (!replyContent.value.trim()) {
+  const replyContent = forumStore.getQuickReplyContent(props.post.id);
+
+  if (!replyContent.trim()) {
     await Swal.fire({
       icon: "warning",
       title: "提醒",
@@ -691,15 +689,17 @@ async function submitReply() {
     return;
   }
 
-  if (isSubmittingReply.value) return;
-  isSubmittingReply.value = true;
+  const isSubmitting = forumStore.getQuickReplySubmitting(props.post.id);
+  if (isSubmitting) return;
+
+  forumStore.setQuickReplySubmitting(props.post.id, true);
 
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
     title: `Re: ${contentSummary.value.substring(0, 50)}...`, // 簡短標題
-    body: replyContent.value.trim(),
+    body: replyContent.trim(),
     type: resolveReplyContentType().type, // 根據被回覆內容決定類型
   };
 
@@ -712,7 +712,7 @@ async function submitReply() {
       timer: 1500,
       showConfirmButton: false,
     });
-    replyContent.value = "";
+    forumStore.clearQuickReply(props.post.id);
     showReply.value = false;
 
     // 直接调用 forumStore 重新获取帖文详情
@@ -729,13 +729,13 @@ async function submitReply() {
       confirmButtonColor: "#145369",
     });
   } finally {
-    isSubmittingReply.value = false;
+    forumStore.setQuickReplySubmitting(props.post.id, false);
   }
 }
 
 function cancelReply() {
   showReply.value = false;
-  replyContent.value = "";
+  forumStore.cancelQuickReply(props.post.id);
   showQuickReply.value = false;
   replyTab.value = null;
 }
