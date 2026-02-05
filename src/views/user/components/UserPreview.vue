@@ -108,10 +108,9 @@ watch(menuOpen, (val) => {
           ></v-img>
         </v-avatar>
         <div>
-          <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3">
+          <h3 class="font-weight-bold text-grey-darken-3">
             {{ username }}
           </h3>
-          <span class="text-caption text-grey">使用者</span>
         </div>
       </div>
 

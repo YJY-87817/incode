@@ -66,6 +66,11 @@ export const useUserStore = defineStore("user", () => {
         birthday: data.birthday || data.Birthday
           ? (data.birthday || data.Birthday).split("T")[0]
           : "",
+          articleCount: 0,
+        missionCount: 0,
+        points: 0,
+        followers: 0,
+        following: 0
       };
 
       // 取得統計數據 (文章數、關注數、粉絲數...)
@@ -78,19 +83,18 @@ export const useUserStore = defineStore("user", () => {
           userProfile.value.followers = statsRes.data.followerCount;
           userProfile.value.following = statsRes.data.followingCount;
         } catch (statsErr) {
-          console.warn("統計數據載入失敗", statsErr);
-          // 失敗時歸零
-          userProfile.value.articleCount = 0;
-          userProfile.value.missionCount = 0;
-          userProfile.value.points = 0;
-          userProfile.value.followers = 0;
-          userProfile.value.following = 0;
+          console.warn("統計數據載入失敗", statsErr);          
         }
       }
     } catch (error) {
       console.error(error);
       if (error.response && error.response.status === 404) {
-        userProfile.value = { ...userProfile.value, name: "查無此使用者", id: 0 };
+        userProfile.value = { id: 0, 
+            username: "查無此使用者", 
+            imageUrl: "",
+            articleCount: 0,
+            followers: 0,
+            following: 0};
       }
     } finally {
       isLoading.value = false;

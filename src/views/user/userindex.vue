@@ -127,7 +127,6 @@ const handleCardAction = () => {
 
 onMounted(() => {
   userStore.fetchUserProfile();
-  username: userStore.fetchUserProfile("otherUser");
 });
 </script>
 

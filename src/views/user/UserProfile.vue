@@ -10,6 +10,7 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import FollowListDialog from "@/views/user/components/FollowListDialog.vue";
 import UserProfileCard from "@/views/user/components/UserProfileCard.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -237,6 +238,18 @@ watch(
           </h2>
           <p class="text-caption text-grey">最新發佈的文章與動態</p>
         </div>
+      </div>
+
+      <v-spacer></v-spacer>
+
+      <div class="mr-4">
+        <UserPreview
+          v-if="userProfile && userProfile.id"
+          :user-id="userProfile.id"
+          :username="userProfile.username"
+          :avatar-url="userProfile.avatarUrl || userProfile.imageUrl"
+          :size="45"
+        />
       </div>
 
       <v-row>
