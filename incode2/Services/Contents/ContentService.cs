@@ -22,7 +22,7 @@ namespace incode2.Services.Contents
       var query = _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.IsActive != 4)
+      .Where(c => c.IsActive == 1)
       .OrderByDescending(c => c.CreatedAt)
       .AsQueryable();
 
@@ -73,7 +73,7 @@ namespace incode2.Services.Contents
       return await _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.ContentId == id && c.IsActive != 4)
+      .Where(c => c.ContentId == id && c.IsActive == 1)
       .Select(c => new ContentDto
       {
         ContentId = c.ContentId,
@@ -189,7 +189,7 @@ namespace incode2.Services.Contents
       return await _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
-      .Where(c => c.ParentContentId == contentId && c.IsActive != 4)
+      .Where(c => c.ParentContentId == contentId && c.IsActive == 1)
       .OrderByDescending(c => c.CreatedAt)
       .Select(c => new ContentDto
       {
@@ -220,7 +220,7 @@ namespace incode2.Services.Contents
       return await _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive != 4 && typeList.Contains(c.Type))
+        .Where(c => c.UserId == userId && c.IsActive == 1 && typeList.Contains(c.Type))
         .OrderByDescending(c => c.CreatedAt)
         .Select(c => new ContentDto
         {
@@ -245,7 +245,7 @@ namespace incode2.Services.Contents
       return await _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive != 4)
+        .Where(c => c.UserId == userId && c.IsActive == 1)
         .OrderByDescending(c => c.CreatedAt)
         .Select(c => new ContentDto
         {
@@ -293,7 +293,7 @@ namespace incode2.Services.Contents
       return await _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
-        .Where(c => c.IsActive != 4)
+        .Where(c => c.IsActive == 1)
         .Where(c => _context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId && ci.CategoryId == resolvedCategoryId.Value))
         .OrderByDescending(c => c.CreatedAt)
         .Select(c => new ContentDto
