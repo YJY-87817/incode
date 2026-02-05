@@ -59,6 +59,9 @@ namespace incode2.ApiControllers
         public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest order)
         {
             order.UserId = userId;
+            if (order == null || order.Items == null || !order.Items.Any())
+            return ResultDTO<int>.Failure("無效的請求數據");
+
             return await _orderService.CreateOrderAsync(order);
         }
 
@@ -67,6 +70,9 @@ namespace incode2.ApiControllers
         [HttpPut("ShippedPut/{ShippedDetailId}")]
         public async Task<ResultDTO<int>> EditShipped(int ShippedDetailId, [FromBody] NewShippedRequest shipped)
         {
+            // 檢驗是否空
+            if (shipped == null)
+                return ResultDTO<int>.Failure("無效的請求數據");
             return await _orderService.EditShippedAsync(ShippedDetailId, shipped);
         }
 
