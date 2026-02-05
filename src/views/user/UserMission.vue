@@ -2,8 +2,6 @@
 import { ref, computed } from "vue";
 import { useUserStore } from "@/stores/user/user.js";
 import { storeToRefs } from "pinia";
-import UserPreview from "@/views/user/components/UserPreview.vue";
-
 const userStore = useUserStore();
 const { userProfile } = storeToRefs(userStore);
 
@@ -91,18 +89,6 @@ const filteredMissions = computed(() => {
           bg-color="white"
         ></v-text-field>
       </div>
-    </div>
-
-    <v-spacer></v-spacer>
-
-    <div class="mr-4">
-      <UserPreview
-        v-if="userProfile && userProfile.id"
-        :user-id="userProfile.id"
-        :username="userProfile.username"
-        :avatar-url="userProfile.avatarUrl || userProfile.imageUrl"
-        :size="45"
-      />
     </div>
 
     <v-container class="pa-0" fluid>

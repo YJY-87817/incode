@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/stores/user/user.js";
 import { useAuthStore } from "@/stores/user/auth.js";
@@ -16,13 +16,8 @@ const authStore = useAuthStore();
 const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
-const {
-  userProfile,
-  displayAvatar,
-  followersCount,
-  isFollowingCurrentUser,
-  isLoading,
-} = storeToRefs(userStore);
+const { userProfile, displayAvatar, isFollowingCurrentUser, isLoading } =
+  storeToRefs(userStore);
 const showFollowDialog = ref(false);
 const followDialogTab = ref("following");
 const postsItems = ref([]);
@@ -67,6 +62,7 @@ const handleCardAction = async () => {
 };
 
 const loadData = async () => {
+  isPostsLoading.value = true;
   const targetUsername = route.params.username;
   await userStore.fetchUserProfile(targetUsername);
   if (authStore.user?.id) {

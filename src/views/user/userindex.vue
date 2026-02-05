@@ -1,21 +1,35 @@
 <script setup>
 import { onMounted, ref, shallowRef, computed } from "vue";
-import { useRouter } from "vue-router";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import { useUserStore } from "@/stores/user/user";
 import { useAuthStore } from "@/stores/user/auth";
 import { storeToRefs } from "pinia";
 import axios from "axios";
+import FollowListDialog from "@/views/user/components/FollowListDialog.vue";
 import UserProfileCard from "@/views/user/components/UserProfileCard.vue";
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
-const router = useRouter();
 const { userProfile, displayAvatar, isLoading, isFollowingCurrentUser } =
   storeToRefs(userStore);
 const dialog = shallowRef(false);
-const stats = ref({});
+const showFollowDialog = ref(false);
+const followDialogTab = ref("following");
+
+const openFollowDialog = async (tab) => {
+  if (!userProfile.value || !userProfile.value.id) return;
+
+  followDialogTab.value = tab;
+  showFollowDialog.value = true;
+
+  // 依據 tab 載入對應清單 (呼叫 Store)
+  if (tab === "following") {
+    await userStore.fetchUserFollowingList(userProfile.value.id);
+  } else {
+    await userStore.fetchUserFollowersList(userProfile.value.id);
+  }
+};
 
 // 3. 編輯表單用的資料 (避免直接修改顯示資料)
 const editForm = ref({
@@ -111,16 +125,15 @@ const buttonLabel = computed(() => {
   return isFollowingCurrentUser.value ? "已追蹤" : "追蹤";
 });
 
-const handleCardAction = () => {
+const handleCardAction = async () => {
   if (isSelf.value) {
-    // 跳轉去編輯頁面
-    console.log("前往編輯頁面...");
+    openEditDialog();
   } else {
     // 執行追蹤或取消追蹤
     if (isFollowingCurrentUser.value) {
-      userStore.unfollowUser(userProfile.value.id);
+      await userStore.unfollowUser(userProfile.value.id);
     } else {
-      userStore.followUser(userProfile.value.id);
+      await userStore.followUser(userProfile.value.id);
     }
   }
 };
@@ -140,92 +153,20 @@ onMounted(() => {
           :avatar-url="displayAvatar"
           :loading="isLoading"
           :show-contact-info="true"
-          action-label="編輯資料"
-          @click-action="handleEditClick"
+          :action-label="buttonLabel"
+          @click-action="handleCardAction"
+          @click-stat="openFollowDialog"
       /></v-col>
     </v-row>
-    <!-- <v-card class="rounded-xl overflow-hidden" elevation="0" border>
-          <div class="d-flex align-center pa-6" style="background-color: #86b0bd">
-            <div style="position: relative" class="mb-0 mr-6">
-              <v-avatar size="120" class="border border-4 border-white elevation-2">
-                <v-img :src="userStore.displayAvatar" alt="User Avatar" cover></v-img>
-                <v-btn icon="mdi-camera" size="x-small" color="grey-darken-3" variant="flat"
-                  style="position: absolute; bottom: 0; right: 0"></v-btn>
-              </v-avatar>
-            </div>
-            <div class="d-flex flex-column justify-center w-100">
-              <h2 class="text-h5 font-weight-bold text-grey-darken-4 mb-2">
-                {{ userStore.userProfile.username }}
-              </h2>
-              <div class="d-flex flex-wrap align-center gap-4 mt-2">
-                <div class="page-container">
-                  <UserProfileCard :profile="userProfile" :avatar-url="displayAvatar" :loading="isLoading"
-                    :action-label="buttonLabel" @click-action="handleCardAction" />
-                </div> -->
-    <!-- <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.articleCount
-                      }}</span>
-                    <span class="text-caption text-white ml-1">文章</span>
-                  </div>
+    <v-dialog v-model="dialog" max-width="600"> </v-dialog>
 
-                  <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.missionCount
-                      }}</span>
-                    <span class="text-caption text-white ml-1">任務</span>
-                  </div>
+    <FollowListDialog
+      v-if="userProfile.id"
+      v-model="showFollowDialog"
+      :user-id="userProfile.id"
+      :initial-tab="followDialogTab"
+    />
 
-                  <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.points }}</span>
-                    <span class="text-caption text-white ml-1">點數</span>
-                  </div>
-
-                  <div class="text-center mr-4">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.followers
-                      }}</span>
-                    <span class="text-caption text-white ml-1">關注</span>
-                  </div>
-
-                  <div class="text-center">
-                    <span class="text-h10 font-weight-bold text-grey-darken-3">{{ userStore.userProfile.following
-                      }}</span>
-                    <span class="text-caption text-white ml-1">粉絲</span>
-                  </div> -->
-
-    <!-- <v-row class="text-body-2 mt-2 pa-4">
-        <v-col cols="12" sm="6" class="d-flex align-center py-2">
-          <v-icon color="grey" class="mr-3">mdi-email-outline</v-icon>
-          <span class="text-grey-darken-1">Email：</span>
-          <span class="font-weight-medium ml-1">{{
-            userStore.userProfile.email
-            }}</span>
-        </v-col>
-        <v-col cols="12" sm="6" class="d-flex align-center py-2">
-          <v-icon color="grey" class="mr-3">mdi-phone-outline</v-icon>
-          <span class="text-grey-darken-1">手機：</span>
-          <span class="font-weight-medium ml-1">{{
-            userStore.userProfile.phone || "未設定"
-            }}</span>
-        </v-col>
-        <v-col cols="12" sm="6" class="d-flex align-center py-2">
-          <v-icon color="grey" class="mr-3">mdi-map-marker-outline</v-icon>
-          <span class="text-grey-darken-1">地址：</span>
-          <span class="font-weight-medium ml-1">{{
-            userStore.userProfile.address || "未設定"
-            }}</span>
-        </v-col>
-        <v-col cols="12" sm="6" class="d-flex align-center py-2">
-          <v-icon color="grey" class="mr-3">mdi-cake-variant-outline</v-icon>
-          <span class="text-grey-darken-1">生日：</span>
-          <span class="font-weight-medium ml-1">{{
-            userStore.userProfile.birthday || "未設定"
-            }}</span>
-        </v-col>
-      </v-row> -->
-    <!--<div class="mt-2 mb-2 d-flex justify-content-end">
-             <v-btn prepend-icon="mdi-pencil-outline" variant="flat" color="#145369" class="text-white" rounded="pill"
-              size="small" @click="openEditDialog">
-              編輯資料
-            </v-btn>-->
     <v-dialog v-model="dialog" max-width="600">
       <v-card rounded="xl" class="pa-6">
         <div class="d-flex justify-space-between align-center mb-4">

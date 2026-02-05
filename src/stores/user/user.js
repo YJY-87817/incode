@@ -76,12 +76,14 @@ export const useUserStore = defineStore("user", () => {
       // 取得統計數據 (文章數、關注數、粉絲數...)
       if (currentUserId) {
         try {
-          const statsRes = await axios.get(`/User/${currentUserId}/stats`);
-          userProfile.value.articleCount = statsRes.data.articleCount;
-          userProfile.value.missionCount = statsRes.data.missionCount;
-          userProfile.value.points = statsRes.data.pointBalance;
-          userProfile.value.followers = statsRes.data.followerCount;
-          userProfile.value.following = statsRes.data.followingCount;
+          const timestamp = new Date().getTime();
+          const statsRes = await axios.get(`/User/${currentUserId}/stats?t=${timestamp}`);
+          const sData = statsRes.data;
+         userProfile.value.articleCount = sData.articleCount || sData.ArticleCount || 0;
+        userProfile.value.missionCount = sData.missionCount || sData.MissionCount || 0;
+        userProfile.value.points = sData.pointBalance || sData.PointBalance || 0;
+        userProfile.value.followers = sData.followers || sData.FollowerCount || 0;
+        userProfile.value.following = sData.following || sData.FollowingCount || 0;
         } catch (statsErr) {
           console.warn("統計數據載入失敗", statsErr);          
         }

@@ -42,15 +42,19 @@ const isFollowing = computed(() => {
 // 當 Menu 打開時，去後端抓取該用戶的最新統計數據
 const fetchUserInfo = async () => {
   if (isLoading.value) return;
+  if (!props.userId) return;
   isLoading.value = true;
   try {
-    const response = await axios.get(`/User/${props.userId}/stats`);
+    const timestamp = new Date().getTime();
+    const response = await axios.get(
+      `/User/${props.userId}/stats?t=${timestamp}`,
+    );
     const data = response.data;
 
     userInfo.value = {
-      articleCount: data.articleCount || 0,
-      followers: data.followers || 0, // 粉絲數
-      following: data.following || 0, // 關注中
+      articleCount: data.articleCount || data.ArticleCount || 0,
+      followers: data.followers || data.FollowerCount || 0, // 粉絲數
+      following: data.following || data.FollowingCount || 0, // 關注中
     };
   } catch (error) {
     console.error("無法取得用戶預覽資料", error);
@@ -79,6 +83,16 @@ watch(menuOpen, (val) => {
     fetchUserInfo();
   }
 });
+watch(
+  () => props.userId,
+  (newId) => {
+    if (newId) {
+      // userId 改變時，可以選擇重置數據或重新抓取
+      // 這裡選擇先重置，等滑鼠移上去再抓(節省流量)，或直接抓取看需求
+      userInfo.value = { articleCount: 0, followers: 0, following: 0 };
+    }
+  },
+);
 </script>
 
 <template>
