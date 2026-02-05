@@ -15,7 +15,7 @@
     },
     {
       "provider": "cdnjs",
-      "library": "datatables@1.10.21",
+      "library": "datatables@1.13.7",
       "destination": "wwwroot/lib/datatables/"
     }
   ]
