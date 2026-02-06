@@ -978,8 +978,14 @@ function handleThreadReplyingTargetClick() {
                     {{ formatDate(topic.lastReplyTime) }}
                   </div>
                   <div v-else class="text-muted">尚無回應</div>
-                  <div v-if="topic.lastReplyUser" class="text-muted">
-                    {{ topic.lastReplyUser }}
+                  <div
+                    v-if="topic.lastReplyUser"
+                    class="text-muted d-inline-flex align-items-center gap-1"
+                  >
+                    <v-avatar size="20">
+                      <v-img :src="getAvatarUrl(topic.lastReplyUser)"></v-img>
+                    </v-avatar>
+                    <span>{{ topic.lastReplyUser }}</span>
                   </div>
                 </td>
 
