@@ -46,11 +46,11 @@ const handleTopicInteractionSuccess = (data) => {
   if (data.categoryId === 2 && data.categoryName === "hide") {
     if (forumStore.selectedThread) {
       // 在詳情視圖中，隱藏後返回列表
+      // 隱藏狀態已在 store 中更新，visibleTopics 計算屬性會自動過濾
       goToList();
-    } else {
-      // 在列表視圖中，隱藏後刷新列表
-      forumStore.fetchTopics();
     }
+    // 在列表視圖中，隱藏狀態已在 store 中更新，visibleTopics 計算屬性會自動過濾
+    // 無需調用 fetchTopics()，前端過濾會實時生效
   }
 };
 
@@ -462,6 +462,16 @@ const isThreadReplyingTarget = computed(() => {
   );
 });
 
+/**
+ * 過濾掉已隱藏的主題
+ */
+const visibleTopics = computed(() => {
+  return forumStore.topics.filter((topic) => {
+    // 如果該主題被標記為隱藏（interactionStates[topicId][2] === true），則過濾掉
+    return !forumStore.interactionStates[topic.id]?.[2];
+  });
+});
+
 // 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
 function handleThreadReplyingTargetClick() {
   if (!isThreadReplyingTarget.value) return;
@@ -774,6 +784,14 @@ function handleThreadReplyingTargetClick() {
           <p>此分類目前沒有主題</p>
         </div>
 
+        <!-- 所有主題都被隱藏 -->
+        <div
+          v-else-if="visibleTopics.length === 0"
+          class="text-center py-5 text-muted"
+        >
+          <p>所有主題已隱藏</p>
+        </div>
+
         <!-- 主題表格 -->
         <div v-else class="table-responsive">
           <table class="table table-hover mb-0">
@@ -799,7 +817,7 @@ function handleThreadReplyingTargetClick() {
             </thead>
             <tbody>
               <tr
-                v-for="topic in forumStore.topics"
+                v-for="topic in visibleTopics"
                 :key="topic.id"
                 class="forum-row"
                 @click="goToThread(topic.id)"
