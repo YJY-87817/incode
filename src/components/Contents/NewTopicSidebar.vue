@@ -280,7 +280,12 @@ const updateDraftBody = (draft, value) => {
           @click="expandDraft(draft)"
         >
           <div class="banner-content">
-            <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
+            <!-- 雙向繫結，帶我回去 banner-jump -->
+            <div
+              v-if="draft.replyingToContentId || draft.parentContentId"
+              class="banner-jump"
+              @click.stop="scrollToReplyTarget(draft)"
+            >
               <i class="fa-solid fa-people-pulling"></i>
             </div>
             <div class="banner-left">

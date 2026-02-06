@@ -160,7 +160,7 @@ watch(
               @click="openNewTopicModal"
             >
               <i class="fas fa-plus"></i>
-              <span class="ms-2">發表新主題</span>
+              <span class="ms-2">發佈新主題</span>
             </button>
           </div>
         </div>
