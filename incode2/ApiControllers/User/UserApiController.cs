@@ -49,42 +49,50 @@ namespace incode2.ApiController.user
         [HttpGet("profile")]
         public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
-            User user = null; // 定義一個變數來存「找到的使用者」
+            int? currentUserId = null;
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {               
+                currentUserId = User.GetId();
+            }
+            User targetUser = null;
 
-            if (!string.IsNullOrEmpty(username))
+            if (string.IsNullOrWhiteSpace(username))
             {
-                // 情境 A: 有傳 username -> 查詢該 username 的資料
-                user = await _context.User
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Username == username);
+                if (currentUserId == null)
+                {
+                    return Unauthorized(new { message = "請先登入才能查看個人檔案" });
+                }
+                targetUser = await _context.User.FindAsync(currentUserId);
             }
             else
             {
-                // 情境 B: 沒傳 username -> 查詢當前登入者 (查自己)
-                int currentUserId = User.GetId();
-                user = await _context.User
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
+                targetUser = await _context.User
+                    .FirstOrDefaultAsync(u => u.Username == username);
+            }
+                        
+            if (targetUser == null)
+            {
+                return NotFound(new { message = "找不到該使用者" });
             }
 
-            // 檢查是否找到資料
-            if (user == null)
+            var responseDto = new UserDto
             {
-                return NotFound("找不到該會員資料");
+                UserId = targetUser.UserId,
+                Username = targetUser.Username,
+                ImageUrl = targetUser.ImageUrl ?? "",                                                      
+            };
+
+            bool isMe = currentUserId.HasValue && currentUserId.Value == targetUser.UserId;
+
+            if (isMe)
+            {
+                responseDto.Email = targetUser.Email;
+                responseDto.Phone = targetUser.Phone;
+                responseDto.Address = targetUser.Address;
+                responseDto.Birthday = targetUser.Birthday;
             }
 
-            // 轉換成 DTO 回傳
-            return Ok(new UserDto
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                Username = user.Username,
-                ImageUrl = user.ImageUrl,
-                Role = user.Role.RoleName ?? "Member",
-                Phone = user.Phone,
-                Address = user.Address,
-                Birthday = user.Birthday,
-            });
+            return Ok(responseDto);        
         }
 
         // PUT: api/User/profile
