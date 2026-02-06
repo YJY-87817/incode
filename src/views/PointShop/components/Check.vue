@@ -197,10 +197,18 @@ const checkout = async () => {
           modal.querySelector('.swal2-confirm').style.color = '#fff';
         }
       });
+      return;
     }
   } catch (error) {
     console.error('訂單建立失敗:', error);
-    alert('訂單建立失敗，請稍後再試');
+    checkoutSwal.fire({
+      title: "訂單建立失敗!",
+      text: "訂單建立失敗，請稍後再試",
+      icon: "error",
+      didOpen: (modal) => {
+        modal.querySelector('.swal2-confirm').style.color = '#fff';
+      }
+    });
   };
 }
 
