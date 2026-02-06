@@ -6,7 +6,7 @@
 -->
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -478,6 +478,32 @@ const visibleTopics = computed(() => {
     return !forumStore.interactionStates[topic.id]?.[2];
   });
 });
+
+/**
+ * 監聽可見主題，當當前分頁所有主題都被隱藏時，自動跳轉到有內容的分頁
+ */
+watch(
+  () => visibleTopics.value.length,
+  (newLength) => {
+    // 只有在列表視圖（非詳情視圖）才處理
+    if (forumStore.selectedThread) return;
+
+    // 如果當前分頁沒有可見主題，但有原始主題（表示全部被隱藏）
+    if (newLength === 0 && forumStore.topics.length > 0) {
+      // 嘗試跳轉到其他有內容的分頁
+      const { currentPage, totalPages } = forumStore.pagination;
+
+      if (currentPage < totalPages) {
+        // 如果不是最後一頁，跳轉到下一頁
+        forumStore.changePage(currentPage + 1);
+      } else if (currentPage > 1) {
+        // 如果是最後一頁，跳轉到前一頁
+        forumStore.changePage(currentPage - 1);
+      }
+      // 如果只有一頁，就保持顯示"所有主題已隱藏"
+    }
+  },
+);
 
 // 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
 function handleThreadReplyingTargetClick() {
