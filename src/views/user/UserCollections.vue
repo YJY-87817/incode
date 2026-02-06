@@ -1,8 +1,7 @@
 <template>
   <div>
-    <div class="mt-4 px-4">
+    <div class="mt-4 px-4 mb-4">
       <h3>我的討論區</h3>
-      <p>掛Api</p>
     </div>
 
     <nav
