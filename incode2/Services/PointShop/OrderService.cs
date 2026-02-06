@@ -100,7 +100,7 @@ namespace incode2.Services.PointShop
                     .ToListAsync();
 
                 if (results == null || !results.Any())
-                    return ResultDTO<IEnumerable<ShippedDTO>>.Success(results,$"找不到訂單編號為{orderId}的寄送資料", 204);
+                    return ResultDTO<IEnumerable<ShippedDTO>>.Success(results, $"找不到訂單編號為{orderId}的寄送資料", 204);
 
                 return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
             }
@@ -148,21 +148,25 @@ namespace incode2.Services.PointShop
                 _context.Orders.Add(newOrder);
                 await _context.SaveChangesAsync(); // 先儲存以取得 OrderId
 
-                // 建立寄送資料
-                var recipient = new ShippedDetail
+                if (newOrder.Orderdetail.Any(e => e.RequiresShipping == true))
                 {
-                    OrderId = newOrder.OrderId, // 設定外鍵
-                    RecipientName = order.Recipient.RecipientName,
-                    RecipientPhone = order.Recipient.RecipientPhone,
-                    RecipientAddress = order.Recipient.RecipientAddress,
-                    IsFailed = false,
-                    IsCompleted = false,
-                    Remark = order.Remark ?? "",
-                    ShippedDate = null,
-                    ArrivalDate = null,
-                };
+                    // 建立寄送資料
+                    var recipient = new ShippedDetail
+                    {
+                        OrderId = newOrder.OrderId, // 設定外鍵
+                        RecipientName = order.Recipient.RecipientName,
+                        RecipientPhone = order.Recipient.RecipientPhone,
+                        RecipientAddress = order.Recipient.RecipientAddress,
+                        IsFailed = false,
+                        IsCompleted = false,
+                        Remark = order.Remark ?? "",
+                        ShippedDate = null,
+                        ArrivalDate = null,
+                    };
+                    _context.ShippedDetail.Add(recipient);
 
-                _context.ShippedDetail.Add(recipient);
+                }
+
                 await _context.SaveChangesAsync();
 
                 // 扣除使用者點數
@@ -170,10 +174,12 @@ namespace incode2.Services.PointShop
 
                 if (!result)
                 {
-                    return ResultDTO<int>.Failure($"訂單建立失敗: 點數有誤");
+                    return ResultDTO<int>.Failure("您的點數不足");
                 }
-
-                return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
+                else
+                {
+                    return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
+                }
             }
             catch (Exception ex)
             {
@@ -263,7 +269,7 @@ namespace incode2.Services.PointShop
 
                 oldOrder.TotalPoint = totalPoints;
                 await _context.SaveChangesAsync();
-                
+
                 return ResultDTO<int>.Success(oldOrder.OrderId, "訂單更新成功");
             }
             catch (Exception ex)
