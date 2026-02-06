@@ -275,6 +275,7 @@ export const useForumStore = defineStore("forum", {
 
       try {
         // 1. 獲取所有內容
+        // 後端會自動從認證信息中獲取當前用戶 ID，用於過濾隱藏的內容
         const allContentParams = { pageSize: 9999 };
         if (targetCategory) allContentParams.categoryId = targetCategory;
 

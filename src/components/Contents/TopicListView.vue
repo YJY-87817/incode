@@ -51,13 +51,13 @@ const replyTab = ref(null);
 const handleTopicInteractionSuccess = (data) => {
   // 隱藏功能的特殊處理
   if (data.categoryId === 2 && data.categoryName === "hide") {
+    // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
+    forumStore.fetchTopics();
+
     if (forumStore.selectedThread) {
       // 在詳情視圖中，隱藏後返回列表
-      // 隱藏狀態已在 store 中更新，visibleTopics 計算屬性會自動過濾
       goToList();
     }
-    // 在列表視圖中，隱藏狀態已在 store 中更新，visibleTopics 計算屬性會自動過濾
-    // 無需調用 fetchTopics()，前端過濾會實時生效
   }
 };
 
@@ -472,39 +472,6 @@ const isThreadReplyingTarget = computed(() => {
 /**
  * 過濾掉已隱藏的主題
  */
-const visibleTopics = computed(() => {
-  return forumStore.topics.filter((topic) => {
-    // 如果該主題被標記為隱藏（interactionStates[topicId][2] === true），則過濾掉
-    return !forumStore.interactionStates[topic.id]?.[2];
-  });
-});
-
-/**
- * 監聽可見主題，當當前分頁所有主題都被隱藏時，自動跳轉到有內容的分頁
- */
-watch(
-  () => visibleTopics.value.length,
-  (newLength) => {
-    // 只有在列表視圖（非詳情視圖）才處理
-    if (forumStore.selectedThread) return;
-
-    // 如果當前分頁沒有可見主題，但有原始主題（表示全部被隱藏）
-    if (newLength === 0 && forumStore.topics.length > 0) {
-      // 嘗試跳轉到其他有內容的分頁
-      const { currentPage, totalPages } = forumStore.pagination;
-
-      if (currentPage < totalPages) {
-        // 如果不是最後一頁，跳轉到下一頁
-        forumStore.changePage(currentPage + 1);
-      } else if (currentPage > 1) {
-        // 如果是最後一頁，跳轉到前一頁
-        forumStore.changePage(currentPage - 1);
-      }
-      // 如果只有一頁，就保持顯示"所有主題已隱藏"
-    }
-  },
-);
-
 // 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
 function handleThreadReplyingTargetClick() {
   if (!isThreadReplyingTarget.value) return;
@@ -825,14 +792,6 @@ function handleThreadReplyingTargetClick() {
           <p>此分類目前沒有主題</p>
         </div>
 
-        <!-- 所有主題都被隱藏 -->
-        <div
-          v-else-if="visibleTopics.length === 0"
-          class="text-center py-5 text-muted"
-        >
-          <p>所有主題已隱藏</p>
-        </div>
-
         <!-- 主題表格 -->
         <div v-else class="table-responsive">
           <table class="table table-hover mb-0">
@@ -858,7 +817,7 @@ function handleThreadReplyingTargetClick() {
             </thead>
             <tbody>
               <tr
-                v-for="topic in visibleTopics"
+                v-for="topic in forumStore.topics"
                 :key="topic.id"
                 class="forum-row"
                 @click="goToThread(topic.id)"
