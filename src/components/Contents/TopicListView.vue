@@ -577,18 +577,15 @@ function handleThreadReplyingTargetClick() {
             class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
           >
             <span>by</span>
-            <span @click.stop>
+            <span class="d-inline-flex align-items-center gap-1" @click.stop>
               <UserPreview
                 v-if="forumStore.threadDetail.userId"
-                activator-type="text"
-                :activator-text="forumStore.threadDetail.author"
                 :user-id="forumStore.threadDetail.userId"
                 :username="forumStore.threadDetail.author"
                 :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
                 :size="26"
-                activator-class="thread-author-link"
               />
-              <span v-else>{{ forumStore.threadDetail.author }}</span>
+              <span>{{ forumStore.threadDetail.author }}</span>
             </span>
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
@@ -926,22 +923,18 @@ function handleThreadReplyingTargetClick() {
                       >
                         <span
                           class="text-nowrap d-inline-flex align-items-center gap-1"
+                          @click.stop
                         >
-                          <span @click.stop>
-                            <UserPreview
-                              v-if="topic.userId"
-                              activator-type="text"
-                              :activator-text="topic.author"
-                              :user-id="topic.userId"
-                              :username="topic.author"
-                              :avatar-url="
-                                getAvatarUrl(topic.author, topic.authorAvatar)
-                              "
-                              :size="24"
-                              activator-class="topic-author-link"
-                            />
-                            <span v-else>{{ topic.author }}</span>
-                          </span>
+                          <UserPreview
+                            v-if="topic.userId"
+                            :user-id="topic.userId"
+                            :username="topic.author"
+                            :avatar-url="
+                              getAvatarUrl(topic.author, topic.authorAvatar)
+                            "
+                            :size="24"
+                          />
+                          <span>{{ topic.author }}</span>
                         </span>
                         <span class="d-md-none text-nowrap">
                           🕒 {{ formatTimeAgo(topic.createdAt) }}
@@ -960,20 +953,20 @@ function handleThreadReplyingTargetClick() {
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
                   </div>
-                  <div class="text-muted" @click.stop>
+                  <div
+                    class="text-muted d-inline-flex align-items-center gap-1"
+                    @click.stop
+                  >
                     <UserPreview
                       v-if="topic.userId"
-                      activator-type="text"
-                      :activator-text="topic.author"
                       :user-id="topic.userId"
                       :username="topic.author"
                       :avatar-url="
                         getAvatarUrl(topic.author, topic.authorAvatar)
                       "
                       :size="24"
-                      activator-class="topic-author-link"
                     />
-                    <span v-else>{{ topic.author }}</span>
+                    <span>{{ topic.author }}</span>
                   </div>
                 </td>
 

@@ -17,18 +17,18 @@
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
-                  <h6 class="card-title post-author mb-0" @click.stop>
+                  <h6
+                    class="card-title post-author mb-0 d-inline-flex align-items-center gap-1"
+                    @click.stop
+                  >
                     <UserPreview
                       v-if="post.userId"
-                      activator-type="text"
-                      :activator-text="post.author"
                       :user-id="post.userId"
                       :username="post.author"
                       :avatar-url="getAvatarUrl(post.author)"
                       :size="24"
-                      activator-class="post-author-link"
                     />
-                    <span v-else>{{ post.author }}</span>
+                    <span>{{ post.author }}</span>
                   </h6>
                   <small
                     class="text-muted post-time clickable"
