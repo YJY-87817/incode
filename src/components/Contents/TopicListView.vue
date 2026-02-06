@@ -577,7 +577,13 @@ function handleThreadReplyingTargetClick() {
             class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
           >
             <span>by</span>
-            <span class="d-inline-flex align-items-center gap-1" @click.stop>
+            <span class="user-hover-proxy" @click.stop>
+              <img
+                class="user-avatar-img user-avatar-img--26"
+                :src="getAvatarUrl(forumStore.threadDetail.author)"
+                alt=""
+              />
+              <span>{{ forumStore.threadDetail.author }}</span>
               <UserPreview
                 v-if="forumStore.threadDetail.userId"
                 :user-id="forumStore.threadDetail.userId"
@@ -585,7 +591,6 @@ function handleThreadReplyingTargetClick() {
                 :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
                 :size="26"
               />
-              <span>{{ forumStore.threadDetail.author }}</span>
             </span>
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
@@ -921,10 +926,15 @@ function handleThreadReplyingTargetClick() {
                       <div
                         class="small text-muted d-flex flex-wrap gap-2 align-items-center"
                       >
-                        <span
-                          class="text-nowrap d-inline-flex align-items-center gap-1"
-                          @click.stop
-                        >
+                        <span class="text-nowrap user-hover-proxy" @click.stop>
+                          <img
+                            class="user-avatar-img user-avatar-img--24"
+                            :src="
+                              getAvatarUrl(topic.author, topic.authorAvatar)
+                            "
+                            alt=""
+                          />
+                          <span>{{ topic.author }}</span>
                           <UserPreview
                             v-if="topic.userId"
                             :user-id="topic.userId"
@@ -934,7 +944,6 @@ function handleThreadReplyingTargetClick() {
                             "
                             :size="24"
                           />
-                          <span>{{ topic.author }}</span>
                         </span>
                         <span class="d-md-none text-nowrap">
                           🕒 {{ formatTimeAgo(topic.createdAt) }}
@@ -973,10 +982,13 @@ function handleThreadReplyingTargetClick() {
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
                   </div>
-                  <div
-                    class="text-muted d-inline-flex align-items-center gap-1"
-                    @click.stop
-                  >
+                  <div class="text-muted user-hover-proxy" @click.stop>
+                    <img
+                      class="user-avatar-img user-avatar-img--24"
+                      :src="getAvatarUrl(topic.author, topic.authorAvatar)"
+                      alt=""
+                    />
+                    <span>{{ topic.author }}</span>
                     <UserPreview
                       v-if="topic.userId"
                       :user-id="topic.userId"
@@ -986,7 +998,6 @@ function handleThreadReplyingTargetClick() {
                       "
                       :size="24"
                     />
-                    <span>{{ topic.author }}</span>
                   </div>
                 </td>
 
@@ -1025,24 +1036,26 @@ function handleThreadReplyingTargetClick() {
                 </td>
               </tr>
             </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 分頁導航 (列表視圖) -->
-    <div
-      v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
-      class="card-footer bg-white py-2 py-md-3"
-    >
-      <nav class="d-flex justify-content-center">
-        <ul
-          class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1"
-        >
-          <!-- 上一頁 -->
-          <li
-            class="page-item"
-            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
+                        <span
+                          v-if="topic.lastReplyUser"
+                          class="d-md-none text-nowrap user-hover-proxy"
+                          @click.stop
+                        >
+                          <span>💬</span>
+                          <img
+                            class="user-avatar-img user-avatar-img--20"
+                            :src="getAvatarUrl(topic.lastReplyUser)"
+                            alt=""
+                          />
+                          <span>{{ topic.lastReplyUser }}</span>
+                          <UserPreview
+                            v-if="topic.lastReplyUserId"
+                            :user-id="topic.lastReplyUserId"
+                            :username="topic.lastReplyUser"
+                            :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                            :size="20"
+                          />
+                        </span>
           >
             <a
               class="page-link"
@@ -1080,23 +1093,25 @@ function handleThreadReplyingTargetClick() {
 
           <!-- 省略號 -->
           <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages - 1
-            "
-            class="page-item disabled d-none d-md-block"
-          >
-            <span class="page-link">...</span>
-          </li>
-
-          <!-- 末頁 -->
-          <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages
-            "
-            class="page-item d-none d-md-block"
-          >
+                  <div
+                    v-if="topic.lastReplyUser"
+                    class="text-muted user-hover-proxy"
+                    @click.stop
+                  >
+                    <img
+                      class="user-avatar-img user-avatar-img--20"
+                      :src="getAvatarUrl(topic.lastReplyUser)"
+                      alt=""
+                    />
+                    <span>{{ topic.lastReplyUser }}</span>
+                    <UserPreview
+                      v-if="topic.lastReplyUserId"
+                      :user-id="topic.lastReplyUserId"
+                      :username="topic.lastReplyUser"
+                      :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                      :size="20"
+                    />
+                  </div>
             <a
               class="page-link"
               href="#"
@@ -1151,6 +1166,42 @@ function handleThreadReplyingTargetClick() {
 .card-body {
   margin-bottom: 0;
   padding-bottom: 0;
+}
+
+.user-hover-proxy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-avatar-img {
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.user-avatar-img--26 {
+  width: 26px;
+  height: 26px;
+}
+
+.user-avatar-img--24 {
+  width: 24px;
+  height: 24px;
+}
+
+.user-avatar-img--20 {
+  width: 20px;
+  height: 20px;
+}
+
+.user-hover-proxy :deep(.v-avatar) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* 按鈕樣式 */

@@ -17,18 +17,22 @@
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
-                  <h6
-                    class="card-title post-author mb-0 d-inline-flex align-items-center gap-1"
-                    @click.stop
-                  >
-                    <UserPreview
-                      v-if="post.userId"
-                      :user-id="post.userId"
-                      :username="post.author"
-                      :avatar-url="getAvatarUrl(post.author)"
-                      :size="24"
-                    />
-                    <span>{{ post.author }}</span>
+                  <h6 class="card-title post-author mb-0" @click.stop>
+                    <span class="user-hover-proxy">
+                      <img
+                        class="user-avatar-img user-avatar-img--24"
+                        :src="getAvatarUrl(post.author)"
+                        alt=""
+                      />
+                      <span>{{ post.author }}</span>
+                      <UserPreview
+                        v-if="post.userId"
+                        :user-id="post.userId"
+                        :username="post.author"
+                        :avatar-url="getAvatarUrl(post.author)"
+                        :size="24"
+                      />
+                    </span>
                   </h6>
                   <small
                     class="text-muted post-time clickable"
@@ -924,6 +928,32 @@ function handleDeleteContent(contentId) {
   color: #0f3c4d;
   letter-spacing: 0.2px;
   font-size: 1rem;
+}
+
+.user-hover-proxy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-avatar-img {
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.user-avatar-img--24 {
+  width: 24px;
+  height: 24px;
+}
+
+.user-hover-proxy :deep(.v-avatar) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .post-author-link {
