@@ -24,13 +24,16 @@ namespace incode2.Services.Point
             _context = context;
         }
 
-        // 領取獎勵：加點
+        // 加扣點
         public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int currentBalance = await GetCurrentBalanceAsync(userId);
+                if (changeAmount < 0 && currentBalance + changeAmount < 0)
+                    return false;
+                int balanceAfter = currentBalance + changeAmount;
 
                 var log = new PointLog
                 {
@@ -39,7 +42,7 @@ namespace incode2.Services.Point
                     SourceId = sourceId,
                     PointTypeDefinitionId = (int)type, //
                     ChangeAmount = changeAmount, // 正數
-                    BalanceAfter = currentBalance + Math.Abs(changeAmount),
+                    BalanceAfter = balanceAfter,
                     Status = "success",
                     CreatedAt = DateTime.Now
                 };
@@ -91,7 +94,7 @@ namespace incode2.Services.Point
         //        return false;
         //    }
         //}
-    
+
 
         public async Task<ResultDTO> AddPointsAsync(int userId, int points, int missionId)
         {
