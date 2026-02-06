@@ -260,7 +260,7 @@ const shippedchange = (shippedid) => {
             </div>
 
             <div class="alert alert-light mt-3 mb-0 border d-flex align-items-start small">
-              <i class="bi bi-chat-text-fill me-2 mt-1 text-secondary"></i>
+              <i class="bi bi-chat-text-fill me-2 text-secondary"></i>
               <div>
                 <strong class="text-dark">備註：</strong>
                 <span class="text-muted">{{ order.remark }}</span>

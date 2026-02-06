@@ -170,6 +170,34 @@ const checkout = async () => {
         router.push('/PointShop/Order');
       });
     }
+    else {
+      if (result.data.message === "您的點數不足") {
+        checkoutSwal.fire({
+          title: "訂單新增失敗!",
+          text: result.data.message || "您的點數不足，請重新選擇商品或增加點數",
+          icon: "error",
+          didOpen: (modal) => {
+            modal.querySelector('.swal2-confirm').style.color = '#fff';
+          },
+          showDenyButton: true,
+          confirmButtonText: '前往點數明細',
+          denyButtonText: '返回'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            router.push('/point-log'); // 根據你的儲值頁面路由調整
+          }
+        });
+        return;
+      }
+      checkoutSwal.fire({
+        title: "訂單新增失敗!",
+        text: result.data.message || "訂單建立失敗，請稍後再試",
+        icon: "error",
+        didOpen: (modal) => {
+          modal.querySelector('.swal2-confirm').style.color = '#fff';
+        }
+      });
+    }
   } catch (error) {
     console.error('訂單建立失敗:', error);
     alert('訂單建立失敗，請稍後再試');
