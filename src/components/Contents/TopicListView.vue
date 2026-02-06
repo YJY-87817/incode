@@ -42,7 +42,16 @@ const replyTab = ref(null);
  * 處理主題互動成功
  */
 const handleTopicInteractionSuccess = (data) => {
-  // 可以在此顯示 toast 或其他反饋
+  // 隱藏功能的特殊處理
+  if (data.categoryId === 2 && data.categoryName === "hide") {
+    if (forumStore.selectedThread) {
+      // 在詳情視圖中，隱藏後返回列表
+      goToList();
+    } else {
+      // 在列表視圖中，隱藏後刷新列表
+      forumStore.fetchTopics();
+    }
+  }
 };
 
 /**
