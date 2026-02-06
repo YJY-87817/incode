@@ -54,7 +54,7 @@ namespace incode2.Services.Contents
         UpdatedAt = (DateTime)c.UpdatedAt,     // 添加這一行
         Username = c.User.Username,
         CategoryName = c.Category.CategoryName,
-        Ishidden = c.IsActive == 2 ? true : false  // ⭐ 添加這一行（可選）
+        Ishidden = c.IsActive == 2 ? true : false  // 添加這一行（可選）
       })
       .ToListAsync();
 
