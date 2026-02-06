@@ -48,11 +48,14 @@ const replyTab = ref(null);
 /**
  * 處理主題互動成功
  */
-const handleTopicInteractionSuccess = (data) => {
+const handleTopicInteractionSuccess = async (data) => {
   // 隱藏功能的特殊處理
   if (data.categoryId === 2 && data.categoryName === "hide") {
+    console.log("文章已隱藏，開始更新列表...");
+
     // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
-    forumStore.fetchTopics();
+    // fetchTopics 會更新 allTopicsForStats，分類統計會自動更新
+    await forumStore.fetchTopics();
 
     if (forumStore.selectedThread) {
       // 在詳情視圖中，隱藏後返回列表
@@ -93,9 +96,13 @@ const handleTopicEditContent = (contentId) => {
 /**
  * 處理主題刪除操作
  */
-const handleTopicDeleteContent = (contentId) => {
+const handleTopicDeleteContent = async (contentId) => {
+  console.log("文章已刪除，開始更新列表...");
+
   // 刪除成功後重新載入數據
-  forumStore.fetchTopics();
+  // fetchTopics 會更新 allTopicsForStats，分類統計會自動更新
+  await forumStore.fetchTopics();
+
   if (forumStore.threadDetail?.id === contentId) {
     // 如果刪除的是當前詳情中的主題，返回列表
     goToList();

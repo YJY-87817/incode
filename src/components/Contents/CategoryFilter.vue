@@ -6,12 +6,16 @@
 -->
 
 <script setup>
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useForumStore } from "@/stores/forumStore";
 
 const forumStore = useForumStore();
 const route = useRoute();
 const router = useRouter();
+
+// 使用帶實時統計的分類列表
+const categories = computed(() => forumStore.categoriesWithStats);
 
 const handleSelectCategory = (categoryId) => {
   const isDetailPage = Boolean(route.params?.id);
@@ -46,8 +50,12 @@ const handleClearCategory = () => {
           @click="forumStore.selectedCategory !== null && handleClearCategory()"
           role="button"
           :tabindex="forumStore.selectedCategory !== null ? 0 : -1"
-          @keydown.enter="forumStore.selectedCategory !== null && handleClearCategory()"
-          @keydown.space.prevent="forumStore.selectedCategory !== null && handleClearCategory()"
+          @keydown.enter="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
+          @keydown.space.prevent="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
         >
           📁 討論分類
           <span
@@ -65,7 +73,7 @@ const handleClearCategory = () => {
     <div class="p-2 p-md-3">
       <!-- 載入中提示 -->
       <div
-        v-if="forumStore.isLoading && forumStore.categories.length === 0"
+        v-if="forumStore.isLoading && categories.length === 0"
         class="text-center py-3"
       >
         <div
@@ -77,20 +85,13 @@ const handleClearCategory = () => {
       </div>
 
       <!-- 分類列表容器與取消按鈕 -->
-      <div
-        v-else
-        class="d-flex gap-2 align-items-flex-start category-wrapper"
-      >
+      <div v-else class="d-flex gap-2 align-items-flex-start category-wrapper">
         <!-- 分類列表 -->
         <div
           class="d-flex flex-wrap align-content-start p-0 category-container flex-grow-1"
         >
           <!-- 分類卡片 -->
-          <div
-            v-for="category in forumStore.categories"
-            :key="category.id"
-            class="m-1"
-          >
+          <div v-for="category in categories" :key="category.id" class="m-1">
             <div
               class="category-card p-2 border rounded cursor-pointer"
               :class="{
@@ -127,7 +128,7 @@ const handleClearCategory = () => {
 
           <!-- 空狀態提示 -->
           <div
-            v-if="!forumStore.isLoading && forumStore.categories.length === 0"
+            v-if="!forumStore.isLoading && categories.length === 0"
             class="w-100 text-center text-muted py-3 small"
           >
             <p>目前沒有分類</p>
@@ -145,7 +146,7 @@ const handleClearCategory = () => {
 }
 
 .card-header {
-  background-color: #86B0BD !important;
+  background-color: #86b0bd !important;
   border-bottom-color: #d1d3d4;
 }
 

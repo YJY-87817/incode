@@ -51,6 +51,7 @@ export const useForumStore = defineStore("forum", {
 
     // ========== 主題列表 ==========
     topics: [],
+    allTopicsForStats: [], // 用於統計的所有主題數據（未分頁）
     isLoading: false,
     searchKeyword: "",
     pagination: {
@@ -195,6 +196,40 @@ export const useForumStore = defineStore("forum", {
       );
       return category?.name || null;
     },
+
+    /**
+     * 帶實時統計的分類列表
+     * 根據所有可見的主題自動計算每個分類的主題數和回文數
+     */
+    categoriesWithStats: (state) => {
+      if (!state.categories || state.categories.length === 0) {
+        return [];
+      }
+
+      // 為每個分類計算實時統計
+      return state.categories.map((category) => {
+        // 從所有主題中篩選屬於此分類的主題
+        const categoryTopics = state.allTopicsForStats.filter(
+          (topic) => topic.categoryName === category.name,
+        );
+
+        // 計算主題數（type=1 的內容）
+        const topicCount = categoryTopics.filter(
+          (topic) => topic.type === CONTENT_TYPES.POST,
+        ).length;
+
+        // 計算回文數（包括所有回覆）
+        const postCount = categoryTopics.reduce((total, topic) => {
+          return total + (topic.replyCount || 0);
+        }, 0);
+
+        return {
+          ...category,
+          topicCount,
+          postCount,
+        };
+      });
+    },
   },
 
   actions: {
@@ -204,10 +239,14 @@ export const useForumStore = defineStore("forum", {
     },
 
     // ========== 分類管理 ==========
-    async fetchCategories() {
+    async fetchCategories(options = {}) {
+      const { forceRefresh = false } = options;
+
       this.isLoading = true;
       try {
-        const data = await apiClient.get("/CategoryApi");
+        // 添加時間戳防止緩存
+        const params = forceRefresh ? { _t: Date.now() } : {};
+        const data = await apiClient.get("/CategoryApi", { params });
         this.categories = data;
 
         // 不再預設選擇第一個分類
@@ -215,6 +254,8 @@ export const useForumStore = defineStore("forum", {
         if (this.selectedCategory && data.length > 0) {
           this.newTopic.categoryId = this.selectedCategory;
         }
+
+        console.log("分類數據已更新:", data);
       } catch (error) {
         console.error("載入分類失敗:", error);
         alert("載入分類失敗");
@@ -274,10 +315,10 @@ export const useForumStore = defineStore("forum", {
       this.isLoading = true;
 
       try {
-        // 1. 獲取所有內容
+        // 1. 獲取所有內容（不過濾分類，用於正確計算所有分類的統計數據）
         // 後端會自動從認證信息中獲取當前用戶 ID，用於過濾隱藏的內容
         const allContentParams = { pageSize: 9999 };
-        if (targetCategory) allContentParams.categoryId = targetCategory;
+        // 注意：不再在 API 調用時過濾分類，而是在前端過濾
 
         const allContentData = await apiClient.get("/ContentApi", {
           params: allContentParams,
@@ -301,12 +342,59 @@ export const useForumStore = defineStore("forum", {
         );
 
         // 2. 過濾 type=1(貼文) 和 type=2(回文) - 只顯示主貼文和回文，留言應在貼文詳情頁面顯示
-        let listContents = contentsWithHtml.filter(
+        let allListContents = contentsWithHtml.filter(
           (c) =>
             c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY,
         );
 
-        // 3. 搜尋過濾 (搜尋 title 和 body)
+        // 用於統計的所有主題數據（包含所有分類，但不包括留言）
+        const allContentsForStats = allListContents.map((item) => {
+          const replyStats = calculateReplyStats(
+            item.contentId,
+            contentsWithHtml,
+          );
+          const { textContent, imageUrls } = normalizeRichContent(
+            item.bodyHtml,
+            toAbsoluteUrl,
+          );
+          return {
+            id: item.contentId,
+            userId: item.userId ?? item.user_id ?? null,
+            title: item.title,
+            content: textContent,
+            imageUrls,
+            author: item.username,
+            authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
+            categoryName: item.categoryName,
+            createdAt: item.createdAt,
+            type: item.type,
+            replyCount: replyStats.replyCount,
+            lastReplyTime: replyStats.lastReplyTime,
+            lastReplyUser: replyStats.lastReplyUser,
+            lastReplyUserId: replyStats.lastReplyUserId,
+            viewCount: item.viewCount ?? 0,
+            isPinned: item.isPinned ?? false,
+            isHot: replyStats.replyCount > 10,
+          };
+        });
+
+        // 保存所有主題數據（用於分類統計）
+        this.allTopicsForStats = allContentsForStats;
+
+        // 3. 分類過濾（在前端進行，僅用於顯示）
+        let listContents = allListContents;
+        if (targetCategory) {
+          const selectedCat = this.categories.find(
+            (c) => c.id === targetCategory,
+          );
+          if (selectedCat) {
+            listContents = listContents.filter(
+              (c) => c.categoryName === selectedCat.name,
+            );
+          }
+        }
+
+        // 4. 搜尋過濾 (搜尋 title 和 body)
         if (this.searchKeyword.trim()) {
           const keyword = this.searchKeyword.trim().toLowerCase();
           listContents = listContents.filter((c) => {
@@ -316,6 +404,7 @@ export const useForumStore = defineStore("forum", {
           });
         }
 
+        // 5. 計算回文統計
         const contentsWithStats = listContents.map((item) => {
           const replyStats = calculateReplyStats(
             item.contentId,
@@ -356,14 +445,13 @@ export const useForumStore = defineStore("forum", {
           return parseDateValue(b.createdAt) - parseDateValue(a.createdAt);
         });
 
-        // 4. 前端分頁
+        // 6. 前端分頁
         const pageSize = this.pagination.pageSize;
         const totalCount = contentsWithStats.length;
         const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
         const currentPage = Math.min(Math.max(1, targetPage), totalPages);
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        const pageItems = contentsWithStats.slice(start, end);
 
         this.pagination = {
           currentPage,
@@ -372,8 +460,8 @@ export const useForumStore = defineStore("forum", {
           totalPages,
         };
 
-        // 5. 組合顯示資料
-        this.topics = pageItems.map((item) => {
+        // 7. 保存當前頁的主題數據
+        this.topics = contentsWithStats.slice(start, end).map((item) => {
           const { textContent, imageUrls } = normalizeRichContent(
             item.bodyHtml,
             toAbsoluteUrl,
