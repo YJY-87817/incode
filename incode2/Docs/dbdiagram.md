@@ -10,7 +10,7 @@ table content {
   type int [not null, note: "1:發文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
-  is_active int [not null, note: "1:顯示, 2:隱藏"]
+  is_active int [not null, note: "1:顯示, 2:本人刪除, 3:官方移除"]
   note {"發文、回文、留言、回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從留言提升成發文(因為下面討論熱烈)"}
 }
 
