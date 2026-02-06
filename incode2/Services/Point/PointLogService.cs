@@ -1,12 +1,17 @@
 ﻿using Google.GenAI.Types;
 using incode2.DTO;
+using incode2.Dtos;
 using incode2.Models;
 using incode2.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using incode2.Constants; // 引用PointType定義的 Enum
+using NuGet.Protocol.Plugins;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace incode2.Services.Point
 {
@@ -19,6 +24,121 @@ namespace incode2.Services.Point
             _context = context;
         }
 
+        // 領取獎勵：加點
+        public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                int currentBalance = await GetCurrentBalanceAsync(userId);
+
+                var log = new PointLog
+                {
+                    UserId = userId,
+                    SourceType = sourceType,
+                    SourceId = sourceId,
+                    PointTypeDefinitionId = (int)type, //
+                    ChangeAmount = changeAmount, // 正數
+                    BalanceAfter = currentBalance + Math.Abs(changeAmount),
+                    Status = "success",
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.PointLog.Add(log);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+
+        // 商城購買：扣點
+        //public async Task<bool> DeductPointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
+        //{
+        //    using var transaction = await _context.Database.BeginTransactionAsync();
+        //    try
+        //    {
+        //        // 1. 獲取當前餘額
+        //        int currentBalance = await GetCurrentBalanceAsync(userId);
+
+        //        // 2. 檢查餘額是否足夠
+        //        if (currentBalance < changeAmount) return false;
+
+        //        var log = new PointLog
+        //        {
+        //            UserId = userId,
+        //            SourceType = sourceType,
+        //            SourceId = sourceId,
+        //            PointTypeDefinitionId = (int)type,
+        //            ChangeAmount = -Math.Abs(changeAmount), // 存入負數
+        //            BalanceAfter = currentBalance - Math.Abs(changeAmount),
+        //            Status = "Success",
+        //            CreatedAt = DateTime.Now
+        //        };
+
+        //        _context.PointLog.Add(log);
+        //        await _context.SaveChangesAsync();
+        //        await transaction.CommitAsync();
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        await transaction.RollbackAsync();
+        //        return false;
+        //    }
+        //}
+    
+
+        public async Task<ResultDTO> AddPointsAsync(int userId, int points, int missionId)
+        {
+            try
+            {
+                var user = await _context.User.FindAsync(userId);
+                if (user == null)
+                    return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
+
+                var lastLog = await _context.PointLog
+                    .Where(l => l.UserId == userId)
+                    .OrderByDescending(l => l.CreatedAt)
+                    .ThenByDescending(l => l.PointLogId)
+                    .Select(l => (int?)l.BalanceAfter)
+                    .FirstOrDefaultAsync();
+
+                var currentBalance = lastLog ?? 0;
+                var newBalance = currentBalance + points;
+
+                var log = new PointLog
+                {
+                    UserId = userId,
+                    ChangeAmount = points,
+                    BalanceAfter = newBalance,
+                    Status = "success",
+                    CreatedAt = DateTime.UtcNow,
+                    PointTypeDefinitionId = 1,
+                    SourceType = "mission",
+                    SourceId = missionId,
+                };
+
+                _context.PointLog.Add(log);
+                // 這裡不要 SaveChangesAsync()，讓外層統一存檔
+
+                return new ResultDTO { Ok = true, Code = 200, Message = "點數記錄成功" };
+            }
+            catch (Exception ex)
+            {
+                return new ResultDTO
+                {
+                    Ok = false,
+                    Code = 500,
+                    Message = $"點數記錄失敗：{ex.Message}"
+                };
+            }
+        }
+
         public async Task<IEnumerable<PointLogDTO>> GetUserLogsAsync(int userId)
         {
             // 給 API前端用
@@ -29,6 +149,7 @@ namespace incode2.Services.Point
                 .Select(l => new PointLogDTO
                 {
                     PointLogId = l.PointLogId,
+                    UserId = l.UserId,
                     CreatedAt = l.CreatedAt ?? DateTime.MinValue,
                     ChangeAmount = l.ChangeAmount,
                     BalanceAfter = l.BalanceAfter,
