@@ -7,7 +7,7 @@ table content {
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_user"]
   title nvarchar(200) [not null, note: "內容標題"]
   body nvarchar(max) [not null, note: "內容內文"]
-  type int [not null, note: "1:發文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:回覆"]
+  type int [not null, note: "1:貼文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:留言回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
   is_active int [not null, note: "1:顯示, 2:本人刪除, 3:官方移除"]
@@ -43,7 +43,7 @@ table interaction_category {
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
   is_active int [not null, note: "1:啟用, 2:不再使用"]
-  note {"互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容; 通知分類:(5)有人留言、(6)按讚"}
+  note {"互動分類:like、block、bookmark、隱藏自己的內容; 通知分類:有人留言、按讚"}
 }
 
 // 內容歷史紀錄(編輯版控)
@@ -162,14 +162,14 @@ Table point_log {
   point_type_definition_id int [not null, ref: > point_type_definition.point_type_definition_id, note: '點數異動類型']
   change_amount int [not null, note: '本次變動點數（正數＝收入，負數＝支出）']
   balance_after int [not null, note: '變動後餘額（建議改用觸發器自動計算或 VIEW 即時計算，避免手動維護出錯）']
-  status nvarchar(50) [not null,check: `[status] IN ('pending','success','failed','cancelled','system')`, default: 'success', note: 'pending, success, failed, cancelled, system']  
+  status nvarchar(50) [not null,check: `[status] IN ('pending','success','failed','cancelled','system')`, default: 'success', note: ' success,tip_out,tip_in , system']  
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
 // 點數類型定義
 Table point_type_definition {
   point_type_definition_id int [pk, increment, note: '點數類型主鍵']
-  type_name nvarchar(50) [ not null, check:`[type_name] IN ('mission','entrust_mission','entrust_mission_point_reserve','point_recharge','order','system')` , note: '程式用代碼，例如：recharge, mission, shopping']
+  type_name nvarchar(50) [ not null,check:`[type_name] IN ('mission','entrust_mission','entrust_mission_point_reserve','point_recharge','order','tip_out','tip_in','system')` ,  note: '程式用代碼，例如：recharge, mission, shopping']
   display_name nvarchar(100) [not null, note: '前台顯示名稱，例如：儲值點數、任務獎勵']
   description nvarchar(100) [note: '後台管理員看的詳細說明']
   is_active bit [not null, default: 1]
@@ -258,9 +258,20 @@ Table point_recharge {
   order_no varchar(100) [unique, not null, note: '內部訂單編號']
   cash_amount decimal(12,2) [not null, note: '支付台幣金額']
   points_granted int [not null, note: '給予點數']
-  payment_method varchar(50) [not null, note: '付款方式']
-  related_order_id varchar(100) [note: '第三方金流編號']
-  status nvarchar(50) [check: `[status] IN ('pending', 'success', 'failed', 'expired')`, default: 'pending', note: '訂單狀態']
+  payment_method nvarchar(50) [not null, check: `[payment_method] IN ('credit', 'applepay', 'webatm','atm','cvs','twqr')`]
+  payment_trade_no varchar(100) [note: '第三方金流編號']
+  status nvarchar(50) [check: `[status] IN ('pending', 'success', 'cancelled','failed','system')`, default: 'pending', note: '訂單狀態']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  Indexes {
+    (user_id, created_at)
+  }}
+
+  Table point_tip {
+  point_tip_id int [pk, increment]
+  from_user_id int [not null, ref: > user.user_id]
+  to_user_id int [not null, ref: > user.user_id]
+  content_id int [not null,ref: > content.content_id ,note: '影評 ID,對應文章/影片/評論']
+  amount int [not null]
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
