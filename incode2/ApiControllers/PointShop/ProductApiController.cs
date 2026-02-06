@@ -26,7 +26,8 @@ namespace incode2.ApiControllers
         [HttpGet]
         public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct()
         {
-            return await _productService.GetProductAsync();
+            var result = await _productService.GetProductAsync();
+            return result;
         }
     }
 }

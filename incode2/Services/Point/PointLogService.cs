@@ -27,7 +27,7 @@ namespace incode2.Services.Point
         // 加扣點
         public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            //using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int currentBalance = await GetCurrentBalanceAsync(userId);
@@ -49,12 +49,12 @@ namespace incode2.Services.Point
 
                 _context.PointLog.Add(log);
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                //await transaction.CommitAsync();
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                //await transaction.RollbackAsync();
                 return false;
             }
         }

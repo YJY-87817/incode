@@ -1,17 +1,23 @@
+using incode2.Constants;
 using incode2.Dtos;
 using incode2.Dtos.PointShop;
 using incode2.Models;
+using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace incode2.Services.PointShop
 {
     public class OrderService : IOrderService
     {
         private readonly incodedatabaseContext _context;
+        private readonly IPointLogService _pointlogService;
 
-        public OrderService(incodedatabaseContext context)
+
+        public OrderService(incodedatabaseContext context, IPointLogService pointLogService)
         {
             _context = context;
+            _pointlogService = pointLogService;
         }
 
         // 取得UserId的訂單資料
@@ -105,39 +111,8 @@ namespace incode2.Services.PointShop
         }
 
         // 新增訂單
-        public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order)
+        public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order, int totalPoints, Dictionary<int, Product> productDict)
         {
-
-            // 檢查 user 是否存在
-            var user = await _context.User.FindAsync(order.UserId);
-            if (user == null)
-                return ResultDTO<int>.Failure($"找不到該會員{order.UserId}");
-
-            // 取得所有商品
-            var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
-            var productDict = await _context.Product
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToDictionaryAsync(p => p.ProductId);
-
-            // 檢查商品是否都存在
-            foreach (var item in order.Items)
-            {
-                if (!productDict.TryGetValue(item.ProductId, out var prod))
-                    return ResultDTO<int>.Failure($"無此商品{item.ProductId}");
-
-                if (prod.Stock < item.Quantity)
-                    return ResultDTO<int>.Failure($"商品 {prod.Name} 庫存不足");
-            }
-
-            // 計算總點數
-            int totalPoints = order.Items.Sum(item => item.Quantity * productDict[item.ProductId].Point);
-
-            //// 檢查使用者點數是否足夠
-            //if (user.Point < totalPoints)
-            //    return ResultDTO<int>.Failure($"點數不足,需要 {totalPoints} 點,目前只有 {user.Point} 點");
-
-            // 交易建立訂單與明細
-            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 建立訂單主檔
@@ -188,36 +163,27 @@ namespace incode2.Services.PointShop
                 };
 
                 _context.ShippedDetail.Add(recipient);
-
-                //// 扣除使用者點數
-                //user.Point -= totalPoints;
-
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+
+                // 扣除使用者點數
+                var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.Order);
+
+                if (!result)
+                {
+                    return ResultDTO<int>.Failure($"訂單建立失敗: 點數有誤");
+                }
 
                 return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
 
         // 修改寄送資料
-        public async Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped)
+        public async Task<ResultDTO<int>> EditShippedAsync(ShippedDetail existingShipped, NewShippedRequest shipped)
         {
-            // 找出資料庫中現有的資料
-            var existingShipped = await _context.ShippedDetail.FindAsync(shippedDetailId);
-
-            if (existingShipped == null)
-                return ResultDTO<int>.Failure($"找不到編號為 {shippedDetailId} 的寄送資料");
-
-            // 檢查邏輯
-            if (existingShipped.IsCompleted)
-                return ResultDTO<int>.Failure("已完成的寄送資料不可修改");
-
-            // 更新資料
             try
             {
                 // 更新欄位
@@ -238,24 +204,8 @@ namespace incode2.Services.PointShop
         }
 
         // 修改訂單資料
-        public async Task<ResultDTO<int>> EditOrderAsync(int orderId, OrderRequest order)
+        public async Task<ResultDTO<int>> EditOrderAsync(Orders oldOrder, OrderRequest order, Dictionary<int, Product> productDict)
         {
-            // 取得修改前訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-            if (oldOrder == null)
-                return ResultDTO<int>.Failure("找不到該訂單");
-
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能修改");
-
-
-            if (oldOrder.Status == "已寄送")
-                return ResultDTO<int>.Failure("訂單已完成不能修改");
-
-            // 開啟交易
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 // 更新備註
@@ -263,7 +213,6 @@ namespace incode2.Services.PointShop
 
                 // 處理明細同步
                 var productsdto = order.Items.Select(i => i.ProductId).ToList();
-                var productDict = await _context.Product.Where(p => productsdto.Contains(p.ProductId)).ToDictionaryAsync(p => p.ProductId);
 
                 // A. 刪除：找出資料庫有但前端沒傳過來的項目
                 var itemsToRemove = oldOrder.Orderdetail
@@ -272,8 +221,10 @@ namespace incode2.Services.PointShop
                 foreach (var removeItem in itemsToRemove)
                 {
                     // 歸還庫存
-                    var prod = await _context.Product.FindAsync(removeItem.ProductId);
-                    if (prod != null) prod.Stock += removeItem.Quantity;
+                    if (productDict.TryGetValue(removeItem.ProductId, out var prod))
+                    {
+                        prod.Stock += removeItem.Quantity;
+                    }
 
                     _context.Orderdetail.Remove(removeItem);
                 }
@@ -282,8 +233,7 @@ namespace incode2.Services.PointShop
                 int totalPoints = 0;
                 foreach (var itemDto in order.Items)
                 {
-                    if (!productDict.TryGetValue(itemDto.ProductId, out var prod))
-                        return ResultDTO<int>.Failure($"找不到商品 {itemDto.ProductId}");
+                    var prod = productDict[itemDto.ProductId];
 
                     var oldDetail = oldOrder.Orderdetail
                         .FirstOrDefault(d => d.ProductId == itemDto.ProductId);
@@ -292,9 +242,6 @@ namespace incode2.Services.PointShop
                     {
                         // 更新舊項目
                         int diff = itemDto.Quantity - oldDetail.Quantity;
-                        if (prod.Stock < diff)
-                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
-
                         prod.Stock -= diff;
                         oldDetail.Quantity = itemDto.Quantity;
                         oldDetail.UnitPointAtPurchase = prod.Point;
@@ -302,9 +249,6 @@ namespace incode2.Services.PointShop
                     else
                     {
                         // 新增項目
-                        if (prod.Stock < itemDto.Quantity)
-                            return ResultDTO<int>.Failure($"{prod.Name} 庫存不足");
-
                         prod.Stock -= itemDto.Quantity;
                         oldOrder.Orderdetail.Add(new Orderdetail
                         {
@@ -319,43 +263,21 @@ namespace incode2.Services.PointShop
 
                 oldOrder.TotalPoint = totalPoints;
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                
                 return ResultDTO<int>.Success(oldOrder.OrderId, "訂單更新成功");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
 
         // 取消訂單
-        public async Task<ResultDTO<int>> CancelOrderAsync(int orderId)
+        public async Task<ResultDTO<int>> CancelOrderAsync(Orders oldOrder, Dictionary<int, Product> productDict)
         {
-            // 取得修改前訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-            if (oldOrder == null)
-                return ResultDTO<int>.Failure("找不到該訂單");
-
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能取消");
-
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能取消");
-
-            if (oldOrder.Status == "已取消")
-                return ResultDTO<int>.Failure("訂單已取消");
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 回復庫存
-                var productIds = oldOrder.Orderdetail.Select(d => d.ProductId).Distinct().ToList();
-                var productDict = await _context.Product
-                    .Where(p => productIds.Contains(p.ProductId))
-                    .ToDictionaryAsync(p => p.ProductId);
-
                 foreach (var detail in oldOrder.Orderdetail)
                 {
                     if (productDict.TryGetValue(detail.ProductId, out var prod))
@@ -366,15 +288,22 @@ namespace incode2.Services.PointShop
 
                 oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
-
                 // 儲存變更
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+
+
+                // 扣除使用者點數
+                var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.Order);
+
+                if (!result)
+                {
+                    return ResultDTO<int>.Failure($"訂單取消失敗:點數回復出錯");
+                }
+
                 return ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
             }
         }
