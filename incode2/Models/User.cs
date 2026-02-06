@@ -61,6 +61,10 @@ public partial class User
 
     public virtual ICollection<PointRecharge> PointRecharge { get; set; } = new List<PointRecharge>();
 
+    public virtual ICollection<PointTip> PointTipFromUser { get; set; } = new List<PointTip>();
+
+    public virtual ICollection<PointTip> PointTipToUser { get; set; } = new List<PointTip>();
+
     public virtual Role Role { get; set; }
 
     public virtual ICollection<Shipaddress> Shipaddress { get; set; } = new List<Shipaddress>();
