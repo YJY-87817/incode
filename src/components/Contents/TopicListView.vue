@@ -939,6 +939,26 @@ function handleThreadReplyingTargetClick() {
                         <span class="d-md-none text-nowrap">
                           🕒 {{ formatTimeAgo(topic.createdAt) }}
                         </span>
+                        <span
+                          v-if="topic.lastReplyUser"
+                          class="d-md-none text-nowrap d-inline-flex align-items-center gap-1"
+                          @click.stop
+                        >
+                          <span>💬</span>
+                          <UserPreview
+                            v-if="topic.lastReplyUserId"
+                            :user-id="topic.lastReplyUserId"
+                            :username="topic.lastReplyUser"
+                            :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                            :size="20"
+                          />
+                          <v-avatar v-else size="20">
+                            <v-img
+                              :src="getAvatarUrl(topic.lastReplyUser)"
+                            ></v-img>
+                          </v-avatar>
+                          <span>{{ topic.lastReplyUser }}</span>
+                        </span>
                       </div>
 
                       <!-- 互動按鈕已移到標題右側 -->
@@ -981,8 +1001,16 @@ function handleThreadReplyingTargetClick() {
                   <div
                     v-if="topic.lastReplyUser"
                     class="text-muted d-inline-flex align-items-center gap-1"
+                    @click.stop
                   >
-                    <v-avatar size="20">
+                    <UserPreview
+                      v-if="topic.lastReplyUserId"
+                      :user-id="topic.lastReplyUserId"
+                      :username="topic.lastReplyUser"
+                      :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                      :size="20"
+                    />
+                    <v-avatar v-else size="20">
                       <v-img :src="getAvatarUrl(topic.lastReplyUser)"></v-img>
                     </v-avatar>
                     <span>{{ topic.lastReplyUser }}</span>

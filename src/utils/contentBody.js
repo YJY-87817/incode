@@ -32,19 +32,19 @@ export const fetchBodyHtml = async (body) => {
 
 /**
  * 解析貼文內容，提取文字和圖片URLs
- * 
+ *
  * 功能：
  * 1. 使用正則表達式萃取 HTTP/HTTPS 圖片URL
  * 2. 支援 .png, .jpg, .jpeg, .gif, .webp, .bmp 格式
  * 3. 移除重複的URL
  * 4. 清理純文字部分 (移除URL、多餘換行)
  * 5. 若無文字但有圖片，顯示 "(已附圖片)"
- * 
+ *
  * @param {string} body - 貼文原始內容
  * @returns {Object} { textContent, imageUrls }
  */
 export const parseBodyContent = (body) => {
-  const raw = body || '';
+  const raw = body || "";
 
   // 正則：完整的 http/https 圖片 URL
   // 支援的格式：.png, .jpe?g, .gif, .webp, .bmp
@@ -60,12 +60,12 @@ export const parseBodyContent = (body) => {
 
   // 清理文字：移除URL、多餘換行
   const textContent = raw
-    .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, '')
-    .replace(/\n{2,}/g, '\n')
+    .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
+    .replace(/\n{2,}/g, "\n")
     .trim();
 
   // 若無文字但有圖片，顯示提示
-  const displayText = textContent || (imageUrls.length ? '(已附圖片)' : '');
+  const displayText = textContent || (imageUrls.length ? "(已附圖片)" : "");
 
   return {
     textContent: displayText,
@@ -75,17 +75,17 @@ export const parseBodyContent = (body) => {
 
 /**
  * 計算貼文的回應統計資訊
- * 
+ *
  * 蒐集該貼文的所有回應，包括：
  * - type=2: 回文
  * - type=3: 留言
  * - type=4: 留言回覆
- * 
+ *
  * 並計算最新回應的時間和作者
- * 
+ *
  * @param {number} postId - 貼文ID
  * @param {Array} allContents - 所有內容列表
- * @returns {Object} { replyCount, lastReplyTime, lastReplyUser }
+ * @returns {Object} { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId }
  */
 export const calculateReplyStats = (postId, allContents) => {
   // 找出該貼文的所有回應
@@ -93,7 +93,7 @@ export const calculateReplyStats = (postId, allContents) => {
   const replies = allContents.filter(
     (c) =>
       c.parentContentId === postId &&
-      (c.type === 2 || c.type === 3 || c.type === 4)
+      (c.type === 2 || c.type === 3 || c.type === 4),
   );
 
   if (replies.length === 0) {
@@ -101,12 +101,13 @@ export const calculateReplyStats = (postId, allContents) => {
       replyCount: 0,
       lastReplyTime: null,
       lastReplyUser: null,
+      lastReplyUserId: null,
     };
   }
 
   // 按時間排序（由新至舊），取得最新的回應
   const sortedReplies = replies.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
   const lastReply = sortedReplies[0];
 
@@ -114,12 +115,13 @@ export const calculateReplyStats = (postId, allContents) => {
     replyCount: replies.length,
     lastReplyTime: lastReply.createdAt,
     lastReplyUser: lastReply.username,
+    lastReplyUserId: lastReply.userId ?? lastReply.user_id ?? null,
   };
 };
 
 /**
  * 時間格式化 - 顯示相對時間 (如「2小時前」)
- * 
+ *
  * @param {string|Date} date - ISO日期字串或Date物件
  * @returns {string} 人類易讀的相對時間
  */
@@ -136,53 +138,57 @@ export const formatTimeAgo = (date) => {
   if (days > 0) return `${days} 天前`;
   if (hours > 0) return `${hours} 小時前`;
   if (minutes > 0) return `${minutes} 分鐘前`;
-  return '剛剛';
+  return "剛剛";
 };
 
 /**
  * 日期格式化 - 顯示完整日期時間
- * 
+ *
  * @param {string|Date} date - ISO日期字串或Date物件
  * @returns {string} YYYY-MM-DD HH:MM 格式
  */
 export const formatDate = (date) => {
-  if (!date) return '';
+  if (!date) return "";
   const d = new Date(date);
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
 /**
  * 附加URLs到內容
  * 用於圖片上傳完成後追加URL到貼文/留言內容
- * 
+ *
  * @param {string} original - 原始內容
  * @param {string|Array} urls - 要附加的URL(們)
  * @returns {string} 合併後的內容
  */
 export const appendUrls = (original, urls) => {
   const list = Array.isArray(urls) ? urls : [urls];
-  const chunk = list.filter(Boolean).join('\n');
+  const chunk = list.filter(Boolean).join("\n");
   if (!chunk) return original;
-  return [original.trim(), chunk].filter(Boolean).join('\n');
+  return [original.trim(), chunk].filter(Boolean).join("\n");
 };
 
 /**
  * 計算分頁顯示
- * 
+ *
  * 根據目前頁碼和總頁數，計算應顯示的頁碼範圍
  * 最多顯示5個頁碼 (包括省略號)
- * 
+ *
  * @param {number} currentPage - 目前頁碼
  * @param {number} totalPages - 總頁數
  * @param {number} maxDisplay - 最多顯示幾個頁碼 (預設5)
  * @returns {Array<number>} 應顯示的頁碼陣列
  */
-export const calculateDisplayPages = (currentPage, totalPages, maxDisplay = 5) => {
+export const calculateDisplayPages = (
+  currentPage,
+  totalPages,
+  maxDisplay = 5,
+) => {
   const pages = [];
 
   if (totalPages <= 1) return pages;

@@ -395,6 +395,7 @@ export const useForumStore = defineStore("forum", {
             replyCount: replyStats.replyCount,
             lastReplyTime: replyStats.lastReplyTime,
             lastReplyUser: replyStats.lastReplyUser,
+            lastReplyUserId: replyStats.lastReplyUserId,
             viewCount: item.viewCount ?? 0,
             isPinned: item.isPinned ?? false,
             isHot: replyStats.replyCount > 10,
