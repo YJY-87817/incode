@@ -13,12 +13,19 @@ import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
+
+const getAvatarUrl = (name, explicitUrl = "") => {
+  if (explicitUrl) return explicitUrl;
+  const safeName = String(name || "User").trim() || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
+};
 
 const goToThread = (threadId) => {
   if (!threadId) return;
@@ -566,8 +573,23 @@ function handleThreadReplyingTargetClick() {
               />
             </div>
           </div>
-          <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
-            <span>by {{ forumStore.threadDetail.author }}</span>
+          <p
+            class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
+          >
+            <span>by</span>
+            <span @click.stop>
+              <UserPreview
+                v-if="forumStore.threadDetail.userId"
+                activator-type="text"
+                :activator-text="forumStore.threadDetail.author"
+                :user-id="forumStore.threadDetail.userId"
+                :username="forumStore.threadDetail.author"
+                :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
+                :size="26"
+                activator-class="thread-author-link"
+              />
+              <span v-else>{{ forumStore.threadDetail.author }}</span>
+            </span>
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
@@ -899,8 +921,28 @@ function handleThreadReplyingTargetClick() {
                       </div>
 
                       <!-- 主題作者資訊 -->
-                      <div class="small text-muted d-flex flex-wrap gap-2">
-                        <span class="text-nowrap"> 👤 {{ topic.author }} </span>
+                      <div
+                        class="small text-muted d-flex flex-wrap gap-2 align-items-center"
+                      >
+                        <span
+                          class="text-nowrap d-inline-flex align-items-center gap-1"
+                        >
+                          <span @click.stop>
+                            <UserPreview
+                              v-if="topic.userId"
+                              activator-type="text"
+                              :activator-text="topic.author"
+                              :user-id="topic.userId"
+                              :username="topic.author"
+                              :avatar-url="
+                                getAvatarUrl(topic.author, topic.authorAvatar)
+                              "
+                              :size="24"
+                              activator-class="topic-author-link"
+                            />
+                            <span v-else>{{ topic.author }}</span>
+                          </span>
+                        </span>
                         <span class="d-md-none text-nowrap">
                           🕒 {{ formatTimeAgo(topic.createdAt) }}
                         </span>
@@ -918,7 +960,21 @@ function handleThreadReplyingTargetClick() {
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
                   </div>
-                  <div class="text-muted">{{ topic.author }}</div>
+                  <div class="text-muted" @click.stop>
+                    <UserPreview
+                      v-if="topic.userId"
+                      activator-type="text"
+                      :activator-text="topic.author"
+                      :user-id="topic.userId"
+                      :username="topic.author"
+                      :avatar-url="
+                        getAvatarUrl(topic.author, topic.authorAvatar)
+                      "
+                      :size="24"
+                      activator-class="topic-author-link"
+                    />
+                    <span v-else>{{ topic.author }}</span>
+                  </div>
                 </td>
 
                 <!-- 最後回應時間欄 -->
@@ -1298,6 +1354,16 @@ function handleThreadReplyingTargetClick() {
 
 .quick-reply-actions .btn {
   min-width: 100px;
+}
+
+.thread-author-link,
+.topic-author-link {
+  color: inherit;
+}
+
+.thread-author-link:hover,
+.topic-author-link:hover {
+  text-decoration: underline;
 }
 
 .thread-detail-image {

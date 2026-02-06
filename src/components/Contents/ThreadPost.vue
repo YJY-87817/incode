@@ -17,7 +17,19 @@
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
-                  <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
+                  <h6 class="card-title post-author mb-0" @click.stop>
+                    <UserPreview
+                      v-if="post.userId"
+                      activator-type="text"
+                      :activator-text="post.author"
+                      :user-id="post.userId"
+                      :username="post.author"
+                      :avatar-url="getAvatarUrl(post.author)"
+                      :size="24"
+                      activator-class="post-author-link"
+                    />
+                    <span v-else>{{ post.author }}</span>
+                  </h6>
                   <small
                     class="text-muted post-time clickable"
                     @click.stop="goToPostDetail"
@@ -261,12 +273,19 @@ import apiClient from "@/api/request.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
+
+const getAvatarUrl = (name, explicitUrl = "") => {
+  if (explicitUrl) return explicitUrl;
+  const safeName = String(name || "User").trim() || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
+};
 
 const props = defineProps({
   post: {
@@ -905,6 +924,14 @@ function handleDeleteContent(contentId) {
   color: #0f3c4d;
   letter-spacing: 0.2px;
   font-size: 1rem;
+}
+
+.post-author-link {
+  color: inherit;
+}
+
+.post-author-link:hover {
+  text-decoration: underline;
 }
 
 .post-meta {
