@@ -124,6 +124,7 @@ builder.Services.AddAuthorization();
 // 4.
 // ==========================================
 builder.Services.AddControllersWithViews();
+builder.Services.AddControllers(); 
 builder.Services.AddRazorPages();
 //owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
@@ -169,7 +170,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
-
+app.MapControllers();
 //以下tim的
 // 在 app.UseStaticFiles(); 之前添加
 app.UseStaticFiles(new StaticFileOptions
