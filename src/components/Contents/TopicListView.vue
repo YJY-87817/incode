@@ -249,7 +249,7 @@ const submitQuickReply = async () => {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
-    title: `留言: ${forumStore.threadDetail.title}`,
+    title: buildReplyTitle(forumStore.threadDetail.title),
     body: quickReplyContent.trim(),
     type: CONTENT_TYPES.COMMENT,
   };
@@ -310,6 +310,11 @@ const getParentCategoryIdValue = (cat) =>
 const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
+const buildReplyTitle = (parentTitle) => {
+  const base = String(parentTitle ?? "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
 const openDetailedComment = () => {
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedComment] No threadDetail.id found");
@@ -369,7 +374,7 @@ const openDetailedComment = () => {
 
     // 創建新的草稿
     forumStore.createDraft({
-      title: "",
+      title: buildReplyTitle(forumStore.threadDetail.title),
       body: "",
       categoryId: threadCategoryId,
       parentContentId: forumStore.threadDetail.id,

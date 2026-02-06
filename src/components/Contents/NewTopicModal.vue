@@ -13,6 +13,11 @@ const { getModeTitle, validatePost, publishPost, hasDraftContent } =
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isPostMode = computed(() => modalMode.value === "post");
 const isEditMode = computed(() => modalMode.value === "edit");
+const isEditingCommentLike = computed(() => {
+  if (!isEditMode.value) return false;
+  const type = forumStore.newTopic?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+});
 const modalTitle = computed(() => getModeTitle(modalMode.value));
 const submitLabel = computed(() => {
   if (modalMode.value === "edit") return "更新";
@@ -1100,7 +1105,7 @@ const handleModalCancel = () => {
                 </div>
               </div>
               <div v-else class="mb-3"></div>
-              <div class="mb-3">
+              <div v-if="!isEditingCommentLike" class="mb-3">
                 <label class="form-label">標題</label>
                 <input
                   v-model="newTopicState.title"

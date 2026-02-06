@@ -402,6 +402,11 @@ const contentSummary = computed(() => {
   return typeof base === "string" ? base : String(base ?? "");
 });
 
+const buildReplyTitle = (parentTitle) => {
+  const base = String(parentTitle ?? "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
 const previewImages = computed(() => {
   const images = props.post.imageUrls ?? [];
   return Array.isArray(images) ? images.slice(0, 3) : [];
@@ -667,10 +672,15 @@ const openDetailedReplyModal = () => {
       : "";
 
   const replySetting = resolveReplyContentType();
+  const replyTitle =
+    replySetting.type === CONTENT_TYPES.COMMENT ||
+    replySetting.type === CONTENT_TYPES.COMMENT_REPLY
+      ? buildReplyTitle(props.post.title || contentSummary.value)
+      : "";
 
   // 創建新的草稿
   forumStore.createDraft({
-    title: "",
+    title: replyTitle,
     body: "",
     categoryId: categoryId,
     parentContentId: props.post.id,
@@ -712,7 +722,7 @@ async function submitReply() {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
-    title: `Re: ${contentSummary.value.substring(0, 50)}...`, // 簡短標題
+    title: buildReplyTitle(props.post.title || contentSummary.value),
     body: replyContent.trim(),
     type: resolveReplyContentType().type, // 根據被回覆內容決定類型
   };
