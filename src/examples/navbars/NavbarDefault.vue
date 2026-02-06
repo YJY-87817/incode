@@ -50,6 +50,11 @@ const menuItems = computed(() => [
     icon: "mdi-cart-outline",
     to: { name: "Order" },
   },
+  {
+    title: "點數儲值",
+    icon: "mdi-cash-plus",
+    to: { name: "recharge" },
+  },
 ]);
 
 const handleLogout = async () => {
@@ -165,65 +170,18 @@ watch(
             <router-link :to="{ name: 'forum' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
               :class="getTextColor()">
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                dashboard</i>
+                comment</i>
               討論區
             </router-link>
           </li>
           <!-- 任務區 -->
-          <li class="nav-item dropdown dropdown-hover mx-2">
-            <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center" :class="getTextColor()"
-              id="dropdownMenuPages" data-bs-toggle="dropdown" aria-expanded="false">
+          <li class="nav-item mx-2">
+            <router-link :to="{ name: 'task' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()">
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                dashboard</i>
+                assignment</i>
               任務大廳
-              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-2 d-lg-block d-none" />
-              <img :src="getArrowColor()" alt="down-arrow" class="arrow ms-1 d-lg-none d-block ms-auto" />
-            </a>
-            <div class="dropdown-menu dropdown-menu-animation ms-n3 dropdown-md p-3 border-radius-xl mt-0 mt-lg-3"
-              style="overflow: hidden" aria-labelledby="dropdownMenuPages">
-              <div class="row d-none d-lg-block">
-                <!-- 任務 -->
-                <div class="col-12 px-4 py-2">
-                  <div class="row">
-                    <div class="position-relative">
-                      <!-- <router-link :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
-                        <span>TestQiu</span>
-                      </router-link> -->
-                      <router-link :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
-                        <span>我的點數明細</span>
-                      </router-link>
-                      <router-link :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
-                        <span>我的任務進度</span>
-                      </router-link>
-                      <router-link :to="{ name: 'task' }" class="dropdown-item border-radius-md">
-                        <span>任務大廳</span>
-                      </router-link>
-                      <router-link :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
-                        <span>點數儲值</span>
-                      </router-link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- 響應式任務 -->
-              <div class="d-lg-none">
-                <!-- <router-link :to="{ name: 'test-qiu' }" class="dropdown-item border-radius-md">
-                  <span>TestQiu</span>
-                </router-link> -->
-                <router-link :to="{ name: 'point-log' }" class="dropdown-item border-radius-md">
-                  <span>我的點數明細</span>
-                </router-link>
-                <router-link :to="{ name: 'mytask' }" class="dropdown-item border-radius-md">
-                  <span>我的任務進度</span>
-                </router-link>
-                <router-link :to="{ name: 'task' }" class="dropdown-item border-radius-md">
-                  <span>任務大廳</span>
-                </router-link>
-                <router-link :to="{ name: 'recharge' }" class="dropdown-item border-radius-md">
-                  <span>點數儲值</span>
-                </router-link>
-              </div>
-            </div>
+            </router-link>
           </li>
 
           <!-- 點數商城區 -->
@@ -231,7 +189,7 @@ watch(
             <router-link :to="{ name: 'PointShop' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
               :class="getTextColor()">
               <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                dashboard</i>
+                shopping_bag</i>
               點數商城
             </router-link>
           </li>
