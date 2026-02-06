@@ -1,4 +1,5 @@
-﻿using incode2.Dtos.Users;
+﻿using incode2.DTO.user;
+using incode2.Dtos.Users;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -104,5 +105,44 @@ namespace incode2.Services.Users
             await _context.SaveChangesAsync();
         }
 
+        public async Task<UserProfileStatsDto> GetUserStatsAsync(int userId)
+        {
+            bool userExists = await _context.User
+            .AnyAsync(u => u.UserId == userId);
+
+            if (!userExists)
+            {
+                return null; // 回傳 null 讓 Controller 報 404
+            }    
+
+            var articleCountTask = await _context.Content
+                .CountAsync(c => c.UserId == userId
+                  && c.IsActive == 1     
+                  && c.Type == 1);
+
+            var missionCountTask = await _context.MissionProgress
+    .CountAsync(mp => mp.UserId == userId
+                   && (mp.Status == "completed" || mp.Status == "rewarded"));
+
+            var pointBalanceTask = await _context.PointLog
+            .Where(p => p.UserId == userId &&
+                       (p.Status == "success" || p.Status == "system")) 
+            .SumAsync(p => p.ChangeAmount);
+
+            var followingCountTask = await _context.Follow
+                .CountAsync(f => f.FollowerId == userId);
+
+            var followerCountTask = await _context.Follow
+                .CountAsync(f => f.FolloweeId == userId);
+            
+            return new UserProfileStatsDto
+            {
+                ArticleCount = articleCountTask,
+                MissionCount = missionCountTask,               
+                PointBalance = pointBalanceTask,
+                FollowingCount = followingCountTask,
+                FollowerCount = followerCountTask
+            };
+        }
     }
 }

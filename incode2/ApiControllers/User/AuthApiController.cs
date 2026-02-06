@@ -56,7 +56,7 @@ namespace incode2.ApiControllers.user
                         user = new
                         {
                             userid = newUser.UserId,
-                            usersername = newUser.Username,
+                            username = newUser.Username,
                             email = newUser.Email,
                             role = roleName,
                             avatarUrl = newUser.ImageUrl
