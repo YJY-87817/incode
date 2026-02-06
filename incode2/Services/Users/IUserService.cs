@@ -1,5 +1,6 @@
-﻿using incode2.Models;
+﻿using incode2.DTO.user;
 using incode2.Dtos.Users;
+using incode2.Models;
 
 namespace incode2.Services.Users
 {
@@ -21,5 +22,6 @@ namespace incode2.Services.Users
         Task UpdateUserAsync(User user);
 
         Task AddLoginLogAsync(int userId, string ipAddress);
+        Task<UserProfileStatsDto> GetUserStatsAsync(int userId);
     }
 }
