@@ -117,6 +117,10 @@ async function handleInteraction(categoryId, categoryName) {
  * 取得按鈕樣式類別
  */
 function getButtonClass(categoryId) {
+  // "隱藏"按鈕(categoryId=2)不顯示激活狀態，因為被隱藏的內容不會在列表中顯示
+  if (categoryId === 2) {
+    return "btn-interaction";
+  }
   const isActive = interactionStates.value[categoryId];
   return isActive ? "btn-interaction-active" : "btn-interaction";
 }
