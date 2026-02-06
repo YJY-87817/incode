@@ -138,16 +138,16 @@ watch(
     ' navbar-dark bg-gradient-dark z-index-3 py-3': props.dark,
   }">
     <div :class="props.transparent || props.light || props.dark
-        ? 'container'
-        : 'container-fluid px-0'
+      ? 'container'
+      : 'container-fluid px-0'
       ">
       <router-link class="navbar-brand d-none d-md-block" :class="[
         (props.transparent && textDark.value) || !props.transparent
           ? 'text-dark font-weight-bolder ms-sm-3'
           : 'text-white font-weight-bolder ms-sm-3',
-      ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim"
-        data-placement="bottom">
-        <i class="fas fa-hat-cowboy-side"></i>
+      ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
+        <img src="@/assets/img/okapi.svg" alt="logo"
+          style="height: 40px; width: auto; margin-right: 8px; vertical-align: middle;" />
         incode影庫
       </router-link>
       <button class="navbar-toggler shadow-none ms-2" type="button" data-bs-toggle="collapse"
