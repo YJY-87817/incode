@@ -1,4 +1,6 @@
-﻿using incode2.DTO;
+﻿using incode2.Constants;
+using incode2.DTO;
+using incode2.Dtos;
 using incode2.Models;
 using incode2.ViewModels;
 
@@ -23,6 +25,11 @@ namespace incode2.Services.Point
 
         //打賞影評作者（雙向交易）//寫 2 筆 point_log 包在同一個 Transaction
         Task TipAsync(int fromUserId,int toUserId,int ContentId, int amount);
-        
+
+        Task<ResultDTO> AddPointsAsync(int userId, int rewardPoints, int missionId);
+
+        Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
+
+        //Task<bool> DeductPointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
     }
 }

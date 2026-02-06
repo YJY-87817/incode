@@ -2,6 +2,7 @@
 using incode2.Dtos;
 using incode2.Extensions;
 using incode2.Models;
+using incode2.Partials;
 using incode2.Services.Point;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -37,13 +38,13 @@ namespace incode2.ApiControllers.Point
             return Ok(mission);
         }
 
-        [HttpPost("{id}/missionClaim")]
+        [HttpPost("{missionId}/missionClaim")]
         [Authorize]
-        public async Task<ActionResult<ResultDTO>> ClaimMission(int id)
+        public async Task<ActionResult<ResultDTO>> ClaimMission(int missionId)
         {
             int userId = User.GetId();
 
-            // 額外防呆：確保 userId 是正數
+            // 使用者驗證
             if (userId <= 0)
             {
                 return Unauthorized(new ResultDTO
@@ -54,21 +55,29 @@ namespace incode2.ApiControllers.Point
                 });
             }
 
-            var result = await _missionService.ClaimMissionAsync(id, userId);
-
-            if (!result.Ok)
+            // 任務 ID 驗證
+            if (missionId <= 0)
             {
-                return result.Code switch
+                return BadRequest(new ResultDTO
                 {
-                    401 => Unauthorized(result),
-                    404 => NotFound(result),
-                    400 => BadRequest(result),
-                    _ => StatusCode(500, result)
-                };
+                    Ok = false,
+                    Code = 400,
+                    Message = "任務 ID 無效"
+                });
             }
 
-            return Ok(result);
+            var result = await _missionService.ClaimMissionAsync(missionId, userId);
+
+            return result.Code switch
+            {
+                200 or 201 => Ok(result),
+                400 => BadRequest(result),
+                401 => Unauthorized(result),
+                404 => NotFound(result),
+                _ => StatusCode(500, result)
+            };
         }
+
 
         // GET: api/MissionApi/5
         [HttpGet("{id}")]

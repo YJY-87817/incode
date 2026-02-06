@@ -1,5 +1,7 @@
-﻿using incode2.DTO;
+﻿using incode2.Constants;
+using incode2.DTO;
 using incode2.Dtos;
+using incode2.Dtos.Point;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Point;
@@ -28,6 +30,56 @@ namespace incode2.ApiControllers.Point
             _pointLogService = pointLogService;
         }
 
+        /// <summary>
+        /// 模擬領取任務獎勵 (加點)
+        /// POST: /api/point/add-reward
+        /// </summary>
+        [HttpPost("add-reward")]
+        [Authorize]
+        public async Task<IActionResult> AddReward([FromForm] int userId, [FromForm] int changeAmount, [FromForm] int sourceId)
+        {
+            // 直接從登入資訊拿 ID，不從參數拿，更安全
+            int currentLoginUserId = User.GetId();
+
+            // 檢查點數是否為 0，避免無謂的寫入
+            //if (changeAmount <= 0) return BadRequest("點數必須大於 0");
+
+            // 調用你的 Service
+            var success = await _pointLogService.ChangePointsAsync(
+                userId = currentLoginUserId,
+                changeAmount,
+                "entrust_mission",
+                sourceId,
+                PointType.EntrustMission // 使用 Enum
+            );
+
+            if (!success) return BadRequest("獎勵領取失敗");
+            return Ok("獎勵已發放");
+        }
+
+        /// <summary>
+        /// 模擬商城購買 (扣點)
+        /// POST: /api/point/shop-purchase
+        /// </summary>
+        //[HttpPost("shop-purchase")]
+        //public async Task<IActionResult> Purchase([FromForm] int userId, [FromForm] int price, [FromForm] int productId)
+        //{
+        //    int currentLoginUserId = User.GetId();
+        //    if (price >= 0) return BadRequest("點數必須小於 0");
+
+        //    var success = await _pointLogService.DeductPointsAsync(
+        //        userId = currentLoginUserId,
+        //        price,
+        //        "orders",
+        //        productId,
+        //        PointType.Order // 使用 Enum
+        //    );
+
+        //    if (!success) return BadRequest("點數不足或購買失敗");
+        //    return Ok("扣點成功，請繼續處理訂單");
+        //}
+    
+
         //GET: api/PointLogApi
        [HttpGet]
         public async Task<IEnumerable<PointLogDTO>> GetPointLog()
@@ -45,50 +97,12 @@ namespace incode2.ApiControllers.Point
             });
         }
 
-        //GET: api/PointLogApi/5
-        //[HttpGet("{id}")]
-        //public async Task<PointLogDTO> GetPointLog(int id)
-        //{
-        //    PointLogDTO? PlDTO = await _context.PointLog.Select(pl => new PointLogDTO
-        //    {
-        //        PointLogId = pl.PointLogId,
-        //        UserId = pl.UserId,
-        //        SourceType = pl.SourceType,
-        //        SourceId = pl.SourceId,
-        //        PointTypeDefinitionId = pl.PointTypeDefinitionId,
-        //        ChangeAmount = pl.ChangeAmount,
-        //        BalanceAfter = pl.BalanceAfter,
-        //        CreatedAt = pl.CreatedAt
-        //    }).FirstOrDefaultAsync(pl => pl.PointLogId == id);
-
-        //    return PlDTO;
-        //}
-
-        // 修改後的 GET：只抓特定使用者的紀錄
-
         [HttpGet("user/my-logs")]
         [Authorize]
         public async Task<IEnumerable<PointLogDTO>> GetPointLogByUser()
         {
             int UserId = User.GetId(); 
             return await _pointLogService.GetUserLogsAsync(UserId);
-            //return await _context.PointLog
-            //    .AsNoTracking()
-            //    .Where(pl => pl.UserId == UserId) // 關鍵：過濾使用者
-            //    .OrderByDescending(pl => pl.CreatedAt) // 讓最新的在上面
-            //    .Select(pl => new PointLogDTO
-            //    {
-            //        PointLogId = pl.PointLogId,
-            //        UserId = pl.UserId,
-            //        SourceType = pl.SourceType,
-            //        SourceId = pl.SourceId,
-            //        PointTypeDefinitionId = pl.PointTypeDefinitionId,
-            //        ChangeAmount = pl.ChangeAmount,
-            //        BalanceAfter = pl.BalanceAfter,
-            //        Status = pl.Status,
-            //        CreatedAt = pl.CreatedAt
-            //    })
-            //    .ToListAsync();
         }
 
         // PUT: api/PointLogApi/5
