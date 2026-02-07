@@ -21,6 +21,8 @@ namespace incode2.ApiControllers.Content
       _contentService = contentService;
     }
 
+    //所有content
+    //https://localhost:7190/api/ContentApi
     [HttpGet]
     public async Task<IActionResult> GetContents([FromQuery] int? categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -29,6 +31,8 @@ namespace incode2.ApiControllers.Content
       return Ok(result);
     }
 
+    // 取得單個content詳細資料
+    // GET https://localhost:7190/api/ContentApi/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetContent(int id)
     {
@@ -37,7 +41,9 @@ namespace incode2.ApiControllers.Content
       return Ok(content);
     }
 
-    //創立貼文
+    // 創立新的貼文
+    // POST https://localhost:7190/api/ContentApi
+    // Body: CreateContentDto
     [HttpPost]
     //[Authorize]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
@@ -51,6 +57,10 @@ namespace incode2.ApiControllers.Content
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
     }
 
+    // 更新content內容
+    // PUT https://localhost:7190/api/ContentApi/{id}
+    // Body: UpdateContentDto
+    // 需要登入，且只能更新自己的content
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateContent(int id, [FromBody] UpdateContentDto dto)
     {
@@ -63,7 +73,9 @@ namespace incode2.ApiControllers.Content
       return Ok(updated);
     }
 
-    //刪除context(軟刪除)
+    // 軟刪除content
+    // DELETE https://localhost:7190/api/ContentApi/{id}
+    // 需要登入，且只能刪除自己的content
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteContent(int id)
     {
@@ -78,6 +90,8 @@ namespace incode2.ApiControllers.Content
       return Ok(new { message = "刪除成功" });
     }
 
+    // 取得指定content的所有評論
+    // GET https://localhost:7190/api/ContentApi/{id}/comments
     [HttpGet("{id}/comments")]
     public async Task<IActionResult> GetCommentsByContentId(int id)
     {
@@ -90,6 +104,9 @@ namespace incode2.ApiControllers.Content
       });
     }
 
+    // 取得當前登入使用者的所有貼文 (type=1)
+    // GET https://localhost:7190/api/ContentApi/me/posts
+    // 需要登入
     [HttpGet("me/posts")]
     public async Task<IActionResult> GetMyPosts()
     {
@@ -106,6 +123,9 @@ namespace incode2.ApiControllers.Content
       });
     }
 
+    // 取得當前登入使用者的所有回覆 (type=2)
+    // GET https://localhost:7190/api/ContentApi/me/replies
+    // 需要登入
     [HttpGet("me/replies")]
     public async Task<IActionResult> GetMyReplies()
     {
@@ -122,6 +142,9 @@ namespace incode2.ApiControllers.Content
       });
     }
 
+    // 取得當前登入使用者的所有評論 (type=3,4)
+    // GET https://localhost:7190/api/ContentApi/me/comments
+    // 需要登入
     [HttpGet("me/comments")]
     public async Task<IActionResult> GetMyComments()
     {
@@ -138,6 +161,9 @@ namespace incode2.ApiControllers.Content
       });
     }
 
+    // 取得當前登入使用者按讚的所有content
+    // GET https://localhost:7190/api/ContentApi/me/liked-contents
+    // 需要登入
     [HttpGet("me/liked-contents")]
     public async Task<IActionResult> GetMyLikedContents()
     {
@@ -154,6 +180,9 @@ namespace incode2.ApiControllers.Content
       });
     }
 
+    // 取得當前登入使用者收藏的所有content
+    // GET https://localhost:7190/api/ContentApi/me/bookmarked-contents
+    // 需要登入
     [HttpGet("me/bookmarked-contents")]
     public async Task<IActionResult> GetMyBookmarkedContents()
     {
