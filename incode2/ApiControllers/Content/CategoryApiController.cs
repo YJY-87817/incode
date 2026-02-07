@@ -20,7 +20,15 @@ namespace incode2.ApiControllers.Content
       _context = context;
     }
 
-    // GET: api/CategoryApi
+    // 取得所有分類（包含分類統計信息）
+    // GET https://localhost:7190/api/CategoryApi
+    // Query Parameters: 無
+    // Response: 返回所有分類列表，包含 { id, parentCategoryId, name, description, topicCount, postCount }
+    // 說明:
+    //   - topicCount: 該分類下的主文數量 (parent_content_id = NULL)
+    //   - postCount: 該分類下的所有內容數量 (主文 + 留言)
+    //   - 只計算 IsActive != 3 的內容
+    // 範例: GET https://localhost:7190/api/CategoryApi
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
     {
@@ -47,7 +55,7 @@ namespace incode2.ApiControllers.Content
         //   - ishidden：比照你 ContentApiController 的寫法，只算「沒被隱藏」的
         var counts = await _context.Content
           .AsNoTracking()
-          .Where(c => c.IsActive!=4 && c.CategoryId != null)
+          .Where(c => c.IsActive!=3 && c.CategoryId != null)
           .GroupBy(c => c.CategoryId.Value)
           .Select(g => new
           {
@@ -78,7 +86,19 @@ namespace incode2.ApiControllers.Content
       }
     }
 
-    // POST: api/CategoryApi
+    // 新增分類
+    // POST https://localhost:7190/api/CategoryApi
+    // Request Body: CreateCategoryDto
+    // {
+    //   "parentCategoryId": null,  // 可選，父分類ID（用於建立分類階層）
+    //   "name": "分類名稱",        // 必填，最多100字
+    //   "description": "分類描述"  // 可選，最多200字
+    // }
+    // Response: 201 Created，返回新建的CategoryDto
+    // 說明:
+    //   - 如果指定了 parentCategoryId，會驗證父分類是否存在
+    //   - IsActive 預設設為 1（啟用狀態）
+    // 範例: POST https://localhost:7190/api/CategoryApi
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto request)
     {
