@@ -1,11 +1,7 @@
 import { defineStore } from "pinia";
 import apiClient from "@/api/request.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
-import {
-  calculateReplyStats,
-  fetchBodyHtml,
-  toAbsoluteUrl,
-} from "@/utils/contentBody.js";
+import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 
 // Content types according to database schema
@@ -51,7 +47,8 @@ export const useForumStore = defineStore("forum", {
 
     // ========== 主題列表 ==========
     topics: [],
-    allTopicsForStats: [], // 用於統計的所有主題數據（未分頁）
+    threadReplyStats: {}, // { [threadId]: { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId, fetchedAt } }
+    replyStatsCacheTtlMs: 60000,
     isLoading: false,
     searchKeyword: "",
     pagination: {
@@ -206,29 +203,11 @@ export const useForumStore = defineStore("forum", {
         return [];
       }
 
-      // 為每個分類計算實時統計
-      return state.categories.map((category) => {
-        // 從所有主題中篩選屬於此分類的主題
-        const categoryTopics = state.allTopicsForStats.filter(
-          (topic) => topic.categoryName === category.name,
-        );
-
-        // 計算主題數（type=1 的內容）
-        const topicCount = categoryTopics.filter(
-          (topic) => topic.type === CONTENT_TYPES.POST,
-        ).length;
-
-        // 計算回文數（包括所有回覆）
-        const postCount = categoryTopics.reduce((total, topic) => {
-          return total + (topic.replyCount || 0);
-        }, 0);
-
-        return {
-          ...category,
-          topicCount,
-          postCount,
-        };
-      });
+      return state.categories.map((category) => ({
+        ...category,
+        topicCount: category.topicCount ?? 0,
+        postCount: category.postCount ?? 0,
+      }));
     },
   },
 
@@ -262,6 +241,55 @@ export const useForumStore = defineStore("forum", {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    updateThreadReplyStats(threadId, replies) {
+      const items = Array.isArray(replies) ? replies : [];
+      const replyCount = items.length;
+      const sorted = items.slice().sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return bTime - aTime;
+      });
+      const lastReply = sorted[0];
+
+      this.threadReplyStats[threadId] = {
+        replyCount,
+        lastReplyTime: lastReply?.createdAt ?? null,
+        lastReplyUser: lastReply?.username ?? null,
+        lastReplyUserId: lastReply?.userId ?? lastReply?.user_id ?? null,
+        fetchedAt: Date.now(),
+      };
+    },
+
+    async fetchThreadReplyStats(threadIds = [], options = {}) {
+      const { forceRefresh = false } = options;
+      const ids = Array.from(new Set(threadIds.filter(Boolean)));
+      if (ids.length === 0) return;
+
+      const now = Date.now();
+      const ttl = this.replyStatsCacheTtlMs;
+      const pendingIds = ids.filter((id) => {
+        if (forceRefresh) return true;
+        const cached = this.threadReplyStats[id];
+        if (!cached) return true;
+        const fetchedAt = cached.fetchedAt || 0;
+        return now - fetchedAt > ttl;
+      });
+
+      if (pendingIds.length === 0) return;
+
+      await Promise.all(
+        pendingIds.map(async (id) => {
+          try {
+            const res = await contentInteractionApi.getComments(id);
+            const replies = Array.isArray(res?.comments) ? res.comments : [];
+            this.updateThreadReplyStats(id, replies);
+          } catch (error) {
+            console.error(`載入主題 ${id} 回應統計失敗:`, error);
+          }
+        }),
+      );
     },
 
     selectCategory(categoryId, options = {}) {
@@ -315,143 +343,25 @@ export const useForumStore = defineStore("forum", {
       this.isLoading = true;
 
       try {
-        // 1. 獲取所有內容（不過濾分類，用於正確計算所有分類的統計數據）
-        // 後端會自動從認證信息中獲取當前用戶 ID，用於過濾隱藏的內容
-        const allContentParams = { pageSize: 9999 };
-        // 注意：不再在 API 調用時過濾分類，而是在前端過濾
+        const pageSize = this.pagination.pageSize;
+        const keyword = this.searchKeyword.trim();
 
-        const allContentData = await apiClient.get("/ContentApi", {
-          params: allContentParams,
-        });
-        const allContents = allContentData.items || [];
-
-        const contentsWithHtml = await Promise.all(
-          allContents.map(async (item) => {
-            const bodyHtml = await fetchBodyHtml(item.body);
-            const { textContent, imageUrls } = normalizeRichContent(
-              bodyHtml,
-              toAbsoluteUrl,
-            );
-            return {
-              ...item,
-              bodyHtml,
-              bodyText: textContent,
-              bodyImages: imageUrls,
-            };
-          }),
-        );
-
-        // 2. 過濾 type=1(貼文) 和 type=2(回文) - 只顯示主貼文和回文，留言應在貼文詳情頁面顯示
-        let allListContents = contentsWithHtml.filter(
-          (c) =>
-            c.type === CONTENT_TYPES.POST || c.type === CONTENT_TYPES.REPLY,
-        );
-
-        // 用於統計的所有主題數據（包含所有分類，但不包括留言）
-        const allContentsForStats = allListContents.map((item) => {
-          const replyStats = calculateReplyStats(
-            item.contentId,
-            contentsWithHtml,
-          );
-          const { textContent, imageUrls } = normalizeRichContent(
-            item.bodyHtml,
-            toAbsoluteUrl,
-          );
-          return {
-            id: item.contentId,
-            userId: item.userId ?? item.user_id ?? null,
-            title: item.title,
-            content: textContent,
-            imageUrls,
-            author: item.username,
-            authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
-            categoryName: item.categoryName,
-            createdAt: item.createdAt,
-            type: item.type,
-            replyCount: replyStats.replyCount,
-            lastReplyTime: replyStats.lastReplyTime,
-            lastReplyUser: replyStats.lastReplyUser,
-            lastReplyUserId: replyStats.lastReplyUserId,
-            viewCount: item.viewCount ?? 0,
-            isPinned: item.isPinned ?? false,
-            isHot: replyStats.replyCount > 10,
-          };
-        });
-
-        // 保存所有主題數據（用於分類統計）
-        this.allTopicsForStats = allContentsForStats;
-
-        // 3. 分類過濾（在前端進行，僅用於顯示）
-        let listContents = allListContents;
-        if (targetCategory) {
-          const selectedCat = this.categories.find(
-            (c) => c.id === targetCategory,
-          );
-          if (selectedCat) {
-            listContents = listContents.filter(
-              (c) => c.categoryName === selectedCat.name,
-            );
-          }
-        }
-
-        // 4. 搜尋過濾 (搜尋 title 和 body)
-        if (this.searchKeyword.trim()) {
-          const keyword = this.searchKeyword.trim().toLowerCase();
-          listContents = listContents.filter((c) => {
-            const titleMatch = c.title?.toLowerCase().includes(keyword);
-            const bodyMatch = c.bodyText?.toLowerCase().includes(keyword);
-            return titleMatch || bodyMatch;
-          });
-        }
-
-        // 5. 計算回文統計
-        const contentsWithStats = listContents.map((item) => {
-          const replyStats = calculateReplyStats(
-            item.contentId,
-            contentsWithHtml,
-          );
-          return {
-            ...item,
-            _replyStats: replyStats,
-          };
-        });
-
-        const parseDateValue = (value) => {
-          if (!value) return 0;
-          const time = new Date(value).getTime();
-          return Number.isNaN(time) ? 0 : time;
+        const params = {
+          page: targetPage,
+          pageSize,
+          types: `${CONTENT_TYPES.POST},${CONTENT_TYPES.REPLY}`,
+          sortBy: "latest",
         };
 
-        const sortOption = this.sortOption || "createdAt_desc";
+        if (targetCategory) params.categoryId = targetCategory;
+        if (keyword) params.keyword = keyword;
 
-        contentsWithStats.sort((a, b) => {
-          if (sortOption === "lastReply_desc") {
-            const aLast = parseDateValue(
-              a._replyStats?.lastReplyTime || a.createdAt,
-            );
-            const bLast = parseDateValue(
-              b._replyStats?.lastReplyTime || b.createdAt,
-            );
-            return bLast - aLast;
-          }
-
-          if (sortOption === "replyCount_desc") {
-            const aCount = Number(a._replyStats?.replyCount || 0);
-            const bCount = Number(b._replyStats?.replyCount || 0);
-            if (bCount !== aCount) return bCount - aCount;
-            return parseDateValue(b.createdAt) - parseDateValue(a.createdAt);
-          }
-
-          return parseDateValue(b.createdAt) - parseDateValue(a.createdAt);
-        });
-
-        // 6. 前端分頁
-        const pageSize = this.pagination.pageSize;
-        const totalCount = contentsWithStats.length;
-        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-        const currentPage = Math.min(Math.max(1, targetPage), totalPages);
-        const start = (currentPage - 1) * pageSize;
-        const end = start + pageSize;
+        const data = await apiClient.get("/ContentApi", { params });
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const totalCount = data?.totalCount ?? items.length;
+        const totalPages =
+          data?.totalPages ?? Math.max(1, Math.ceil(totalCount / pageSize));
+        const currentPage = data?.currentPage ?? targetPage;
 
         this.pagination = {
           currentPage,
@@ -460,34 +370,47 @@ export const useForumStore = defineStore("forum", {
           totalPages,
         };
 
-        // 7. 保存當前頁的主題數據
-        this.topics = contentsWithStats.slice(start, end).map((item) => {
-          const { textContent, imageUrls } = normalizeRichContent(
-            item.bodyHtml,
-            toAbsoluteUrl,
-          );
-          const replyStats =
-            item._replyStats ||
-            calculateReplyStats(item.contentId, contentsWithHtml);
+        const itemsWithHtml = await Promise.all(
+          items.map(async (item) => {
+            const bodyHtml = await fetchBodyHtml(item.body);
+            const { sanitizedHtml, textContent, imageUrls } =
+              normalizeRichContent(bodyHtml, toAbsoluteUrl);
+            return {
+              ...item,
+              bodyHtml,
+              bodyText: textContent,
+              bodyImages: imageUrls,
+              bodySanitizedHtml: sanitizedHtml,
+            };
+          }),
+        );
 
+        const threadIds = itemsWithHtml
+          .map((item) => item.contentId)
+          .filter(Boolean);
+        await this.fetchThreadReplyStats(threadIds);
+
+        this.topics = itemsWithHtml.map((item) => {
+          const stats = this.threadReplyStats[item.contentId] || {};
           return {
             id: item.contentId,
             userId: item.userId ?? item.user_id ?? null,
             title: item.title,
-            content: textContent,
-            imageUrls,
+            content: item.bodyText ?? "",
+            imageUrls: item.bodyImages ?? [],
             author: item.username,
             authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
             categoryName: item.categoryName,
+            categoryId: item.categoryId ?? item.category_id ?? null,
             createdAt: item.createdAt,
             type: item.type,
-            replyCount: replyStats.replyCount,
-            lastReplyTime: replyStats.lastReplyTime,
-            lastReplyUser: replyStats.lastReplyUser,
-            lastReplyUserId: replyStats.lastReplyUserId,
+            replyCount: stats.replyCount ?? 0,
+            lastReplyTime: stats.lastReplyTime ?? null,
+            lastReplyUser: stats.lastReplyUser ?? null,
+            lastReplyUserId: stats.lastReplyUserId ?? null,
             viewCount: item.viewCount ?? 0,
             isPinned: item.isPinned ?? false,
-            isHot: replyStats.replyCount > 10,
+            isHot: (stats.replyCount ?? 0) > 10,
           };
         });
       } catch (error) {
@@ -514,13 +437,11 @@ export const useForumStore = defineStore("forum", {
     // ========== 帖文詳情 ==========
     async fetchThreadDetail(threadId) {
       try {
-        const [detailRes, commentsRes, allContentsRes] = await Promise.all([
+        const [detailRes, commentsRes] = await Promise.all([
           apiClient.get(`/ContentApi/${threadId}`),
           contentInteractionApi.getComments(threadId),
-          apiClient.get("/ContentApi", { params: { pageSize: 9999 } }),
         ]);
 
-        // 處理主題詳情
         const detail = detailRes?.contentId ? detailRes : detailRes?.data;
 
         if (detail && detail.contentId) {
@@ -528,7 +449,6 @@ export const useForumStore = defineStore("forum", {
           const { sanitizedHtml, textContent, imageUrls } =
             normalizeRichContent(detailBodyHtml, toAbsoluteUrl);
 
-          // 嘗試多個可能的 categoryId 字段名
           let categoryId =
             detail.categoryId ??
             detail.category_id ??
@@ -536,7 +456,6 @@ export const useForumStore = defineStore("forum", {
             detail.cate_id ??
             null;
 
-          // 如果 detail 中沒有 categoryId，嘗試從主題列表中查找
           if (!categoryId && this.topics && this.topics.length > 0) {
             const matchedTopic = this.topics.find(
               (t) => String(t.id) === String(threadId),
@@ -544,20 +463,6 @@ export const useForumStore = defineStore("forum", {
             if (matchedTopic) {
               categoryId =
                 matchedTopic.categoryId ?? matchedTopic.category_id ?? null;
-            }
-          }
-
-          // 如果仍然沒有，嘗試從 allContentsRes 中查找
-          if (!categoryId && allContentsRes?.items) {
-            const allItems = Array.isArray(allContentsRes.items)
-              ? allContentsRes.items
-              : [];
-            const matchedItem = allItems.find(
-              (i) => String(i.contentId) === String(threadId),
-            );
-            if (matchedItem) {
-              categoryId =
-                matchedItem.categoryId ?? matchedItem.category_id ?? null;
             }
           }
 
@@ -576,195 +481,99 @@ export const useForumStore = defineStore("forum", {
           };
         }
 
-        // 處理留言 - 只保留 COMMENT 類型（不包含其他類型）
-        const commentsData = commentsRes?.comments || [];
+        const directChildren = Array.isArray(commentsRes?.comments)
+          ? commentsRes.comments
+          : [];
 
-        // 獲取所有內容用於查找留言回覆
-        const allItems = Array.isArray(allContentsRes?.items)
-          ? allContentsRes.items
-          : Array.isArray(allContentsRes)
-            ? allContentsRes
-            : [];
+        this.updateThreadReplyStats(threadId, directChildren);
+
+        const loadContentWithHtml = async (item, fallbackType) => {
+          const bodyHtml = await fetchBodyHtml(item.body);
+          const { sanitizedHtml, textContent, imageUrls } =
+            normalizeRichContent(bodyHtml, toAbsoluteUrl);
+          return {
+            id: item.contentId,
+            userId: item.userId ?? item.user_id ?? null,
+            author: item.username,
+            createdAt: item.createdAt,
+            content: textContent,
+            contentHtml: sanitizedHtml,
+            contentText: textContent,
+            imageUrls,
+            type: item.type ?? fallbackType,
+            parentContentId: item.parentContentId,
+          };
+        };
+
+        const fetchChildComments = async (parentId, expectedType) => {
+          try {
+            const res = await contentInteractionApi.getComments(parentId);
+            const items = Array.isArray(res?.comments) ? res.comments : [];
+            const filtered = expectedType
+              ? items.filter((i) => i.type === expectedType || !i.type)
+              : items;
+            return await Promise.all(
+              filtered.map((item) => loadContentWithHtml(item, expectedType)),
+            );
+          } catch (error) {
+            console.error(`獲取內容 ${parentId} 的子留言失敗:`, error);
+            return [];
+          }
+        };
+
+        const threadCommentsBase = directChildren.filter(
+          (c) => c.type === CONTENT_TYPES.COMMENT || !c.type,
+        );
 
         this.threadComments = await Promise.all(
-          commentsData
-            .filter((c) => c.type === CONTENT_TYPES.COMMENT || !c.type) // 信任 API 返回的類型，或默認為 COMMENT
-            .map(async (comment) => {
-              const commentHtml = await fetchBodyHtml(comment.body);
-              const { sanitizedHtml, textContent, imageUrls } =
-                normalizeRichContent(commentHtml, toAbsoluteUrl);
-
-              // 為每個留言獲取其留言回覆 (type=4 且 parent_content_id 為該留言 ID)
-              const commentId = comment.contentId;
-              const commentReplies = allItems.filter(
-                (cr) =>
-                  cr.type === CONTENT_TYPES.COMMENT_REPLY &&
-                  Number(cr.parentContentId) === commentId,
-              );
-
-              let replies = [];
-              try {
-                replies = await Promise.all(
-                  commentReplies.map(async (cr) => {
-                    const crHtml = await fetchBodyHtml(cr.body);
-                    const {
-                      sanitizedHtml: crSanitizedHtml,
-                      textContent: crTextContent,
-                      imageUrls: crImageUrls,
-                    } = normalizeRichContent(crHtml, toAbsoluteUrl);
-                    return {
-                      id: cr.contentId,
-                      userId: cr.userId ?? cr.user_id ?? null,
-                      author: cr.username,
-                      createdAt: cr.createdAt,
-                      content: crTextContent,
-                      contentHtml: crSanitizedHtml,
-                      contentText: crTextContent,
-                      imageUrls: crImageUrls,
-                      type: CONTENT_TYPES.COMMENT_REPLY,
-                      parentContentId: cr.parentContentId,
-                    };
-                  }),
-                );
-              } catch (error) {
-                console.error(
-                  `獲取留言 ${comment.contentId} 的回覆失敗:`,
-                  error,
-                );
-              }
-
-              return {
-                id: comment.contentId,
-                userId: comment.userId ?? comment.user_id ?? null,
-                author: comment.username,
-                createdAt: comment.createdAt,
-                content: textContent,
-                contentHtml: sanitizedHtml,
-                contentText: textContent,
-                imageUrls,
-                type: CONTENT_TYPES.COMMENT,
-                parentContentId: comment.parentContentId,
-                replies: replies.sort(
-                  (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-                ),
-              };
-            }),
+          threadCommentsBase.map(async (comment) => {
+            const base = await loadContentWithHtml(
+              comment,
+              CONTENT_TYPES.COMMENT,
+            );
+            const replies = await fetchChildComments(
+              comment.contentId,
+              CONTENT_TYPES.COMMENT_REPLY,
+            );
+            return {
+              ...base,
+              replies: replies.sort(
+                (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+              ),
+            };
+          }),
         );
 
-        // 獲取回文 - 改為獲取所有內容然後過濾
-        const normalizedThreadId = Number(threadId);
-
-        // 過濾出 parent_content_id 等於當前主題 ID 的內容
-        const replyItems = allItems.filter(
-          (i) =>
-            i.parentContentId !== null &&
-            Number(i.parentContentId) === normalizedThreadId,
+        const threadRepliesBase = directChildren.filter(
+          (c) => c.type === CONTENT_TYPES.REPLY,
         );
 
-        // 只過濾出回文類型，排除留言和留言回覆，並且排除已經在留言中出現過的ID
-        const commentIds = new Set(this.threadComments.map((c) => c.id));
-        const replyList = replyItems.filter(
-          (i) => i.type === CONTENT_TYPES.REPLY && !commentIds.has(i.contentId),
-        );
-
-        // 獲取所有回文的子留言
         this.threadPosts = await Promise.all(
-          replyList.map(async (i) => {
-            const replyHtml = await fetchBodyHtml(i.body);
-            const { sanitizedHtml, textContent, imageUrls } =
-              normalizeRichContent(replyHtml, toAbsoluteUrl);
-
-            // 為每個回文獲取其子留言 (type=3 且 parent_content_id 為該回文 ID)
-            const replyId = i.contentId;
-            const replyCommentList = allItems.filter(
-              (rc) =>
-                rc.type === CONTENT_TYPES.COMMENT &&
-                Number(rc.parentContentId) === replyId,
+          threadRepliesBase.map(async (reply) => {
+            const base = await loadContentWithHtml(reply, CONTENT_TYPES.REPLY);
+            const replyComments = await fetchChildComments(
+              reply.contentId,
+              CONTENT_TYPES.COMMENT,
             );
 
-            let replyComments = [];
-            try {
-              replyComments = await Promise.all(
-                replyCommentList.map(async (rc) => {
-                  const rcHtml = await fetchBodyHtml(rc.body);
-                  const {
-                    sanitizedHtml: rcSanitizedHtml,
-                    textContent: rcTextContent,
-                    imageUrls: rcImageUrls,
-                  } = normalizeRichContent(rcHtml, toAbsoluteUrl);
-
-                  // 為回文下的每個留言獲取其留言回覆 (type=4)
-                  const commentId = rc.contentId;
-                  const commentReplies = allItems.filter(
-                    (cr) =>
-                      cr.type === CONTENT_TYPES.COMMENT_REPLY &&
-                      Number(cr.parentContentId) === commentId,
-                  );
-
-                  let replies = [];
-                  try {
-                    replies = await Promise.all(
-                      commentReplies.map(async (cr) => {
-                        const crHtml = await fetchBodyHtml(cr.body);
-                        const {
-                          sanitizedHtml: crSanitizedHtml,
-                          textContent: crTextContent,
-                          imageUrls: crImageUrls,
-                        } = normalizeRichContent(crHtml, toAbsoluteUrl);
-                        return {
-                          id: cr.contentId,
-                          userId: cr.userId ?? cr.user_id ?? null,
-                          author: cr.username,
-                          createdAt: cr.createdAt,
-                          content: crTextContent,
-                          contentHtml: crSanitizedHtml,
-                          contentText: crTextContent,
-                          imageUrls: crImageUrls,
-                          type: CONTENT_TYPES.COMMENT_REPLY,
-                          parentContentId: cr.parentContentId,
-                        };
-                      }),
-                    );
-                  } catch (error) {
-                    console.error(
-                      `獲取留言 ${rc.contentId} 的回覆失敗:`,
-                      error,
-                    );
-                  }
-
-                  return {
-                    id: rc.contentId,
-                    userId: rc.userId ?? rc.user_id ?? null,
-                    author: rc.username,
-                    createdAt: rc.createdAt,
-                    content: rcTextContent,
-                    contentHtml: rcSanitizedHtml,
-                    contentText: rcTextContent,
-                    imageUrls: rcImageUrls,
-                    type: CONTENT_TYPES.COMMENT,
-                    parentContentId: rc.parentContentId,
-                    replies: replies.sort(
-                      (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-                    ),
-                  };
-                }),
-              );
-            } catch (error) {
-              console.error(`獲取回文 ${i.contentId} 的子留言失敗:`, error);
-            }
+            const replyCommentsWithReplies = await Promise.all(
+              replyComments.map(async (rc) => {
+                const replies = await fetchChildComments(
+                  rc.id,
+                  CONTENT_TYPES.COMMENT_REPLY,
+                );
+                return {
+                  ...rc,
+                  replies: replies.sort(
+                    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+                  ),
+                };
+              }),
+            );
 
             return {
-              id: i.contentId,
-              userId: i.userId ?? i.user_id ?? null,
-              author: i.username,
-              createdAt: i.createdAt,
-              content: textContent,
-              contentHtml: sanitizedHtml,
-              contentText: textContent,
-              imageUrls,
-              type: i.type,
-              parentContentId: i.parentContentId,
-              replies: replyComments.sort(
+              ...base,
+              replies: replyCommentsWithReplies.sort(
                 (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
               ),
             };
@@ -983,7 +792,7 @@ export const useForumStore = defineStore("forum", {
     },
 
     setSortOption(option) {
-      this.sortOption = option;
+      this.sortOption = option === "createdAt_desc" ? option : "createdAt_desc";
       this.pagination.currentPage = 1;
       this.fetchTopics();
     },

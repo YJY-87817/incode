@@ -54,7 +54,7 @@ const handleTopicInteractionSuccess = async (data) => {
     console.log("文章已隱藏，開始更新列表...");
 
     // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
-    // fetchTopics 會更新 allTopicsForStats，分類統計會自動更新
+    // fetchTopics 會更新分類統計
     await forumStore.fetchTopics();
 
     if (forumStore.selectedThread) {
@@ -100,7 +100,7 @@ const handleTopicDeleteContent = async (contentId) => {
   console.log("文章已刪除，開始更新列表...");
 
   // 刪除成功後重新載入數據
-  // fetchTopics 會更新 allTopicsForStats，分類統計會自動更新
+  // fetchTopics 會更新分類統計
   await forumStore.fetchTopics();
 
   if (forumStore.threadDetail?.id === contentId) {
@@ -523,8 +523,6 @@ function handleThreadReplyingTargetClick() {
             aria-label="主題排序"
           >
             <option value="createdAt_desc">發佈時間（新→舊）</option>
-            <option value="lastReply_desc">最新回覆</option>
-            <option value="replyCount_desc">回覆數（多→少）</option>
           </select>
         </div>
       </div>
