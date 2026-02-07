@@ -19,11 +19,8 @@ export const fetchBodyHtml = async (body) => {
 
   const url = toAbsoluteUrl(body);
   try {
-    const response = await fetch(url, { method: "GET" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} when fetching ${url}`);
-    }
-    return await response.text();
+    const response = await apiClient.get(url, { responseType: "text" });
+    return response;
   } catch (error) {
     console.error("讀取內容 HTML 失敗:", error);
     return "";
