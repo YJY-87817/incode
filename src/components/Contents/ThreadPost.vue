@@ -356,7 +356,7 @@ const canReply = computed(
 // 巢狀子層(展開留言/回覆內)不顯示回覆按鈕
 const canReplyHere = computed(() => canReply.value && !props.isReply);
 const canHaveNestedReplies = computed(
-  () => !props.hideNestedReplies && canReply.value,
+  () => !props.hideNestedReplies && canReply.value && !props.isReply,
 );
 
 const quickReplyLabel = computed(() =>
