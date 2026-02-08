@@ -105,97 +105,128 @@ namespace incode2.ApiControllers.Content
     }
 
     // 取得當前登入使用者的所有貼文 (type=1)
-    // GET https://localhost:7190/api/ContentApi/me/posts
+    // GET https://localhost:7190/api/ContentApi/me/posts?page=1&pageSize=10
     // 需要登入
     [HttpGet("me/posts")]
-    public async Task<IActionResult> GetMyPosts()
+    public async Task<IActionResult> GetMyPosts([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 1 });
+      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 1 }, page, pageSize);
+      
+      // 轉換為包含舊欄位的格式以保持向下相容
+      var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
         type = 1,
-        items = contents,
-        count = contents.Count
+        items = resultObj.items,
+        count = resultObj.totalCount,
+        totalCount = resultObj.totalCount,
+        page = resultObj.page,
+        pageSize = resultObj.pageSize,
+        totalPages = resultObj.totalPages
       });
     }
 
     // 取得當前登入使用者的所有回覆 (type=2)
-    // GET https://localhost:7190/api/ContentApi/me/replies
+    // GET https://localhost:7190/api/ContentApi/me/replies?page=1&pageSize=10
     // 需要登入
     [HttpGet("me/replies")]
-    public async Task<IActionResult> GetMyReplies()
+    public async Task<IActionResult> GetMyReplies([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 2 });
+      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 2 }, page, pageSize);
+      
+      var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
         type = 2,
-        items = contents,
-        count = contents.Count
+        items = resultObj.items,
+        count = resultObj.totalCount,
+        totalCount = resultObj.totalCount,
+        page = resultObj.page,
+        pageSize = resultObj.pageSize,
+        totalPages = resultObj.totalPages
       });
     }
 
     // 取得當前登入使用者的所有評論 (type=3,4)
-    // GET https://localhost:7190/api/ContentApi/me/comments
+    // GET https://localhost:7190/api/ContentApi/me/comments?page=1&pageSize=10
     // 需要登入
     [HttpGet("me/comments")]
-    public async Task<IActionResult> GetMyComments()
+    public async Task<IActionResult> GetMyComments([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var contents = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 });
+      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 }, page, pageSize);
+      
+      var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
         type = new[] { 3, 4 },
-        items = contents,
-        count = contents.Count
+        items = resultObj.items,
+        count = resultObj.totalCount,
+        totalCount = resultObj.totalCount,
+        page = resultObj.page,
+        pageSize = resultObj.pageSize,
+        totalPages = resultObj.totalPages
       });
     }
 
     // 取得當前登入使用者按讚的所有content
-    // GET https://localhost:7190/api/ContentApi/me/liked-contents
+    // GET https://localhost:7190/api/ContentApi/me/liked-contents?page=1&pageSize=10
     // 需要登入
     [HttpGet("me/liked-contents")]
-    public async Task<IActionResult> GetMyLikedContents()
+    public async Task<IActionResult> GetMyLikedContents([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var contents = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" });
+      var result = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" }, page, pageSize);
+      
+      var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
         interactionCategoryId = 1,
-        items = contents,
-        count = contents.Count
+        items = resultObj.items,
+        count = resultObj.totalCount,
+        totalCount = resultObj.totalCount,
+        page = resultObj.page,
+        pageSize = resultObj.pageSize,
+        totalPages = resultObj.totalPages
       });
     }
 
     // 取得當前登入使用者收藏的所有content
-    // GET https://localhost:7190/api/ContentApi/me/bookmarked-contents
+    // GET https://localhost:7190/api/ContentApi/me/bookmarked-contents?page=1&pageSize=10
     // 需要登入
     [HttpGet("me/bookmarked-contents")]
-    public async Task<IActionResult> GetMyBookmarkedContents()
+    public async Task<IActionResult> GetMyBookmarkedContents([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var contents = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" });
+      var result = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" }, page, pageSize);
+      
+      var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
         interactionCategoryId = 2,
-        items = contents,
-        count = contents.Count
+        items = resultObj.items,
+        count = resultObj.totalCount,
+        totalCount = resultObj.totalCount,
+        page = resultObj.page,
+        pageSize = resultObj.pageSize,
+        totalPages = resultObj.totalPages
       });
     }
   }

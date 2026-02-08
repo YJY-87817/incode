@@ -209,19 +209,32 @@ namespace incode2.Services.Contents
       .ToListAsync();
     }
 
-    public async Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types)
+    public async Task<object> GetUserContentsByTypes(int userId, IEnumerable<int> types, int page, int pageSize)
     {
       var typeList = types?.Distinct().ToList() ?? new List<int>();
       if (typeList.Count == 0)
       {
-        return new List<ContentDto>();
+        return new
+        {
+          items = new List<ContentDto>(),
+          totalCount = 0,
+          page,
+          pageSize,
+          totalPages = 0
+        };
       }
 
-      return await _context.Content
+      var query = _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
         .Where(c => c.UserId == userId && c.IsActive == 1 && typeList.Contains(c.Type))
-        .OrderByDescending(c => c.CreatedAt)
+        .OrderByDescending(c => c.CreatedAt);
+
+      var totalCount = await query.CountAsync();
+
+      var items = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
         .Select(c => new ContentDto
         {
           ContentId = c.ContentId,
@@ -238,6 +251,15 @@ namespace incode2.Services.Contents
           Ishidden = c.IsActive == 2 ? true : false
         })
         .ToListAsync();
+
+      return new
+      {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+      };
     }
 
     public async Task<List<ContentDto>> GetUserContents(int userId)
@@ -265,7 +287,7 @@ namespace incode2.Services.Contents
         .ToListAsync();
     }
 
-    public async Task<List<ContentDto>> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames)
+    public async Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize)
     {
       var resolvedCategoryId = interactionCategoryId;
       if (!resolvedCategoryId.HasValue)
@@ -287,15 +309,28 @@ namespace incode2.Services.Contents
 
       if (!resolvedCategoryId.HasValue)
       {
-        return new List<ContentDto>();
+        return new
+        {
+          items = new List<ContentDto>(),
+          totalCount = 0,
+          page,
+          pageSize,
+          totalPages = 0
+        };
       }
 
-      return await _context.Content
+      var query = _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
         .Where(c => c.IsActive == 1)
         .Where(c => _context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId && ci.CategoryId == resolvedCategoryId.Value))
-        .OrderByDescending(c => c.CreatedAt)
+        .OrderByDescending(c => c.CreatedAt);
+
+      var totalCount = await query.CountAsync();
+
+      var items = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
         .Select(c => new ContentDto
         {
           ContentId = c.ContentId,
@@ -312,6 +347,15 @@ namespace incode2.Services.Contents
           Ishidden = c.IsActive == 2 ? true : false
         })
         .ToListAsync();
+
+      return new
+      {
+        items,
+        totalCount,
+        page,
+        pageSize,
+        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+      };
     }
 
     private async Task<string> SaveContentBodyAsync(string htmlBody)
