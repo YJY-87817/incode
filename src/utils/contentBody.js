@@ -80,7 +80,10 @@ export const parseBodyContent = (body) => {
 };
 
 /**
- * 計算貼文的回應統計資訊
+ * [已棄用 - 僅作為 fallback] 計算貼文的回應統計資訊
+ *
+ * 注意：後端現在直接在 ContentDto 中提供這些統計資訊（replyCount, lastReplyTime, lastReplyUser, lastReplyUserId）
+ * 前端應優先使用後端提供的資料，此函數僅作為備用方案保留
  *
  * 蒐集該貼文的所有回應，包括：
  * - type=2: 回文
@@ -89,6 +92,7 @@ export const parseBodyContent = (body) => {
  *
  * 並計算最新回應的時間和作者
  *
+ * @deprecated 優先使用後端 API 提供的統計資訊
  * @param {number} postId - 貼文ID
  * @param {Array} allContents - 所有內容列表
  * @returns {Object} { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId }

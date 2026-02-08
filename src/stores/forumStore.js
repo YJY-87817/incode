@@ -169,32 +169,18 @@ const buildThreadItem = async (item, fallbackType) => {
   };
 };
 
+/**
+ * 從 API 回應中提取回覆統計資訊
+ * 後端現在直接在 ContentDto 頂層提供這些欄位
+ * @param {Object} item - API 回應的內容項目
+ * @returns {Object} { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId }
+ */
 const extractReplyStats = (item) => {
-  const stats = item?.replyStats ?? item?.reply_stats ?? null;
-  const replyCount =
-    item?.replyCount ??
-    item?.reply_count ??
-    stats?.replyCount ??
-    stats?.reply_count ??
-    null;
-  const lastReplyTime =
-    item?.lastReplyTime ??
-    item?.last_reply_time ??
-    stats?.lastReplyTime ??
-    stats?.last_reply_time ??
-    null;
-  const lastReplyUser =
-    item?.lastReplyUser ??
-    item?.last_reply_user ??
-    stats?.lastReplyUser ??
-    stats?.last_reply_user ??
-    null;
-  const lastReplyUserId =
-    item?.lastReplyUserId ??
-    item?.last_reply_user_id ??
-    stats?.lastReplyUserId ??
-    stats?.last_reply_user_id ??
-    null;
+  // 優先使用後端直接提供的統計資訊（camelCase）
+  const replyCount = item?.replyCount ?? null;
+  const lastReplyTime = item?.lastReplyTime ?? null;
+  const lastReplyUser = item?.lastReplyUser ?? null;
+  const lastReplyUserId = item?.lastReplyUserId ?? null;
 
   return {
     replyCount,
@@ -476,6 +462,16 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
+    /**
+     * [遺留方法 - 作為 fallback] 更新主題的回覆統計資訊
+     *
+     * 注意：後端現在直接在 ContentDto 中提供這些統計資訊
+     * 此方法僅在 replyStatsFallbackEnabled=true 且後端未提供統計時使用
+     *
+     * @param {number} threadId - 主題 ID
+     * @param {Array} replies - 回覆列表
+     * @param {number} totalCount - 總回覆數
+     */
     updateThreadReplyStats(threadId, replies, totalCount = null) {
       const items = Array.isArray(replies) ? replies : [];
       const replyCount = Number.isFinite(totalCount)
@@ -682,6 +678,15 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
+    /**
+     * [遺留方法 - 作為 fallback] 獲取主題的回覆統計資訊
+     *
+     * 注意：後端現在直接在 ContentDto 中提供這些統計資訊
+     * 此方法僅在 replyStatsFallbackEnabled=true 且後端未提供統計時使用
+     *
+     * @param {Array} threadIds - 主題 ID 列表
+     * @param {Object} options - 選項 { forceRefresh }
+     */
     async fetchThreadReplyStats(threadIds = [], options = {}) {
       const { forceRefresh = false } = options;
       const ids = Array.from(new Set(threadIds.filter(Boolean)));
@@ -1065,6 +1070,9 @@ export const useForumStore = defineStore("forum", {
             }
           }
 
+          // 提取後端提供的回覆統計資訊
+          const stats = extractReplyStats(detail);
+
           this.threadDetail = {
             id: detail.contentId,
             userId: detail.userId ?? detail.user_id ?? null,
@@ -1077,7 +1085,23 @@ export const useForumStore = defineStore("forum", {
             imageUrls,
             categoryId: categoryId,
             type: detail.type,
+            // 添加回覆統計資訊
+            replyCount: stats.replyCount ?? 0,
+            lastReplyTime: stats.lastReplyTime ?? null,
+            lastReplyUser: stats.lastReplyUser ?? null,
+            lastReplyUserId: stats.lastReplyUserId ?? null,
           };
+
+          // 更新快取的統計資訊
+          if (detail.contentId && stats.replyCount !== null) {
+            this.threadReplyStats[detail.contentId] = {
+              replyCount: stats.replyCount ?? 0,
+              lastReplyTime: stats.lastReplyTime ?? null,
+              lastReplyUser: stats.lastReplyUser ?? null,
+              lastReplyUserId: stats.lastReplyUserId ?? null,
+              fetchedAt: Date.now(),
+            };
+          }
         }
 
         await Promise.all([
@@ -1107,6 +1131,10 @@ export const useForumStore = defineStore("forum", {
         imageUrls: [],
         categoryId: null,
         type: null,
+        replyCount: 0,
+        lastReplyTime: null,
+        lastReplyUser: null,
+        lastReplyUserId: null,
       };
       this.threadPosts = [];
       this.threadComments = [];

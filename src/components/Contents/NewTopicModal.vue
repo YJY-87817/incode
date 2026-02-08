@@ -180,7 +180,7 @@ const effectiveCategoryId = computed(
 const fetchTopics = (categoryId = null) => {
   const params = {};
   if (categoryId) params.categoryId = categoryId;
-  // 獲取足夠的資料來計算回文統計
+  // 後端現在直接提供回覆統計資訊
   params.pageSize = 9999;
 
   apiClient
@@ -188,29 +188,17 @@ const fetchTopics = (categoryId = null) => {
     .then((data) => {
       const allItems = data.items || [];
 
-      // 計算每個貼文/回文的回文統計資訊
+      // 後端現在直接在 ContentDto 中提供回覆統計資訊
+      // 不再需要前端計算，直接使用後端提供的資料
       newTopicState.topics = allItems.map((item) => {
-        // 找出該貼文的所有回應
-        const replies = allItems.filter(
-          (c) =>
-            c.parentContentId === item.contentId &&
-            (c.type === 2 || c.type === 3 || c.type === 4),
-        );
-
-        let lastReplyTime = null;
-        if (replies.length > 0) {
-          const sortedReplies = replies.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          );
-          lastReplyTime = sortedReplies[0].createdAt;
-        }
-
         return {
           id: item.contentId,
           title: item.title,
-          replyCount: replies.length,
-          lastReplyTime: lastReplyTime,
+          // 使用後端提供的統計資訊
+          replyCount: item.replyCount ?? 0,
+          lastReplyTime: item.lastReplyTime ?? null,
+          lastReplyUser: item.lastReplyUser ?? null,
+          lastReplyUserId: item.lastReplyUserId ?? null,
           createdAt: item.createdAt,
         };
       });
