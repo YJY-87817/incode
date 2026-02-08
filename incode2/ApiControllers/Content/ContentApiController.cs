@@ -24,10 +24,10 @@ namespace incode2.ApiControllers.Content
     //所有content
     //https://localhost:7190/api/ContentApi
     [HttpGet]
-    public async Task<IActionResult> GetContents([FromQuery] int? categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetContents([FromQuery] int? categoryId, [FromQuery] string? keyword, [FromQuery] string? types, [FromQuery] string? sortBy, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
-      var result = await _contentService.GetContents(categoryId, page, pageSize, userId > 0 ? userId : null);
+      var result = await _contentService.GetContents(categoryId, page, pageSize, userId > 0 ? userId : null, keyword, types, sortBy);
       return Ok(result);
     }
 
@@ -102,6 +102,15 @@ namespace incode2.ApiControllers.Content
         comments = comments,
         count = comments.Count
       });
+    }
+
+    // 取得指定content的子回覆 (分頁)
+    // GET https://localhost:7190/api/ContentApi/{id}/children?types=2,3&page=1&pageSize=20
+    [HttpGet("{id}/children")]
+    public async Task<IActionResult> GetChildrenByContentId(int id, [FromQuery] string? types, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+      var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize);
+      return Ok(result);
     }
 
     // 取得當前登入使用者的所有貼文 (type=1)
