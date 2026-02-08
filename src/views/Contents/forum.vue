@@ -10,7 +10,6 @@ import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 
 // 可以抓到前端userID pinia
 import { useAuthStore } from "@/stores/user/auth.js";
@@ -128,8 +127,6 @@ watch(
       <div class="col-lg-9 order-2 order-lg-1">
         <!-- 分類欄 -->
         <CategoryFilter />
-        <!-- 搜尋欄 -->
-        <ForumSearchBar />
         <!-- 新主題改為使用彈出視窗 -->
         <NewTopicModal />
         <TopicListView />
