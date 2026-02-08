@@ -27,8 +27,36 @@ const getAvatarUrl = (name, explicitUrl = "") => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
 };
 
-const basePreviewCss =
-  "body { white-space: pre-wrap; } img { max-width: 100%; height: auto; }";
+const basePreviewCss = `
+  body {
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  p, div, br {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+  }
+  br {
+    display: none;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 2px 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+`;
 
 const getTopicPreviewCss = (topic) => {
   const hasImages = Array.isArray(topic?.imageUrls) && topic.imageUrls.length;
@@ -1149,7 +1177,7 @@ function handleThreadReplyingTargetClick() {
 }
 
 .topic-preview-collapsed {
-  max-height: 140px;
+  max-height: 100px;
   overflow: hidden;
   position: relative;
 }
@@ -1180,6 +1208,8 @@ function handleThreadReplyingTargetClick() {
 
 .topic-preview-iframe {
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .topic-preview-click-layer {
