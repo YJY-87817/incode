@@ -4,7 +4,6 @@ import { useRoute, useRouter } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
-import Swal from "sweetalert2";
 import { useForumPost } from "@/composables/useForumPost";
 
 const forumStore = useForumStore();
