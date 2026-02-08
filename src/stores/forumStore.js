@@ -85,51 +85,32 @@ const buildPreviewHtml = (textContent, imageUrls = []) => {
     safeText && images
       ? `${safeText}<br />${images}`
       : safeText || images || "";
-  console.log("[buildPreviewHtml]", {
-    textContent: textContent?.substring(0, 50),
-    imagesCount: imageUrls.length,
-    resultLength: result.length,
-  });
   return result;
 };
 
 const fetchBodyHtmlCached = async (body) => {
   if (!body) {
-    console.log("[fetchBodyHtmlCached] body is empty");
     return "";
   }
   if (isHtml(body)) {
-    console.log(
-      "[fetchBodyHtmlCached] body is HTML (direct)",
-      body.substring(0, 100),
-    );
     return body;
   }
 
   const url = toAbsoluteUrl(body);
-  console.log("[fetchBodyHtmlCached] Fetching from URL:", url);
   if (!url) {
-    console.log("[fetchBodyHtmlCached] url is empty");
     return "";
   }
 
   if (contentBodyCache.has(url)) {
-    console.log("[fetchBodyHtmlCached] Returning from cache");
     return contentBodyCache.get(url);
   }
 
   if (contentBodyPending.has(url)) {
-    console.log("[fetchBodyHtmlCached] Waiting for pending request");
     return contentBodyPending.get(url);
   }
 
   const request = (async () => {
-    console.log("[fetchBodyHtmlCached] Making fetch request for:", body);
     const html = await fetchBodyHtml(body);
-    console.log(
-      "[fetchBodyHtmlCached] Received content length:",
-      html?.length || 0,
-    );
     contentBodyCache.set(url, html);
     return html;
   })();
@@ -137,10 +118,6 @@ const fetchBodyHtmlCached = async (body) => {
   contentBodyPending.set(url, request);
   try {
     const result = await request;
-    console.log(
-      "[fetchBodyHtmlCached] Final result length:",
-      result?.length || 0,
-    );
     return result;
   } finally {
     contentBodyPending.delete(url);
@@ -452,8 +429,6 @@ export const useForumStore = defineStore("forum", {
         if (this.selectedCategory && data.length > 0) {
           this.newTopic.categoryId = this.selectedCategory;
         }
-
-        console.log("分類數據已更新:", data);
       } catch (error) {
         console.error("載入分類失敗:", error);
         alert("載入分類失敗");
@@ -813,20 +788,6 @@ export const useForumStore = defineStore("forum", {
           const data = await contentApi.getContents(params);
           const items = Array.isArray(data?.items) ? data.items : [];
 
-          // Log first 2 items completely
-          if (items.length > 0) {
-            console.log(
-              "[fetchTopics] API Response - First item structure:",
-              JSON.stringify(items[0], null, 2),
-            );
-            if (items.length > 1) {
-              console.log(
-                "[fetchTopics] API Response - Second item structure:",
-                JSON.stringify(items[1], null, 2),
-              );
-            }
-          }
-
           let serverReplyStatsProvided = Boolean(data?.replyStatsIncluded);
           const totalCount = data?.totalCount ?? items.length;
           const totalPages =
@@ -835,12 +796,6 @@ export const useForumStore = defineStore("forum", {
 
           const topics = await Promise.all(
             items.map(async (item) => {
-              console.log(
-                "[fetchTopics] Processing item:",
-                item.contentId || item.id,
-                "| title:",
-                item.title,
-              );
               const previewPayload = extractPreviewPayload(item);
               const previewText = previewPayload?.previewText ?? "";
               const previewImages = Array.isArray(previewPayload?.previewImages)
@@ -858,16 +813,6 @@ export const useForumStore = defineStore("forum", {
               const hasPreviewPayload =
                 Boolean(previewPayload) &&
                 (isSubstantialPreview || previewImages.length > 0);
-              console.log(
-                "[fetchTopics] item",
-                item.contentId || item.id,
-                "| hasPreviewPayload:",
-                hasPreviewPayload,
-                "| body:",
-                (item.body || "").substring(0, 100),
-                "| item keys:",
-                Object.keys(item || {}),
-              );
 
               let bodyText = String(previewText || "");
               let bodyImages = previewImages;
@@ -944,14 +889,6 @@ export const useForumStore = defineStore("forum", {
                   ? this.threadReplyStats[contentId]
                   : {};
 
-              console.log(
-                "[fetchTopics] Final result for",
-                contentId,
-                "| contentText:",
-                (bodyText || "").substring(0, 50),
-                "| contentHtml:",
-                (bodySanitizedHtml || "").substring(0, 50),
-              );
               return {
                 id: contentId,
                 userId: item.userId ?? item.user_id ?? null,
