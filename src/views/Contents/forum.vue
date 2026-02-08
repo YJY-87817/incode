@@ -15,7 +15,6 @@ import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
 // 可以抓到前端userID pinia
 import { useAuthStore } from "@/stores/user/auth.js";
 const authStore = useAuthStore();
-console.log(authStore.user?.id);
 // 可以抓到前端userID pinia
 
 const forumStore = useForumStore();

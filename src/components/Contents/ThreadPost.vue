@@ -865,8 +865,6 @@ function handleReplyingTargetClick() {
 async function handleInteractionSuccess(data) {
   // 隱藏功能的特殊處理
   if (data.categoryId === 2 && data.categoryName === "hide") {
-    console.log("回文已隱藏，開始更新列表...");
-
     // 重新載入主題列表以反映後端狀態
     // fetchTopics 會更新分類統計
     await forumStore.fetchTopics();
@@ -899,8 +897,6 @@ function handleEditContent(contentId) {
  * 處理刪除內容
  */
 async function handleDeleteContent(contentId) {
-  console.log("回文已刪除，開始更新列表...");
-
   // 刪除成功後重新載入數據
   // fetchTopics 會更新分類統計
   await forumStore.fetchTopics();
