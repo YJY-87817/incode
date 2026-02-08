@@ -1282,6 +1282,12 @@ export const useForumStore = defineStore("forum", {
       clearTopicPageCache();
     },
 
+    clearContentCaches() {
+      clearTopicPageCache();
+      contentBodyCache.clear();
+      contentBodyPending.clear();
+    },
+
     // ========== 搜尋功能 ==========
     setSearchKeyword(keyword) {
       this.searchKeyword = keyword;

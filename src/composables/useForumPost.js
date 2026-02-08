@@ -294,6 +294,8 @@ export function useForumPost() {
         body: params.body,
       });
 
+      forumStore.clearContentCaches();
+
       // 刷新資料
       await refreshAfterPost(params.parentContentId);
 
