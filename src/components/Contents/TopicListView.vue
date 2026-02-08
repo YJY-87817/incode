@@ -961,36 +961,6 @@ function handleThreadReplyingTargetClick() {
                         ></div>
                       </div>
 
-                      <!-- 主題作者資訊 -->
-                      <div
-                        class="small text-muted d-flex flex-wrap gap-2 align-items-center"
-                      >
-                        <UserHoverName
-                          class="text-nowrap"
-                          :user-id="topic.userId"
-                          :username="topic.author"
-                          :avatar-url="
-                            getAvatarUrl(topic.author, topic.authorAvatar)
-                          "
-                          :size="24"
-                        />
-                        <span class="d-md-none text-nowrap">
-                          🕒 {{ formatTimeAgo(topic.createdAt) }}
-                        </span>
-                        <span
-                          v-if="topic.lastReplyUser"
-                          class="d-md-none text-nowrap d-inline-flex align-items-center gap-1"
-                        >
-                          <span>💬</span>
-                          <UserHoverName
-                            :user-id="topic.lastReplyUserId"
-                            :username="topic.lastReplyUser"
-                            :avatar-url="getAvatarUrl(topic.lastReplyUser)"
-                            :size="20"
-                          />
-                        </span>
-                      </div>
-
                       <!-- 互動按鈕已移到標題右側 -->
                     </div>
                   </div>
