@@ -299,6 +299,13 @@ export function useForumPost() {
       // 刷新資料
       await refreshAfterPost(params.parentContentId);
 
+      const selectedThreadId = forumStore.selectedThread;
+
+      // 如果當前在查看討論串詳情，無論編輯的是主文還是嵌套內容，都需要刷新
+      if (selectedThreadId) {
+        await forumStore.fetchThreadDetail(selectedThreadId);
+      }
+
       // 临时下陋 modal 的 z-index
       const modalBackdrop = document.querySelector(".custom-modal-backdrop");
       if (modalBackdrop) modalBackdrop.style.zIndex = "500";
