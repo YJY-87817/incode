@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import Swal from "sweetalert2";
 import contentInteractionApi from "@/api/contentInteractionApi";
+import contentApi from "@/api/contentApi";
 import { useAuthStore } from "@/stores/user/auth";
 import { useForumStore } from "@/stores/forumStore";
 
@@ -99,6 +100,7 @@ async function handleInteraction(categoryId, categoryName) {
 
   if (result.success) {
     emit("interaction-success", {
+      contentId: props.contentId,
       categoryId,
       categoryName,
       isRemoved: result.isRemoved,
@@ -106,6 +108,7 @@ async function handleInteraction(categoryId, categoryName) {
     });
   } else {
     emit("interaction-error", {
+      contentId: props.contentId,
       categoryId,
       categoryName,
       error: result.error || "操作失敗，請稍後再試",
@@ -169,7 +172,7 @@ async function handleDelete() {
   }
 
   try {
-    await contentInteractionApi.deleteContent(props.contentId);
+    await contentApi.deleteContent(props.contentId);
     emit("delete-content", props.contentId);
     emit("interaction-success", {
       categoryId: null,

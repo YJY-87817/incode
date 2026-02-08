@@ -868,6 +868,11 @@ async function handleInteractionSuccess(data) {
     // 重新載入主題列表以反映後端狀態
     // fetchTopics 會更新分類統計
     await forumStore.fetchTopics();
+
+    // 如果在詳情視圖，也重新載入線程詳情以更新回文列表
+    if (forumStore.threadDetail?.id) {
+      forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+    }
   }
 }
 

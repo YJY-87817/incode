@@ -92,6 +92,11 @@ const replyTab = ref(null);
 const handleTopicInteractionSuccess = async (data) => {
   // 隱藏功能的特殊處理
   if (data.categoryId === 2 && data.categoryName === "hide") {
+    // 立即從列表中移除隱藏的主題
+    forumStore.topics = forumStore.topics.filter(
+      (topic) => topic.id !== data.contentId,
+    );
+
     // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
     // fetchTopics 會更新分類統計
     await forumStore.fetchTopics();

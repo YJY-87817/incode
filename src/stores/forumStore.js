@@ -1354,6 +1354,10 @@ export const useForumStore = defineStore("forum", {
 
         if (response.isRemoved) {
           this.interactionStates[contentId][categoryId] = false;
+          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
+          if (categoryId === 2) {
+            clearTopicPageCache();
+          }
           return { success: true, isRemoved: true, message: "互動已移除" };
         } else {
           this.interactionStates[contentId][categoryId] = true;
@@ -1363,6 +1367,10 @@ export const useForumStore = defineStore("forum", {
             3: "收藏",
             4: "檢舉",
           };
+          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
+          if (categoryId === 2) {
+            clearTopicPageCache();
+          }
           return {
             success: true,
             isRemoved: false,
