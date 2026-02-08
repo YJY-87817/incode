@@ -174,24 +174,78 @@ namespace incode2.Services.Contents
 
     public async Task<ContentDto?> GetContent(int id)
     {
-      return await _context.Content
+      var content = await _context.Content
       .Include(c => c.User)
       .Include(c => c.Category)
       .Where(c => c.ContentId == id && c.IsActive == 1)
-      .Select(c => new ContentDto
+      .Select(c => new
       {
-        ContentId = c.ContentId,
-        ParentContentId = c.ParentContentId,
-        Title = c.Title,
-        Body = c.Body,
-        Type = c.Type,
-        CreatedAt = (DateTime)c.CreatedAt,
-        UpdatedAt = (DateTime)c.UpdatedAt,
+        c.ContentId,
+        c.ParentContentId,
+        c.Title,
+        c.Body,
+        c.Type,
+        c.CreatedAt,
+        c.UpdatedAt,
         Username = c.User.Username,
         CategoryName = c.Category.CategoryName,
-        UserId = c.UserId
+        c.UserId,
+        c.CategoryId
       })
       .FirstOrDefaultAsync();
+
+      if (content == null)
+        return null;
+
+      // 計算回覆統計信息
+      int replyCount = 0;
+      DateTime? lastReplyTime = null;
+      string lastReplyUser = null;
+      int? lastReplyUserId = null;
+
+      var replyStats = await _context.Content
+        .AsNoTracking()
+        .Where(c => c.IsActive == 1
+          && c.ParentContentId == id
+          && new[] { 2, 3, 4 }.Contains(c.Type))
+        .OrderByDescending(x => x.CreatedAt)
+        .Select(x => new { x.CreatedAt, x.UserId })
+        .ToListAsync();
+
+      if (replyStats.Count > 0)
+      {
+        replyCount = replyStats.Count;
+        var lastReply = replyStats.First();
+        lastReplyTime = lastReply.CreatedAt;
+        lastReplyUserId = lastReply.UserId;
+
+        // 取得最後回覆者的用戶名
+        var lastReplyUserData = await _context.User
+          .AsNoTracking()
+          .Where(u => u.UserId == lastReply.UserId)
+          .Select(u => u.Username)
+          .FirstOrDefaultAsync();
+        lastReplyUser = lastReplyUserData;
+      }
+
+      return new ContentDto
+      {
+        ContentId = content.ContentId,
+        ParentContentId = content.ParentContentId,
+        Title = content.Title,
+        Body = content.Body,
+        Type = content.Type,
+        CreatedAt = (DateTime)content.CreatedAt,
+        UpdatedAt = (DateTime)content.UpdatedAt,
+        Username = content.Username,
+        CategoryName = content.CategoryName,
+        UserId = content.UserId,
+        CategoryId = content.CategoryId,
+        ReplyCount = replyCount,
+        LastReplyTime = lastReplyTime,
+        LastReplyUser = lastReplyUser,
+        LastReplyUserId = lastReplyUserId
+      };
     }
 
     public async Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize)
