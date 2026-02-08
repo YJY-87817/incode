@@ -27,6 +27,28 @@ const getAvatarUrl = (name, explicitUrl = "") => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
 };
 
+const basePreviewCss =
+  "body { white-space: pre-wrap; } img { max-width: 100%; height: auto; }";
+
+const getTopicPreviewCss = (topic) => {
+  const hasImages = Array.isArray(topic?.imageUrls) && topic.imageUrls.length;
+  if (hasImages) return `${basePreviewCss} img { display: none; }`;
+  return basePreviewCss;
+};
+
+const logTopic = (topic) => {
+  if (topic?.id) {
+    console.log(`[TopicListView] Topic ${topic.id}:`, {
+      title: topic.title,
+      hasContentHtml: !!topic.contentHtml,
+      contentHtmlLen: topic.contentHtml?.length || 0,
+      hasContent: !!topic.content,
+      contentLen: topic.content?.length || 0,
+      imageUrls: topic.imageUrls?.length || 0,
+    });
+  }
+};
+
 const goToThread = (threadId) => {
   if (!threadId) return;
   router.push({ name: "forum-thread", params: { id: threadId } });
@@ -832,10 +854,12 @@ function handleThreadReplyingTargetClick() {
                 class="forum-row"
                 @click="goToThread(topic.id)"
               >
+                <!-- Debug: log topic data -->
+                <template>{{ logTopic(topic) }}</template>
                 <!-- 主題欄 -->
                 <td class="p-3 py-md-3">
-                  <div class="d-flex align-items-start gap-2">
-                    <div class="flex-grow-1">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
                       <div class="d-flex flex-wrap gap-1 mb-1">
                         <span v-if="topic.isPinned" class="badge bg-danger">
@@ -875,37 +899,38 @@ function handleThreadReplyingTargetClick() {
                         </div>
                       </div>
 
-                      <!-- 主題圖片縮圖 -->
                       <div
-                        v-if="topic.imageUrls && topic.imageUrls.length"
-                        class="d-flex flex-wrap gap-2 mt-2 mb-2 topic-image-list"
+                        class="topic-preview-body topic-preview-collapsed mb-2"
                       >
-                        <img
-                          v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
-                          :key="url + idx"
-                          :src="url"
-                          alt="貼文圖片"
-                          class="topic-image-thumb"
-                          loading="lazy"
-                          style="
-                            max-width: 80px;
-                            max-height: 80px;
-                            object-fit: cover;
-                            border-radius: 4px;
-                          "
-                        />
                         <div
-                          v-if="topic.imageUrls.length > 3"
-                          class="d-flex align-items-center justify-content-center text-muted small"
-                          style="
-                            width: 80px;
-                            height: 80px;
-                            background-color: #f0f0f0;
-                            border-radius: 4px;
-                          "
+                          v-if="topic.imageUrls && topic.imageUrls.length"
+                          class="topic-preview-images-col"
                         >
-                          +{{ topic.imageUrls.length - 3 }} 張
+                          <div class="topic-preview-images-grid">
+                            <img
+                              v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
+                              :key="url + idx"
+                              :src="url"
+                              alt="貼文圖片"
+                              class="topic-preview-image-thumb"
+                              loading="lazy"
+                            />
+                          </div>
                         </div>
+                        <div class="topic-preview-text-col">
+                          <HtmlIframe
+                            class="topic-preview-iframe"
+                            :html="topic.contentHtml || topic.content"
+                            :min-height="0"
+                            text-color="#145369"
+                            :allow-scripts="true"
+                            :extra-css="getTopicPreviewCss(topic)"
+                          />
+                        </div>
+                        <div
+                          class="topic-preview-click-layer"
+                          @click="goToThread(topic.id)"
+                        ></div>
                       </div>
 
                       <!-- 主題作者資訊 -->
@@ -1114,6 +1139,53 @@ function handleThreadReplyingTargetClick() {
 .card-body {
   margin-bottom: 0;
   padding-bottom: 0;
+}
+
+.topic-preview-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.topic-preview-collapsed {
+  max-height: 140px;
+  overflow: hidden;
+  position: relative;
+}
+
+.topic-preview-images-col {
+  flex: 0 0 auto;
+}
+
+.topic-preview-images-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 56px);
+  gap: 8px;
+}
+
+.topic-preview-image-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
+.topic-preview-text-col {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topic-preview-iframe {
+  width: 100%;
+}
+
+.topic-preview-click-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 
 /* 按鈕樣式 */

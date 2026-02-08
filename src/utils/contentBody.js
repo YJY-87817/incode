@@ -45,8 +45,16 @@ export const parseBodyContent = (body) => {
 
   // 正則：完整的 http/https 圖片 URL
   // 支援的格式：.png, .jpe?g, .gif, .webp, .bmp
-  const imagePattern = /https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
-  const matches = raw.match(imagePattern) || [];
+  const absolutePattern =
+    /https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi;
+  const rootRelativePattern =
+    /(?:^|\s)(\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp))/gi;
+
+  const absoluteMatches = raw.match(absolutePattern) || [];
+  const rootMatches = Array.from(raw.matchAll(rootRelativePattern)).map(
+    (match) => match[1],
+  );
+  const matches = [...absoluteMatches, ...rootMatches];
 
   // 去重：保留唯一的圖片URL
   const uniqueImages = Array.from(new Set(matches));
@@ -57,7 +65,8 @@ export const parseBodyContent = (body) => {
 
   // 清理文字：移除URL、多餘換行
   const textContent = raw
-    .replace(/https?:\/\/[^\s()\[\]]+\.(?:png|jpe?g|gif|webp|bmp)/gi, "")
+    .replace(absolutePattern, "")
+    .replace(rootRelativePattern, " ")
     .replace(/\n{2,}/g, "\n")
     .trim();
 

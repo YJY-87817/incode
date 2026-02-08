@@ -1,6 +1,5 @@
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
-import apiClient from "@/api/request.js";
-import contentInteractionApi from "@/api/contentInteractionApi";
+import contentApi from "@/api/contentApi.js";
 import Swal from "sweetalert2";
 
 /**
@@ -134,7 +133,7 @@ export function useForumPost() {
     };
 
     try {
-      await apiClient.post("/ContentApi", dto);
+      await contentApi.createContent(dto);
       return { success: true };
     } catch (error) {
       console.error("[useForumPost] 發佈失敗:", error);
@@ -290,7 +289,7 @@ export function useForumPost() {
     }
 
     try {
-      await contentInteractionApi.updateContent(params.editingContentId, {
+      await contentApi.updateContent(params.editingContentId, {
         title: params.title,
         body: params.body,
       });

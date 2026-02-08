@@ -15,7 +15,7 @@ const contentInteractionApi = {
   /**
    * Fetch all interaction categories.
    *
-   * GET /InteractionCategoryApi
+   * GET /ContentInteractionApi/category
    *
    * @returns {Promise<Array>} Array of categories, each containing:
    *   {
@@ -26,7 +26,7 @@ const contentInteractionApi = {
    *   }
    */
   getCategories() {
-    return apiClient.get("/InteractionCategoryApi");
+    return apiClient.get("/ContentInteractionApi/category");
   },
 
   /**
@@ -72,61 +72,7 @@ const contentInteractionApi = {
     return this.postInteraction({ interactionCategoryId: 2, contentId });
   },
 
-  /**
-   * Fetch comments for a specific content item.
-   *
-   * GET /ContentApi/{contentId}/comments
-   *
-   * @param {number} contentId - The ID of the content to fetch comments for
-   * @returns {Promise<Object>} Object containing:
-   *   {
-   *     contentId: number,
-   *     comments: Array,
-   *     count: number
-   *   }
-   */
-  getComments(contentId) {
-    return apiClient.get(`/ContentApi/${contentId}/comments`);
-  },
-
-  /**
-   * Update (edit) a content item.
-   *
-   * PUT /ContentApi/{contentId}
-   *
-   * Request body (JSON):
-   * {
-   *   "title": string,      // 新的標題
-   *   "body": string,       // 新的內容
-   * }
-   *
-   * @param {number} contentId - The ID of the content to update
-   * @param {Object} payload - The updated content data
-   * @param {string} payload.title - New title
-   * @param {string} payload.body - New body content
-   * @returns {Promise<Object>} The updated content record
-   */
-  updateContent(contentId, { title, body }) {
-    return apiClient.put(`/ContentApi/${contentId}`, {
-      title,
-      body,
-    });
-  },
-
-  /**
-   * Delete (soft delete) a content item.
-   *
-   * DELETE /ContentApi/{contentId}
-   *
-   * This performs a soft delete by setting is_active to 2 (hidden).
-   * The content will still exist in the database but won't be displayed.
-   *
-   * @param {number} contentId - The ID of the content to delete
-   * @returns {Promise<Object>} Success response
-   */
-  deleteContent(contentId) {
-    return apiClient.delete(`/ContentApi/${contentId}`);
-  },
+  // Content CRUD and child pagination are handled by contentApi.
 };
 
 export default contentInteractionApi;

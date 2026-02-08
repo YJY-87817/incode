@@ -121,10 +121,7 @@
     </div>
 
     <!-- 巢狀回覆 -->
-    <div
-      v-if="!hideNestedReplies && post.replies && post.replies.length > 0"
-      class="nested-replies-section ms-3 mt-2"
-    >
+    <div v-if="canHaveNestedReplies" class="nested-replies-section ms-3 mt-2">
       <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
         <button
           v-if="canReplyHere"
@@ -166,10 +163,13 @@
           ></i>
           <span class="ms-1">
             {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
-              post.replies.length
+              nestedCountLabel
             }})
           </span>
         </button>
+        <span v-if="nestedRepliesLoading" class="text-muted small">
+          載入中...
+        </span>
       </div>
 
       <!-- 回覆輸入框：置於展開內容上方 -->
@@ -194,13 +194,19 @@
       >
         <div class="nested-replies-content">
           <ThreadPost
-            v-for="reply in post.replies"
+            v-for="reply in nestedReplies"
             :key="reply.id"
             :post="reply"
             :is-reply="true"
             :category-id="categoryId"
             :preview-only="true"
           />
+          <div
+            v-if="nestedRepliesLoaded && nestedRepliesCount === 0"
+            class="text-muted small py-2"
+          >
+            尚無{{ nestedLabel }}
+          </div>
           <div
             v-if="nestedToggleEnabled"
             class="nested-click-layer"
@@ -211,10 +217,7 @@
     </div>
 
     <!-- 無巢狀回覆時的單獨按鈕 -->
-    <div
-      v-if="hideNestedReplies || !post.replies || post.replies.length === 0"
-      class="mt-2"
-    >
+    <div v-if="!canHaveNestedReplies" class="mt-2">
       <button
         v-if="canReplyHere"
         class="btn btn-sm btn-forum-secondary thread-reply-btn"
@@ -264,7 +267,7 @@
 import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
-import apiClient from "@/api/request.js";
+import contentApi from "@/api/contentApi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
@@ -352,6 +355,9 @@ const canReply = computed(
 
 // 巢狀子層(展開留言/回覆內)不顯示回覆按鈕
 const canReplyHere = computed(() => canReply.value && !props.isReply);
+const canHaveNestedReplies = computed(
+  () => !props.hideNestedReplies && canReply.value,
+);
 
 const quickReplyLabel = computed(() =>
   props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆",
@@ -371,6 +377,38 @@ const nestedLabel = computed(() => {
     default:
       return "回覆";
   }
+});
+
+const nestedRepliesState = computed(
+  () => forumStore.childRepliesByParentId[props.post.id] || null,
+);
+
+const nestedReplies = computed(() => {
+  if (nestedRepliesState.value?.items) return nestedRepliesState.value.items;
+  if (Array.isArray(props.post.replies)) return props.post.replies;
+  return [];
+});
+
+const nestedRepliesCount = computed(() => {
+  if (nestedRepliesState.value?.loaded) {
+    return nestedRepliesState.value.totalCount ?? nestedReplies.value.length;
+  }
+  return Array.isArray(props.post.replies) ? props.post.replies.length : 0;
+});
+
+const nestedRepliesLoading = computed(
+  () => nestedRepliesState.value?.isLoading ?? false,
+);
+
+const nestedRepliesLoaded = computed(
+  () => nestedRepliesState.value?.loaded ?? false,
+);
+
+const nestedCountLabel = computed(() => {
+  if (nestedRepliesLoading.value) return "...";
+  if (nestedRepliesLoaded.value) return String(nestedRepliesCount.value);
+  if (nestedRepliesCount.value > 0) return String(nestedRepliesCount.value);
+  return "?";
 });
 
 const badgeClass = computed(() => {
@@ -445,6 +483,8 @@ const resolveReplyContentType = () => {
       };
   }
 };
+
+const nestedChildType = computed(() => resolveReplyContentType().type);
 
 function togglePreview() {
   if (!previewToggleEnabled.value) return;
@@ -522,6 +562,7 @@ watch(
 function toggleNestedReplies() {
   isNestedExpanded.value = !isNestedExpanded.value;
   if (isNestedExpanded.value) {
+    forumStore.ensureChildRepliesLoaded(props.post.id, nestedChildType.value);
     nextTick(() => {
       updateNestedToggleState();
     });
@@ -542,8 +583,8 @@ const measureNestedHeight = () => {
 const updateNestedToggleState = async () => {
   if (
     !isNestedExpanded.value ||
-    !props.post.replies ||
-    props.post.replies.length === 0
+    !nestedReplies.value ||
+    nestedReplies.value.length === 0
   ) {
     nestedToggleEnabled.value = false;
     isNestedFullyExpanded.value = false;
@@ -563,6 +604,15 @@ const updateNestedToggleState = async () => {
 
 watch(
   () => isNestedExpanded.value,
+  () => {
+    if (isNestedExpanded.value) {
+      updateNestedToggleState();
+    }
+  },
+);
+
+watch(
+  () => nestedReplies.value.length,
   () => {
     if (isNestedExpanded.value) {
       updateNestedToggleState();
@@ -728,7 +778,7 @@ async function submitReply() {
   };
 
   try {
-    await apiClient.post("/ContentApi", dto);
+    await contentApi.createContent(dto);
     await Swal.fire({
       icon: "success",
       title: "已送出！",

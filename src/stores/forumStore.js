@@ -1,7 +1,12 @@
 import { defineStore } from "pinia";
 import apiClient from "@/api/request.js";
+import contentApi from "@/api/contentApi.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
-import { fetchBodyHtml, toAbsoluteUrl } from "@/utils/contentBody.js";
+import {
+  fetchBodyHtml,
+  parseBodyContent,
+  toAbsoluteUrl,
+} from "@/utils/contentBody.js";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 
 // Content types according to database schema
@@ -10,6 +15,226 @@ export const CONTENT_TYPES = {
   REPLY: 2, // 回文(出現在貼文版面)
   COMMENT: 3, // 留言
   COMMENT_REPLY: 4, // 留言回覆
+};
+
+const TOPIC_PAGE_CACHE_TTL_MS = 30000;
+const topicPageCache = new Map();
+const topicPagePending = new Map();
+const contentBodyCache = new Map();
+const contentBodyPending = new Map();
+
+const buildTopicsCacheKey = ({
+  categoryId,
+  keyword,
+  page,
+  pageSize,
+  sortOption,
+}) =>
+  JSON.stringify({
+    categoryId: categoryId ?? null,
+    keyword: String(keyword || "")
+      .trim()
+      .toLowerCase(),
+    page,
+    pageSize,
+    sortOption,
+  });
+
+const getCachedTopicPage = (cacheKey) => {
+  const cached = topicPageCache.get(cacheKey);
+  if (!cached) return null;
+  if (Date.now() - cached.fetchedAt > TOPIC_PAGE_CACHE_TTL_MS) {
+    topicPageCache.delete(cacheKey);
+    return null;
+  }
+  return cached.data;
+};
+
+const clearTopicPageCache = () => {
+  topicPageCache.clear();
+  topicPagePending.clear();
+};
+
+const isHtml = (value) => /<[^>]+>/.test(value || "");
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return char;
+    }
+  });
+
+const buildPreviewHtml = (textContent, imageUrls = []) => {
+  const safeText = escapeHtml(textContent).replace(/\n/g, "<br />");
+  const images = (Array.isArray(imageUrls) ? imageUrls : [])
+    .filter(Boolean)
+    .map((url) => `<img src="${escapeHtml(url)}" alt="preview" />`)
+    .join("");
+  const result =
+    safeText && images
+      ? `${safeText}<br />${images}`
+      : safeText || images || "";
+  console.log("[buildPreviewHtml]", {
+    textContent: textContent?.substring(0, 50),
+    imagesCount: imageUrls.length,
+    resultLength: result.length,
+  });
+  return result;
+};
+
+const fetchBodyHtmlCached = async (body) => {
+  if (!body) {
+    console.log("[fetchBodyHtmlCached] body is empty");
+    return "";
+  }
+  if (isHtml(body)) {
+    console.log(
+      "[fetchBodyHtmlCached] body is HTML (direct)",
+      body.substring(0, 100),
+    );
+    return body;
+  }
+
+  const url = toAbsoluteUrl(body);
+  console.log("[fetchBodyHtmlCached] Fetching from URL:", url);
+  if (!url) {
+    console.log("[fetchBodyHtmlCached] url is empty");
+    return "";
+  }
+
+  if (contentBodyCache.has(url)) {
+    console.log("[fetchBodyHtmlCached] Returning from cache");
+    return contentBodyCache.get(url);
+  }
+
+  if (contentBodyPending.has(url)) {
+    console.log("[fetchBodyHtmlCached] Waiting for pending request");
+    return contentBodyPending.get(url);
+  }
+
+  const request = (async () => {
+    console.log("[fetchBodyHtmlCached] Making fetch request for:", body);
+    const html = await fetchBodyHtml(body);
+    console.log(
+      "[fetchBodyHtmlCached] Received content length:",
+      html?.length || 0,
+    );
+    contentBodyCache.set(url, html);
+    return html;
+  })();
+
+  contentBodyPending.set(url, request);
+  try {
+    const result = await request;
+    console.log(
+      "[fetchBodyHtmlCached] Final result length:",
+      result?.length || 0,
+    );
+    return result;
+  } finally {
+    contentBodyPending.delete(url);
+  }
+};
+
+const buildThreadItem = async (item, fallbackType) => {
+  const bodyHtml = await fetchBodyHtmlCached(item.body);
+  const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
+    bodyHtml,
+    toAbsoluteUrl,
+  );
+  return {
+    id: item.contentId ?? item.content_id ?? item.id,
+    userId: item.userId ?? item.user_id ?? null,
+    author: item.username ?? item.userName ?? item.user_name ?? "",
+    createdAt: item.createdAt ?? item.created_at ?? null,
+    content: textContent,
+    contentHtml: sanitizedHtml,
+    contentText: textContent,
+    imageUrls,
+    type: item.type ?? fallbackType,
+    parentContentId: item.parentContentId ?? item.parent_content_id ?? null,
+    categoryId: item.categoryId ?? item.category_id ?? null,
+    title: item.title ?? "",
+  };
+};
+
+const extractReplyStats = (item) => {
+  const stats = item?.replyStats ?? item?.reply_stats ?? null;
+  const replyCount =
+    item?.replyCount ??
+    item?.reply_count ??
+    stats?.replyCount ??
+    stats?.reply_count ??
+    null;
+  const lastReplyTime =
+    item?.lastReplyTime ??
+    item?.last_reply_time ??
+    stats?.lastReplyTime ??
+    stats?.last_reply_time ??
+    null;
+  const lastReplyUser =
+    item?.lastReplyUser ??
+    item?.last_reply_user ??
+    stats?.lastReplyUser ??
+    stats?.last_reply_user ??
+    null;
+  const lastReplyUserId =
+    item?.lastReplyUserId ??
+    item?.last_reply_user_id ??
+    stats?.lastReplyUserId ??
+    stats?.last_reply_user_id ??
+    null;
+
+  return {
+    replyCount,
+    lastReplyTime,
+    lastReplyUser,
+    lastReplyUserId,
+  };
+};
+
+const extractPreviewPayload = (item) => {
+  const previewHtml =
+    item?.previewHtml ??
+    item?.preview_html ??
+    item?.bodyPreviewHtml ??
+    item?.body_preview_html ??
+    item?.bodyHtml ??
+    item?.body_html ??
+    null;
+  const previewText =
+    item?.previewText ??
+    item?.preview_text ??
+    item?.bodyPreviewText ??
+    item?.body_preview_text ??
+    item?.bodyText ??
+    item?.body_text ??
+    null;
+  const previewImages =
+    item?.previewImages ??
+    item?.preview_images ??
+    item?.imageUrls ??
+    item?.image_urls ??
+    null;
+
+  if (!previewHtml && !previewText && !previewImages) return null;
+
+  return {
+    previewHtml,
+    previewText,
+    previewImages,
+  };
 };
 
 const normalizeCategory = (raw, fallbackName = "") => {
@@ -49,6 +274,7 @@ export const useForumStore = defineStore("forum", {
     topics: [],
     threadReplyStats: {}, // { [threadId]: { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId, fetchedAt } }
     replyStatsCacheTtlMs: 60000,
+    replyStatsFallbackEnabled: false,
     isLoading: false,
     searchKeyword: "",
     pagination: {
@@ -79,6 +305,21 @@ export const useForumStore = defineStore("forum", {
     threadItemsPerPage: 5,
     threadCommentsCurrentPage: 1,
     threadCommentsItemsPerPage: 5,
+    threadRepliesPagination: {
+      currentPage: 1,
+      pageSize: 5,
+      totalCount: 0,
+      totalPages: 0,
+      isLoading: false,
+    },
+    threadCommentsPagination: {
+      currentPage: 1,
+      pageSize: 5,
+      totalCount: 0,
+      totalPages: 0,
+      isLoading: false,
+    },
+    childRepliesByParentId: {}, // { [parentId]: { items, currentPage, pageSize, totalCount, totalPages, isLoading, loaded } }
 
     // ========== 新主題表單 ==========
     showNewTopicBox: false,
@@ -130,37 +371,28 @@ export const useForumStore = defineStore("forum", {
      * 計算帖文詳情的總頁數
      */
     threadTotalPages: (state) => {
-      return Math.ceil(state.threadPosts.length / state.threadItemsPerPage);
+      return state.threadRepliesPagination.totalPages || 0;
     },
 
     /**
      * 計算留言的總頁數
      */
     threadCommentsTotalPages: (state) => {
-      return Math.ceil(
-        state.threadComments.length / state.threadCommentsItemsPerPage,
-      );
+      return state.threadCommentsPagination.totalPages || 0;
     },
 
     /**
      * 當前頁的回文列表
      */
     paginatedThreadPosts: (state) => {
-      const start = (state.threadCurrentPage - 1) * state.threadItemsPerPage;
-      return state.threadPosts.slice(start, start + state.threadItemsPerPage);
+      return state.threadPosts;
     },
 
     /**
      * 當前頁的留言列表
      */
     paginatedThreadComments: (state) => {
-      const start =
-        (state.threadCommentsCurrentPage - 1) *
-        state.threadCommentsItemsPerPage;
-      return state.threadComments.slice(
-        start,
-        start + state.threadCommentsItemsPerPage,
-      );
+      return state.threadComments;
     },
 
     /**
@@ -243,9 +475,11 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
-    updateThreadReplyStats(threadId, replies) {
+    updateThreadReplyStats(threadId, replies, totalCount = null) {
       const items = Array.isArray(replies) ? replies : [];
-      const replyCount = items.length;
+      const replyCount = Number.isFinite(totalCount)
+        ? totalCount
+        : items.length;
       const sorted = items.slice().sort((a, b) => {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
@@ -260,6 +494,160 @@ export const useForumStore = defineStore("forum", {
         lastReplyUserId: lastReply?.userId ?? lastReply?.user_id ?? null,
         fetchedAt: Date.now(),
       };
+    },
+
+    resetThreadPagingState() {
+      this.threadPosts = [];
+      this.threadComments = [];
+      this.threadCurrentPage = 1;
+      this.threadCommentsCurrentPage = 1;
+      this.threadRepliesPagination = {
+        currentPage: 1,
+        pageSize: this.threadItemsPerPage,
+        totalCount: 0,
+        totalPages: 0,
+        isLoading: false,
+      };
+      this.threadCommentsPagination = {
+        currentPage: 1,
+        pageSize: this.threadCommentsItemsPerPage,
+        totalCount: 0,
+        totalPages: 0,
+        isLoading: false,
+      };
+      this.childRepliesByParentId = {};
+    },
+
+    async fetchThreadRepliesPage(page = 1, options = {}) {
+      const threadId = options.threadId ?? this.selectedThread;
+      if (!threadId) return;
+
+      const pageSize = this.threadRepliesPagination.pageSize;
+      this.threadRepliesPagination.isLoading = true;
+
+      try {
+        const res = await contentApi.getChildren(threadId, {
+          types: String(CONTENT_TYPES.REPLY),
+          page,
+          pageSize,
+        });
+        const items = Array.isArray(res?.items) ? res.items : [];
+        const mapped = await Promise.all(
+          items.map((item) => buildThreadItem(item, CONTENT_TYPES.REPLY)),
+        );
+
+        const totalCount = res?.totalCount ?? mapped.length;
+        const totalPages =
+          res?.totalPages ??
+          (totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize));
+        const currentPage = res?.currentPage ?? res?.page ?? page;
+
+        this.threadPosts = mapped;
+        this.threadRepliesPagination = {
+          currentPage,
+          pageSize,
+          totalCount,
+          totalPages,
+          isLoading: false,
+        };
+        this.threadCurrentPage = currentPage;
+      } catch (error) {
+        console.error("載入回文分頁失敗:", error);
+        this.threadRepliesPagination.isLoading = false;
+      }
+    },
+
+    async fetchThreadCommentsPage(page = 1, options = {}) {
+      const threadId = options.threadId ?? this.selectedThread;
+      if (!threadId) return;
+
+      const pageSize = this.threadCommentsPagination.pageSize;
+      this.threadCommentsPagination.isLoading = true;
+
+      try {
+        const res = await contentApi.getChildren(threadId, {
+          types: String(CONTENT_TYPES.COMMENT),
+          page,
+          pageSize,
+        });
+        const items = Array.isArray(res?.items) ? res.items : [];
+        const mapped = await Promise.all(
+          items.map((item) => buildThreadItem(item, CONTENT_TYPES.COMMENT)),
+        );
+
+        const totalCount = res?.totalCount ?? mapped.length;
+        const totalPages =
+          res?.totalPages ??
+          (totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize));
+        const currentPage = res?.currentPage ?? res?.page ?? page;
+
+        this.threadComments = mapped;
+        this.threadCommentsPagination = {
+          currentPage,
+          pageSize,
+          totalCount,
+          totalPages,
+          isLoading: false,
+        };
+        this.threadCommentsCurrentPage = currentPage;
+      } catch (error) {
+        console.error("載入留言分頁失敗:", error);
+        this.threadCommentsPagination.isLoading = false;
+      }
+    },
+
+    async ensureChildRepliesLoaded(parentId, expectedType, options = {}) {
+      if (!parentId) return;
+      const current = this.childRepliesByParentId[parentId];
+      if (current?.loaded || current?.isLoading) return;
+
+      const pageSize = options.pageSize ?? 20;
+      this.childRepliesByParentId[parentId] = {
+        items: current?.items ?? [],
+        currentPage: 1,
+        pageSize,
+        totalCount: current?.totalCount ?? 0,
+        totalPages: current?.totalPages ?? 0,
+        isLoading: true,
+        loaded: false,
+      };
+
+      try {
+        const res = await contentApi.getChildren(parentId, {
+          types: expectedType ? String(expectedType) : undefined,
+          page: 1,
+          pageSize,
+        });
+        const items = Array.isArray(res?.items) ? res.items : [];
+        const mapped = await Promise.all(
+          items.map((item) => buildThreadItem(item, expectedType)),
+        );
+        const totalCount = res?.totalCount ?? mapped.length;
+        const totalPages =
+          res?.totalPages ??
+          (totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize));
+
+        this.childRepliesByParentId[parentId] = {
+          items: mapped,
+          currentPage: 1,
+          pageSize,
+          totalCount,
+          totalPages,
+          isLoading: false,
+          loaded: true,
+        };
+      } catch (error) {
+        console.error(`載入內容 ${parentId} 子回覆失敗:`, error);
+        this.childRepliesByParentId[parentId] = {
+          items: [],
+          currentPage: 1,
+          pageSize,
+          totalCount: 0,
+          totalPages: 0,
+          isLoading: false,
+          loaded: true,
+        };
+      }
     },
 
     async fetchThreadReplyStats(threadIds = [], options = {}) {
@@ -282,9 +670,13 @@ export const useForumStore = defineStore("forum", {
       await Promise.all(
         pendingIds.map(async (id) => {
           try {
-            const res = await contentInteractionApi.getComments(id);
-            const replies = Array.isArray(res?.comments) ? res.comments : [];
-            this.updateThreadReplyStats(id, replies);
+            const res = await contentApi.getChildren(id, {
+              types: `${CONTENT_TYPES.REPLY},${CONTENT_TYPES.COMMENT},${CONTENT_TYPES.COMMENT_REPLY}`,
+              page: 1,
+              pageSize: 200,
+            });
+            const replies = Array.isArray(res?.items) ? res.items : [];
+            this.updateThreadReplyStats(id, replies, res?.totalCount);
           } catch (error) {
             console.error(`載入主題 ${id} 回應統計失敗:`, error);
           }
@@ -340,12 +732,36 @@ export const useForumStore = defineStore("forum", {
         categoryId !== null ? categoryId : this.selectedCategory;
       const targetPage = page !== null ? page : this.pagination.currentPage;
 
+      const pageSize = this.pagination.pageSize;
+      const keyword = this.searchKeyword.trim();
+      const cacheKey = buildTopicsCacheKey({
+        categoryId: targetCategory,
+        keyword,
+        page: targetPage,
+        pageSize,
+        sortOption: this.sortOption,
+      });
+
+      const cached = getCachedTopicPage(cacheKey);
+      if (cached) {
+        this.pagination = cached.pagination;
+        this.topics = cached.topics;
+        return;
+      }
+
+      if (topicPagePending.has(cacheKey)) {
+        await topicPagePending.get(cacheKey);
+        const pendingCached = getCachedTopicPage(cacheKey);
+        if (pendingCached) {
+          this.pagination = pendingCached.pagination;
+          this.topics = pendingCached.topics;
+        }
+        return;
+      }
+
       this.isLoading = true;
 
       try {
-        const pageSize = this.pagination.pageSize;
-        const keyword = this.searchKeyword.trim();
-
         const params = {
           page: targetPage,
           pageSize,
@@ -356,63 +772,214 @@ export const useForumStore = defineStore("forum", {
         if (targetCategory) params.categoryId = targetCategory;
         if (keyword) params.keyword = keyword;
 
-        const data = await apiClient.get("/ContentApi", { params });
-        const items = Array.isArray(data?.items) ? data.items : [];
-        const totalCount = data?.totalCount ?? items.length;
-        const totalPages =
-          data?.totalPages ?? Math.max(1, Math.ceil(totalCount / pageSize));
-        const currentPage = data?.currentPage ?? targetPage;
+        const requestPromise = (async () => {
+          const data = await contentApi.getContents(params);
+          const items = Array.isArray(data?.items) ? data.items : [];
 
-        this.pagination = {
-          currentPage,
-          pageSize,
-          totalCount,
-          totalPages,
-        };
+          // Log first 2 items completely
+          if (items.length > 0) {
+            console.log(
+              "[fetchTopics] API Response - First item structure:",
+              JSON.stringify(items[0], null, 2),
+            );
+            if (items.length > 1) {
+              console.log(
+                "[fetchTopics] API Response - Second item structure:",
+                JSON.stringify(items[1], null, 2),
+              );
+            }
+          }
 
-        const itemsWithHtml = await Promise.all(
-          items.map(async (item) => {
-            const bodyHtml = await fetchBodyHtml(item.body);
-            const { sanitizedHtml, textContent, imageUrls } =
-              normalizeRichContent(bodyHtml, toAbsoluteUrl);
-            return {
-              ...item,
-              bodyHtml,
-              bodyText: textContent,
-              bodyImages: imageUrls,
-              bodySanitizedHtml: sanitizedHtml,
-            };
-          }),
-        );
+          let serverReplyStatsProvided = Boolean(data?.replyStatsIncluded);
+          const totalCount = data?.totalCount ?? items.length;
+          const totalPages =
+            data?.totalPages ?? Math.max(1, Math.ceil(totalCount / pageSize));
+          const currentPage = data?.currentPage ?? data?.page ?? targetPage;
 
-        const threadIds = itemsWithHtml
-          .map((item) => item.contentId)
-          .filter(Boolean);
-        await this.fetchThreadReplyStats(threadIds);
+          const topics = await Promise.all(
+            items.map(async (item) => {
+              console.log(
+                "[fetchTopics] Processing item:",
+                item.contentId || item.id,
+                "| title:",
+                item.title,
+              );
+              const previewPayload = extractPreviewPayload(item);
+              const previewText = previewPayload?.previewText ?? "";
+              const previewImages = Array.isArray(previewPayload?.previewImages)
+                ? previewPayload.previewImages.map(toAbsoluteUrl)
+                : [];
+              const previewHtml = previewPayload?.previewHtml ?? "";
 
-        this.topics = itemsWithHtml.map((item) => {
-          const stats = this.threadReplyStats[item.contentId] || {};
+              // Only treat as real preview if previewHtml exists + non-empty,
+              // or if previewText is substantial (not just title) + previewHtml is explicitly set
+              const isSubstantialPreview =
+                String(previewHtml).trim().length > 0 ||
+                (String(previewText).trim().length > 50 &&
+                  previewPayload?.previewHtml !== null);
+
+              const hasPreviewPayload =
+                Boolean(previewPayload) &&
+                (isSubstantialPreview || previewImages.length > 0);
+              console.log(
+                "[fetchTopics] item",
+                item.contentId || item.id,
+                "| hasPreviewPayload:",
+                hasPreviewPayload,
+                "| body:",
+                (item.body || "").substring(0, 100),
+                "| item keys:",
+                Object.keys(item || {}),
+              );
+
+              let bodyText = String(previewText || "");
+              let bodyImages = previewImages;
+              let bodySanitizedHtml = "";
+
+              if (String(previewHtml || "").trim()) {
+                const { sanitizedHtml, textContent, imageUrls } =
+                  normalizeRichContent(previewHtml, toAbsoluteUrl);
+                bodySanitizedHtml = sanitizedHtml;
+                if (!bodyText) bodyText = textContent;
+                if (bodyImages.length === 0) bodyImages = imageUrls;
+              }
+
+              if (!hasPreviewPayload) {
+                const bodyHtml = await fetchBodyHtmlCached(item.body);
+                if (isHtml(bodyHtml)) {
+                  const { sanitizedHtml, textContent, imageUrls } =
+                    normalizeRichContent(bodyHtml, toAbsoluteUrl);
+                  bodyText = textContent;
+                  bodyImages = imageUrls;
+                  bodySanitizedHtml = sanitizedHtml;
+                } else {
+                  const { textContent, imageUrls } = parseBodyContent(bodyHtml);
+                  const previewHtml = buildPreviewHtml(textContent, imageUrls);
+                  const {
+                    sanitizedHtml,
+                    textContent: normalizedText,
+                    imageUrls: normalizedImages,
+                  } = normalizeRichContent(previewHtml, toAbsoluteUrl);
+                  bodyText = normalizedText || textContent;
+                  bodyImages = normalizedImages.length
+                    ? normalizedImages
+                    : imageUrls;
+                  bodySanitizedHtml = sanitizedHtml;
+                }
+              }
+
+              if (!bodySanitizedHtml && (bodyText || bodyImages.length > 0)) {
+                const previewHtml = buildPreviewHtml(bodyText, bodyImages);
+                const { sanitizedHtml, textContent, imageUrls } =
+                  normalizeRichContent(previewHtml, toAbsoluteUrl);
+                bodySanitizedHtml = sanitizedHtml;
+                if (!bodyText) bodyText = textContent;
+                if (bodyImages.length === 0) bodyImages = imageUrls;
+              }
+
+              if (!bodyText && bodyImages.length > 0) {
+                bodyText = "(已附圖片)";
+              }
+
+              const stats = extractReplyStats(item);
+              if (
+                !serverReplyStatsProvided &&
+                (stats.replyCount !== null ||
+                  stats.lastReplyTime ||
+                  stats.lastReplyUser)
+              ) {
+                serverReplyStatsProvided = true;
+              }
+              const contentId = item.contentId ?? item.content_id ?? item.id;
+
+              if (contentId && stats.replyCount !== null) {
+                this.threadReplyStats[contentId] = {
+                  replyCount: stats.replyCount ?? 0,
+                  lastReplyTime: stats.lastReplyTime ?? null,
+                  lastReplyUser: stats.lastReplyUser ?? null,
+                  lastReplyUserId: stats.lastReplyUserId ?? null,
+                  fetchedAt: Date.now(),
+                };
+              }
+
+              const fallbackStats =
+                contentId && this.threadReplyStats[contentId]
+                  ? this.threadReplyStats[contentId]
+                  : {};
+
+              console.log(
+                "[fetchTopics] Final result for",
+                contentId,
+                "| contentText:",
+                (bodyText || "").substring(0, 50),
+                "| contentHtml:",
+                (bodySanitizedHtml || "").substring(0, 50),
+              );
+              return {
+                id: contentId,
+                userId: item.userId ?? item.user_id ?? null,
+                title: item.title,
+                content: bodyText ?? "",
+                contentText: bodyText ?? "",
+                contentHtml: bodySanitizedHtml ?? "",
+                imageUrls: bodyImages ?? [],
+                author: item.username,
+                authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
+                categoryName: item.categoryName,
+                categoryId: item.categoryId ?? item.category_id ?? null,
+                createdAt: item.createdAt,
+                type: item.type,
+                replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
+                lastReplyTime:
+                  stats.lastReplyTime ?? fallbackStats.lastReplyTime ?? null,
+                lastReplyUser:
+                  stats.lastReplyUser ?? fallbackStats.lastReplyUser ?? null,
+                lastReplyUserId:
+                  stats.lastReplyUserId ??
+                  fallbackStats.lastReplyUserId ??
+                  null,
+                viewCount: item.viewCount ?? 0,
+                isPinned: item.isPinned ?? false,
+                isHot: (stats.replyCount ?? fallbackStats.replyCount ?? 0) > 10,
+              };
+            }),
+          );
+
           return {
-            id: item.contentId,
-            userId: item.userId ?? item.user_id ?? null,
-            title: item.title,
-            content: item.bodyText ?? "",
-            imageUrls: item.bodyImages ?? [],
-            author: item.username,
-            authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
-            categoryName: item.categoryName,
-            categoryId: item.categoryId ?? item.category_id ?? null,
-            createdAt: item.createdAt,
-            type: item.type,
-            replyCount: stats.replyCount ?? 0,
-            lastReplyTime: stats.lastReplyTime ?? null,
-            lastReplyUser: stats.lastReplyUser ?? null,
-            lastReplyUserId: stats.lastReplyUserId ?? null,
-            viewCount: item.viewCount ?? 0,
-            isPinned: item.isPinned ?? false,
-            isHot: (stats.replyCount ?? 0) > 10,
+            pagination: {
+              currentPage,
+              pageSize,
+              totalCount,
+              totalPages,
+            },
+            topics,
+            serverReplyStatsProvided,
           };
+        })();
+
+        topicPagePending.set(cacheKey, requestPromise);
+        const result = await requestPromise;
+        topicPageCache.set(cacheKey, {
+          fetchedAt: Date.now(),
+          data: result,
         });
+
+        this.pagination = result.pagination;
+        this.topics = result.topics;
+
+        const shouldFetchFallbackStats =
+          this.replyStatsFallbackEnabled &&
+          !result.serverReplyStatsProvided &&
+          result.topics.some(
+            (topic) => topic.replyCount === 0 && !topic.lastReplyTime,
+          );
+
+        if (shouldFetchFallbackStats) {
+          const threadIds = result.topics
+            .map((item) => item.id)
+            .filter(Boolean);
+          await this.fetchThreadReplyStats(threadIds);
+        }
       } catch (error) {
         console.error("載入主題失敗:", error);
         if (error.response) {
@@ -424,6 +991,7 @@ export const useForumStore = defineStore("forum", {
         }
         this.topics = [];
       } finally {
+        topicPagePending.delete(cacheKey);
         this.isLoading = false;
       }
     },
@@ -437,15 +1005,14 @@ export const useForumStore = defineStore("forum", {
     // ========== 帖文詳情 ==========
     async fetchThreadDetail(threadId) {
       try {
-        const [detailRes, commentsRes] = await Promise.all([
-          apiClient.get(`/ContentApi/${threadId}`),
-          contentInteractionApi.getComments(threadId),
-        ]);
+        this.resetThreadPagingState();
+
+        const detailRes = await contentApi.getContent(threadId);
 
         const detail = detailRes?.contentId ? detailRes : detailRes?.data;
 
         if (detail && detail.contentId) {
-          const detailBodyHtml = await fetchBodyHtml(detail.body);
+          const detailBodyHtml = await fetchBodyHtmlCached(detail.body);
           const { sanitizedHtml, textContent, imageUrls } =
             normalizeRichContent(detailBodyHtml, toAbsoluteUrl);
 
@@ -481,113 +1048,10 @@ export const useForumStore = defineStore("forum", {
           };
         }
 
-        const directChildren = Array.isArray(commentsRes?.comments)
-          ? commentsRes.comments
-          : [];
-
-        this.updateThreadReplyStats(threadId, directChildren);
-
-        const loadContentWithHtml = async (item, fallbackType) => {
-          const bodyHtml = await fetchBodyHtml(item.body);
-          const { sanitizedHtml, textContent, imageUrls } =
-            normalizeRichContent(bodyHtml, toAbsoluteUrl);
-          return {
-            id: item.contentId,
-            userId: item.userId ?? item.user_id ?? null,
-            author: item.username,
-            createdAt: item.createdAt,
-            content: textContent,
-            contentHtml: sanitizedHtml,
-            contentText: textContent,
-            imageUrls,
-            type: item.type ?? fallbackType,
-            parentContentId: item.parentContentId,
-          };
-        };
-
-        const fetchChildComments = async (parentId, expectedType) => {
-          try {
-            const res = await contentInteractionApi.getComments(parentId);
-            const items = Array.isArray(res?.comments) ? res.comments : [];
-            const filtered = expectedType
-              ? items.filter((i) => i.type === expectedType || !i.type)
-              : items;
-            return await Promise.all(
-              filtered.map((item) => loadContentWithHtml(item, expectedType)),
-            );
-          } catch (error) {
-            console.error(`獲取內容 ${parentId} 的子留言失敗:`, error);
-            return [];
-          }
-        };
-
-        const threadCommentsBase = directChildren.filter(
-          (c) => c.type === CONTENT_TYPES.COMMENT || !c.type,
-        );
-
-        this.threadComments = await Promise.all(
-          threadCommentsBase.map(async (comment) => {
-            const base = await loadContentWithHtml(
-              comment,
-              CONTENT_TYPES.COMMENT,
-            );
-            const replies = await fetchChildComments(
-              comment.contentId,
-              CONTENT_TYPES.COMMENT_REPLY,
-            );
-            return {
-              ...base,
-              replies: replies.sort(
-                (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-              ),
-            };
-          }),
-        );
-
-        const threadRepliesBase = directChildren.filter(
-          (c) => c.type === CONTENT_TYPES.REPLY,
-        );
-
-        this.threadPosts = await Promise.all(
-          threadRepliesBase.map(async (reply) => {
-            const base = await loadContentWithHtml(reply, CONTENT_TYPES.REPLY);
-            const replyComments = await fetchChildComments(
-              reply.contentId,
-              CONTENT_TYPES.COMMENT,
-            );
-
-            const replyCommentsWithReplies = await Promise.all(
-              replyComments.map(async (rc) => {
-                const replies = await fetchChildComments(
-                  rc.id,
-                  CONTENT_TYPES.COMMENT_REPLY,
-                );
-                return {
-                  ...rc,
-                  replies: replies.sort(
-                    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-                  ),
-                };
-              }),
-            );
-
-            return {
-              ...base,
-              replies: replyCommentsWithReplies.sort(
-                (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-              ),
-            };
-          }),
-        );
-
-        this.threadPosts.sort(
-          (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-        );
-        this.threadComments.sort(
-          (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-        );
-        this.threadCurrentPage = 1;
-        this.threadCommentsCurrentPage = 1;
+        await Promise.all([
+          this.fetchThreadRepliesPage(1, { threadId }),
+          this.fetchThreadCommentsPage(1, { threadId }),
+        ]);
       } catch (error) {
         console.error("獲取帖文詳情失敗:", error);
       }
@@ -616,17 +1080,32 @@ export const useForumStore = defineStore("forum", {
       this.threadComments = [];
       this.threadCurrentPage = 1;
       this.threadCommentsCurrentPage = 1;
+      this.threadRepliesPagination = {
+        currentPage: 1,
+        pageSize: this.threadItemsPerPage,
+        totalCount: 0,
+        totalPages: 0,
+        isLoading: false,
+      };
+      this.threadCommentsPagination = {
+        currentPage: 1,
+        pageSize: this.threadCommentsItemsPerPage,
+        totalCount: 0,
+        totalPages: 0,
+        isLoading: false,
+      };
+      this.childRepliesByParentId = {};
     },
 
     changeThreadPage(page) {
       if (page >= 1 && page <= this.threadTotalPages) {
-        this.threadCurrentPage = page;
+        this.fetchThreadRepliesPage(page);
       }
     },
 
     changeThreadCommentsPage(page) {
       if (page >= 1 && page <= this.threadCommentsTotalPages) {
-        this.threadCommentsCurrentPage = page;
+        this.fetchThreadCommentsPage(page);
       }
     },
 
@@ -667,12 +1146,13 @@ export const useForumStore = defineStore("forum", {
       };
 
       try {
-        await apiClient.post("/ContentApi", dto);
+        await contentApi.createContent(dto);
         alert("發表成功！");
         this.newTopic.title = "";
         this.newTopic.body = "";
         this.showNewTopicBox = false;
         this.pagination.currentPage = 1;
+        clearTopicPageCache();
         await this.fetchTopics();
       } catch (error) {
         console.error("發表失敗:", error);
@@ -776,6 +1256,7 @@ export const useForumStore = defineStore("forum", {
 
     triggerTopicRefresh() {
       this.lastRefreshTime = Date.now();
+      clearTopicPageCache();
     },
 
     // ========== 搜尋功能 ==========
