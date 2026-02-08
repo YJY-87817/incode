@@ -320,6 +320,7 @@ export const useForumStore = defineStore("forum", {
       isLoading: false,
     },
     childRepliesByParentId: {}, // { [parentId]: { items, currentPage, pageSize, totalCount, totalPages, isLoading, loaded } }
+    childRepliesCountByParentId: {}, // { [parentId]: { totalCount, isLoading } } 用於預加載數量
 
     // ========== 新主題表單 ==========
     showNewTopicBox: false,
@@ -516,6 +517,7 @@ export const useForumStore = defineStore("forum", {
         isLoading: false,
       };
       this.childRepliesByParentId = {};
+      this.childRepliesCountByParentId = {};
     },
 
     async fetchThreadRepliesPage(page = 1, options = {}) {
@@ -593,6 +595,36 @@ export const useForumStore = defineStore("forum", {
       } catch (error) {
         console.error("載入留言分頁失敗:", error);
         this.threadCommentsPagination.isLoading = false;
+      }
+    },
+
+    async preloadChildRepliesCount(parentId, expectedType) {
+      if (!parentId) return;
+      const current = this.childRepliesCountByParentId[parentId];
+      if (current) return; // 已經預加載過，不再重複加載
+
+      this.childRepliesCountByParentId[parentId] = {
+        totalCount: null,
+        isLoading: true,
+      };
+
+      try {
+        const res = await contentApi.getChildren(parentId, {
+          types: expectedType ? String(expectedType) : undefined,
+          page: 1,
+          pageSize: 1, // 只獲取一條用於統計總數
+        });
+        const totalCount = res?.totalCount ?? 0;
+        this.childRepliesCountByParentId[parentId] = {
+          totalCount,
+          isLoading: false,
+        };
+      } catch (error) {
+        console.error(`預加載內容 ${parentId} 子回覆數量失敗:`, error);
+        this.childRepliesCountByParentId[parentId] = {
+          totalCount: 0,
+          isLoading: false,
+        };
       }
     },
 
@@ -1095,6 +1127,7 @@ export const useForumStore = defineStore("forum", {
         isLoading: false,
       };
       this.childRepliesByParentId = {};
+      this.childRepliesCountByParentId = {};
     },
 
     changeThreadPage(page) {

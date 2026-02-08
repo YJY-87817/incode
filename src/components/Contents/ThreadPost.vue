@@ -405,6 +405,16 @@ const nestedRepliesLoaded = computed(
 );
 
 const nestedCountLabel = computed(() => {
+  // 優先顯示預加載的數量
+  const preloadedData = forumStore.childRepliesCountByParentId[props.post.id];
+  if (
+    preloadedData &&
+    !preloadedData.isLoading &&
+    preloadedData.totalCount !== null
+  ) {
+    return String(preloadedData.totalCount);
+  }
+
   if (nestedRepliesLoading.value) return "...";
   if (nestedRepliesLoaded.value) return String(nestedRepliesCount.value);
   if (nestedRepliesCount.value > 0) return String(nestedRepliesCount.value);
@@ -549,6 +559,11 @@ const updatePreviewToggleState = async () => {
 
 onMounted(() => {
   updatePreviewToggleState();
+
+  // 預加載子回覆的數量（不加載詳細內容）
+  if (canHaveNestedReplies.value) {
+    forumStore.preloadChildRepliesCount(props.post.id, nestedChildType.value);
+  }
 });
 
 watch(
