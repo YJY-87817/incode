@@ -260,7 +260,10 @@ export const useForumStore = defineStore("forum", {
       contentText: "",
       imageUrls: [],
       categoryId: null,
+      categoryName: null,
       type: null,
+      isPinned: false,
+      isHot: false,
     },
     threadPosts: [],
     threadComments: [],
@@ -1010,6 +1013,22 @@ export const useForumStore = defineStore("forum", {
           // 提取後端提供的回覆統計資訊
           const stats = extractReplyStats(detail);
 
+          // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
+          let isPinned = detail.isPinned ?? false;
+          let isHot = (stats.replyCount ?? 0) > 10;
+          let categoryName = detail.categoryName ?? null;
+
+          if (this.topics && this.topics.length > 0) {
+            const matchedTopic = this.topics.find(
+              (t) => String(t.id) === String(threadId),
+            );
+            if (matchedTopic) {
+              isPinned = matchedTopic.isPinned ?? isPinned;
+              isHot = matchedTopic.isHot ?? isHot;
+              categoryName = matchedTopic.categoryName ?? categoryName;
+            }
+          }
+
           this.threadDetail = {
             id: detail.contentId,
             userId: detail.userId ?? detail.user_id ?? null,
@@ -1021,7 +1040,10 @@ export const useForumStore = defineStore("forum", {
             contentText: textContent,
             imageUrls,
             categoryId: categoryId,
+            categoryName: categoryName,
             type: detail.type,
+            isPinned: isPinned,
+            isHot: isHot,
             // 添加回覆統計資訊
             replyCount: stats.replyCount ?? 0,
             lastReplyTime: stats.lastReplyTime ?? null,
@@ -1067,7 +1089,10 @@ export const useForumStore = defineStore("forum", {
         contentText: "",
         imageUrls: [],
         categoryId: null,
+        categoryName: null,
         type: null,
+        isPinned: false,
+        isHot: false,
         replyCount: 0,
         lastReplyTime: null,
         lastReplyUser: null,

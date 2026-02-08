@@ -596,6 +596,28 @@ function handleThreadReplyingTargetClick() {
           "
           @click="handleThreadReplyingTargetClick"
         >
+          <!-- 主題徽章 -->
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            <span
+              v-if="forumStore.threadDetail?.categoryName"
+              class="badge bg-secondary-light text-dark"
+            >
+              {{ forumStore.threadDetail.categoryName }}
+            </span>
+            <span
+              v-if="forumStore.threadDetail?.isPinned"
+              class="badge bg-danger"
+            >
+              置頂
+            </span>
+            <span
+              v-if="forumStore.threadDetail?.isHot"
+              class="badge bg-warning text-dark"
+            >
+              熱門
+            </span>
+          </div>
+
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
@@ -882,6 +904,12 @@ function handleThreadReplyingTargetClick() {
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
                       <div class="d-flex flex-wrap gap-1 mb-1">
+                        <span
+                          v-if="topic.categoryName"
+                          class="badge bg-secondary-light text-dark"
+                        >
+                          {{ topic.categoryName }}
+                        </span>
                         <span v-if="topic.isPinned" class="badge bg-danger">
                           置頂
                         </span>
@@ -1226,6 +1254,11 @@ function handleThreadReplyingTargetClick() {
 .badge.bg-secondary {
   background-color: #86b0bd !important;
   color: #fff;
+}
+
+.badge.bg-secondary-light {
+  background-color: #d0e8f2 !important;
+  color: #145369;
 }
 
 .badge.bg-info {

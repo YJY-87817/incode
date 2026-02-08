@@ -16,6 +16,12 @@
             >
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
+                  <span
+                    v-if="post.categoryName"
+                    class="badge bg-secondary-light text-dark"
+                  >
+                    {{ post.categoryName }}
+                  </span>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
                   <h6 class="card-title post-author mb-0" @click.stop>
                     <UserHoverName
@@ -1014,6 +1020,11 @@ async function handleDeleteContent(contentId) {
   gap: 0.5rem;
   position: relative;
   z-index: 4;
+}
+
+.badge.bg-secondary-light {
+  background-color: #d0e8f2 !important;
+  color: #145369;
 }
 
 .post-time {
