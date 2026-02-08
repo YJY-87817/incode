@@ -12,7 +12,7 @@ namespace incode2.Services.Contents
     Task<bool> DeleteContent(int id, int currentUserId);
     Task<List<ContentDto>> GetCommentsByContentId(int contentId);
     Task<List<ContentDto>> GetUserContents(int userId);
-    Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types);
-    Task<List<ContentDto>> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames);
+    Task<object> GetUserContentsByTypes(int userId, IEnumerable<int> types, int page, int pageSize);
+    Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize);
   }
 }
