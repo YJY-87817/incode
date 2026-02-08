@@ -936,7 +936,7 @@ function handleThreadReplyingTargetClick() {
                         >
                           <div class="topic-preview-images-grid">
                             <img
-                              v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
+                              v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
                               :key="url + idx"
                               :src="url"
                               alt="貼文圖片"
@@ -1177,7 +1177,7 @@ function handleThreadReplyingTargetClick() {
 }
 
 .topic-preview-collapsed {
-  max-height: 100px;
+  max-height: 65px;
   overflow: hidden;
   position: relative;
 }
@@ -1188,7 +1188,7 @@ function handleThreadReplyingTargetClick() {
 
 .topic-preview-images-grid {
   display: grid;
-  grid-template-columns: repeat(2, 56px);
+  grid-template-columns: 56px;
   gap: 8px;
 }
 
