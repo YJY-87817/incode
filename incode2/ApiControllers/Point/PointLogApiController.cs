@@ -59,17 +59,22 @@ namespace incode2.ApiControllers.Point
        [HttpGet]
         public async Task<IEnumerable<PointLogDTO>> GetPointLog()
         {
-            return _context.PointLog.Select(pl => new PointLogDTO
-            {
-                PointLogId = pl.PointLogId,
-                UserId = pl.UserId,
-                SourceType = pl.SourceType,
-                SourceId = pl.SourceId,
-                PointTypeDefinitionId = pl.PointTypeDefinitionId,
-                ChangeAmount = pl.ChangeAmount,
-                Status = pl.Status,
-                CreatedAt = pl.CreatedAt
-            });
+            return await _context.PointLog
+        .AsNoTracking() // 建議查詢列表時加上，效能較好
+        .Select(pl => new PointLogDTO
+        {
+            PointLogId = pl.PointLogId,
+            UserId = pl.UserId,
+            SourceType = pl.SourceType,
+            SourceId = pl.SourceId,
+            PointTypeDefinitionId = pl.PointTypeDefinitionId,
+            ChangeAmount = pl.ChangeAmount,           
+            BalanceAfter = pl.BalanceAfter,            
+            Status = pl.Status,
+            CreatedAt = pl.CreatedAt,
+            DisplayName = pl.PointTypeDefinition.TypeName
+        })
+        .ToListAsync(); // 記得補上非同步執行
         }
 
         [HttpGet("user/my-logs")]
