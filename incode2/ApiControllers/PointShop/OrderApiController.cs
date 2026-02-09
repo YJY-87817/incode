@@ -60,6 +60,15 @@ namespace incode2.ApiControllers
             return res;
         }
 
+        // 取得輸入過寄送資料
+        // GET: api/OrderApi/shipaddress
+        [HttpGet("shipaddress")]
+        public async Task<ResultDTO<IEnumerable<ShipAddressDTO>>> GetShipAddress() //登入才可找
+        {
+            var result = await _orderService.GetHasShippedDetailAsync(userId);
+            return result;
+        }
+
 
         // 新增訂單
         // POST: api/OrderApi/OrderPost
