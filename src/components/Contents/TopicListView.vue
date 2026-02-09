@@ -809,6 +809,7 @@ function handleThreadReplyingTargetClick() {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
+                :show-parent-link="false"
               />
             </div>
 
