@@ -90,10 +90,13 @@ namespace incode2.ApiControllers.Point
         Title = em.Title,
         Detail = em.Detail,
         RewardPoints = em.RewardPoints,
-        MaxParticipants = em.MaxParticipants,
+        Category = em.Category,
+        Deadline = em.Deadline,
         Status = em.Status,
+        IsUrgent = em.IsUrgent ?? false,
         IsActive = em.IsActive,
         CreatedAt = em.CreatedAt,
+        UpdatedAt = em.UpdatedAt,
       }).FirstOrDefaultAsync(em => em.EntrustMissionId == id);
 
       return EmDTO;
@@ -117,8 +120,10 @@ namespace incode2.ApiControllers.Point
         Em.Title = EmDTO.Title;
         Em.Detail = EmDTO.Detail;
         Em.RewardPoints = EmDTO.RewardPoints;
-        Em.MaxParticipants = EmDTO.MaxParticipants;
+        Em.Category = EmDTO.Category;
+        Em.Deadline = EmDTO.Deadline;
         Em.Status = EmDTO.Status;
+        Em.IsUrgent = EmDTO.IsUrgent;
         Em.IsActive = EmDTO.IsActive;
         // 只有當前端真的有傳新時間才更新，否則保留資料庫原始時間
         Em.CreatedAt = EmDTO.CreatedAt ?? Em.CreatedAt;
