@@ -26,8 +26,6 @@ namespace incode2.Services.Point
             RewardPoints = em.RewardPoints,
             Category = em.Category ?? "其他",
             Deadline = em.Deadline,
-            MaxParticipants = em.MaxParticipants,
-            CurrentParticipants = em.CurrentParticipants ?? 0,
             Status = em.Status ?? "open",
             IsUrgent = em.IsUrgent ?? false,
             IsActive = em.IsActive,
@@ -69,14 +67,6 @@ namespace incode2.Services.Point
           return new ResultDTO { Ok = false, Code = 400, Message = "任務已過截止時間" };
         }
 
-        int current = mission.CurrentParticipants ?? 0; // NOT NULL，直接用
-        int max = mission.MaxParticipants > 0 ? mission.MaxParticipants : 1;  // 防呆
-
-        if (current >= max)
-        {
-          return new ResultDTO { Ok = false, Code = 409, Message = "此任務已被他人接取" };
-        }
-
         // 【新增】檢查使用者是否已有進行中的委託任務
         bool hasOngoing = await _context.EntrustMissionProgress
             .AnyAsync(p => p.UserId == userId && p.Status == "ongoing");
@@ -112,7 +102,6 @@ namespace incode2.Services.Point
         _context.EntrustMissionProgress.Add(progress);
 
         // 更新主表
-        mission.CurrentParticipants = current + 1;
         mission.Status = "in_progress";
         mission.UpdatedAt = DateTime.UtcNow;
 
@@ -127,8 +116,6 @@ namespace incode2.Services.Point
           Data = new
           {
             EntrustMissionId = entrustMissionId,
-            CurrentParticipants = mission.CurrentParticipants,
-            MaxParticipants = max,
             Status = mission.Status,
             AcceptedAt = progress.AcceptedAt
           }
@@ -158,8 +145,6 @@ namespace incode2.Services.Point
             RewardPoints = em.RewardPoints,
             Category = em.Category ?? "其他",
             Deadline = em.Deadline,
-            MaxParticipants = em.MaxParticipants,
-            CurrentParticipants = em.CurrentParticipants ?? 0,
             Status = em.Status ?? "其他",
             IsUrgent = em.IsUrgent ?? false,
             IsActive = em.IsActive,
@@ -180,9 +165,6 @@ namespace incode2.Services.Point
 
       if (dto.Deadline.HasValue && dto.Deadline.Value < DateTime.UtcNow)
         return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
-
-      if (dto.MaxParticipants <= 0)
-        return new ResultDTO { Ok = false, Code = 400, Message = "最多參與人數必須至少 1" };
 
       // 驗證 ContentId 是否存在
       var content = await _context.Content
@@ -210,8 +192,6 @@ namespace incode2.Services.Point
         RewardPoints = dto.RewardPoints,
         Category = dto.Category ?? "其他",
         Deadline = dto.Deadline,
-        MaxParticipants = dto.MaxParticipants > 0 ? dto.MaxParticipants : 1,
-        CurrentParticipants = 0,
         Status = "open",
         IsUrgent = dto.IsUrgent,
         IsActive = true,
@@ -250,7 +230,6 @@ namespace incode2.Services.Point
       em.RewardPoints = dto.RewardPoints;
       em.Category = dto.Category ?? em.Category;
       em.Deadline = dto.Deadline ?? em.Deadline;
-      em.MaxParticipants = dto.MaxParticipants > 0 ? dto.MaxParticipants : em.MaxParticipants;
       em.IsUrgent = dto.IsUrgent;
       // em.Status = dto.Status ?? em.Status;  ← 建議不要讓前端隨意改狀態，可移除或嚴格限制
       em.UpdatedAt = DateTime.UtcNow;

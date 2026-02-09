@@ -31,12 +31,6 @@ namespace incode2.DTO
         public DateTime? Deadline { get; set; }
 
         [Required]
-        [Range(1, 99, ErrorMessage = "最多參與人數必須至少 1")]
-        public int MaxParticipants { get; set; } = 1;
-
-        public int CurrentParticipants { get; set; } = 0;  // 改成非 nullable，預設 0
-
-        [Required]
         public string Status { get; set; } = "open";
 
         public bool IsUrgent { get; set; } = false;        // 改成非 nullable
