@@ -16,20 +16,21 @@
 
         <div class="card-body">
             <div class="table-responsive">
-                <table id="shippedTable" class="table table-bordered table-striped table-hover align-middle">
+                <table id="shippedTable" class="table table-bordered table-striped table-hover align-middle" style="visibility: hidden;">
                     <thead class="table-light">
                         <tr class="text-center">
                             <th style="width:60px">寄送ID</th>
                             <th style="width:60px">訂單ID</th>
+                            <th style="width:60px">狀態</th>
                             <th style="width:80px">姓名</th>
                             <th style="min-width:250px">地址</th>
                             <th style="width:110px">電話</th>
                             <th style="width:140px">寄送日期</th>
                             <th style="width:140px">送達日期</th>
-                            <th style="width:80px">失敗</th>
+                            <th style="width:60px">失敗</th>
                             <th style="min-width:100px">說明</th>
                             <th style="width:100px">完成</th>
-                            <th style="width:80px">查看</th>
+                            <th style="width:60px">查看</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -38,6 +39,14 @@
                             <tr>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.ShippedDetailId)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.OrderId)</td>
+                                <td class="text-center" data-order="@(item.Order.Status ?? "")">
+                                    @if (!string.IsNullOrEmpty(item.Order.Status))
+                                    {
+                                        <span class="badge @(item.Order.Status == "已完成" ? "bg-success" : item.Order.Status == "已取消" ? "bg-danger" : item.Order.Status == "待處理" ? "bg-warning" : "bg-secondary")">
+                                            @item.Order.Status
+                                        </span>
+                                    }
+                                </td>
                                 <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
                                 <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.RecipientPhone)</td>
@@ -107,7 +116,10 @@
                     { orderable: false, targets: [10] } // 查看欄位不可排序
                 ],
                 responsive: true,
-                autoWidth: false
+                autoWidth: false,
+                initComplete: function() {
+                    $('#shippedTable').css('visibility', 'visible');
+                }
             });
         });
     </script>

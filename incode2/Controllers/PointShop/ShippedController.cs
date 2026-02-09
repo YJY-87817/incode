@@ -18,7 +18,8 @@ namespace incode2.Controllers
         [HttpGet]
         public ActionResult Index()
         {
-            return View(_context.ShippedDetail);
+
+            return View(_context.ShippedDetail.Include(e => e.Order).ToList());
         }
 
         // GET: Shipped/Create 顯示頁面
