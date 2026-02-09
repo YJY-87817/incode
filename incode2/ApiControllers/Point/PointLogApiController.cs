@@ -30,10 +30,8 @@ namespace incode2.ApiControllers.Point
             _pointLogService = pointLogService;
         }
 
-        /// <summary>
         /// 模擬領取任務獎勵 (加點)
         /// POST: /api/point/add-reward
-        /// </summary>
         [HttpPost("add-reward")]
         [Authorize]
         public async Task<IActionResult> AddReward([FromForm] int userId, [FromForm] int changeAmount, [FromForm] int sourceId)
@@ -56,29 +54,6 @@ namespace incode2.ApiControllers.Point
             if (!success) return BadRequest("獎勵領取失敗");
             return Ok("獎勵已發放");
         }
-
-        /// <summary>
-        /// 模擬商城購買 (扣點)
-        /// POST: /api/point/shop-purchase
-        /// </summary>
-        //[HttpPost("shop-purchase")]
-        //public async Task<IActionResult> Purchase([FromForm] int userId, [FromForm] int price, [FromForm] int productId)
-        //{
-        //    int currentLoginUserId = User.GetId();
-        //    if (price >= 0) return BadRequest("點數必須小於 0");
-
-        //    var success = await _pointLogService.DeductPointsAsync(
-        //        userId = currentLoginUserId,
-        //        price,
-        //        "orders",
-        //        productId,
-        //        PointType.Order // 使用 Enum
-        //    );
-
-        //    if (!success) return BadRequest("點數不足或購買失敗");
-        //    return Ok("扣點成功，請繼續處理訂單");
-        //}
-    
 
         //GET: api/PointLogApi
        [HttpGet]

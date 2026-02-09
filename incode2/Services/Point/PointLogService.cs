@@ -24,10 +24,56 @@ namespace incode2.Services.Point
             _context = context;
         }
 
+        // 儲值成功 → 加點 + 寫 point_log（含 transaction）
+        public async Task AddPointsFromRechargeAsync(PointRecharge recharge)
+        {
+            using var tx = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1️⃣ 計算目前餘額（以 log 為準）
+                var currentBalance = await _context.PointLog
+                    .Where(x => x.UserId == recharge.UserId
+                             && x.Status == "success")
+                    .SumAsync(x => (int?)x.ChangeAmount) ?? 0;
+
+                // 2️⃣ 新餘額
+                var newBalance = currentBalance + recharge.PointsGranted;
+
+                // 3️⃣ 寫 point_log
+                var log = new PointLog
+                {
+                    UserId = recharge.UserId,
+                    SourceType = "recharge",
+                    SourceId = recharge.PointRechargeId,
+                    PointTypeDefinitionId = 1, // 🔥 儲值類型（依你定義）
+                    ChangeAmount = recharge.PointsGranted,
+                    BalanceAfter = newBalance,
+                    Status = "success",
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.PointLog.Add(log);
+
+                // 4️⃣ 更新儲值訂單
+                recharge.Status = "success";
+                recharge.CreatedAt = DateTime.Now; // 如果你有這欄
+                _context.PointRecharge.Update(recharge);
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
         // 加扣點
         public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            //using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int currentBalance = await GetCurrentBalanceAsync(userId);
@@ -49,51 +95,13 @@ namespace incode2.Services.Point
 
                 _context.PointLog.Add(log);
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
                 return false;
             }
-        }
-
-        // 商城購買：扣點
-        //public async Task<bool> DeductPointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
-        //{
-        //    using var transaction = await _context.Database.BeginTransactionAsync();
-        //    try
-        //    {
-        //        // 1. 獲取當前餘額
-        //        int currentBalance = await GetCurrentBalanceAsync(userId);
-
-        //        // 2. 檢查餘額是否足夠
-        //        if (currentBalance < changeAmount) return false;
-
-        //        var log = new PointLog
-        //        {
-        //            UserId = userId,
-        //            SourceType = sourceType,
-        //            SourceId = sourceId,
-        //            PointTypeDefinitionId = (int)type,
-        //            ChangeAmount = -Math.Abs(changeAmount), // 存入負數
-        //            BalanceAfter = currentBalance - Math.Abs(changeAmount),
-        //            Status = "Success",
-        //            CreatedAt = DateTime.Now
-        //        };
-
-        //        _context.PointLog.Add(log);
-        //        await _context.SaveChangesAsync();
-        //        await transaction.CommitAsync();
-        //        return true;
-        //    }
-        //    catch
-        //    {
-        //        await transaction.RollbackAsync();
-        //        return false;
-        //    }
-        //}
+        }  
 
 
         public async Task<ResultDTO> AddPointsAsync(int userId, int points, int missionId)

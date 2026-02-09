@@ -1,11 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.Models;
+using incode2.Services.Point;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using incode2.DTO;
 
 namespace incode2.ApiControllers.Point
 {
@@ -14,11 +16,71 @@ namespace incode2.ApiControllers.Point
     public class PointRechargeApiController : ControllerBase
     {
         private readonly incodedatabaseContext _context;
+        private readonly EcpayService _ecpay;
+        private readonly IPointLogService _pointLogService;
 
-        public PointRechargeApiController(incodedatabaseContext context)
+        public PointRechargeApiController(incodedatabaseContext context, EcpayService ecpay, IPointLogService pointLogService   )
         {
             _context = context;
+            _ecpay = ecpay;
+            _pointLogService = pointLogService;
         }
+
+        //AI 綠界儲值Api
+        [HttpPost("recharge")]
+        public async Task<IActionResult> CreateRecharge(
+       [FromBody] PointRechargeDTO dto)
+        {
+            var userId = 1; // 之後從 JWT 取
+
+            var order = new PointRecharge
+            {
+                UserId = userId,
+                OrderNo = "PR" + DateTime.Now.Ticks,
+                CashAmount = dto.CashAmount,
+                PointsGranted = dto.CashAmount * 10,
+                PaymentMethod = dto.PaymentMethod,
+                Status = "pending"
+            };
+
+            _context.PointRecharge.Add(order);
+            await _context.SaveChangesAsync();
+
+            var ecpayParams = _ecpay.CreatePayment(order);
+
+            return Ok(ecpayParams);
+        }
+
+        //AI 付款完成回呼 API（ECPay ReturnURL）
+        [HttpPost("ecpay/return")]
+        public async Task<IActionResult> EcpayReturn([FromForm] IFormCollection form)
+        {
+            // 1️⃣ 基本驗證
+            if (form["RtnCode"] != "1")
+                return Content("0|FAIL");
+
+            var orderNo = form["MerchantTradeNo"].ToString();
+            var tradeNo = form["TradeNo"].ToString();
+
+            // 2️⃣ 找訂單
+            var recharge = await _context.PointRecharge
+       .FirstOrDefaultAsync(x => x.OrderNo == orderNo);
+
+            if (recharge == null)
+                return Content("0|ORDER_NOT_FOUND");
+
+            // 3️⃣ 防止重複加點（超重要）
+            if (recharge.Status == "success")
+                return Content("1|OK");
+
+            // 4️⃣ 更新訂單
+            recharge.PaymentTradeNo = tradeNo;
+
+            await _pointLogService.AddPointsFromRechargeAsync(recharge);
+
+            return Content("1|OK");
+        }
+
 
         // GET: api/PointRechargeApi
         [HttpGet]
