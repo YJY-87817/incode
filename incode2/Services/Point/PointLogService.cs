@@ -312,43 +312,6 @@ namespace incode2.Services.Point
         }
 
 
-        //兌換商品（扣點）
-        public async Task ConsumeAsync(int userId, int points, int OrderId)
-        {
-            using var tx = await _context.Database.BeginTransactionAsync();
-
-            // 取得最新點數餘額
-            var lastLog = await _context.PointLog
-                .Where(l => l.UserId == userId)
-                .OrderByDescending(l => l.CreatedAt)
-                .ThenByDescending(l => l.PointLogId)
-                .Select(l => (int?)l.BalanceAfter)
-                .FirstOrDefaultAsync();
-
-            var currentBalance = lastLog ?? 0;
-
-            if (currentBalance < points)
-                throw new Exception("點數不足");
-
-            var newBalance = currentBalance - points;
-
-            _context.PointLog.Add(new PointLog
-            {
-                UserId = userId,
-                PointTypeDefinitionId = 5, // order
-                SourceType = "orders",
-                SourceId = OrderId,
-                ChangeAmount = -points,
-                BalanceAfter = newBalance,
-                Status = "success",
-                CreatedAt = DateTime.UtcNow
-            });
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-
-
         public async Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount)
         {
             if (fromUserId == toUserId)

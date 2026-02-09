@@ -7,10 +7,10 @@ table content {
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_user"]
   title nvarchar(200) [not null, note: "內容標題"]
   body nvarchar(max) [not null, note: "內容內文"]
-  type int [not null, note: "1:貼文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:留言回覆"]
+  type int [not null, note: "1:發文(出現在貼文版面), 2:回文(出現在貼文版面), 3:留言, 4:回覆"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`]
-  is_active int [not null, note: "1:顯示, 2:本人刪除, 3:官方移除"]
+  is_active int [not null, note: "1:顯示, 2:隱藏"]
   note {"發文、回文、留言、回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從留言提升成發文(因為下面討論熱烈)"}
 }
 
@@ -21,13 +21,13 @@ table content_category {
   category_name nvarchar(100) [not null]
   description nvarchar(200)
   is_active int [not null, note: "1:會員新增, 2:官方提供, 3:不再使用"]
-  note {"先選好再發文，類似麵包屑，電影>動畫片、影城>屏東縣。可以讓使用者自己新增"}
+  note {"先選好再發文，類似麵包屑，電影>動畫片>Zootopia2、影城>屏東縣>中影。可以讓使用者自己新增"}
 }
 
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)有人回覆、(6)官方公告"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
   created_at datetime [default:`current_timestamp`]
@@ -43,7 +43,7 @@ table interaction_category {
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
   is_active int [not null, note: "1:啟用, 2:不再使用"]
-  note {"互動分類:like、block、bookmark、隱藏自己的內容; 通知分類:有人留言、按讚"}
+  note {"互動分類:(1)like、(2)bookmark、(3)block、(4)隱藏自己的內容; 通知分類:(5)有人留言、(6)按讚"}
 }
 
 // 內容歷史紀錄(編輯版控)
@@ -223,6 +223,8 @@ Table entrust_mission {
   reward_points int [not null, check: `[reward_points] >= 0`, note: '完成可得點數']
   category nvarchar(50) [not null, note: '任務類別，例如：字幕、尋片、資源、解析、票務、社交']
   deadline datetime [note: '預計完成期限，可為 null 表示無期限']
+  // max_participants int [not null, default: 1, note: '接取任務人數限制']
+  // current_participants int [default: 0 , note: '目前已接取人數']
   status nvarchar(50) [not null, check: `[status] IN ('open','in_progress','completed','cancelled','expired')`, default: 'open', note: '任務狀態']
   is_urgent bit [default: 0,note: '是否標記為急件，由發布者主動設定']
   is_active bit [not null, default: 1]
