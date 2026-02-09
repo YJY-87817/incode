@@ -223,8 +223,6 @@ Table entrust_mission {
   reward_points int [not null, check: `[reward_points] >= 0`, note: '完成可得點數']
   category nvarchar(50) [not null, note: '任務類別，例如：字幕、尋片、資源、解析、票務、社交']
   deadline datetime [note: '預計完成期限，可為 null 表示無期限']
-  max_participants int [not null, default: 1, note: '接取任務人數限制']
-  current_participants int [default: 0 , note: '目前已接取人數']
   status nvarchar(50) [not null, check: `[status] IN ('open','in_progress','completed','cancelled','expired')`, default: 'open', note: '任務狀態']
   is_urgent bit [default: 0,note: '是否標記為急件，由發布者主動設定']
   is_active bit [not null, default: 1]
