@@ -145,15 +145,11 @@ namespace incode2.Services.PointShop
                     prod.Stock -= item.Quantity;
                 }
 
-                _context.Orders.Add(newOrder);
-                await _context.SaveChangesAsync(); // 先儲存以取得 OrderId
-
                 if (newOrder.Orderdetail.Any(e => e.RequiresShipping == true))
                 {
                     // 建立寄送資料
                     var recipient = new ShippedDetail
                     {
-                        OrderId = newOrder.OrderId, // 設定外鍵
                         RecipientName = order.Recipient.RecipientName,
                         RecipientPhone = order.Recipient.RecipientPhone,
                         RecipientAddress = order.Recipient.RecipientAddress,
@@ -163,9 +159,10 @@ namespace incode2.Services.PointShop
                         ShippedDate = null,
                         ArrivalDate = null,
                     };
-                    _context.ShippedDetail.Add(recipient);
-
+                    newOrder.ShippedDetail.Add(recipient);
                 }
+
+                _context.Orders.Add(newOrder);
 
                 await _context.SaveChangesAsync();
 
