@@ -1,6 +1,9 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
-import { getProducts } from "@/views/PointShop/services/PointShopApi";
+import { ref, onMounted, computed, watch } from "vue";
+import {
+  getProducts,
+  getProductSearch,
+} from "@/views/PointShop/services/PointShopApi";
 import FilterPanel from "@/views/PointShop/components/FilterPanel.vue";
 
 // 套版範例
@@ -9,6 +12,7 @@ import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
 const products = ref([]);
 const loading = ref(true);
+const keyword = ref("");
 
 // 篩選狀態
 const filters = ref({
@@ -17,19 +21,24 @@ const filters = ref({
   categories: [],
   series: [],
   inStock: false,
+  search: "",
 });
 
 // 可用的類別列表（從產品資料動態生成）
 const categories = ref([]);
 const series = ref([]);
 
-const fetchProducts = () => {
-  // 開始抓取前，通常會手動開啟 loading (原本 async 函式通常也會在開頭設定)
+// 抓取商品資料
+const fetchProducts = (keyword = "") => {
   loading.value = true;
 
-  getProducts()
+  const searchRequest =
+    keyword && keyword.trim()
+      ? getProductSearch(keyword.trim())
+      : getProducts();
+
+  searchRequest
     .then((response) => {
-      // 成功處理邏輯
       products.value = response.data.data;
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
@@ -55,15 +64,15 @@ const fetchProducts = () => {
       }));
 
       // 設定最大價格
-      const maxPrice = Math.max(...response.data.data.map((p) => p.point || 0));
+      const priceValues = response.data.data.map((p) => p.point || 0);
+      const maxPrice =
+        priceValues.length > 0 ? Math.max(...priceValues) : 10000;
       filters.value.maxPrice = maxPrice;
     })
     .catch((error) => {
-      // 錯誤處理邏輯
       console.error("抓取商品失敗:", error);
     })
     .finally(() => {
-      // 不論成功或失敗都會執行的邏輯
       loading.value = false;
     });
 };
@@ -115,42 +124,58 @@ const resetFilters = () => {
     categories: [],
     series: [],
     inStock: false,
+    search: "",
   };
+  fetchProducts(""); // 重設篩選時，清空搜尋並重新載入所有商品
 };
 
 const handleFilterUpdate = (newFilters) => {
   filters.value = newFilters;
 };
 
+// 監聽搜尋字段變化，自動觸發搜尋
+watch(
+  () => filters.value.search,
+  (newSearch) => {
+    fetchProducts(newSearch);
+  },
+  { immediate: false },
+);
+
 onMounted(() => {
   const body = document.getElementsByTagName("body")[0];
   body.classList.add("bg-grey-lighten-5"); // 全局背景色
 
-  fetchProducts();
+  fetchProducts(""); // 初始載入所有商品
 });
 </script>
 
 <template>
   <DefaultNavbar light />
-  <div class="min-vh-100 pb-5 ">
+  <div class="min-vh-100 pb-5">
     <div class="container pt-5 mb-5">
-      <!-- <div class="col-12 mb-4">
-        <div class="card border-0 shadow-sm" style="background-color: #86B0BD;">
-          <div class="card-body p-4">
-            <h2 class="fw-bold mb-1">點數商城</h2>
-          </div>
-        </div>
-      </div> -->
       <div class="row">
         <div class="col-lg-3">
-          <FilterPanel :filters="filters" :categories="categories" :series="series" @update:filters="handleFilterUpdate"
-            @toggle-category="toggleCategory" @toggle-series="toggleSeries" @reset-filters="resetFilters" />
+          <FilterPanel
+            :filters="filters"
+            :categories="categories"
+            :series="series"
+            @update:filters="handleFilterUpdate"
+            @toggle-category="toggleCategory"
+            @toggle-series="toggleSeries"
+            @reset-filters="resetFilters"
+          />
         </div>
         <div class="col-lg-9">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
-              <component :is="Component" :products="products" :filtered-products="filteredProducts" :loading="loading"
-                @reset-filters="resetFilters" />
+              <component
+                :is="Component"
+                :products="products"
+                :filtered-products="filteredProducts"
+                :loading="loading"
+                @reset-filters="resetFilters"
+              />
             </transition>
           </router-view>
         </div>

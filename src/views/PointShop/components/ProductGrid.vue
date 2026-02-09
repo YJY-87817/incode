@@ -20,8 +20,8 @@ const props = defineProps({
 const emit = defineEmits(["reset-filters"]);
 
 // --- 分頁相關邏輯 ---
-const currentPage = ref(1);        // 目前頁碼
-const pageSize = ref(8);           // 每頁顯示幾筆
+const currentPage = ref(1); // 目前頁碼
+const pageSize = ref(8); // 每頁顯示幾筆
 
 // 計算總頁數
 const totalPages = computed(() => {
@@ -36,26 +36,39 @@ const paginatedProducts = computed(() => {
 });
 
 // 當篩選條件改變時，自動回到第一頁
-watch(() => props.filteredProducts, () => {
-  currentPage.value = 1;
-});
+watch(
+  () => props.filteredProducts,
+  () => {
+    currentPage.value = 1;
+  },
+);
 
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
     // 選擇性：換頁後捲動到頂部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 };
 </script>
 
 <template>
   <div>
-    <div v-if="loading" class="col-12 text-center py-5">...</div>
+    <div v-if="loading" class="col-12 text-center py-5">找尋中...</div>
+    <div v-if="loading" class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">找尋中...</span>
+      </div>
+      <p class="mt-2">找尋中...</p>
+    </div>
 
     <template v-else-if="filteredProducts.length > 0">
       <div class="row g-3">
-        <div v-for="item in paginatedProducts" :key="item.productId" class="col-12 col-md-6 col-lg-6">
+        <div
+          v-for="item in paginatedProducts"
+          :key="item.productId"
+          class="col-12 col-md-6 col-lg-6"
+        >
           <ProductCard :product="item" />
         </div>
       </div>
@@ -64,22 +77,45 @@ const changePage = (page) => {
         <nav aria-label="Page navigation" class="mt-4">
           <ul class="pagination">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(currentPage - 1)">&laquo;</a>
+              <a
+                class="page-link btn-custom-primary"
+                href="#"
+                @click.prevent="changePage(currentPage - 1)"
+                >&laquo;</a
+              >
             </li>
 
-            <li v-for="page in totalPages" :key="page" class="page-item" :class="{ active: currentPage === page }">
-              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+            <li
+              v-for="page in totalPages"
+              :key="page"
+              class="page-item"
+              :class="{ active: currentPage === page }"
+            >
+              <a
+                class="page-link btn-custom-primary"
+                href="#"
+                @click.prevent="changePage(page)"
+                >{{ page }}</a
+              >
             </li>
 
-            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link btn-custom-primary" href="#" @click.prevent="changePage(currentPage + 1)">&raquo;</a>
+            <li
+              class="page-item"
+              :class="{ disabled: currentPage === totalPages }"
+            >
+              <a
+                class="page-link btn-custom-primary"
+                href="#"
+                @click.prevent="changePage(currentPage + 1)"
+                >&raquo;</a
+              >
             </li>
           </ul>
         </nav>
       </div>
     </template>
 
-    <div v-else class="col-12 text-center py-5">...</div>
+    <div v-else class="col-12 text-center py-5">找不到符合條件的商品</div>
   </div>
 </template>
 
