@@ -23,10 +23,6 @@ public partial class EntrustMission
 
     public DateTime? Deadline { get; set; }
 
-    public int MaxParticipants { get; set; }
-
-    public int? CurrentParticipants { get; set; }
-
     public string Status { get; set; }
 
     public bool? IsUrgent { get; set; }

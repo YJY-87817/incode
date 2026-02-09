@@ -87,6 +87,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("chat_message");
 
+            entity.HasIndex(e => e.SessionId, "IX_chat_message_session_id");
+
             entity.Property(e => e.ChatMessageId).HasColumnName("chat_message_id");
             entity.Property(e => e.Body)
                 .IsRequired()
@@ -115,6 +117,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("chat_session");
 
+            entity.HasIndex(e => e.UserId, "IX_chat_session_user_id");
+
             entity.Property(e => e.ChatSessionId).HasColumnName("chat_session_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -142,6 +146,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.ContentId).HasName("PK__content__655FE510FBC0C75B");
 
             entity.ToTable("content");
+
+            entity.HasIndex(e => e.CategoryId, "IX_content_category_id");
+
+            entity.HasIndex(e => e.ParentContentId, "IX_content_parent_content_id");
+
+            entity.HasIndex(e => e.UserId, "IX_content_user_id");
 
             entity.Property(e => e.ContentId).HasColumnName("content_id");
             entity.Property(e => e.Body)
@@ -185,6 +195,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("content_category");
 
+            entity.HasIndex(e => e.ParentCategoryId, "IX_content_category_parent_category_id");
+
             entity.Property(e => e.ContentCategoryId).HasColumnName("content_category_id");
             entity.Property(e => e.CategoryName)
                 .IsRequired()
@@ -206,6 +218,10 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094CA2BDD5E");
 
             entity.ToTable("content_history");
+
+            entity.HasIndex(e => e.ContentId, "IX_content_history_content_id");
+
+            entity.HasIndex(e => e.UserId, "IX_content_history_user_id");
 
             entity.Property(e => e.ContentHistoryId).HasColumnName("content_history_id");
             entity.Property(e => e.ContentId).HasColumnName("content_id");
@@ -241,6 +257,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("content_interaction");
 
+            entity.HasIndex(e => e.CategoryId, "IX_content_interaction_category_id");
+
+            entity.HasIndex(e => e.ContentId, "IX_content_interaction_content_id");
+
+            entity.HasIndex(e => e.UserId, "IX_content_interaction_user_id");
+
             entity.Property(e => e.ContentInteractionId).HasColumnName("content_interaction_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.ContentId).HasColumnName("content_id");
@@ -275,6 +297,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B280C912812");
 
             entity.ToTable("content_notification");
+
+            entity.HasIndex(e => e.CategoryId, "IX_content_notification_category_id");
+
+            entity.HasIndex(e => e.ContentId, "IX_content_notification_content_id");
+
+            entity.HasIndex(e => e.UserId, "IX_content_notification_user_id");
 
             entity.Property(e => e.ContentNotificationId).HasColumnName("content_notification_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
@@ -316,6 +344,10 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("entrust_mission");
 
+            entity.HasIndex(e => e.ContentId, "IX_entrust_mission_content_id");
+
+            entity.HasIndex(e => e.UserId, "IX_entrust_mission_user_id");
+
             entity.Property(e => e.EntrustMissionId).HasColumnName("entrust_mission_id");
             entity.Property(e => e.Category)
                 .IsRequired()
@@ -326,9 +358,6 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.CurrentParticipants)
-                .HasDefaultValue(0)
-                .HasColumnName("current_participants");
             entity.Property(e => e.Deadline)
                 .HasColumnType("datetime")
                 .HasColumnName("deadline");
@@ -342,9 +371,6 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.IsUrgent)
                 .HasDefaultValue(false)
                 .HasColumnName("is_urgent");
-            entity.Property(e => e.MaxParticipants)
-                .HasDefaultValue(1)
-                .HasColumnName("max_participants");
             entity.Property(e => e.RewardPoints).HasColumnName("reward_points");
             entity.Property(e => e.Status)
                 .IsRequired()
@@ -376,6 +402,10 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___150064708CF174DB");
 
             entity.ToTable("entrust_mission_point_reserve");
+
+            entity.HasIndex(e => e.EntrustMissionId, "IX_entrust_mission_point_reserve_entrust_mission_id");
+
+            entity.HasIndex(e => e.UserId, "IX_entrust_mission_point_reserve_user_id");
 
             entity.Property(e => e.EntrustMissionPointReserveId).HasColumnName("entrust_mission_point_reserve_id");
             entity.Property(e => e.CreatedAt)
@@ -411,6 +441,10 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("entrust_mission_progress");
 
+            entity.HasIndex(e => e.EntrustMissionId, "IX_entrust_mission_progress_entrust_mission_id");
+
+            entity.HasIndex(e => e.UserId, "IX_entrust_mission_progress_user_id");
+
             entity.Property(e => e.EntrustMissionProgressId).HasColumnName("entrust_mission_progress_id");
             entity.Property(e => e.AcceptedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -445,6 +479,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E68C57B971");
 
             entity.ToTable("follow");
+
+            entity.HasIndex(e => e.FolloweeId, "IX_follow_followee_id");
 
             entity.Property(e => e.FollowerId).HasColumnName("follower_id");
             entity.Property(e => e.FolloweeId).HasColumnName("followee_id");
@@ -554,6 +590,10 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("mission_progress");
 
+            entity.HasIndex(e => e.MissionId, "IX_mission_progress_mission_id");
+
+            entity.HasIndex(e => e.UserId, "IX_mission_progress_user_id");
+
             entity.Property(e => e.MissionProgressId).HasColumnName("mission_progress_id");
             entity.Property(e => e.AcceptedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -597,6 +637,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("notifications");
 
+            entity.HasIndex(e => e.TargetUserId, "IX_notifications_target_user_id");
+
             entity.Property(e => e.NotificationsId).HasColumnName("notifications_id");
             entity.Property(e => e.Category)
                 .HasMaxLength(50)
@@ -635,6 +677,10 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("orderdetail");
 
+            entity.HasIndex(e => e.OrderId, "IX_orderdetail_order_id");
+
+            entity.HasIndex(e => e.ProductId, "IX_orderdetail_product_id");
+
             entity.Property(e => e.OrderdetailId).HasColumnName("orderdetail_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
@@ -658,6 +704,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.OrderId).HasName("PK__orders__46596229A7119C0E");
 
             entity.ToTable("orders");
+
+            entity.HasIndex(e => e.UserId, "IX_orders_user_id");
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.CanceledAt)
@@ -688,6 +736,10 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C752B4410");
 
             entity.ToTable("point_log");
+
+            entity.HasIndex(e => e.PointTypeDefinitionId, "IX_point_log_point_type_definition_id");
+
+            entity.HasIndex(e => e.UserId, "IX_point_log_user_id");
 
             entity.Property(e => e.PointLogId).HasColumnName("point_log_id");
             entity.Property(e => e.BalanceAfter).HasColumnName("balance_after");
@@ -770,6 +822,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("point_tip");
 
+            entity.HasIndex(e => e.ContentId, "IX_point_tip_content_id");
+
+            entity.HasIndex(e => e.FromUserId, "IX_point_tip_from_user_id");
+
+            entity.HasIndex(e => e.ToUserId, "IX_point_tip_to_user_id");
+
             entity.Property(e => e.PointTipId).HasColumnName("point_tip_id");
             entity.Property(e => e.Amount).HasColumnName("amount");
             entity.Property(e => e.ContentId).HasColumnName("content_id");
@@ -832,6 +890,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("pointchange");
 
+            entity.HasIndex(e => e.ProductId, "IX_pointchange_product_id");
+
             entity.Property(e => e.PointchangeId).HasColumnName("pointchange_id");
             entity.Property(e => e.Point).HasColumnName("point");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
@@ -891,6 +951,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("productimage");
 
+            entity.HasIndex(e => e.ProductId, "IX_productimage_product_id");
+
             entity.Property(e => e.ProductimageId).HasColumnName("productimage_id");
             entity.Property(e => e.ImageName)
                 .HasMaxLength(50)
@@ -925,6 +987,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("shipaddress");
 
+            entity.HasIndex(e => e.UserId, "IX_shipaddress_user_id");
+
             entity.Property(e => e.ShipaddressId).HasColumnName("shipaddress_id");
             entity.Property(e => e.RecipientAddress)
                 .IsRequired()
@@ -951,6 +1015,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C93F06C1255");
 
             entity.ToTable("shipped_detail");
+
+            entity.HasIndex(e => e.OrderId, "IX_shipped_detail_order_id");
 
             entity.Property(e => e.ShippedDetailId).HasColumnName("shipped_detail_id");
             entity.Property(e => e.ArrivalDate)
@@ -989,6 +1055,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FC3440408");
 
             entity.ToTable("user");
+
+            entity.HasIndex(e => e.RoleId, "IX_user_role_id");
 
             entity.HasIndex(e => e.Email, "UQ__user__AB6E61640A03D6F9").IsUnique();
 
@@ -1040,6 +1108,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("user_image");
 
+            entity.HasIndex(e => e.UserId, "IX_user_image_user_id");
+
             entity.Property(e => e.UserImageId).HasColumnName("user_image_id");
             entity.Property(e => e.Caption)
                 .HasMaxLength(200)
@@ -1073,6 +1143,8 @@ public partial class incodedatabaseContext : DbContext
 
             entity.ToTable("user_inventory");
 
+            entity.HasIndex(e => e.UserId, "IX_user_inventory_user_id");
+
             entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
             entity.Property(e => e.ItemId).HasColumnName("item_id");
             entity.Property(e => e.Quantity)
@@ -1090,6 +1162,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.LoginlogId).HasName("PK__user_log__2AF68B1EBDA405BF");
 
             entity.ToTable("user_loginlog");
+
+            entity.HasIndex(e => e.UserId, "IX_user_loginlog_user_id");
 
             entity.Property(e => e.LoginlogId).HasColumnName("loginlog_id");
             entity.Property(e => e.IpAddress)
@@ -1112,6 +1186,8 @@ public partial class incodedatabaseContext : DbContext
             entity.HasKey(e => e.UserNotificationId).HasName("PK__user_not__64BFFBDB2F033306");
 
             entity.ToTable("user_notification");
+
+            entity.HasIndex(e => e.UserId, "IX_user_notification_user_id");
 
             entity.Property(e => e.UserNotificationId).HasColumnName("user_notification_id");
             entity.Property(e => e.Content)

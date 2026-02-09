@@ -5,14 +5,15 @@ namespace incode2.Services.Contents
 {
   public interface IContentService
   {
-    Task<object> GetContents(int? categoryId, int page, int pageSize);
+    Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy);
     Task<ContentDto?> GetContent(int id);
     Task<Content> CreateContent(CreateContentDto dto);
     Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
-    Task<bool> DeleteContent(int id);
+    Task<bool> DeleteContent(int id, int currentUserId);
     Task<List<ContentDto>> GetCommentsByContentId(int contentId);
+    Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize);
     Task<List<ContentDto>> GetUserContents(int userId);
-    Task<List<ContentDto>> GetUserContentsByTypes(int userId, IEnumerable<int> types);
-    Task<List<ContentDto>> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames);
+    Task<object> GetUserContentsByTypes(int userId, IEnumerable<int> types, int page, int pageSize);
+    Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize);
   }
 }

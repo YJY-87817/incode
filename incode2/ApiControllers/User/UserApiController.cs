@@ -1,6 +1,7 @@
 ﻿using incode2.DTO.user;
 using incode2.Extensions;
 using incode2.Models;
+using incode2.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,15 +13,17 @@ namespace incode2.ApiController.user
   //localhost:7190/api/User
   [Route("api/[controller]")]
   [ApiController]
-  [Authorize]
+  //[Authorize]
     public class UserController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
+        private readonly IUserService _userService;
 
-    public UserController(incodedatabaseContext context)
+        public UserController(incodedatabaseContext context, IUserService userService)
     {
       _context = context;
-    }
+            _userService = userService;
+        }
 
         // GET: api/User
         // 取得所有使用者列表
@@ -46,42 +49,50 @@ namespace incode2.ApiController.user
         [HttpGet("profile")]
         public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
-            User user = null; // 定義一個變數來存「找到的使用者」
+            int? currentUserId = null;
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {               
+                currentUserId = User.GetId();
+            }
+            User targetUser = null;
 
-            if (!string.IsNullOrEmpty(username))
+            if (string.IsNullOrWhiteSpace(username))
             {
-                // 情境 A: 有傳 username -> 查詢該 username 的資料
-                user = await _context.User
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Username == username);
+                if (currentUserId == null)
+                {
+                    return Unauthorized(new { message = "請先登入才能查看個人檔案" });
+                }
+                targetUser = await _context.User.FindAsync(currentUserId);
             }
             else
             {
-                // 情境 B: 沒傳 username -> 查詢當前登入者 (查自己)
-                int currentUserId = User.GetId();
-                user = await _context.User
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.UserId == currentUserId);
+                targetUser = await _context.User
+                    .FirstOrDefaultAsync(u => u.Username == username);
+            }
+                        
+            if (targetUser == null)
+            {
+                return NotFound(new { message = "找不到該使用者" });
             }
 
-            // 檢查是否找到資料
-            if (user == null)
+            var responseDto = new UserDto
             {
-                return NotFound("找不到該會員資料");
+                UserId = targetUser.UserId,
+                Username = targetUser.Username,
+                ImageUrl = targetUser.ImageUrl ?? "",                                                      
+            };
+
+            bool isMe = currentUserId.HasValue && currentUserId.Value == targetUser.UserId;
+
+            if (isMe)
+            {
+                responseDto.Email = targetUser.Email;
+                responseDto.Phone = targetUser.Phone;
+                responseDto.Address = targetUser.Address;
+                responseDto.Birthday = targetUser.Birthday;
             }
 
-            // 轉換成 DTO 回傳
-            return Ok(new UserDto
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                Username = user.Username,
-                ImageUrl = user.ImageUrl,
-                Role = user.Role.RoleName ?? "Member",
-                Phone = user.Phone,
-                Address = user.Address,
-                Birthday = user.Birthday,
-            });
+            return Ok(responseDto);        
         }
 
         // PUT: api/User/profile
@@ -147,6 +158,30 @@ namespace incode2.ApiController.user
         private bool UserExists(int id)
         {
             return _context.User.Any(e => e.UserId == id);
+        }
+
+        // user/41/stats
+        [HttpGet("{userId}/stats")]
+        public async Task<ActionResult<UserProfileStatsDto>> GetUserStats(int userId)
+        {
+            // 呼叫 Service
+            var stats = await _userService.GetUserStatsAsync(userId);
+
+            // 判斷 Service 是否回傳 null (代表找不到該用戶)
+            if (stats == null)
+            {
+                return NotFound(new { message = "找不到該使用者或是使用者不存在" });
+            }
+
+            // 回傳 200 OK 與數據
+            return Ok(new
+            {
+                articleCount = stats.ArticleCount,
+                followers = stats.FollowerCount, 
+                following = stats.FollowingCount,
+                missionCount = stats.MissionCount,
+                points = stats.PointBalance
+            });
         }
     }
 }
