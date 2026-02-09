@@ -24,12 +24,13 @@ namespace incode2.Services.Point
         Task ConsumeAsync(int userId, int points, int OrderId);
 
         //打賞影評作者（雙向交易）//寫 2 筆 point_log 包在同一個 Transaction
-        Task TipAsync(int fromUserId,int toUserId,int ContentId, int amount);
+        Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount);
 
         Task<ResultDTO> AddPointsAsync(int userId, int rewardPoints, int missionId);
 
         Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
 
         //Task<bool> DeductPointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
+        Task AddPointsFromRechargeAsync(PointRecharge recharge);
     }
 }
