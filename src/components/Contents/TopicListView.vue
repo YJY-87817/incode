@@ -593,7 +593,7 @@ function handleThreadReplyingTargetClick() {
           @click="handleThreadReplyingTargetClick"
         >
           <!-- 主題徽章 -->
-          <div class="d-flex flex-wrap gap-1 mb-2">
+          <div class="d-flex flex-wrap gap-1">
             <span
               v-if="forumStore.threadDetail?.categoryName"
               class="badge bg-secondary-light text-dark"
@@ -630,7 +630,7 @@ function handleThreadReplyingTargetClick() {
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
             <h3
-              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0"
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
             >
               {{ forumStore.threadDetail.title }}
             </h3>
@@ -910,7 +910,7 @@ function handleThreadReplyingTargetClick() {
                   <div class="d-flex align-items-start gap-3">
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
-                      <div class="d-flex flex-wrap gap-1 mb-1">
+                      <div class="d-flex flex-wrap gap-1">
                         <span
                           v-if="topic.categoryName"
                           class="badge bg-secondary-light text-dark"
