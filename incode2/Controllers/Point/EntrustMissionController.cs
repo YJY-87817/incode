@@ -56,7 +56,7 @@ namespace incode2.Controllers.Point
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,MaxParticipants,Status,CreatedAt")] EntrustMission entrustMission)
+        public async Task<IActionResult> Create([Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,Status,CreatedAt")] EntrustMission entrustMission)
         {
             if (ModelState.IsValid)
             {
@@ -90,7 +90,7 @@ namespace incode2.Controllers.Point
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,MaxParticipants,Status,CreatedAt")] EntrustMission entrustMission)
+        public async Task<IActionResult> Edit(int id, [Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,Status,CreatedAt")] EntrustMission entrustMission)
         {
             if (id != entrustMission.EntrustMissionId)
             {
