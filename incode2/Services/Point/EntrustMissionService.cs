@@ -1,4 +1,5 @@
-﻿using incode2.DTO;
+﻿using incode2.Constants;
+using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,12 @@ namespace incode2.Services.Point
   public class EntrustMissionService : IEntrustMissionService
   {
     private readonly incodedatabaseContext _context;
-    public EntrustMissionService(incodedatabaseContext context) => _context = context;
+    private readonly IPointLogService _pointLogService;
+        public EntrustMissionService(incodedatabaseContext context,IPointLogService pointLogService) 
+        { 
+            _context = context; 
+            _pointLogService = pointLogService;
+        }
 
     public async Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync()
     {
@@ -154,73 +160,125 @@ namespace incode2.Services.Point
           .FirstOrDefaultAsync();
     }
 
-    public async Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto)
-    {
-      // 驗證業務邏輯
-      if (dto.RewardPoints <= 0)
-        return new ResultDTO { Ok = false, Code = 400, Message = "賞金必須大於 0" };
-
-      if (dto.ContentId <= 0)
-        return new ResultDTO { Ok = false, Code = 400, Message = "必須選擇關聯內容" };
-
-      if (dto.Deadline.HasValue && dto.Deadline.Value < DateTime.UtcNow)
-        return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
-
-      // 驗證 ContentId 是否存在
-      var content = await _context.Content
-          .AsNoTracking()
-          .FirstOrDefaultAsync(c => c.ContentId == dto.ContentId);
-
-      if (content == null)
-        return new ResultDTO { Ok = false, Code = 404, Message = "指定的內容不存在" };
-
-      // 驗證發起人是否存在
-      var user = await _context.User
-          .AsNoTracking()
-          .FirstOrDefaultAsync(u => u.UserId == dto.UserId);
-
-      if (user == null)
-        return new ResultDTO { Ok = false, Code = 404, Message = "發起人不存在" };
-
-      // 建立新任務記錄
-      var em = new EntrustMission
-      {
-        UserId = dto.UserId,
-        ContentId = dto.ContentId,
-        Title = dto.Title,  // 使用前端傳入的標題
-        Detail = dto.Detail ?? "無詳細說明",
-        RewardPoints = dto.RewardPoints,
-        Category = dto.Category ?? "其他",
-        Deadline = dto.Deadline,
-        Status = "open",
-        IsUrgent = dto.IsUrgent,
-        IsActive = true,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-      };
-
-      try
-      {
-        _context.EntrustMission.Add(em);
-        await _context.SaveChangesAsync();
-
-        return new ResultDTO
+        public async Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto)
         {
-          Ok = true,
-          Code = 201,
-          Message = "委託任務建立成功",
-          Data = new { EntrustMissionId = em.EntrustMissionId, Title = em.Title }
-        };
-      }
-      catch (DbUpdateException ex)
-      {
-        // _logger.LogError(ex, "建立委託任務失敗 - UserId: {UserId}", dto.UserId);
-        return new ResultDTO { Ok = false, Code = 500, Message = "建立任務失敗，請稍後再試" };
-      }
-    }
+            int userId = dto.UserId;
+            DateTime now = DateTime.UtcNow;
+            // ========= 基本業務驗證 =========
+            if (dto.RewardPoints <= 0)
+                return new ResultDTO { Ok = false, Code = 400, Message = "賞金必須大於 0" };
 
-    public async Task<ResultDTO> UpdateEntrustMissionAsync(int id, EntrustMissionDTO dto)
-    {
+            if (dto.ContentId <= 0)
+                return new ResultDTO { Ok = false, Code = 400, Message = "必須選擇關聯內容" };
+
+            if (dto.Deadline.HasValue && dto.Deadline < DateTime.UtcNow)
+                return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
+
+            // ========= Content 是否存在 =========
+            bool contentExists = await _context.Content
+                .AsNoTracking()
+                .AnyAsync(c => c.ContentId == dto.ContentId);
+
+            if (!contentExists)
+                return new ResultDTO { Ok = false, Code = 404, Message = "指定的內容不存在" };
+
+            // ========= 使用者是否存在 =========
+            bool userExists = await _context.User
+                .AsNoTracking()
+                .AnyAsync(u => u.UserId == userId);
+
+            if (!userExists)
+                return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
+
+            // ========= Transaction =========
+            using var tx = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1️⃣ 獲取最新餘額並鎖定該行 (防止併發超扣)
+                // 注意：這裡使用 SQL Raw 來確保 UPDLOCK 生效
+                var lastLog = await _context.PointLog
+                    .FromSqlRaw("SELECT TOP 1 * FROM point_log WITH (UPDLOCK) WHERE user_id = {0} ORDER BY created_at DESC", userId)
+                    .FirstOrDefaultAsync();
+
+                int currentBalance = lastLog?.BalanceAfter ?? 0;
+
+                if (currentBalance < dto.RewardPoints)
+                    return new ResultDTO { Ok = false, Code = 400, Message = "點數不足" };
+
+                // 1️⃣ 建立委託任務
+                var entrustMission = new EntrustMission
+                {
+                    UserId = userId,
+                    ContentId = dto.ContentId,
+                    Title = dto.Title,
+                    Detail = dto.Detail ?? "無詳細說明",
+                    RewardPoints = dto.RewardPoints,
+                    Category = dto.Category,
+                    Deadline = dto.Deadline,
+                    Status = "open",
+                    IsUrgent = dto.IsUrgent,
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                _context.EntrustMission.Add(entrustMission);
+                await _context.SaveChangesAsync();
+
+                // 2️⃣ 預扣點數
+                var reserve = new EntrustMissionPointReserve
+                {
+                    UserId = userId,
+                    EntrustMissionId = entrustMission.EntrustMissionId,
+                    ReservedPoints = dto.RewardPoints,
+                    Status = "reserved",
+                    CreatedAt = now
+                };
+
+                // 3️⃣ 點數異動紀錄
+                var log = new PointLog
+                {
+                    UserId = userId,
+                    SourceType = "entrust_mission",
+                    SourceId = entrustMission.EntrustMissionId,
+                    PointTypeDefinitionId = (int)PointType.EntrustMissionReserve,
+                    ChangeAmount = -dto.RewardPoints,
+                    BalanceAfter = currentBalance - dto.RewardPoints,
+                    Status = "system",
+                    CreatedAt = now
+                };
+                _context.EntrustMissionPointReserve.Add(reserve);
+                _context.PointLog.Add(log);
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return new ResultDTO
+                {
+                    Ok = true,
+                    Code = 201,
+                    Message = "委託任務建立成功",
+                    Data = new { EntrustMissionId = entrustMission.EntrustMissionId }
+                };
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                // 取得真正的錯誤原因
+                var realMessage = ex.InnerException?.Message ?? ex.Message;
+                return new ResultDTO
+                {
+                    Ok = false,
+                    Code = 500,
+                    Message = $"除錯訊息: {realMessage}" // 這會告訴你是 SQL 語法錯、欄位太長、還是外鍵報錯
+                };
+            }
+        }
+
+
+        public async Task<ResultDTO> UpdateEntrustMissionAsync(int id, EntrustMissionDTO dto)
+        {
       var em = await _context.EntrustMission.FindAsync(id);
       if (em == null)
         return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
@@ -236,7 +294,7 @@ namespace incode2.Services.Point
 
       await _context.SaveChangesAsync();
       return new ResultDTO { Ok = true, Code = 204, Message = "更新成功" };
-    }
+        }
 
     public async Task<ResultDTO> DeleteEntrustMissionAsync(int id)
     {
