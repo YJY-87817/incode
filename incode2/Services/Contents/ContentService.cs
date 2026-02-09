@@ -143,6 +143,7 @@ namespace incode2.Services.Contents
         return new ContentListItemDto
         {
           ContentId = c.ContentId,
+          ParentContentId = c.ParentContentId,
           UserId = c.UserId,
           Username = c.Username,
           CategoryId = c.CategoryId,

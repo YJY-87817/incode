@@ -3,6 +3,7 @@ namespace incode2.Dtos
   public class ContentListItemDto
   {
     public int ContentId { get; set; }
+    public int? ParentContentId { get; set; }
     public int UserId { get; set; }
     public string Username { get; set; }
     public int? CategoryId { get; set; }
