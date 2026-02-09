@@ -1119,6 +1119,12 @@ async function handleDeleteContent(contentId) {
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
   color: #145369;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  line-height: 1;
 }
 
 .post-time {
