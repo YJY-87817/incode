@@ -65,7 +65,17 @@ const getTopicPreviewCss = (topic) => {
 };
 
 const logTopic = (topic) => {
-  // 調試函數
+  if (!topic) return;
+  if (topic.type !== CONTENT_TYPES.REPLY) return;
+  console.log("[TopicListView] reply topic", {
+    id: topic.id,
+    type: topic.type,
+    parentContentId: topic.parentContentId,
+    parent_content_id: topic.parent_content_id,
+    parentId: topic.parentId,
+    parent_id: topic.parent_id,
+    title: topic.title,
+  });
 };
 
 const goToThread = (threadId) => {
@@ -813,7 +823,6 @@ function handleThreadReplyingTargetClick() {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
-                :show-parent-link="false"
               />
             </div>
 

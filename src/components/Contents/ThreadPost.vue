@@ -474,7 +474,12 @@ const badgeClass = computed(() => {
 });
 
 const parentContentId = computed(
-  () => props.post.parentContentId ?? props.post.parent_content_id ?? null,
+  () =>
+    props.post.parentContentId ??
+    props.post.parent_content_id ??
+    props.post.parentId ??
+    props.post.parent_id ??
+    null,
 );
 
 const shouldShowParentLink = computed(
@@ -482,6 +487,31 @@ const shouldShowParentLink = computed(
     props.showParentLink &&
     props.post.type === CONTENT_TYPES.REPLY &&
     parentContentId.value,
+);
+
+watch(
+  () => [
+    props.post?.id,
+    props.post?.type,
+    props.post?.parentContentId,
+    props.post?.parent_content_id,
+    props.post?.parentId,
+    props.post?.parent_id,
+  ],
+  () => {
+    console.log("[ThreadPost] parent link check", {
+      id: props.post?.id,
+      type: props.post?.type,
+      parentContentId: props.post?.parentContentId,
+      parent_content_id: props.post?.parent_content_id,
+      parentId: props.post?.parentId,
+      parent_id: props.post?.parent_id,
+      resolvedParentId: parentContentId.value,
+      showParentLinkProp: props.showParentLink,
+      shouldShowParentLink: shouldShowParentLink.value,
+    });
+  },
+  { immediate: true },
 );
 
 const escapeHtml = (value) =>

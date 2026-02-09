@@ -893,6 +893,20 @@ export const useForumStore = defineStore("forum", {
                   ? this.threadReplyStats[contentId]
                   : {};
 
+              if (item?.type === CONTENT_TYPES.REPLY) {
+                console.log("[forumStore] reply item raw", {
+                  id: contentId,
+                  type: item.type,
+                  parentContentId: item.parentContentId,
+                  parent_content_id: item.parent_content_id,
+                  parentId: item.parentId,
+                  parent_id: item.parent_id,
+                  parent: item.parent,
+                  parentContent: item.parentContent,
+                  keys: Object.keys(item || {}),
+                });
+              }
+
               return {
                 id: contentId,
                 userId: item.userId ?? item.user_id ?? null,
@@ -906,7 +920,11 @@ export const useForumStore = defineStore("forum", {
                 categoryName: item.categoryName,
                 categoryId: item.categoryId ?? item.category_id ?? null,
                 parentContentId:
-                  item.parentContentId ?? item.parent_content_id ?? null,
+                  item.parentContentId ??
+                  item.parent_content_id ??
+                  item.parentId ??
+                  item.parent_id ??
+                  null,
                 createdAt: item.createdAt,
                 type: item.type,
                 replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
@@ -1045,7 +1063,11 @@ export const useForumStore = defineStore("forum", {
             categoryId: categoryId,
             categoryName: categoryName,
             parentContentId:
-              detail.parentContentId ?? detail.parent_content_id ?? null,
+              detail.parentContentId ??
+              detail.parent_content_id ??
+              detail.parentId ??
+              detail.parent_id ??
+              null,
             type: detail.type,
             isPinned: isPinned,
             isHot: isHot,
