@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick } from "vue";
+import { computed, nextTick, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
@@ -15,6 +15,29 @@ const { getModeTitle, publishPost, hasDraftContent } = useForumPost();
 const allDrafts = computed(() => forumStore.drafts || []);
 
 const submitLabel = "發布";
+
+const buildReplyTitle = (baseTitle) => {
+  const base = String(baseTitle || "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
+const isCommentLikeDraft = (draft) => {
+  const type = draft?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+};
+
+const getReplyBaseTitle = (draft) =>
+  draft?.replyingToContentData?.title ||
+  draft?.replyingToContentData?.contentText ||
+  "";
+
+const syncDraftReplyTitle = (draft) => {
+  if (!draft || !isCommentLikeDraft(draft)) return;
+  const targetTitle = buildReplyTitle(getReplyBaseTitle(draft));
+  if (targetTitle && draft.title !== targetTitle) {
+    forumStore.updateDraft(draft.id, { title: targetTitle });
+  }
+};
 
 // 滾動到回覆目標的函數
 const scrollToReplyTarget = async (draft) => {
@@ -193,6 +216,14 @@ const updateDraftTitle = (draft, value) => {
 const updateDraftBody = (draft, value) => {
   forumStore.updateDraft(draft.id, { body: value });
 };
+
+watch(
+  () => allDrafts.value,
+  (drafts) => {
+    (drafts || []).forEach((draft) => syncDraftReplyTitle(draft));
+  },
+  { immediate: true, deep: true },
+);
 </script>
 
 <template>
@@ -228,7 +259,7 @@ const updateDraftBody = (draft, value) => {
             </div>
           </div>
           <div class="card-body pt-0 pb-0 sidebar-body">
-            <div class="mb-3">
+            <div v-if="!isCommentLikeDraft(draft)" class="mb-3">
               <label class="form-label">標題</label>
               <input
                 :value="draft.title"

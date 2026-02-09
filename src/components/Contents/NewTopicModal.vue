@@ -17,10 +17,27 @@ const isEditingCommentLike = computed(() => {
   const type = forumStore.newTopic?.contentType;
   return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
 });
+const isReplyLikeMode = computed(
+  () => modalMode.value === "comment" || modalMode.value === "commentReply",
+);
+const shouldHideTitleInput = computed(
+  () => isEditingCommentLike.value || isReplyLikeMode.value,
+);
 const modalTitle = computed(() => getModeTitle(modalMode.value));
 const submitLabel = computed(() => {
   if (modalMode.value === "edit") return "更新";
   return modalMode.value === "post" ? "發佈" : "發佈";
+});
+
+const buildReplyTitle = (baseTitle) => {
+  const base = String(baseTitle || "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
+const replyAutoTitle = computed(() => {
+  const data = forumStore.replyingToContentData;
+  const baseTitle = data?.title || data?.contentText || "";
+  return buildReplyTitle(baseTitle);
 });
 
 const newTopicState = reactive({
@@ -271,6 +288,18 @@ watch(
   (value) => {
     forumStore.newTopic.title = value;
   },
+);
+
+watch(
+  () => [isReplyLikeMode.value, replyAutoTitle.value],
+  ([replyLikeMode, autoTitle]) => {
+    if (!replyLikeMode) return;
+    if (!autoTitle) return;
+    if (newTopicState.title !== autoTitle) {
+      newTopicState.title = autoTitle;
+    }
+  },
+  { immediate: true },
 );
 
 watch(
@@ -1092,7 +1121,7 @@ const handleModalCancel = () => {
                 </div>
               </div>
               <div v-else class="mb-3"></div>
-              <div v-if="!isEditingCommentLike" class="mb-3">
+              <div v-if="!shouldHideTitleInput" class="mb-3">
                 <label class="form-label">標題</label>
                 <input
                   v-model="newTopicState.title"
