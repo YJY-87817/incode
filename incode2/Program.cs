@@ -148,6 +148,7 @@ builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
 builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
 builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
+builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();
 

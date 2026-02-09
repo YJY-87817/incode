@@ -208,6 +208,8 @@ Table mission_progress {
   accepted_at datetime [default: `CURRENT_TIMESTAMP`, note: '開始計算進度的時間']
   completed_at datetime [note: '實際完成時間']
   rewarded_at datetime [note: '實際撥款的時間(點選領取按鈕)']
+  cycle_start_at datetime [note: '循環開始時間']
+  cycle_end_at datetime [note: '循環結束時間']
 }
 
 //========= 委託任務 ===========

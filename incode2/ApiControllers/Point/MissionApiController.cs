@@ -31,13 +31,13 @@ namespace incode2.ApiControllers.Point
 
         // GET: api/MissionApi
         [HttpGet]
-        //[Authorize]
         public async Task<ActionResult<IEnumerable<MissionDTO>>> GetMission()
         {
             var mission = await _missionService.GetAllMissionAsync();
             return Ok(mission);
         }
 
+        //領取平台任務
         [HttpPost("{missionId}/missionClaim")]
         [Authorize]
         public async Task<ActionResult<ResultDTO>> ClaimMission(int missionId)
@@ -190,10 +190,5 @@ namespace incode2.ApiControllers.Point
             }        
             return new ResultDTO { Ok = true, Code = 204 };
         }
-
-        //private bool MissionExists(int id)
-        //{
-        //    return _context.Mission.Any(e => e.MissionId == id);
-        //}
     }
 }
