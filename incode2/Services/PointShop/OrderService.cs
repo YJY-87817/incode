@@ -110,6 +110,31 @@ namespace incode2.Services.PointShop
             }
         }
 
+        // 取得輸入過寄送資料
+        public async Task<ResultDTO<IEnumerable<ShipAddressDTO>>> GetHasShippedDetailAsync(int userId)
+        {
+            try
+            {
+                var shipAddresses = await _context.Shipaddress
+                    .Where(e => e.UserId == userId)
+                    .Select(e => new ShipAddressDTO
+                    {
+                         //根據 ShipAddressDTO 的屬性映射相應欄位
+                         //例如: ShipAddressId = e.ShipAddressId,
+                         RecipientName = e.RecipientName,
+                         RecipientPhone = e.RecipientPhone,
+                         RecipientAddress = e.RecipientAddress
+                    })
+                    .ToListAsync();
+
+                return ResultDTO<IEnumerable<ShipAddressDTO>>.Success(shipAddresses);
+            }
+            catch (Exception ex)
+            {
+                return ResultDTO<IEnumerable<ShipAddressDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+            }
+        }
+
         // 新增訂單
         public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order, int totalPoints, Dictionary<int, Product> productDict)
         {

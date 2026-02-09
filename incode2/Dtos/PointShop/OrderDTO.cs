@@ -114,5 +114,17 @@ namespace incode2.Dtos.PointShop
                 : address;
         }
     }
+
+    // 使用者取得過去寄送資料
+    public class ShipAddressDTO
+    {
+        public string RecipientName { get; set; }
+
+        public string RecipientAddress { get; set; }
+
+        public string RecipientPhone { get; set; }
+
+    }
+
 }
 
