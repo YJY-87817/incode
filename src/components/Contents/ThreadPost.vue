@@ -22,6 +22,15 @@
                   >
                     {{ post.categoryName }}
                   </span>
+                  <button
+                    v-if="shouldShowParentLink"
+                    class="btn btn-sm btn-outline-primary parent-link-btn"
+                    type="button"
+                    @click.stop="goToParentThread"
+                  >
+                    <i class="fas fa-link me-1"></i>
+                    主文
+                  </button>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
                   <h6 class="card-title post-author mb-0" @click.stop>
                     <UserHoverName
@@ -313,6 +322,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showParentLink: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const showReply = ref(false);
@@ -459,6 +472,17 @@ const badgeClass = computed(() => {
       return "bg-light text-dark";
   }
 });
+
+const parentContentId = computed(
+  () => props.post.parentContentId ?? props.post.parent_content_id ?? null,
+);
+
+const shouldShowParentLink = computed(
+  () =>
+    props.showParentLink &&
+    props.post.type === CONTENT_TYPES.REPLY &&
+    parentContentId.value,
+);
 
 const escapeHtml = (value) =>
   String(value)
@@ -887,6 +911,15 @@ function goToPostDetail(event) {
   router.push({ name: "forum-thread", params: { id: props.post.id } });
 }
 
+function goToParentThread(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  if (!parentContentId.value) return;
+  router.push({ name: "forum-thread", params: { id: parentContentId.value } });
+}
+
 /**
  * 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
  */
@@ -1059,6 +1092,23 @@ async function handleDeleteContent(contentId) {
   gap: 0.5rem;
   position: relative;
   z-index: 4;
+}
+
+.parent-link-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-color: #86b0bd;
+  color: #145369;
+  background: transparent;
+}
+
+.parent-link-btn:hover {
+  background-color: #fff0dd;
+  border-color: #145369;
+  color: #145369;
 }
 
 .badge.bg-secondary-light {

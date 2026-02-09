@@ -261,6 +261,7 @@ export const useForumStore = defineStore("forum", {
       imageUrls: [],
       categoryId: null,
       categoryName: null,
+      parentContentId: null,
       type: null,
       isPinned: false,
       isHot: false,
@@ -904,6 +905,8 @@ export const useForumStore = defineStore("forum", {
                 authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
                 categoryName: item.categoryName,
                 categoryId: item.categoryId ?? item.category_id ?? null,
+                parentContentId:
+                  item.parentContentId ?? item.parent_content_id ?? null,
                 createdAt: item.createdAt,
                 type: item.type,
                 replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
@@ -1041,6 +1044,8 @@ export const useForumStore = defineStore("forum", {
             imageUrls,
             categoryId: categoryId,
             categoryName: categoryName,
+            parentContentId:
+              detail.parentContentId ?? detail.parent_content_id ?? null,
             type: detail.type,
             isPinned: isPinned,
             isHot: isHot,
@@ -1090,6 +1095,7 @@ export const useForumStore = defineStore("forum", {
         imageUrls: [],
         categoryId: null,
         categoryName: null,
+        parentContentId: null,
         type: null,
         isPinned: false,
         isHot: false,

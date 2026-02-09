@@ -604,6 +604,18 @@ function handleThreadReplyingTargetClick() {
             >
               {{ forumStore.threadDetail.categoryName }}
             </span>
+            <button
+              v-if="
+                forumStore.threadDetail?.type === CONTENT_TYPES.REPLY &&
+                forumStore.threadDetail?.parentContentId
+              "
+              class="btn btn-sm btn-outline-primary parent-link-btn"
+              type="button"
+              @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
+            >
+              <i class="fas fa-link me-1"></i>
+              主文
+            </button>
             <span
               v-if="forumStore.threadDetail?.isPinned"
               class="badge bg-danger"
@@ -801,6 +813,7 @@ function handleThreadReplyingTargetClick() {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
+                :show-parent-link="false"
               />
             </div>
 
@@ -910,6 +923,18 @@ function handleThreadReplyingTargetClick() {
                         >
                           {{ topic.categoryName }}
                         </span>
+                        <button
+                          v-if="
+                            topic.type === CONTENT_TYPES.REPLY &&
+                            topic.parentContentId
+                          "
+                          class="btn btn-sm btn-outline-primary parent-link-btn"
+                          type="button"
+                          @click.stop="goToThread(topic.parentContentId)"
+                        >
+                          <i class="fas fa-link me-1"></i>
+                          主文
+                        </button>
                         <span v-if="topic.isPinned" class="badge bg-danger">
                           置頂
                         </span>
@@ -1258,6 +1283,23 @@ function handleThreadReplyingTargetClick() {
 
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
+  color: #145369;
+}
+
+.parent-link-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-color: #86b0bd;
+  color: #145369;
+  background: transparent;
+}
+
+.parent-link-btn:hover {
+  background-color: #fff0dd;
+  border-color: #145369;
   color: #145369;
 }
 
