@@ -115,7 +115,15 @@ const changePage = (page) => {
       </div>
     </template>
 
-    <div v-else class="col-12 text-center py-5">找不到符合條件的商品</div>
+    <div v-else class="col-12 text-center py-5">
+      <h3>找不到符合條件的商品</h3>
+      <button
+        class="btn btn-custom-primary mt-3"
+        @click="$emit('reset-filters')"
+      >
+        清除篩選條件
+      </button>
+    </div>
   </div>
 </template>
 
