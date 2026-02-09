@@ -64,20 +64,6 @@ const getTopicPreviewCss = (topic) => {
   return basePreviewCss;
 };
 
-const logTopic = (topic) => {
-  if (!topic) return;
-  if (topic.type !== CONTENT_TYPES.REPLY) return;
-  console.log("[TopicListView] reply topic", {
-    id: topic.id,
-    type: topic.type,
-    parentContentId: topic.parentContentId,
-    parent_content_id: topic.parent_content_id,
-    parentId: topic.parentId,
-    parent_id: topic.parent_id,
-    title: topic.title,
-  });
-};
-
 const goToThread = (threadId) => {
   if (!threadId) return;
   router.push({ name: "forum-thread", params: { id: threadId } });
@@ -918,8 +904,6 @@ function handleThreadReplyingTargetClick() {
                 class="forum-row"
                 @click="goToThread(topic.id)"
               >
-                <!-- Debug: log topic data -->
-                <template>{{ logTopic(topic) }}</template>
                 <!-- 主題欄 -->
                 <td class="p-3 py-md-3">
                   <div class="d-flex align-items-start gap-3">

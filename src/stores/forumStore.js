@@ -893,20 +893,6 @@ export const useForumStore = defineStore("forum", {
                   ? this.threadReplyStats[contentId]
                   : {};
 
-              if (item?.type === CONTENT_TYPES.REPLY) {
-                console.log("[forumStore] reply item raw", {
-                  id: contentId,
-                  type: item.type,
-                  parentContentId: item.parentContentId,
-                  parent_content_id: item.parent_content_id,
-                  parentId: item.parentId,
-                  parent_id: item.parent_id,
-                  parent: item.parent,
-                  parentContent: item.parentContent,
-                  keys: Object.keys(item || {}),
-                });
-              }
-
               return {
                 id: contentId,
                 userId: item.userId ?? item.user_id ?? null,
