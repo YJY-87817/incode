@@ -323,6 +323,7 @@ const previewWrapper = ref(null);
 const previewToggleEnabled = ref(false);
 const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
 const PREVIEW_MIN_HEIGHT = 60;
+const PREVIEW_TEXT_COLLAPSE_LENGTH = 300;
 const savedScrollPosition = ref(0);
 
 // 巢狀回覆展開/收起狀態
@@ -590,7 +591,10 @@ const updatePreviewToggleState = async () => {
     const needsToggleByHeight = height > PREVIEW_COLLAPSED_MAX_HEIGHT + 1;
     const needsToggleByImages =
       previewImages.value.length > 0 || hasInlineImages.value;
-    const shouldEnable = needsToggleByHeight || needsToggleByImages;
+    const needsToggleByText =
+      contentSummary.value.length > PREVIEW_TEXT_COLLAPSE_LENGTH;
+    const shouldEnable =
+      needsToggleByHeight || needsToggleByImages || needsToggleByText;
     previewToggleEnabled.value = shouldEnable;
     if (!shouldEnable) {
       isPreviewExpanded.value = false;
