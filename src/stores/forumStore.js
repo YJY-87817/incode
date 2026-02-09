@@ -1209,6 +1209,7 @@ export const useForumStore = defineStore("forum", {
         categorySearch: options.categorySearch || "",
         mode: options.mode || "post",
         contentType: options.contentType || CONTENT_TYPES.POST,
+        editingContentId: options.editingContentId || null,
         isMinimized: false,
         replyingToContentId: options.replyingToContentId || null,
         replyingToContentData: options.replyingToContentData || null,

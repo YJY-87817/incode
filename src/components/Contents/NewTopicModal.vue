@@ -779,6 +779,8 @@ const resetNewTopicDraft = () => {
 };
 
 const handleModalCancel = () => {
+  const isEditModeActive = modalMode.value === "edit";
+
   if (hasDraftContent(newTopicState.title, newTopicState.body)) {
     // 檢查是否是從草稿打開的
     if (forumStore.currentEditingDraftId) {
@@ -790,8 +792,8 @@ const handleModalCancel = () => {
         parentContentId: newTopicState.parentContentId,
         categorySearch: categorySearch.value,
       });
-      // 保持草稿最小化
-      forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, true);
+      // 回到 sidebar 編輯器
+      forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, false);
     } else {
       // 創建新草稿並最小化
       const draftId = forumStore.createDraft({
@@ -802,11 +804,12 @@ const handleModalCancel = () => {
         categorySearch: categorySearch.value,
         mode: forumStore.newTopic.mode,
         contentType: forumStore.newTopic.contentType,
+        editingContentId: forumStore.newTopic.editingContentId,
         replyingToContentId: forumStore.replyingToContentId,
         replyingToContentData: forumStore.replyingToContentData,
         replyingToThreadId: forumStore.replyingToThreadId,
       });
-      forumStore.toggleDraftMinimize(draftId, true);
+      forumStore.toggleDraftMinimize(draftId, !isEditModeActive);
     }
 
     forumStore.toggleNewTopicModal(false);
@@ -818,6 +821,24 @@ const handleModalCancel = () => {
   }
 
   // 沒有內容時，只關閉 modal
+  if (forumStore.currentEditingDraftId) {
+    forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, false);
+  } else if (isEditModeActive) {
+    const draftId = forumStore.createDraft({
+      title: newTopicState.title,
+      body: newTopicState.body,
+      categoryId: newTopicState.categoryId,
+      parentContentId: newTopicState.parentContentId,
+      categorySearch: categorySearch.value,
+      mode: forumStore.newTopic.mode,
+      contentType: forumStore.newTopic.contentType,
+      editingContentId: forumStore.newTopic.editingContentId,
+      replyingToContentId: forumStore.replyingToContentId,
+      replyingToContentData: forumStore.replyingToContentData,
+      replyingToThreadId: forumStore.replyingToThreadId,
+    });
+    forumStore.toggleDraftMinimize(draftId, false);
+  }
   forumStore.toggleNewTopicModal(false);
   forumStore.currentEditingDraftId = null;
   newTopicState.categoryId = null;

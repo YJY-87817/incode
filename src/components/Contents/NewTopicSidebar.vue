@@ -178,6 +178,7 @@ const openLargeEditor = (draft) => {
   forumStore.newTopic.categorySearch = draft.categorySearch;
   forumStore.newTopic.mode = draft.mode;
   forumStore.newTopic.contentType = draft.contentType;
+  forumStore.newTopic.editingContentId = draft.editingContentId || null;
   forumStore.replyingToContentId = draft.replyingToContentId;
   forumStore.replyingToContentData = draft.replyingToContentData;
   forumStore.replyingToThreadId = draft.replyingToThreadId;
@@ -192,13 +193,18 @@ const openLargeEditor = (draft) => {
 
 const submitDraft = async (draft) => {
   // 使用 composable 的 publishPost 進行驗證和提交
-  const success = await publishPost({
-    title: draft.title,
-    body: draft.body,
-    categoryId: draft.categoryId,
-    parentContentId: draft.parentContentId,
-    contentType: draft.contentType,
-  });
+  const isEditMode = draft.mode === "edit" && draft.editingContentId;
+  const success = await publishPost(
+    {
+      title: draft.title,
+      body: draft.body,
+      categoryId: draft.categoryId,
+      parentContentId: draft.parentContentId,
+      contentType: draft.contentType,
+      editingContentId: draft.editingContentId,
+    },
+    Boolean(isEditMode),
+  );
 
   if (!success) {
     return;
