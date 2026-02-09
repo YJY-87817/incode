@@ -23,6 +23,10 @@ public partial class MissionProgress
 
     public DateTime? RewardedAt { get; set; }
 
+    public DateTime? CycleStartAt { get; set; }
+
+    public DateTime? CycleEndAt { get; set; }
+
     public virtual Mission Mission { get; set; }
 
     public virtual User User { get; set; }
