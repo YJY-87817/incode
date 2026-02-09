@@ -146,6 +146,9 @@ export function useForumPost() {
    * @param {number|null} parentContentId - 父內容 ID
    */
   const refreshAfterPost = async (parentContentId) => {
+    // 清除緩存以確保獲取最新數據
+    forumStore.clearContentCaches();
+
     // 重置分頁並重新載入主題列表
     forumStore.pagination.currentPage = 1;
     await forumStore.fetchTopics();
