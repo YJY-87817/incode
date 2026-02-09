@@ -160,6 +160,7 @@
           </button>
         </div>
         <button
+          v-if="shouldShowNestedToggleButton"
           class="btn btn-sm btn-outline-secondary nested-toggle-btn"
           @click="toggleNestedReplies"
         >
@@ -425,6 +426,24 @@ const nestedCountLabel = computed(() => {
   if (nestedRepliesLoaded.value) return String(nestedRepliesCount.value);
   if (nestedRepliesCount.value > 0) return String(nestedRepliesCount.value);
   return "?";
+});
+
+const shouldShowNestedToggleButton = computed(() => {
+  // 優先檢查預加載的計數數據
+  const preloadedData = forumStore.childRepliesCountByParentId[props.post.id];
+  if (preloadedData) {
+    // 如果正在加載或已加載且有數據，顯示按鈕
+    if (preloadedData.isLoading) return true;
+    if (preloadedData.totalCount !== null && preloadedData.totalCount > 0) {
+      return true;
+    }
+  }
+
+  // 檢查實際加載的回覆數據或預先設定的 replies
+  if (nestedRepliesCount.value > 0) return true;
+
+  // 其他情況不顯示按鈕
+  return false;
 });
 
 const badgeClass = computed(() => {
