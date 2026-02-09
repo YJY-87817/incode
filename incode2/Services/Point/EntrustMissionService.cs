@@ -187,7 +187,7 @@ namespace incode2.Services.Point
       {
         UserId = dto.UserId,
         ContentId = dto.ContentId,
-        Title = content.Title,  // 強制同步 Content 的標題
+        Title = dto.Title,  // 使用前端傳入的標題
         Detail = dto.Detail ?? "無詳細說明",
         RewardPoints = dto.RewardPoints,
         Category = dto.Category ?? "其他",

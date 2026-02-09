@@ -6,8 +6,7 @@ namespace incode2.DTO
     {
         public int? EntrustMissionId { get; set; }  // 查詢/更新時用，新增時可 null
 
-        [Required]
-        public int UserId { get; set; }             // 發起委託的使用者
+        public int UserId { get; set; }             // 發起委託的使用者（後端自動設定，前端不需傳）
 
         [Required]
         public int ContentId { get; set; }          // 關聯內容
