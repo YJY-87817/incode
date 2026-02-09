@@ -96,10 +96,6 @@ namespace incode2.ApiControllers
             // 計算總點數
             int totalPoints = order.Items.Sum(item => item.Quantity * productDict[item.ProductId].Point);
 
-            //// 檢查使用者點數是否足夠
-            //if (user.Point < totalPoints)
-            //    return ResultDTO<int>.Failure($"點數不足,需要 {totalPoints} 點,目前只有 {user.Point} 點");
-
             // 交易建立訂單與明細
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
