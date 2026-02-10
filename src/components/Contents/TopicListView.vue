@@ -1037,7 +1037,7 @@ function handleThreadReplyingTargetClick() {
                       :user-id="topic.lastReplyUserId"
                       :username="topic.lastReplyUser"
                       :avatar-url="getAvatarUrl(topic.lastReplyUser)"
-                      :size="20"
+                      :size="24"
                     />
                   </div>
                 </td>
