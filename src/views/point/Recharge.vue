@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import axios from "axios";
 
 // 1. 使用者資料
 const user = ref({
@@ -12,9 +13,9 @@ const user = ref({
 
 // 2. 儲值方案設定
 const plans = ref([
-  { id: 1, points: 500, price: 500, popular: false, bonus: 0 },
-  { id: 2, points: 1000, price: 950, popular: true, bonus: 50 },
-  { id: 3, points: 3000, price: 2700, popular: false, bonus: 300 },
+  { id: 1, points: 500, price: 50, popular: false, bonus: 0 },
+  { id: 2, points: 1000, price: 95, popular: true, bonus: 50 },
+  { id: 3, points: 3000, price: 270, popular: false, bonus: 300 },
 ]);
 
 // 3. 狀態控制
@@ -76,25 +77,87 @@ const selectPlan = (id) => {
   customAmount.value = null;
 };
 
-const handleCheckout = () => {
+// 點確認付款 → 呼叫後端生成訂單 → 自動導到綠界
+// 6. 方法 (優化後的 handleCheckout)
+const handleCheckout = async () => {
+  if (isSubmitDisabled.value) return;
   isLoading.value = true;
-  // 模擬 API 請求
-  setTimeout(() => {
-    isLoading.value = false;
-    alert(
-      `儲值成功！已選擇支付方式：${selectedPayment.value}，共支付 NT$ ${finalDetails.value.price}`,
+
+  try {
+    // 1. 根據你 Postman 的圖示，payload 欄位名稱要跟後端對上
+    const payload = {
+      cashAmount: finalDetails.value.price, // 對應後端 cashAmount
+      paymentMethod: selectedPayment.value === "credit-card" ? "credit" : "ALL", // 依後端邏輯決定
+    };
+
+    // 2. 呼叫後端生成訂單資料
+    const res = await axios.post(
+      "https://localhost:7190/api/PointRechargeApi/recharge",
+      payload,
+      { withCredentials: true },
     );
-  }, 2000);
+
+    // 這裡的 data 就是你 Postman 看到的那個 JSON 物件
+    const ecpayData = res.data;
+
+    // 3. 建立一個隱藏的 form 物件
+    const form = document.createElement("form");
+    form.method = "POST";
+    // 注意：如果是正式環境要換成正式網址
+    form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
+
+    // 4. 自動將後端傳回的所有 Key-Value 轉為 input hidden 欄位
+    for (const key in ecpayData) {
+      if (Object.prototype.hasOwnProperty.call(ecpayData, key)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key; // 例如: MerchantID
+        input.value = ecpayData[key]; // 例如: 3002599
+        form.appendChild(input);
+      }
+    }
+
+    // 5. 也可以在這裡手動追加 ClientBackURL (如果後端沒給的話)
+    // const backUrlInput = document.createElement("input");
+    // backUrlInput.type = "hidden";
+    // backUrlInput.name = "ClientBackURL";
+    // backUrlInput.value = "https://你的前端網址/point/recharge/result";
+    // form.appendChild(backUrlInput);
+
+    // 6. 插入 DOM 並執行提交
+    document.body.appendChild(form);
+    form.submit();
+
+    // 提交後移除該 form (雖然頁面準備跳轉了，但維持乾淨是個好習慣)
+    document.body.removeChild(form);
+  } catch (err) {
+    console.error("金流串接失敗:", err);
+    alert("無法啟動支付流程，請檢查網路或聯繫客服");
+  } finally {
+    isLoading.value = false;
+  }
 };
+
+onMounted(async () => {
+  try {
+    // 這裡很重要！因為 ReturnURL 是背景執行的，
+    // 使用者跳回來時，可能 ReturnURL 還沒跑完。
+    // 你可以延遲 1-2 秒再重新獲取餘額，或者提供一個「重新整理」按鈕。
+    await userStore.fetchUserInfo();
+    statusMessage.value = "感謝您的儲值！點數處理中，請稍候。";
+  } catch (err) {
+    console.error(err);
+  }
+});
 </script>
 
 <template>
   <DefaultNavbar light />
-
   <div class="bg-gray-200 min-vh-100 pb-5 mt-6">
     <div class="container-fluid mt-n6">
       <div class="row">
         <div class="col-lg-10 mx-auto">
+          <!-- 選擇方案區 -->
           <div class="container mt-4">
             <h4 class="mb-3 ps-2 font-weight-bolder">1. 選擇方案</h4>
             <div class="row">
@@ -126,13 +189,14 @@ const handleCheckout = () => {
                     <small
                       v-if="plan.bonus > 0"
                       class="text-success font-weight-bold"
-                      >額外贈送 {{ plan.bonus }} 點</small
                     >
+                      額外贈送 {{ plan.bonus }} 點
+                    </small>
                     <small v-else class="text-transparent">N/A</small>
                   </div>
                 </div>
               </div>
-
+              <!-- 自定義方案 -->
               <div class="col-12 mb-4">
                 <div
                   @click="selectedPlan = 'custom'"
@@ -165,8 +229,9 @@ const handleCheckout = () => {
                       <small
                         v-if="customAmount && customAmount < 100"
                         class="text-danger mt-1 d-block text-xs"
-                        >金額不可低於 100</small
                       >
+                        金額不可低於 100
+                      </small>
                     </div>
                     <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
                       <p class="text-sm mb-0 text-secondary">預計獲得點數</p>
@@ -180,6 +245,7 @@ const handleCheckout = () => {
             </div>
           </div>
 
+          <!-- 支付方式 & 總金額 -->
           <h4 class="mb-3 ps-2 font-weight-bolder">2. 支付方式</h4>
           <div class="card shadow-sm mb-4 border-0">
             <div class="card-body p-4">
@@ -197,6 +263,7 @@ const handleCheckout = () => {
                         ? 'btn-outline-primary active'
                         : 'btn-outline-secondary',
                     ]"
+                    type="button"
                   >
                     <i
                       :class="[pay.icon, pay.color, 'd-block mb-2 text-lg']"
@@ -259,6 +326,42 @@ const handleCheckout = () => {
       </div>
     </div>
   </div>
+
+  <!-- <form
+    method="post"
+    action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"
+  >
+    <input type="hidden" name="MerchantID" value="3002599" />
+    <input type="hidden" name="MerchantTradeNo" value="PR639063232747464280" />
+    <input type="hidden" name="MerchantTradeDate" value="2026/02/10 12:27:56" />
+    <input type="hidden" name="PaymentType" value="aio" />
+    <input type="hidden" name="TotalAmount" value="122" />
+    <input type="hidden" name="TradeDesc" value="PointRecharge" />
+    <input type="hidden" name="ItemName" value="Point 1220" />
+
+     ✅ 新增 ClientBackURL -->
+  <!-- <input
+      type="hidden"
+      name="ClientBackURL"
+      value="https://你的前端網址/point/recharge/result"
+    /> -->
+
+  <!-- 後端用的回呼 -->
+  <!-- <input
+      type="hidden"
+      name="ReturnURL"
+      value="https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return"
+    /> -->
+
+  <!-- <input type="hidden" name="ChoosePayment" value="ALL" />
+    <input type="hidden" name="EncryptType" value="1" />
+    <input
+      type="hidden"
+      name="CheckMacValue"
+      value="5E8B1F4320B1559A808E49E728777AACAD991AB7C3B8DA3803E630DC81561C91"
+    />
+    <button type="submit">前往付款</button>
+  </form>  -->
 </template>
 
 <style scoped>
@@ -292,6 +395,8 @@ const handleCheckout = () => {
 .shadow-blur {
   backdrop-filter: saturate(200%) blur(30px);
   background-color: rgba(255, 255, 255, 0.8) !important;
-  box-shadow: inset 0 0 2px #fefefe, 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    inset 0 0 2px #fefefe,
+    0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
 }
 </style>

@@ -6,18 +6,19 @@ import FirstView from "@/views/FirstView.vue";
 import Register from "@/views/user/register.vue";
 import Login from "@/views/user/login.vue";
 import UserIndex from "@/views/user/userindex.vue";
-import UserSettings from "@/views/user/UserSettings.vue"
-import UserCollections from "@/views/user/UserCollections.vue"
-import UserPost from "@/views/user/UserPost.vue"
-import UserLike from "@/views/user/UserLike.vue"
-import UserSave from "@/views/user/UserSave.vue"
-import UserMission from "@/views/user/UserMission.vue"
+import UserSettings from "@/views/user/UserSettings.vue";
+import UserCollections from "@/views/user/UserCollections.vue";
+import UserPost from "@/views/user/UserPost.vue";
+import UserLike from "@/views/user/UserLike.vue";
+import UserSave from "@/views/user/UserSave.vue";
+import UserMission from "@/views/user/UserMission.vue";
 // owen
 // qiu以下
 import Task from "../views/point/Task.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
+import RechargeResult from "../views/point/RechargeResult.vue";
 // qiu以上
 // yjy 以下
 import ProductView from "@/views/PointShop/ProductView.vue";
@@ -89,11 +90,11 @@ const router = createRouter({
       component: UserSettings,
     },
     {
-      path: '/profile/:username',
-      name: 'UserProfile',
+      path: "/profile/:username",
+      name: "UserProfile",
       // 建議使用動態載入 (Lazy loading)
-      component: () => import('@/views/user/UserProfile.vue'),
-      props: true
+      component: () => import("@/views/user/UserProfile.vue"),
+      props: true,
     },
     {
       path: "/userindex",
@@ -157,6 +158,11 @@ const router = createRouter({
       name: "recharge",
       component: Recharge, //views的檔案名稱
     },
+    {
+      path: "/recharge-result",
+      name: "recharge-result",
+      component: RechargeResult, //views的檔案名稱
+    },
     // qiu以上
 
     // yjy 以下
@@ -165,17 +171,17 @@ const router = createRouter({
       component: ProductView,
       children: [
         {
-          path: '',
+          path: "",
           name: "PointShop",
           component: ProductGrid,
         },
         {
-          path: ':id',
+          path: ":id",
           name: "ProductDetail",
           component: ProductDetail,
           props: true,
-        }
-      ]
+        },
+      ],
     },
     {
       path: "/PointShop/Order",
