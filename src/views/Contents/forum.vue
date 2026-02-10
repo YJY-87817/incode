@@ -143,32 +143,6 @@ watch(
         :class="{ 'forum-sidebar--no-editor': !hasExpandedDraft }"
       >
         <div class="forum-sidebar-top">
-          <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-              <h6 class="mb-0">📊 論壇統計</h6>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <div
-                  class="d-flex justify-content-between align-items-center mb-1"
-                >
-                  <span class="small text-muted">總主題數</span>
-                  <strong class="text-primary">{{
-                    forumStore.pagination.totalCount
-                  }}</strong>
-                </div>
-              </div>
-
-              <button
-                class="btn btn-forum-primary w-100"
-                type="button"
-                @click="openNewTopicModal"
-              >
-                <i class="fas fa-plus"></i>
-                <span class="ms-2">發佈新主題</span>
-              </button>
-            </div>
-          </div>
           <NewTopicSidebar />
         </div>
         <div class="forum-sidebar-bottom">
@@ -178,6 +152,15 @@ watch(
     </div>
   </div>
   <DefaultFooter />
+
+  <button
+    class="btn btn-forum-primary forum-new-topic-fab"
+    type="button"
+    @click="openNewTopicModal"
+  >
+    <i class="fas fa-plus"></i>
+    <span class="ms-2">發佈新主題</span>
+  </button>
 </template>
 
 <style scoped>
@@ -324,6 +307,25 @@ watch(
 /* 文字顏色 */
 .text-primary {
   color: #145369 !important;
+}
+
+/* 右下角浮動發佈按鈕，放在 AI 助手上方 */
+.forum-new-topic-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 9997;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
+}
+
+@media (max-width: 576px) {
+  .forum-new-topic-fab {
+    right: 12px;
+    bottom: 80px;
+    font-size: 0.9rem;
+  }
 }
 
 /* 留言框樣式 */
