@@ -26,6 +26,18 @@ const getDraftEntrustMission = (draft) =>
     ? { ...draft.entrustMission }
     : getDefaultEntrustMission();
 
+const getDraftExtraValues = (draft) => {
+  if (!draft?.showEntrustMission) return [];
+  const data = getDraftEntrustMission(draft);
+  return [
+    data.title,
+    data.detail,
+    data.rewardPoints,
+    data.category,
+    data.deadline,
+  ];
+};
+
 const updateDraftEntrustMission = (draft, updates) => {
   const current = getDraftEntrustMission(draft);
   forumStore.updateDraft(draft.id, {
@@ -124,7 +136,7 @@ const syncDraftReplyTitle = (draft) => {
 
 // 處理草稿操作
 const handleCancelClick = (draft) => {
-  if (hasDraftContent(draft.title, draft.body)) {
+  if (hasDraftContent(draft.title, draft.body, getDraftExtraValues(draft))) {
     // 如果有內容，最小化
     forumStore.toggleDraftMinimize(draft.id, true);
   } else {

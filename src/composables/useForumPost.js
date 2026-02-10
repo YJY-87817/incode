@@ -220,7 +220,7 @@ export function useForumPost() {
    * @param {string} body - 內容
    * @returns {boolean} 是否有內容
    */
-  const hasDraftContent = (title, body) => {
+  const hasDraftContent = (title, body, extraValues = []) => {
     const hasTitle = title && title.trim().length > 0;
 
     if (!body || !body.trim()) {
@@ -241,7 +241,21 @@ export function useForumPost() {
     const hasMedia =
       doc.body.querySelector("img, video, audio, iframe") !== null;
 
-    return hasTitle || text.length > 0 || hasMedia;
+    if (hasTitle || text.length > 0 || hasMedia) return true;
+
+    if (!Array.isArray(extraValues) || extraValues.length === 0) return false;
+
+    return extraValues.some((value) => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === "boolean") return value;
+      if (typeof value === "number") {
+        return Number.isFinite(value) && value !== 0;
+      }
+      const normalized = String(value)
+        .replace(/\u00a0/g, " ")
+        .trim();
+      return normalized.length > 0;
+    });
   };
 
   /**

@@ -868,6 +868,17 @@ const buildEntrustMissionPayload = () => {
   };
 };
 
+const getModalExtraValues = () => {
+  if (!showEntrustMission.value) return [];
+  return [
+    entrustMissionState.title,
+    entrustMissionState.detail,
+    entrustMissionState.rewardPoints,
+    entrustMissionState.category,
+    entrustMissionState.deadline,
+  ];
+};
+
 const submitNewTopic = async () => {
   // 判斷是否為編輯模式
   const isEdit = modalMode.value === "edit";
@@ -942,8 +953,13 @@ const resetNewTopicDraft = () => {
 
 const handleModalCancel = () => {
   const isEditModeActive = modalMode.value === "edit";
+  const hasContent = hasDraftContent(
+    newTopicState.title,
+    newTopicState.body,
+    getModalExtraValues(),
+  );
 
-  if (hasDraftContent(newTopicState.title, newTopicState.body)) {
+  if (hasContent) {
     // 檢查是否是從草稿打開的
     if (forumStore.currentEditingDraftId) {
       // 同步內容回原草稿
@@ -998,56 +1014,13 @@ const handleModalCancel = () => {
     return;
   }
 
-  // 沒有內容時，只關閉 modal
+  // 沒有內容時，只關閉 modal，不建立草稿
   if (forumStore.currentEditingDraftId) {
-    forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, false);
-  } else if (isEditModeActive) {
-    const draftId = forumStore.createDraft({
-      title: newTopicState.title,
-      body: newTopicState.body,
-      categoryId: newTopicState.categoryId,
-      parentContentId: newTopicState.parentContentId,
-      categorySearch: categorySearch.value,
-      mode: forumStore.newTopic.mode,
-      contentType: forumStore.newTopic.contentType,
-      editingContentId: forumStore.newTopic.editingContentId,
-      replyingToContentId: forumStore.replyingToContentId,
-      replyingToContentData: forumStore.replyingToContentData,
-      replyingToThreadId: forumStore.replyingToThreadId,
-      showEntrustMission: showEntrustMission.value,
-      entrustMission: buildEntrustMissionPayload() || {
-        title: "",
-        detail: "",
-        rewardPoints: "",
-        category: "",
-        deadline: "",
-      },
-    });
-    forumStore.toggleDraftMinimize(draftId, false);
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
   }
-  forumStore.toggleNewTopicModal(false);
   forumStore.currentEditingDraftId = null;
-  newTopicState.categoryId = null;
-  newTopicState.parentContentId = null;
-  selectedSubCategoryId.value = null;
-  categorySearch.value = "";
-  showEntrustMission.value = false;
-  resetEntrustMission();
-  forumStore.newTopic.showEntrustMission = false;
-  forumStore.newTopic.entrustMission = {
-    title: "",
-    detail: "",
-    rewardPoints: "",
-    category: "",
-    deadline: "",
-  };
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = null;
-  forumStore.newTopic.parentContentId = null;
-  forumStore.newTopic.categorySearch = "";
-  forumStore.newTopic.mode = "post";
-  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  resetNewTopicDraft();
+  closeNewTopic();
 };
 </script>
 

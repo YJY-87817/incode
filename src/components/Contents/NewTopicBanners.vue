@@ -12,8 +12,20 @@ const { hasDraftContent } = useForumPost();
 
 const allDrafts = computed(() => forumStore.drafts || []);
 
+const getDraftExtraValues = (draft) => {
+  if (!draft?.showEntrustMission) return [];
+  const data = draft?.entrustMission || {};
+  return [
+    data.title,
+    data.detail,
+    data.rewardPoints,
+    data.category,
+    data.deadline,
+  ];
+};
+
 const hasVisibleDraftContent = (draft) =>
-  hasDraftContent(draft.title, draft.body);
+  hasDraftContent(draft.title, draft.body, getDraftExtraValues(draft));
 
 const expandDraft = (draft) => {
   allDrafts.value.forEach((d) => {
