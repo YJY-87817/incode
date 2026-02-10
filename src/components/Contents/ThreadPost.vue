@@ -33,7 +33,7 @@
                   </button>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
                   <h6 class="card-title post-author mb-0" @click.stop>
-                    <UserHoverName
+                    <UserPreview
                       :user-id="post.userId"
                       :username="post.author"
                       :avatar-url="getAvatarUrl(post.author)"
@@ -287,7 +287,7 @@ import contentApi from "@/api/contentApi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
-import UserHoverName from "@/components/UserHoverName.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";

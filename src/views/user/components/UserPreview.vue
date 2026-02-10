@@ -7,7 +7,7 @@ import axios from "axios";
 
 // 接收外部傳入的參數
 const props = defineProps({
-  userId: { type: [Number, String], required: true },
+  userId: { type: [Number, String], default: null },
   avatarUrl: { type: String, default: "" },
   username: { type: String, default: "User" },
   size: { type: [Number, String], default: 40 }, // 頭像大小
@@ -23,6 +23,15 @@ const userInfo = ref({
   articleCount: 0,
   followers: 0,
   following: 0,
+});
+
+// 計算顯示用戶名稱
+const displayName = computed(() => props.username || "User");
+
+// 計算數值大小
+const numericSize = computed(() => {
+  const parsed = Number(props.size);
+  return Number.isNaN(parsed) || parsed <= 0 ? 24 : parsed;
 });
 
 // 檢查是否是自己 (如果是自己，不顯示追蹤按鈕)
@@ -78,6 +87,11 @@ const handleFollowAction = async () => {
 
 // 監聽 Menu 開啟狀態
 watch(menuOpen, (val) => {
+  if (val && !props.userId) {
+    // 如果沒有 userId，不要打開菜單
+    menuOpen.value = false;
+    return;
+  }
   if (val) {
     // 每次打開都重新抓一次數據，確保準確，或者你可以加判斷只抓一次
     fetchUserInfo();
@@ -105,12 +119,15 @@ watch(
     close-delay="300"
   >
     <template v-slot:activator="{ props }">
-      <v-avatar
-        v-bind="props"
-        :size="size"
-        class="cursor-pointer elevation-2 border border-2 border-white"
-        :image="avatarUrl || 'https://cdn.vuetifyjs.com/images/john.jpg'"
-      ></v-avatar>
+      <span v-bind="props" class="user-hover-proxy" @click.stop>
+        <img
+          class="user-avatar-img"
+          :src="avatarUrl || 'https://cdn.vuetifyjs.com/images/john.jpg'"
+          :style="{ width: `${numericSize}px`, height: `${numericSize}px` }"
+          alt=""
+        />
+        <span>{{ displayName }}</span>
+      </span>
     </template>
 
     <v-card width="300" class="rounded-xl pa-4" elevation="4">
@@ -172,6 +189,27 @@ watch(
 
 <style scoped>
 .cursor-pointer {
+  cursor: pointer;
+}
+
+.user-hover-proxy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.user-avatar-img {
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.user-hover-proxy :deep(.v-avatar) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
   cursor: pointer;
 }
 </style>

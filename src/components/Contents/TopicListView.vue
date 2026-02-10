@@ -13,7 +13,7 @@ import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
-import UserHoverName from "@/components/UserHoverName.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
@@ -652,7 +652,7 @@ function handleThreadReplyingTargetClick() {
             class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
           >
             <span>by</span>
-            <UserHoverName
+            <UserPreview
               :user-id="forumStore.threadDetail.userId"
               :username="forumStore.threadDetail.author"
               :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
@@ -1012,7 +1012,7 @@ function handleThreadReplyingTargetClick() {
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
                   </div>
-                  <UserHoverName
+                  <UserPreview
                     class="text-muted"
                     :user-id="topic.userId"
                     :username="topic.author"
@@ -1033,7 +1033,7 @@ function handleThreadReplyingTargetClick() {
                     v-if="topic.lastReplyUser"
                     class="text-muted d-inline-flex align-items-center gap-1"
                   >
-                    <UserHoverName
+                    <UserPreview
                       :user-id="topic.lastReplyUserId"
                       :username="topic.lastReplyUser"
                       :avatar-url="getAvatarUrl(topic.lastReplyUser)"
