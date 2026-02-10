@@ -185,6 +185,26 @@ namespace incode2.Services.PointShop
                         ArrivalDate = null,
                     };
                     newOrder.ShippedDetail.Add(recipient);
+                    // 檢查是否已存在完全相同的寄送地址
+                    var existingAddress = await _context.Shipaddress
+                        .FirstOrDefaultAsync(s => 
+                            s.UserId == order.UserId &&
+                            s.RecipientName == order.Recipient.RecipientName &&
+                            s.RecipientPhone == order.Recipient.RecipientPhone &&
+                            s.RecipientAddress == order.Recipient.RecipientAddress);
+
+                    // 只有在不存在相同資料時才新增
+                    if (existingAddress == null)
+                    {
+                        var rec = new Shipaddress
+                        {
+                            UserId = order.UserId,
+                            RecipientName = order.Recipient.RecipientName,
+                            RecipientPhone = order.Recipient.RecipientPhone,
+                            RecipientAddress = order.Recipient.RecipientAddress,
+                        };
+                        _context.Shipaddress.Add(rec);
+                    }
                 }
 
                 _context.Orders.Add(newOrder);
