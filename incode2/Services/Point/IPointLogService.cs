@@ -17,13 +17,8 @@ namespace incode2.Services.Point
         // 規定必須有一個方法可以查詢目前總餘額
         Task<int> GetCurrentBalanceAsync(int userId);
 
-        //儲值 => 入帳（綠界 ReturnURL 用） 不需要回傳值 成功就是成功 錯誤直接 throw
-        Task RechargeSuccessAsync(string orderNo);
-
         //打賞影評作者（雙向交易）//寫 2 筆 point_log 包在同一個 Transaction
         Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount);
-
-        Task<ResultDTO> AddPointsAsync(int userId, int rewardPoints, int missionId);
 
         Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
 
