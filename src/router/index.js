@@ -6,6 +6,7 @@ import FirstView from "@/views/FirstView.vue";
 import { useAuthStore } from '@/stores/user/auth';
 import Swal from 'sweetalert2';
 import AuthView from '@/views/user/AuthView.vue';
+import ResetPasswordView from '@/views/user/ResetPasswordView.vue'
 import UserIndex from "@/views/user/userindex.vue";
 import UserSettings from "@/views/user/UserSettings.vue";
 import UserProfile from "@/views/user/UserProfile.vue";
@@ -85,6 +86,11 @@ const routes = [
     path: "/login",
     name: "Login",
     redirect: '/auth'
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPasswordView
   },
   {
     path: "/usersettings",

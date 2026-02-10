@@ -20,6 +20,34 @@ export const useAuthStore = defineStore("auth", () => {
     return user.value?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png';
   });
 
+  async function forgotPassword(email) {
+    isLoading.value = true;
+    try {
+      // 注意：後端 Controller 目前寫死了 frontendUrl，所以這裡只要傳 email
+      const response = await axios.post("/AuthApi/forgot-password", { email });
+      return response.status === 200;
+    } catch (error) {
+      console.error("發送重設信失敗", error);
+      throw error; // 將錯誤拋出給前端組件處理
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function resetPassword(payload) {
+    // payload 格式: { email, token, newPassword }
+    isLoading.value = true;
+    try {
+      const response = await axios.post("/AuthApi/reset-password", payload);
+      return response.status === 200;
+    } catch (error) {
+      console.error("重設密碼失敗", error);
+      throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   async function login(payload) {
     isLoading.value = true;
     try {
@@ -116,7 +144,9 @@ export const useAuthStore = defineStore("auth", () => {
     register,
     logout,
     checkAuth,
-    updateUserInfo
+    updateUserInfo,
+    forgotPassword,
+    resetPassword
   };
 }, {
   persist: true // 保持登入
