@@ -6,16 +6,19 @@ namespace incode2.Services.Point
 {
     public class EcpayService
     {
-        private const string MerchantID = "3002599";
-        private const string HashKey = "spPjZn66i0OhqJsQ";
-        private const string HashIV = "hT5OJckN45isQTTs";
-        private const string ReturnUrl = "https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return";
+        private readonly string MerchantID;
+        private readonly string HashKey;
+        private readonly string HashIV;
+        private readonly string ReturnUrl;
 
         private readonly IConfiguration _config;
 
         public EcpayService(IConfiguration config)
         {
-            _config = config;
+            MerchantID = config["ECPay:MerchantID"];
+            HashKey = config["ECPay:HashKey"];
+            HashIV = config["ECPay:HashIV"];
+            ReturnUrl = config["ECPay:ReturnUrl"];
         }
 
         public Dictionary<string, string> CreatePayment(
@@ -23,14 +26,15 @@ namespace incode2.Services.Point
         {
             var data = new Dictionary<string, string>
         {
-            { "MerchantID", "3002599" },
+            { "MerchantID", MerchantID },
             { "MerchantTradeNo", order.OrderNo },
             { "MerchantTradeDate", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") },
             { "PaymentType", "aio" },
             { "TotalAmount", ((int)order.CashAmount).ToString() },
             { "TradeDesc", "PointRecharge" },
             { "ItemName", $"Point {order.PointsGranted}" },
-            { "ReturnURL", "https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return" },
+            { "ReturnURL", ReturnUrl },
+            { "ClientBackURL", "https://localhost:5173/recharge-result" },
             { "ChoosePayment", "ALL" },
             { "EncryptType", "1" }
         };
@@ -39,22 +43,15 @@ namespace incode2.Services.Point
             return data;
         }
 
-        private string GenerateCheckMacValue(Dictionary<string, string> data)
+        public string GenerateCheckMacValue(Dictionary<string, string> data)
         {
-            var hashKey = "spPjZn66i0OhqJsQ";
-            var hashIV = "hT5OJckN45isQTTs";
-
-            var ordered = data
-        .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-        .Select(x => $"{x.Key}={x.Value}");
-
-            var raw = $"HashKey={hashKey}&{string.Join("&", ordered)}&HashIV={hashIV}";
-
+            var ordered = data.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                              .Select(x => $"{x.Key}={x.Value}");
+            var raw = $"HashKey={HashKey}&{string.Join("&", ordered)}&HashIV={HashIV}";
             var encoded = System.Web.HttpUtility.UrlEncode(raw).ToLower()
-                .Replace("%21", "!")
-                .Replace("%2a", "*")
-                .Replace("%28", "(")
-                .Replace("%29", ")");
+                .Replace("%21", "!").Replace("%2a", "*")
+                .Replace("%28", "(").Replace("%29", ")")
+                .Replace("%20", "+");
 
             using var sha = SHA256.Create();
             var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(encoded));
