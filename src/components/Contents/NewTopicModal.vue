@@ -4,6 +4,7 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import { useForumPost } from "@/composables/useForumPost";
+import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const { getModeTitle, validatePost, publishPost, hasDraftContent } =
@@ -63,6 +64,19 @@ const createCategoryParentId = ref(null);
 const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showTitleBodyRequiredModal = ref(false);
+
+const showEntrustMission = ref(false);
+const entrustMissionState = reactive({
+  title: "",
+  detail: "",
+  rewardPoints: "",
+  category: "",
+  deadline: "",
+});
+
+const canUseEntrustMission = computed(
+  () => isPostMode.value && !newTopicState.parentContentId,
+);
 
 const NO_REPLY_LABEL = "無(發佈新主題)";
 
@@ -332,6 +346,10 @@ watch(
       replySearch.value = "";
       return;
     }
+    if (showEntrustMission.value) {
+      showEntrustMission.value = false;
+      resetEntrustMission();
+    }
     if (modalMode.value !== "post") {
       return;
     }
@@ -360,6 +378,17 @@ watch(
         input.toLowerCase(),
     );
     newTopicState.parentContentId = match ? match.id : null;
+  },
+);
+
+watch(
+  () => canUseEntrustMission.value,
+  (value) => {
+    if (value) return;
+    if (showEntrustMission.value) {
+      showEntrustMission.value = false;
+      resetEntrustMission();
+    }
   },
 );
 
@@ -723,9 +752,79 @@ const closeTitleBodyRequiredModal = () => {
   showTitleBodyRequiredModal.value = false;
 };
 
+const resetEntrustMission = () => {
+  entrustMissionState.title = "";
+  entrustMissionState.detail = "";
+  entrustMissionState.rewardPoints = "";
+  entrustMissionState.category = "";
+  entrustMissionState.deadline = "";
+};
+
+const toggleEntrustMission = () => {
+  if (!canUseEntrustMission.value) return;
+  showEntrustMission.value = !showEntrustMission.value;
+  if (!showEntrustMission.value) {
+    resetEntrustMission();
+  }
+};
+
+const validateEntrustMission = async () => {
+  if (!showEntrustMission.value) return true;
+
+  const title = String(entrustMissionState.title || "").trim();
+  const detail = String(entrustMissionState.detail || "").trim();
+  const category = String(entrustMissionState.category || "").trim();
+  const rewardPoints = Number(entrustMissionState.rewardPoints);
+
+  if (!title || !detail || !category || !Number.isFinite(rewardPoints)) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請完整填寫委託任務資訊",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
+
+  if (rewardPoints <= 0) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "獎勵點數需大於 0",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const buildEntrustMissionPayload = () => {
+  if (!showEntrustMission.value) return null;
+
+  const rewardPoints = Number(entrustMissionState.rewardPoints);
+  const deadline = String(entrustMissionState.deadline || "").trim();
+
+  return {
+    title: String(entrustMissionState.title || "").trim(),
+    detail: String(entrustMissionState.detail || "").trim(),
+    rewardPoints: Number.isFinite(rewardPoints) ? rewardPoints : 0,
+    category: String(entrustMissionState.category || "").trim(),
+    deadline: deadline || null,
+  };
+};
+
 const submitNewTopic = async () => {
   // 判斷是否為編輯模式
   const isEdit = modalMode.value === "edit";
+
+  if (showEntrustMission.value && !(await validateEntrustMission())) {
+    return;
+  }
+
+  const entrustMissionPayload = buildEntrustMissionPayload();
 
   // 使用 composable 的 publishPost 進行驗證和提交
   const success = await publishPost(
@@ -736,6 +835,7 @@ const submitNewTopic = async () => {
       parentContentId: newTopicState.parentContentId,
       contentType: forumStore.newTopic?.contentType,
       editingContentId: forumStore.newTopic?.editingContentId,
+      entrustMission: entrustMissionPayload,
     },
     isEdit,
   );
@@ -768,6 +868,8 @@ const resetNewTopicDraft = () => {
   categorySearch.value = "";
   subCategorySearch.value = "";
   replySearch.value = "";
+  showEntrustMission.value = false;
+  resetEntrustMission();
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = null;
@@ -845,6 +947,8 @@ const handleModalCancel = () => {
   newTopicState.parentContentId = null;
   selectedSubCategoryId.value = null;
   categorySearch.value = "";
+  showEntrustMission.value = false;
+  resetEntrustMission();
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = null;
@@ -1158,6 +1262,67 @@ const handleModalCancel = () => {
                   placeholder="請輸入貼文內容..."
                 />
               </div>
+              <div v-if="canUseEntrustMission" class="mb-3">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-entrust-toggle"
+                  @click="toggleEntrustMission"
+                >
+                  {{ showEntrustMission ? "取消委託任務" : "發佈委託任務" }}
+                </button>
+              </div>
+              <div
+                v-if="showEntrustMission"
+                class="entrust-mission-panel border rounded p-3 mb-3"
+              >
+                <h6 class="mb-3">委託任務資訊</h6>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">任務標題</label>
+                    <input
+                      v-model="entrustMissionState.title"
+                      class="form-control"
+                      placeholder="請輸入任務標題"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">任務分類</label>
+                    <input
+                      v-model="entrustMissionState.category"
+                      class="form-control"
+                      placeholder="請輸入任務分類"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">獎勵點數</label>
+                    <input
+                      v-model="entrustMissionState.rewardPoints"
+                      type="number"
+                      min="1"
+                      step="1"
+                      class="form-control"
+                      placeholder="請輸入獎勵點數"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">截止日期</label>
+                    <input
+                      v-model="entrustMissionState.deadline"
+                      type="date"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">任務說明</label>
+                    <textarea
+                      v-model="entrustMissionState.detail"
+                      class="form-control"
+                      rows="4"
+                      placeholder="請輸入任務內容"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="modal-footer d-flex justify-content-end">
               <button
@@ -1352,6 +1517,21 @@ const handleModalCancel = () => {
   background-color: #fff0dd;
   border-color: #86b0bd;
   color: #145369;
+}
+
+.btn-entrust-toggle {
+  border-color: #145369;
+  color: #145369;
+}
+
+.btn-entrust-toggle:hover {
+  background-color: #eaf2f4;
+  color: #0f4456;
+}
+
+.entrust-mission-panel {
+  background: #f6f8f9;
+  border-color: #d9e2e6;
 }
 
 .custom-modal-backdrop {

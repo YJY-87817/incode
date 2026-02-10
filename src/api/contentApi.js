@@ -19,6 +19,10 @@ const contentApi = {
     return apiClient.post("/ContentApi", payload);
   },
 
+  createContentWithEntrustMission(payload) {
+    return apiClient.post("/ContentApi/with-entrust-mission", payload);
+  },
+
   updateContent(contentId, payload) {
     return apiClient.put(`/ContentApi/${contentId}`, payload);
   },

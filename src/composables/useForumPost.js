@@ -112,6 +112,7 @@ export function useForumPost() {
    * @param {number|null} params.categoryId - 分類 ID
    * @param {number|null} params.parentContentId - 父內容 ID
    * @param {number|null} params.contentType - 內容類型
+   * @param {Object|null} params.entrustMission - 委託任務資料
    * @returns {Promise<{success: boolean, error?: any}>} 提交結果
    */
   const submitPost = async ({
@@ -120,6 +121,7 @@ export function useForumPost() {
     categoryId,
     parentContentId,
     contentType,
+    entrustMission = null,
   }) => {
     const resolvedType = resolveContentType(parentContentId, contentType);
 
@@ -133,7 +135,18 @@ export function useForumPost() {
     };
 
     try {
-      await contentApi.createContent(dto);
+      if (entrustMission) {
+        await contentApi.createContentWithEntrustMission({
+          parentContentId,
+          categoryId,
+          title,
+          body,
+          type: resolvedType,
+          entrustMission,
+        });
+      } else {
+        await contentApi.createContent(dto);
+      }
       return { success: true };
     } catch (error) {
       console.error("[useForumPost] 發佈失敗:", error);
