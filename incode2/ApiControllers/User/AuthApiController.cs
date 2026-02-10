@@ -1,11 +1,14 @@
 ﻿using Azure.Core;
+using incode2.DTO.user;
 using incode2.Dtos.Users;
 using incode2.Enums;
 using incode2.Extensions;
-using incode2.Services.Users;
 using incode2.Models;
+using incode2.Services.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -14,7 +17,7 @@ namespace incode2.ApiControllers.user
     [Route("api/[controller]")]
     [ApiController]
     public class AuthApiController : ControllerBase
-    {
+    {        
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
 
@@ -89,7 +92,7 @@ namespace incode2.ApiControllers.user
         new Claim(ClaimTypes.Role, roleName)
     };
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsIdentity = new ClaimsIdentity(claims, "MemberAuth");
 
             var authProperties = new AuthenticationProperties
             {
@@ -98,7 +101,7 @@ namespace incode2.ApiControllers.user
             };
 
             await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+                "MemberAuth",
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
         }
@@ -143,12 +146,59 @@ namespace incode2.ApiControllers.user
                 }
             });
         }
-               
+
+        // 1. 前端點擊「Google 登入」後，導向這裡
+        [HttpGet("login-google")]
+        public IActionResult LoginGoogle()
+        {
+            var properties = new AuthenticationProperties
+            {
+                // Google 登入成功後，後端會自動回調這個網址 (GoogleResponse)
+                RedirectUri = Url.Action(nameof(GoogleResponse))
+            };
+            // 發起挑戰，導向 Google 登入頁面
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        // 2. Google 登入成功後的回調 (由後端內部處理)
+        [HttpGet("google-response")]
+        public async Task<IActionResult> GoogleResponse()
+        {
+            // 取得 Google 回傳的使用者資訊
+            var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+            if (!result.Succeeded)
+                return BadRequest("Google 驗證失敗");
+
+            // 抓取 Google 給的資料
+            var claims = result.Principal.Identities.FirstOrDefault()?.Claims;
+            var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            // Google 的大頭貼 (通常是 picture 或 urn:google:picture)
+            // var picture = claims?.FirstOrDefault(c => c.Type == "urn:google:picture")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+                return BadRequest("無法取得 Google Email 資訊");
+
+            var user = await _userService.GetUserByEmailAsync(email);
+
+            if (user == null)
+            {
+                user = await _userService.CreateGoogleUserAsync(email, name);
+            }
+
+            // --- 執行登入 (寫入 Cookie) ---
+            await SignInProcessAsync(user, true); // Google 登入預設記住我
+
+            // --- 最後：重導回前端 Vue --
+            return Redirect("https://localhost:5173/userindex");
+        }
+
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             // 清除 Cookie
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync("MemberAuth");
             if (Request.Cookies[".AspNetCore.Cookies"] != null)
             {
                 Response.Cookies.Delete(".AspNetCore.Cookies");
@@ -174,5 +224,38 @@ namespace incode2.ApiControllers.user
 
             return Ok(new { isLoggedIn = false });
         }
+
+        // 前端 Vue 請 POST 到: /api/Auth/forgot-password
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] DTO.user.ForgotPasswordRequest request)
+        {
+            // 這裡的網址要設定為 "前端 Vue 的網址"！
+            // 假設你的 Vue 跑在 port 5173
+            string frontendUrl = "https://localhost:5173/reset-password";
+
+            // 呼叫 Service (Service 內寄信時，會把 token 拼在 frontendUrl 後面)
+            await _authService.ForgotPasswordAsync(request.Email, frontendUrl);
+
+            // API 永遠只回傳狀態，不回傳畫面
+            return Ok(new { message = "若 Email 存在，信件已發送。" });
+        }
+
+        // API 2: 重設密碼
+        // 前端 Vue 請 POST 到: /api/Auth/reset-password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] DTO.user.ResetPasswordRequest request)
+        {
+            bool result = await _authService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword);
+
+            if (result)
+            {
+                return Ok(new { message = "密碼重設成功" });
+            }
+            else
+            {
+                return BadRequest(new { message = "連結無效或已過期" });
+            }
+        }
+
     }
 }

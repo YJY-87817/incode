@@ -10,5 +10,8 @@ namespace incode2.Services.Users
 
         // 2. 註冊使用者 
         Task<string> RegisterAsync(string email, string password, string Username);
+
+        Task<bool> ForgotPasswordAsync(string email, string resetLinkBaseUrl);
+        Task<bool> ResetPasswordAsync(string email, string token, string newPassword);
     }
 }

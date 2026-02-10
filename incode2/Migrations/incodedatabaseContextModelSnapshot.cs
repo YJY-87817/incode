@@ -1401,6 +1401,12 @@ namespace incode2.Migrations
                         .HasColumnType("varchar(15)")
                         .HasColumnName("phone");
 
+                    b.Property<string>("ResetToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetTokenExpiry")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("RoleId")
                         .HasColumnType("int")
                         .HasColumnName("role_id");

@@ -12,7 +12,7 @@ using incode2.Models;
 namespace incode2.Migrations
 {
     [DbContext(typeof(incodedatabaseContext))]
-    [Migration("20260203033302_InitialCreate")]
+    [Migration("20260210193000_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -1403,6 +1403,12 @@ namespace incode2.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(15)")
                         .HasColumnName("phone");
+
+                    b.Property<string>("ResetToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("RoleId")
                         .HasColumnType("int")

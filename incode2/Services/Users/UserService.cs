@@ -20,6 +20,25 @@ namespace incode2.Services.Users
             return await _context.User.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<User> CreateGoogleUserAsync(string email, string name)
+        {
+            var newUser = new User
+            {
+                Email = email,
+                Username = name ?? "Google User",
+                Password = "GOOGLE_AUTH", // 標記
+                CreatedAt = DateTime.Now,
+                IsActive = true,
+                RoleId = 2, 
+                ImageUrl = "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+            };
+
+            _context.User.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return newUser;
+        }
+
         public async Task<List<User>> SearchUsersAsync(string keyword)
         {
             // 搜尋 Email 或 Username
