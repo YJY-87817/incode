@@ -72,8 +72,6 @@ const scrollToBottom = async () => {
 
 const removePreview = () => { selectedFile.value = null; previewImage.value = null; };
 
-
-
 const ensureSession = async () => {
     if (currentSessionId.value > 0) {
         return { sessionId: currentSessionId.value, isNew: false };
@@ -151,9 +149,11 @@ const initSignalR = async () => {
             .withAutomaticReconnect()
             .build();
 
-        // 監聽訊息
+        // ★★★ 關鍵修改：SignalR 監聽器 ★★★
         newConnection.on("ReceiveMessage", (type, message) => {
-            if (type === 'User') return;
+            // User 訊息我們自己在前端已經先顯示了，所以這裡可以選擇過濾掉，
+            // 或者是保留它來確保多裝置同步 (這裡選擇保留，但要注意可能會有極短暫的重複閃爍，通常不影響體驗)
+            // if (type === 'User') return; 
 
             // 系統訊息
             if (type === 'System') {
@@ -167,25 +167,29 @@ const initSignalR = async () => {
             if (type === 'Live') {
                 chatStore.addMessage({ role: 'ai', text: message, imageUrl: null, isHuman: true, time: new Date() });
                 isHumanMode.value = true;
-                isSending.value = false;
+                isSending.value = false; // 收到訊息就關閉 loading
                 return;
             }
 
-            // AI 訊息
+            // AI 訊息 (包含純文字與 Markdown)
             let imgUrl = null;
             let textContent = message;
-            let isMessageHuman = false;
 
             if (type === 'AI' || type === 'AI_Image') {
-                 // 這裡假設後端回傳的是 Markdown，進行解析
+                 // 解析 Markdown (包含後端回傳的圖片語法 ![img](url))
                  textContent = renderMarkdown(message);
+                 
                  chatStore.addMessage({ role: 'ai', text: textContent, imageUrl: null, isHuman: false, time: new Date() });
+                 
+                 // ★★★ 關鍵：收到 SignalR 就代表 AI 回應了，立刻關閉 Loading ★★★
                  isSending.value = false;
                  return;
             }
 
-            // 圖片回傳
+            // 使用者傳圖片的回音
             if (type === 'User_Image') {
+                // 如果您希望上傳圖片後，也要靠 SignalR 顯示圖片，可以在這裡處理
+                // 但目前的邏輯是前端自己先顯示 previewImage，所以這裡可以忽略
                 return; 
             }
         });
@@ -258,10 +262,11 @@ const checkLoginAndInit = async () => {
     }
 };
 
+// ★★★ 關鍵修改：sendMessage 改為「射後不理」，不等待 response ★★★
 const sendMessage = async (text) => {
     if (isSending.value) return;
 
-    // 1. 檢查連線 (原本的邏輯)
+    // 1. 檢查連線
     if (!connection.value || connection.value.state !== signalR.HubConnectionState.Connected) {
         await initSignalR();
         if (!connectionId.value) {
@@ -271,48 +276,45 @@ const sendMessage = async (text) => {
     }
 
     if (!currentSessionId.value || currentSessionId.value === 0) {
+        // ... (建立 Session 邏輯保持不變) ...
         console.log("偵測到新對話，正在建立 Session...");
         try {
-            // 呼叫 API 建立 Session
             const { sessionId } = await ensureSession(); 
-            
-            // 拿到 ID 後，立刻讓 SignalR 加入群組 (關鍵！)
             if (sessionId > 0 && connection.value) {
-                console.log(`加入新房間: ${sessionId}`);
                 await connection.value.invoke("JoinSessionGroup", sessionId.toString());
             }
         } catch (e) {
             console.error("建立新對話失敗", e);
-            alert("無法建立對話，請重整頁面後再試。");
             return;
         }
     }
 
-    // UI 顯示 (原本的邏輯)
+    // UI 顯示
+    // 為了讓使用者感覺「秒發」，我們在前端先顯示這則訊息
+    // (注意：因為後端也會廣播 'User' 訊息，如果您發現訊息出現兩次，請把 SignalR 裡的 if (type === 'User') return; 打開)
     chatStore.addMessage({ role: 'user', text: text, time: new Date() });
+    
     userInput.value = '';
-    isSending.value = true;
+    isSending.value = true; // 開啟 Loading
 
     try {
-        const sid = currentSessionId.value; // 這時候一定有值了
+        const sid = currentSessionId.value;
         const payload = { 
             sessionId: sid, 
             userContent: text, 
             connectionId: connectionId.value 
         };
         
-        const res = await axios.post(`${API_BASE_URL}/api/ChatMessages/SendMessage`, payload, { withCredentials: true });
+        // ★ 這裡只管發送，不需要拿 res.data 來顯示訊息
+        // ★ 因為顯示訊息的工作已經全權交給 SignalR 了
+        await axios.post(`${API_BASE_URL}/api/ChatMessages/SendMessage`, payload, { withCredentials: true });
         
-        // 雙重確認更新
-        if (res.data.sessionId && res.data.sessionId !== currentSessionId.value) {
-            currentSessionId.value = res.data.sessionId;
-            chatStore.setSessionId(res.data.sessionId);
-        }
-
-        if (isHumanMode.value) isSending.value = false;
+        // 注意：isSending.value = false 不能寫在這裡！
+        // 因為 API 回傳只代表「伺服器收到了」，不代表「AI 想好了」
+        // 我們要在 SignalR 收到 'AI' 訊息時才把 isSending 關掉 (看 initSignalR 裡面的修改)
 
     } catch (error) {
-        isSending.value = false;
+        isSending.value = false; // 失敗才手動關閉
         chatStore.addMessage({ role: 'ai', text: `<span style="color:red">發送失敗。</span>`, isSystem: true, time: new Date() });
     }
 };
@@ -320,20 +322,16 @@ const sendMessage = async (text) => {
 const sendImageWithText = async (file, text) => {
     if (!connection.value) await initSignalR();
 
-    // 如果沒有 Session ID，先去建立
     if (!currentSessionId.value || currentSessionId.value === 0) {
         try {
             const { sessionId } = await ensureSession();
             if (sessionId > 0 && connection.value) {
                 await connection.value.invoke("JoinSessionGroup", sessionId.toString());
             }
-        } catch (e) {
-            console.error("建立新對話失敗", e);
-            return;
-        }
+        } catch (e) { return; }
     }
     
-    const sid = currentSessionId.value; // 確保有值
+    const sid = currentSessionId.value;
 
     chatStore.addMessage({ role: 'user', text: text, imageUrl: previewImage.value, time: new Date() });
     
@@ -348,16 +346,12 @@ const sendImageWithText = async (file, text) => {
     isSending.value = true;
 
     try {
-        const res = await axios.post(`${API_BASE_URL}/api/ChatMessages/UploadImage`, formData, { 
+        // 同樣改為「射後不理」
+        await axios.post(`${API_BASE_URL}/api/ChatMessages/UploadImage`, formData, { 
             headers: { 'Content-Type': 'multipart/form-data' },
             withCredentials: true 
         });
-
-        if (res.data.sessionId && res.data.sessionId !== currentSessionId.value) {
-            currentSessionId.value = res.data.sessionId;
-            chatStore.setSessionId(res.data.sessionId);
-        }
-
+        
     } catch (error) { 
         isSending.value = false; 
         chatStore.addMessage({ role: 'ai', text: `<span style="color:red">圖片上傳失敗。</span>`, isSystem: true, time: new Date() });
@@ -414,7 +408,6 @@ const endChat = async () => {
         
         if (res.data.success) {
             isHumanMode.value = false;
-            
             if (res.data.sessionId && res.data.sessionId !== currentSessionId.value) {
                 currentSessionId.value = res.data.sessionId;
                 chatStore.setSessionId(res.data.sessionId);
