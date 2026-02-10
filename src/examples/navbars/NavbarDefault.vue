@@ -6,6 +6,8 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
 import { useAuthStore } from "@/stores/user/auth";
 import ArrDark from "@/assets/img/down-arrow-dark.svg";
 import DownArrWhite from "@/assets/img/down-arrow-white.svg";
+import axio from "axios";
+import mysweet from "sweetalert2";
 
 // 取得購物車狀態
 const CartNow = useCartStore();
@@ -30,9 +32,9 @@ const menuItems = computed(() => [
     icon: "mdi-face-man-profile",
     to: authStore.user?.username
       ? {
-        name: "UserProfile",
-        params: { username: authStore.user.username },
-      }
+          name: "UserProfile",
+          params: { username: authStore.user.username },
+        }
       : { name: "UserIndex" }, // 安全的替代路徑
   },
   {
@@ -56,6 +58,51 @@ const menuItems = computed(() => [
     to: { name: "recharge" },
   },
 ]);
+
+// 搜尋框
+const API_KEY = "a6c7cb6a572961e259b16765e8726e85"; // 替換為你的 TMDb API 金鑰
+const searchQuery = ref("");
+const searchResults = ref([]);
+const SEARCH_API = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=zh-TW&query=`;
+function searchget() {
+  // 在這裡實現搜尋邏輯，將結果存入 searchResults
+  // console.log("搜尋內容:", searchQuery.value);
+  console.log(SEARCH_API + searchQuery.value);
+  if (searchQuery.value == "") {
+    searchResults.value = [];
+    mysweet.fire({
+      icon: "warning",
+      title: "請輸入搜尋內容",
+      showConfirmButton: false,
+      timer: 1500,
+    });
+    return;
+  }
+  axio
+    .get(SEARCH_API + searchQuery.value, {
+      // 關閉憑證帶入
+      withCredentials: false,
+    })
+    .then((res) => {
+      // console.log("API 回應:", res.data.results);
+      searchResults.value = res.data.results;
+      console.log("搜尋結果:", searchResults.value);
+      if (searchResults.value.length === 0) {
+        mysweet.fire({
+          icon: "info",
+          title: "沒有找到相關電影",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      } else {
+        for (let i = 0; i < searchResults.value.length; i++) {
+          console.log(
+            `https://image.tmdb.org/t/p/w500/${searchResults.value[i].poster_path}`,
+          );
+        }
+      }
+    });
+}
 
 const handleLogout = async () => {
   await authStore.logout();
@@ -98,16 +145,7 @@ function getArrowColor() {
 
 // set text color
 const getTextColor = () => {
-  let color;
-  if (props.transparent && textDark.value) {
-    color = "text-dark";
-  } else if (props.transparent) {
-    color = "text-white";
-  } else {
-    color = "text-dark";
-  }
-
-  return color;
+  return "text-white";
 };
 
 // set nav color on mobile && desktop
@@ -134,84 +172,156 @@ watch(
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-lg top-0" :style="props.light ? 'background-color: #FFF0DD !important' : ''" :class="{
-    'z-index-3 w-100 shadow-none navbar-transparent position-absolute my-3':
-      props.transparent,
-    'my-3 blur border-radius-lg z-index-3 py-2 shadow py-2 start-0 end-0 mx-4 position-absolute mt-4':
-      props.sticky,
-    'navbar-light py-3': props.light,
-    ' navbar-dark bg-gradient-dark z-index-3 py-3': props.dark,
-  }">
-    <div :class="props.transparent || props.light || props.dark
-      ? 'container'
-      : 'container-fluid px-0'
-      ">
-      <router-link class="navbar-brand d-none d-md-block" :class="[
-        (props.transparent && textDark.value) || !props.transparent
-          ? 'text-dark font-weight-bolder ms-sm-3'
-          : 'text-white font-weight-bolder ms-sm-3',
-      ]" :to="{ name: 'firstview' }" rel="tooltip" title="Designed and Coded by Creative Tim" data-placement="bottom">
-        <img src="@/assets/img/okapi.svg" alt="logo"
-          style="height: 40px; width: auto; margin-right: 8px; vertical-align: middle;" />
+  <nav
+    class="navbar navbar-expand-lg top-0"
+    :style="props.light ? 'background-color: #5e8a96 !important' : ''"
+    :class="{
+      'z-index-3 w-100 shadow-none navbar-transparent position-absolute my-3':
+        props.transparent,
+      'my-3 blur border-radius-lg z-index-3 py-2 shadow py-2 start-0 end-0 mx-4 position-absolute mt-4':
+        props.sticky,
+      'navbar-light py-3': props.light,
+      ' navbar-dark bg-gradient-dark z-index-3 py-3': props.dark,
+    }"
+  >
+    <div
+      :class="
+        props.transparent || props.light || props.dark
+          ? 'container'
+          : 'container-fluid px-0'
+      "
+    >
+      <router-link
+        class="navbar-brand d-none d-md-block"
+        :class="['text-white font-weight-bolder ms-sm-3']"
+        :to="{ name: 'firstview' }"
+        rel="tooltip"
+        title="Designed and Coded by Creative Tim"
+        data-placement="bottom"
+      >
+        <img
+          src="@/assets/img/okapi.svg"
+          alt="logo"
+          style="
+            height: 40px;
+            width: auto;
+            margin-right: 8px;
+            vertical-align: middle;
+          "
+        />
         incode影庫
       </router-link>
-      <button class="navbar-toggler shadow-none ms-2" type="button" data-bs-toggle="collapse"
-        data-bs-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
+      <button
+        class="navbar-toggler shadow-none ms-2"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navigation"
+        aria-controls="navigation"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
         <span class="navbar-toggler-icon mt-2">
           <span class="navbar-toggler-bar bar1"></span>
           <span class="navbar-toggler-bar bar2"></span>
           <span class="navbar-toggler-bar bar3"></span>
         </span>
       </button>
-      <div class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0" id="navigation">
+      <div
+        class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0"
+        id="navigation"
+      >
         <ul class="navbar-nav navbar-nav-hover">
           <!-- 討論區 -->
           <li class="nav-item mx-2">
-            <router-link :to="{ name: 'forum' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
-              :class="getTextColor()">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                comment</i>
+            <router-link
+              :to="{ name: 'forum' }"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+            >
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                comment</i
+              >
               討論區
             </router-link>
           </li>
           <!-- 任務區 -->
           <li class="nav-item mx-2">
-            <router-link :to="{ name: 'task' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
-              :class="getTextColor()">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                assignment</i>
+            <router-link
+              :to="{ name: 'task' }"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+            >
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                assignment</i
+              >
               任務大廳
             </router-link>
           </li>
 
           <!-- 點數商城區 -->
           <li class="nav-item mx-2">
-            <router-link :to="{ name: 'PointShop' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
-              :class="getTextColor()">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                shopping_bag</i>
+            <router-link
+              :to="{ name: 'PointShop' }"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+            >
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                shopping_bag</i
+              >
               點數商城
             </router-link>
           </li>
           <!-- owen -->
           <li class="nav-item mx-2">
-            <RouterLink :to="{ name: 'UserIndex' }" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
-              :class="getTextColor()">
-              <i class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
-                person</i>會員中心
+            <RouterLink
+              :to="{ name: 'UserIndex' }"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+              :class="getTextColor()"
+            >
+              <i
+                class="material-icons opacity-6 me-2 text-md"
+                :class="getTextColor()"
+              >
+                person</i
+              >會員中心
             </RouterLink>
           </li>
           <div
             class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md dropdown-md-responsive p-3 border-radius-lg mt-0 mt-lg-3"
-            aria-labelledby="dropdownMenuBlocks">
+            aria-labelledby="dropdownMenuBlocks"
+          >
             <div class="d-none d-lg-block">
               <ul class="navbar-nav d-lg-block d-none">
                 <li class="nav-item dropdown dropdown-hover">
-                  <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center"
-                    :class="getTextColor()" id="dropdownMenuUser" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img v-if="userAvatarUrl" :src="userAvatarUrl" class="avatar-img rounded-circle me-2" alt="user" />
+                  <a
+                    role="button"
+                    class="nav-link ps-2 d-flex cursor-pointer align-items-center"
+                    :class="getTextColor()"
+                    id="dropdownMenuUser"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <img
+                      v-if="userAvatarUrl"
+                      :src="userAvatarUrl"
+                      class="avatar-img rounded-circle me-2"
+                      alt="user"
+                    />
 
-                    <i v-else class="material-icons opacity-6 me-2 text-md" :class="getTextColor()">
+                    <i
+                      v-else
+                      class="material-icons opacity-6 me-2 text-md"
+                      :class="getTextColor()"
+                    >
                       account_circle
                     </i>
                     {{ authStore.user?.username || "會員" }}
@@ -219,7 +329,8 @@ watch(
 
                   <div
                     class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md p-3 border-radius-lg mt-0 mt-lg-3"
-                    aria-labelledby="dropdownMenuUser">
+                    aria-labelledby="dropdownMenuUser"
+                  >
                     <div class="d-flex align-items-center px-2 py-2 mb-2">
                       <div class="d-flex flex-column">
                         <h6 class="text-dark font-weight-bolder mb-0">
@@ -232,10 +343,19 @@ watch(
                     <hr class="horizontal dark my-1" />
 
                     <ul class="list-group">
-                      <li v-for="(item, index) in menuItems" :key="index" class="nav-item list-group-item border-0 p-0">
-                        <RouterLink :to="item.to"
-                          class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center">
-                          <i v-if="item.icon" :class="`mdi ${item.icon} me-2 text-primary`"></i>
+                      <li
+                        v-for="(item, index) in menuItems"
+                        :key="index"
+                        class="nav-item list-group-item border-0 p-0"
+                      >
+                        <RouterLink
+                          :to="item.to"
+                          class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center"
+                        >
+                          <i
+                            v-if="item.icon"
+                            :class="`mdi ${item.icon} me-2 text-primary`"
+                          ></i>
                           <span>{{ item.title }}</span>
                         </RouterLink>
                       </li>
@@ -243,9 +363,11 @@ watch(
                       <hr class="horizontal dark my-2" />
 
                       <li class="nav-item list-group-item border-0 p-0">
-                        <a href="javascript:;"
+                        <a
+                          href="javascript:;"
                           class="dropdown-item py-2 ps-3 border-radius-md text-danger d-flex align-items-center"
-                          @click="handleLogout">
+                          @click="handleLogout"
+                        >
                           <i class="mdi mdi-logout me-2"></i>
                           <span>登出</span>
                         </a>
@@ -258,41 +380,73 @@ watch(
           </div>
         </ul>
         <!-- 搜尋框 -->
-        <div class="mx-auto d-none d-lg-flex align-items-center" style="max-width: 350px; flex: 1">
-          <div class="input-group d-flex align-items-center" style="
+        <div
+          class="mx-auto d-none d-lg-flex align-items-center"
+          style="max-width: 350px; flex: 1"
+        >
+          <div
+            class="input-group d-flex align-items-center"
+            style="
               background: #f8f9fa;
               border-radius: 50px;
               padding: 0.25rem 0.5rem;
-            ">
-            <input type="text" class="form-control border-0 bg-transparent shadow-none" placeholder="搜尋" style="
+            "
+          >
+            <input
+              id="searchInput"
+              type="text"
+              class="form-control border-0 bg-transparent shadow-none"
+              placeholder="搜尋"
+              style="
                 padding: 0.5rem 1rem;
                 color: #344767;
                 outline: none;
                 box-shadow: none !important;
                 background-image: none !important;
-              " />
-            <button type="button" class="btn border-0 bg-transparent d-flex align-items-center justify-content-center"
+              "
+              v-model="searchQuery"
+            />
+            <button
+              type="button"
+              class="btn border-0 bg-transparent d-flex align-items-center justify-content-center"
               style="
                 outline: none;
                 padding: 0.5rem 0.75rem;
                 margin: 0;
                 line-height: 1;
-              ">
-              <i class="material-icons text-muted" style="font-size: 1.75rem; display: block; line-height: 1">search</i>
+              "
+              @click="searchget"
+            >
+              <i
+                class="material-icons text-muted"
+                style="font-size: 1.75rem; display: block; line-height: 1"
+                >search</i
+              >
             </button>
           </div>
         </div>
         <ul class="navbar-nav ms-0">
           <!-- 購物車 -->
           <li class="nav-item d-none d-lg-block">
-            <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center position-relative"
-              :class="getTextColor()" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas"
-              aria-controls="cartOffcanvas">
+            <a
+              role="button"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center position-relative"
+              :class="getTextColor()"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#cartOffcanvas"
+              aria-controls="cartOffcanvas"
+            >
               <div class="position-relative d-inline-block">
-                <i class="bi bi-cart-dash" style="font-size: 1.2rem; line-height: 1;" :class="getTextColor()"></i>
-                <span v-if="CartNow.totalItems > 0"
+                <i
+                  class="bi bi-cart-dash"
+                  style="font-size: 1.2rem; line-height: 1"
+                  :class="getTextColor()"
+                ></i>
+                <span
+                  v-if="CartNow.totalItems > 0"
                   class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-                  style="font-size: 0.6rem; padding: 0.2rem 0.4rem">
+                  style="font-size: 0.6rem; padding: 0.2rem 0.4rem"
+                >
                   {{ CartNow.totalItems > 99 ? "99+" : CartNow.totalItems }}
                 </span>
               </div>
@@ -304,38 +458,59 @@ watch(
           <!--手機版登入 -->
           <!-- owen -->
           <li class="nav-item" v-if="!authStore.isAuthenticated">
-            <RouterLink :to="{ name: 'Auth' }" class="btn btn-sm mb-0 nav-login-btn">
+            <RouterLink
+              :to="{ name: 'Auth' }"
+              class="btn btn-sm mb-0 nav-login-btn"
+            >
               登入
             </RouterLink>
           </li>
 
           <li class="nav-item dropdown dropdown-hover mx-2" v-else>
-            <a role="button" class="nav-link ps-2 d-flex cursor-pointer align-items-center justify-content-center"
-              id="dropdownMenuUser" data-bs-toggle="dropdown" aria-expanded="false"
-              style="height: 100%; min-height: 40px">
-              <div v-if="userAvatarUrl" class="d-flex align-items-center justify-content-center bg-white shadow-sm"
+            <a
+              role="button"
+              class="nav-link ps-2 d-flex cursor-pointer align-items-center justify-content-center"
+              id="dropdownMenuUser"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              style="height: 100%; min-height: 40px"
+            >
+              <div
+                v-if="userAvatarUrl"
+                class="d-flex align-items-center justify-content-center bg-white shadow-sm"
                 style="
                   width: 40px;
                   height: 40px;
                   border-radius: 50%;
                   border: 2px solid #fff;
                   overflow: hidden;
-                ">
-                <img :src="userAvatarUrl" alt="Avatar" style="
+                "
+              >
+                <img
+                  :src="userAvatarUrl"
+                  alt="Avatar"
+                  style="
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
                     display: block;
-                  " />
+                  "
+                />
               </div>
-              <i v-else class="material-icons opacity-6 text-md" :class="getTextColor()" style="font-size: 24px">
+              <i
+                v-else
+                class="material-icons opacity-6 text-md"
+                :class="getTextColor()"
+                style="font-size: 24px"
+              >
                 account_circle
               </i>
             </a>
 
             <div
               class="dropdown-menu dropdown-menu-end dropdown-menu-animation dropdown-md p-3 border-radius-lg mt-0 mt-lg-3"
-              aria-labelledby="dropdownMenuUser">
+              aria-labelledby="dropdownMenuUser"
+            >
               <div class="d-flex align-items-center px-2 py-2 mb-2">
                 <div class="d-flex flex-column">
                   <h6 class="text-dark font-weight-bolder mb-0">
@@ -348,9 +523,19 @@ watch(
               <hr class="horizontal dark my-1" />
 
               <ul class="list-group">
-                <li v-for="(item, index) in menuItems" :key="index" class="nav-item list-group-item border-0 p-0">
-                  <RouterLink :to="item.to" class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center">
-                    <i v-if="item.icon" :class="`mdi ${item.icon} me-2 text-primary`"></i>
+                <li
+                  v-for="(item, index) in menuItems"
+                  :key="index"
+                  class="nav-item list-group-item border-0 p-0"
+                >
+                  <RouterLink
+                    :to="item.to"
+                    class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center"
+                  >
+                    <i
+                      v-if="item.icon"
+                      :class="`mdi ${item.icon} me-2 text-primary`"
+                    ></i>
                     <span>{{ item.title }}</span>
                   </RouterLink>
                 </li>
@@ -358,9 +543,11 @@ watch(
                 <hr class="horizontal dark my-2" />
 
                 <li class="nav-item list-group-item border-0 p-0">
-                  <a href="javascript:;"
+                  <a
+                    href="javascript:;"
                     class="dropdown-item py-2 ps-3 border-radius-md text-danger d-flex align-items-center"
-                    @click="handleLogout">
+                    @click="handleLogout"
+                  >
                     <i class="mdi mdi-logout me-2"></i>
                     <span>登出</span>
                   </a>
@@ -376,6 +563,11 @@ watch(
 </template>
 
 <style scoped>
+/* 導航連結 hover 效果 */
+.nav-link {
+  transition: color 0.3s ease;
+}
+
 /* 登入按鈕 */
 .nav-login-btn {
   /* 預設狀態 */

@@ -82,7 +82,7 @@ onMounted(() => {
   >
     <div
       ref="filterHeaderRef"
-      class="card-header text-white d-flex justify-content-between align-items-center collapsed"
+      class="card-header text-white d-flex justify-content-between align-items-center collapsed rounded-top"
       data-bs-toggle="collapse"
       data-bs-target="#filterCollapse"
       aria-expanded="false"

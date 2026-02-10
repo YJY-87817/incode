@@ -18,26 +18,40 @@ const decrease = (item) => {
 <template>
   <!-- 購物車按鈕 -->
   <div>
-
-    <button class="cart-side-btn d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+    <button
+      class="cart-side-btn d-lg-none"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#cartOffcanvas"
+    >
       <div class="position-relative d-inline-block d-flex align-items-center">
         <i class="bi bi-cart-dash-fill h4 mb-0 text-white"></i>
-        <span v-if="CartNow.totalItems > 0"
+        <span
+          v-if="CartNow.totalItems > 0"
           class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-          style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
-          {{ CartNow.totalItems > 99 ? '99+' : CartNow.totalItems }}
+          style="font-size: 0.6rem; padding: 0.2rem 0.4rem"
+        >
+          {{ CartNow.totalItems > 99 ? "99+" : CartNow.totalItems }}
         </span>
       </div>
       <span class="btn-text"></span>
     </button>
 
     <!-- 左側購物車 -->
-    <div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="cartOffcanvas">
+    <div
+      class="offcanvas offcanvas-start"
+      data-bs-scroll="true"
+      tabindex="-1"
+      id="cartOffcanvas"
+    >
       <div class="offcanvas-header">
         <h5 class="offcanvas-title">
           <i class="bi bi-cart-dash-fill h1"></i> 購物車
         </h5>
-        <button type="button" class="btn btn-custom-primary" @click="CartNow.clearCart()">
+        <button
+          type="button"
+          class="btn btn-custom-primary"
+          @click="CartNow.clearCart()"
+        >
           清空購物車
         </button>
       </div>
@@ -45,8 +59,11 @@ const decrease = (item) => {
       <div class="offcanvas-body d-flex flex-column">
         <!-- 購物車清單 -->
         <div v-if="CartNow.cartItems.length > 0">
-          <div class="d-flex justify-content-between align-items-center border-bottom py-2"
-            v-for="item in CartNow.cartItems" :key="item.productId">
+          <div
+            class="d-flex justify-content-between align-items-center border-bottom py-2"
+            v-for="item in CartNow.cartItems"
+            :key="item.productId"
+          >
             <div>
               <div class="fw-bold">{{ item.name }}</div>
               <small class="text-muted">
@@ -55,22 +72,45 @@ const decrease = (item) => {
             </div>
 
             <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;" @click="increase(item)">
+              <button
+                class="btn btn-sm btn-custom-primary"
+                style="font-size: 0.875rem"
+                @click="increase(item)"
+              >
                 +
               </button>
-              <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;" @click="decrease(item)">
+              <button
+                class="btn btn-sm btn-custom-primary"
+                style="font-size: 0.875rem"
+                @click="decrease(item)"
+              >
                 −
               </button>
-              <button class="btn btn-sm btn-custom-primary" style="font-size: 0.875rem;"
-                @click="CartNow.removeFromCart(item.productId)">
-                <i class="bi bi-trash" style="font-size: 0.875rem;"></i>
+              <button
+                class="btn btn-sm btn-custom-primary"
+                style="font-size: 0.875rem"
+                @click="CartNow.removeFromCart(item.productId)"
+              >
+                <i class="bi bi-trash" style="font-size: 0.875rem"></i>
               </button>
             </div>
           </div>
         </div>
 
-        <div v-else class="text-center text-muted mt-5">
+        <div
+          v-else
+          class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted"
+        >
           目前沒有任何商品在購物車
+          <br />
+          <router-link :to="{ name: 'PointShop' }">
+            <button
+              class="btn btn-custom-primary mt-3"
+              data-bs-dismiss="offcanvas"
+            >
+              繼續逛逛
+            </button>
+          </router-link>
         </div>
 
         <!-- 底部總金額 -->
@@ -83,8 +123,14 @@ const decrease = (item) => {
             <span>數量</span>
             <span>{{ CartNow.totalItems }} 件</span>
           </div>
-          <router-link :to="{ name: 'Checkout' }" class="dropdown-item border-radius-md">
-            <button class="btn btn-custom-primary w-100 mt-3" data-bs-dismiss="offcanvas">
+          <router-link
+            :to="{ name: 'Checkout' }"
+            class="dropdown-item border-radius-md"
+          >
+            <button
+              class="btn btn-custom-primary w-100 mt-3"
+              data-bs-dismiss="offcanvas"
+            >
               前往結帳
             </button>
           </router-link>
