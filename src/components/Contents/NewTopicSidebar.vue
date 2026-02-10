@@ -766,6 +766,15 @@ watch(
   color: #0f4456;
 }
 
+.new-topic-sidebar .btn-entrust-toggle:focus,
+.new-topic-sidebar .btn-entrust-toggle:active,
+.new-topic-sidebar .btn-entrust-toggle.active {
+  background-color: #eaf2f4;
+  border-color: #145369;
+  color: #0f4456;
+  box-shadow: none;
+}
+
 .new-topic-sidebar .entrust-mission-panel {
   background: #f6f8f9;
   border-color: #d9e2e6;
