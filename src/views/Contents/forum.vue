@@ -124,7 +124,7 @@ watch(
   <div class="container mt-5 mb-5">
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
-      <div class="col-lg-9 order-2 order-lg-1">
+      <div class="col-lg-9 order-2 order-lg-1 forum-main">
         <!-- 分類欄 -->
         <CategoryFilter />
         <!-- 新主題改為使用彈出視窗 -->
@@ -243,6 +243,14 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+@media (min-width: 992px) {
+  .forum-sidebar {
+    position: sticky;
+    top: 1rem;
+    align-self: flex-start;
+  }
 }
 
 /* 表格樣式 */
