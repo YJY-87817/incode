@@ -186,7 +186,9 @@ namespace incode2.Migrations
                     created_at = table.Column<DateTime>(type: "datetime", nullable: true, defaultValueSql: "(getdate())"),
                     is_active = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
                     role_id = table.Column<int>(type: "int", nullable: true),
-                    employeeid = table.Column<int>(type: "int", nullable: true)
+                    employeeid = table.Column<int>(type: "int", nullable: true),
+                    ResetToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResetTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
