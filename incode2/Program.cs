@@ -138,6 +138,7 @@ builder.Services.AddScoped<IStatusService, StatusService>();
 //tim
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
