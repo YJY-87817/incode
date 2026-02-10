@@ -25,7 +25,13 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await axios.post("/AuthApi/Login", payload);
       if (response.status === 200) {
-        user.value = response.data.user;
+        const userData = response.data.user;
+        user.value = {
+          id: userData.userid || userData.UserId,
+          username: userData.username,
+          role: userData.role,
+          avatar: userData.avatarUrl || userData.ImageUrl
+        };
         isAuthenticated.value = true;
         return true;
       }
@@ -41,7 +47,7 @@ export const useAuthStore = defineStore("auth", () => {
     isLoading.value = true;
     try {
       const response = await axios.post("/AuthApi/Register", payload);
-      if (response.status === 200) {// 因為後端會回傳 user 物件，直接存起來         
+      if (response.status === 200) {
         if (response.data.user) {
           const userData = response.data.user;
           user.value = {
@@ -72,7 +78,7 @@ export const useAuthStore = defineStore("auth", () => {
       user.value = null;
       isAuthenticated.value = false;
       console.log("正在執行跳轉...");
-      window.location.href = '/'; //跳轉回首頁
+      window.location.href = '/'; //router.push('/');
     }
   }
 
@@ -90,13 +96,14 @@ export const useAuthStore = defineStore("auth", () => {
           avatar: profileData.imageUrl || profileData.ImageUrl
         };
         isAuthenticated.value = true;
+        return true;
       } else {
-        user.value = null;
-        isAuthenticated.value = false;
+        throw new Error("Not logged in")
       }
     } catch (error) {
       user.value = null;
       isAuthenticated.value = false;
+      return false;
     }
   }
 
@@ -104,6 +111,7 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     isAuthenticated,
     isLoading,
+    userAvatar,
     login,
     register,
     logout,
