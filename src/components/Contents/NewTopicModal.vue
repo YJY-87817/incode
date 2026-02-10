@@ -65,18 +65,30 @@ const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showTitleBodyRequiredModal = ref(false);
 
-const showEntrustMission = ref(false);
+const showEntrustMission = ref(Boolean(forumStore.newTopic.showEntrustMission));
 const entrustMissionState = reactive({
-  title: "",
-  detail: "",
-  rewardPoints: "",
-  category: "",
-  deadline: "",
+  title: forumStore.newTopic.entrustMission?.title || "",
+  detail: forumStore.newTopic.entrustMission?.detail || "",
+  rewardPoints: forumStore.newTopic.entrustMission?.rewardPoints || "",
+  category: forumStore.newTopic.entrustMission?.category || "",
+  deadline: forumStore.newTopic.entrustMission?.deadline || "",
 });
 
 const canUseEntrustMission = computed(
   () => isPostMode.value && !newTopicState.parentContentId,
 );
+
+const syncEntrustMissionFromStore = () => {
+  showEntrustMission.value = Boolean(forumStore.newTopic.showEntrustMission);
+  entrustMissionState.title = forumStore.newTopic.entrustMission?.title || "";
+  entrustMissionState.detail = forumStore.newTopic.entrustMission?.detail || "";
+  entrustMissionState.rewardPoints =
+    forumStore.newTopic.entrustMission?.rewardPoints || "";
+  entrustMissionState.category =
+    forumStore.newTopic.entrustMission?.category || "";
+  entrustMissionState.deadline =
+    forumStore.newTopic.entrustMission?.deadline || "";
+};
 
 const NO_REPLY_LABEL = "無(發佈新主題)";
 
@@ -296,6 +308,46 @@ onMounted(() => {
     }
   }
 });
+
+watch(
+  () => forumStore.showNewTopicModal,
+  (value) => {
+    if (value) {
+      syncEntrustMissionFromStore();
+    }
+  },
+);
+
+watch(
+  () => showEntrustMission.value,
+  (value) => {
+    forumStore.newTopic.showEntrustMission = value;
+    if (!value) {
+      resetEntrustMission();
+      forumStore.newTopic.entrustMission = {
+        title: "",
+        detail: "",
+        rewardPoints: "",
+        category: "",
+        deadline: "",
+      };
+    }
+  },
+);
+
+watch(
+  () => ({ ...entrustMissionState }),
+  (value) => {
+    forumStore.newTopic.entrustMission = {
+      title: value.title || "",
+      detail: value.detail || "",
+      rewardPoints: value.rewardPoints || "",
+      category: value.category || "",
+      deadline: value.deadline || "",
+    };
+  },
+  { deep: true },
+);
 
 watch(
   () => newTopicState.title,
@@ -870,6 +922,14 @@ const resetNewTopicDraft = () => {
   replySearch.value = "";
   showEntrustMission.value = false;
   resetEntrustMission();
+  forumStore.newTopic.showEntrustMission = false;
+  forumStore.newTopic.entrustMission = {
+    title: "",
+    detail: "",
+    rewardPoints: "",
+    category: "",
+    deadline: "",
+  };
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = null;
@@ -893,6 +953,14 @@ const handleModalCancel = () => {
         categoryId: newTopicState.categoryId,
         parentContentId: newTopicState.parentContentId,
         categorySearch: categorySearch.value,
+        showEntrustMission: showEntrustMission.value,
+        entrustMission: buildEntrustMissionPayload() || {
+          title: "",
+          detail: "",
+          rewardPoints: "",
+          category: "",
+          deadline: "",
+        },
       });
       // 回到 sidebar 編輯器
       forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, false);
@@ -910,6 +978,14 @@ const handleModalCancel = () => {
         replyingToContentId: forumStore.replyingToContentId,
         replyingToContentData: forumStore.replyingToContentData,
         replyingToThreadId: forumStore.replyingToThreadId,
+        showEntrustMission: showEntrustMission.value,
+        entrustMission: buildEntrustMissionPayload() || {
+          title: "",
+          detail: "",
+          rewardPoints: "",
+          category: "",
+          deadline: "",
+        },
       });
       forumStore.toggleDraftMinimize(draftId, !isEditModeActive);
     }
@@ -938,6 +1014,14 @@ const handleModalCancel = () => {
       replyingToContentId: forumStore.replyingToContentId,
       replyingToContentData: forumStore.replyingToContentData,
       replyingToThreadId: forumStore.replyingToThreadId,
+      showEntrustMission: showEntrustMission.value,
+      entrustMission: buildEntrustMissionPayload() || {
+        title: "",
+        detail: "",
+        rewardPoints: "",
+        category: "",
+        deadline: "",
+      },
     });
     forumStore.toggleDraftMinimize(draftId, false);
   }
@@ -949,6 +1033,14 @@ const handleModalCancel = () => {
   categorySearch.value = "";
   showEntrustMission.value = false;
   resetEntrustMission();
+  forumStore.newTopic.showEntrustMission = false;
+  forumStore.newTopic.entrustMission = {
+    title: "",
+    detail: "",
+    rewardPoints: "",
+    category: "",
+    deadline: "",
+  };
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = null;

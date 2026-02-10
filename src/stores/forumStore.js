@@ -300,12 +300,20 @@ export const useForumStore = defineStore("forum", {
       mode: "post",
       contentType: CONTENT_TYPES.POST,
       editingContentId: null, // 新增：正在編輯的內容 ID
+      showEntrustMission: false,
+      entrustMission: {
+        title: "",
+        detail: "",
+        rewardPoints: "",
+        category: "",
+        deadline: "",
+      },
     },
     isSubmittingNewTopic: false,
     isUploadingNewTopicImages: false,
 
     // ========== 多個草稿相關 ==========
-    drafts: [], // { id, title, body, categoryId, parentContentId, categorySearch, mode, contentType, isMinimized, replyingToContentId, replyingToContentData, replyingToThreadId }
+    drafts: [], // { id, title, body, categoryId, parentContentId, categorySearch, mode, contentType, isMinimized, replyingToContentId, replyingToContentData, replyingToThreadId, showEntrustMission, entrustMission }
     nextDraftId: 1,
     currentEditingDraftId: null, // 記錄當前正在 modal 中編輯的草稿 ID
 
@@ -1204,6 +1212,14 @@ export const useForumStore = defineStore("forum", {
       this.newTopic.body = "";
       this.newTopic.mode = "post";
       this.newTopic.contentType = CONTENT_TYPES.POST;
+      this.newTopic.showEntrustMission = false;
+      this.newTopic.entrustMission = {
+        title: "",
+        detail: "",
+        rewardPoints: "",
+        category: "",
+        deadline: "",
+      };
       this.showNewTopicBox = false;
     },
 
@@ -1228,6 +1244,14 @@ export const useForumStore = defineStore("forum", {
         replyingToContentId: options.replyingToContentId || null,
         replyingToContentData: options.replyingToContentData || null,
         replyingToThreadId: options.replyingToThreadId || null,
+        showEntrustMission: Boolean(options.showEntrustMission),
+        entrustMission: options.entrustMission || {
+          title: "",
+          detail: "",
+          rewardPoints: "",
+          category: "",
+          deadline: "",
+        },
       };
       this.drafts.push(newDraft);
       return draftId;

@@ -5,6 +5,7 @@ import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
 import { useForumPost } from "@/composables/useForumPost";
+import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
@@ -15,6 +16,92 @@ const { getModeTitle, publishPost, hasDraftContent } = useForumPost();
 const allDrafts = computed(() => forumStore.drafts || []);
 
 const submitLabel = "發布";
+
+const getDefaultEntrustMission = () => ({
+  title: "",
+  detail: "",
+  rewardPoints: "",
+  category: "",
+  deadline: "",
+});
+
+const getDraftEntrustMission = (draft) =>
+  draft?.entrustMission
+    ? { ...draft.entrustMission }
+    : getDefaultEntrustMission();
+
+const updateDraftEntrustMission = (draft, updates) => {
+  const current = getDraftEntrustMission(draft);
+  forumStore.updateDraft(draft.id, {
+    entrustMission: {
+      ...current,
+      ...updates,
+    },
+  });
+};
+
+const canUseEntrustMission = (draft) =>
+  draft?.mode === "post" && !draft?.parentContentId;
+
+const toggleEntrustMission = (draft) => {
+  if (!canUseEntrustMission(draft)) return;
+  const next = !draft?.showEntrustMission;
+  forumStore.updateDraft(draft.id, {
+    showEntrustMission: next,
+    entrustMission: next
+      ? getDraftEntrustMission(draft)
+      : getDefaultEntrustMission(),
+  });
+};
+
+const validateEntrustMission = async (draft) => {
+  if (!draft?.showEntrustMission) return true;
+
+  const data = getDraftEntrustMission(draft);
+  const title = String(data.title || "").trim();
+  const detail = String(data.detail || "").trim();
+  const category = String(data.category || "").trim();
+  const rewardPoints = Number(data.rewardPoints);
+
+  if (!title || !detail || !category || !Number.isFinite(rewardPoints)) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請完整填寫委託任務資訊",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
+
+  if (rewardPoints <= 0) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "獎勵點數需大於 0",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const buildEntrustMissionPayload = (draft) => {
+  if (!draft?.showEntrustMission) return null;
+  const data = getDraftEntrustMission(draft);
+  const deadline = String(data.deadline || "").trim();
+  const rewardPoints = Number(data.rewardPoints);
+
+  return {
+    title: String(data.title || "").trim(),
+    detail: String(data.detail || "").trim(),
+    rewardPoints: Number.isFinite(rewardPoints) ? rewardPoints : 0,
+    category: String(data.category || "").trim(),
+    deadline: deadline || null,
+  };
+};
 
 const buildReplyTitle = (baseTitle) => {
   const base = String(baseTitle || "").trim();
@@ -179,6 +266,8 @@ const openLargeEditor = (draft) => {
   forumStore.newTopic.mode = draft.mode;
   forumStore.newTopic.contentType = draft.contentType;
   forumStore.newTopic.editingContentId = draft.editingContentId || null;
+  forumStore.newTopic.showEntrustMission = Boolean(draft.showEntrustMission);
+  forumStore.newTopic.entrustMission = getDraftEntrustMission(draft);
   forumStore.replyingToContentId = draft.replyingToContentId;
   forumStore.replyingToContentData = draft.replyingToContentData;
   forumStore.replyingToThreadId = draft.replyingToThreadId;
@@ -194,6 +283,14 @@ const openLargeEditor = (draft) => {
 const submitDraft = async (draft) => {
   // 使用 composable 的 publishPost 進行驗證和提交
   const isEditMode = draft.mode === "edit" && draft.editingContentId;
+  if (draft.showEntrustMission && !(await validateEntrustMission(draft))) {
+    return;
+  }
+
+  const entrustMissionPayload = canUseEntrustMission(draft)
+    ? buildEntrustMissionPayload(draft)
+    : null;
+
   const success = await publishPost(
     {
       title: draft.title,
@@ -202,6 +299,7 @@ const submitDraft = async (draft) => {
       parentContentId: draft.parentContentId,
       contentType: draft.contentType,
       editingContentId: draft.editingContentId,
+      entrustMission: entrustMissionPayload,
     },
     Boolean(isEditMode),
   );
@@ -281,6 +379,92 @@ watch(
                   @update:modelValue="updateDraftBody(draft, $event)"
                   placeholder="請輸入貼文內容..."
                 />
+              </div>
+            </div>
+            <div v-if="canUseEntrustMission(draft)" class="mb-3">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-entrust-toggle"
+                @click="toggleEntrustMission(draft)"
+              >
+                {{ draft.showEntrustMission ? "取消委託任務" : "發佈委託任務" }}
+              </button>
+            </div>
+            <div
+              v-if="draft.showEntrustMission"
+              class="entrust-mission-panel border rounded p-3 mb-3"
+            >
+              <h6 class="mb-3">委託任務資訊</h6>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">任務標題</label>
+                  <input
+                    :value="draft.entrustMission?.title || ''"
+                    class="form-control"
+                    placeholder="請輸入任務標題"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        title: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">任務分類</label>
+                  <input
+                    :value="draft.entrustMission?.category || ''"
+                    class="form-control"
+                    placeholder="請輸入任務分類"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        category: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">獎勵點數</label>
+                  <input
+                    :value="draft.entrustMission?.rewardPoints || ''"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="form-control"
+                    placeholder="請輸入獎勵點數"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        rewardPoints: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">截止日期</label>
+                  <input
+                    :value="draft.entrustMission?.deadline || ''"
+                    type="date"
+                    class="form-control"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        deadline: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">任務說明</label>
+                  <textarea
+                    :value="draft.entrustMission?.detail || ''"
+                    class="form-control"
+                    rows="4"
+                    placeholder="請輸入任務內容"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        detail: $event.target.value,
+                      })
+                    "
+                  ></textarea>
+                </div>
               </div>
             </div>
             <div class="d-flex justify-content-end gap-2 sidebar-actions">
@@ -571,6 +755,21 @@ watch(
   background-color: #145369;
   border-color: #145369;
   color: white;
+}
+
+.new-topic-sidebar .btn-entrust-toggle {
+  border-color: #145369;
+  color: #145369;
+}
+
+.new-topic-sidebar .btn-entrust-toggle:hover {
+  background-color: #eaf2f4;
+  color: #0f4456;
+}
+
+.new-topic-sidebar .entrust-mission-panel {
+  background: #f6f8f9;
+  border-color: #d9e2e6;
 }
 
 .new-topic-sidebar .sidebar-actions {
