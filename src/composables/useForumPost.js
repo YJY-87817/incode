@@ -222,9 +222,22 @@ export function useForumPost() {
    */
   const hasDraftContent = (title, body, extraValues = []) => {
     const hasTitle = title && title.trim().length > 0;
+    const hasExtra = Array.isArray(extraValues)
+      ? extraValues.some((value) => {
+          if (value === null || value === undefined) return false;
+          if (typeof value === "boolean") return value;
+          if (typeof value === "number") {
+            return Number.isFinite(value) && value !== 0;
+          }
+          const normalized = String(value)
+            .replace(/\u00a0/g, " ")
+            .trim();
+          return normalized.length > 0;
+        })
+      : false;
 
     if (!body || !body.trim()) {
-      return hasTitle;
+      return hasTitle || hasExtra;
     }
 
     const raw = body.trim();
@@ -232,7 +245,7 @@ export function useForumPost() {
 
     if (!looksLikeHtml) {
       const text = raw.replace(/\u00a0/g, " ").trim();
-      return hasTitle || text.length > 0;
+      return hasTitle || text.length > 0 || hasExtra;
     }
 
     const parser = new DOMParser();
@@ -243,19 +256,7 @@ export function useForumPost() {
 
     if (hasTitle || text.length > 0 || hasMedia) return true;
 
-    if (!Array.isArray(extraValues) || extraValues.length === 0) return false;
-
-    return extraValues.some((value) => {
-      if (value === null || value === undefined) return false;
-      if (typeof value === "boolean") return value;
-      if (typeof value === "number") {
-        return Number.isFinite(value) && value !== 0;
-      }
-      const normalized = String(value)
-        .replace(/\u00a0/g, " ")
-        .trim();
-      return normalized.length > 0;
-    });
+    return hasExtra;
   };
 
   /**

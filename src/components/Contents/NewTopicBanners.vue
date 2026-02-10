@@ -24,8 +24,15 @@ const getDraftExtraValues = (draft) => {
   ];
 };
 
-const hasVisibleDraftContent = (draft) =>
-  hasDraftContent(draft.title, draft.body, getDraftExtraValues(draft));
+const isCommentLikeDraft = (draft) => {
+  const type = draft?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+};
+
+const hasVisibleDraftContent = (draft) => {
+  const titleToCheck = isCommentLikeDraft(draft) ? "" : draft.title;
+  return hasDraftContent(titleToCheck, draft.body, getDraftExtraValues(draft));
+};
 
 const expandDraft = (draft) => {
   allDrafts.value.forEach((d) => {

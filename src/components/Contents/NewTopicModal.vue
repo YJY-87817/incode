@@ -953,8 +953,9 @@ const resetNewTopicDraft = () => {
 
 const handleModalCancel = () => {
   const isEditModeActive = modalMode.value === "edit";
+  const titleToCheck = shouldHideTitleInput.value ? "" : newTopicState.title;
   const hasContent = hasDraftContent(
-    newTopicState.title,
+    titleToCheck,
     newTopicState.body,
     getModalExtraValues(),
   );

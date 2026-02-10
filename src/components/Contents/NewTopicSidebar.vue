@@ -136,7 +136,8 @@ const syncDraftReplyTitle = (draft) => {
 
 // 處理草稿操作
 const handleCancelClick = (draft) => {
-  if (hasDraftContent(draft.title, draft.body, getDraftExtraValues(draft))) {
+  const titleToCheck = isCommentLikeDraft(draft) ? "" : draft.title;
+  if (hasDraftContent(titleToCheck, draft.body, getDraftExtraValues(draft))) {
     // 如果有內容，最小化
     forumStore.toggleDraftMinimize(draft.id, true);
   } else {
