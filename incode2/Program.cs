@@ -21,9 +21,7 @@ builder.Services.AddDbContext<incodedatabaseContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// ==========================================
 // 2. CORS
-// ==========================================
 builder.Services.AddCors(options =>
 {
   options.AddPolicy("VueApp", policy =>
@@ -44,9 +42,7 @@ builder.Services.AddCors(options =>
   });
 });
 
-// ==========================================
 // 2.5 Configure request size limits for file uploads
-// ==========================================
 // tim 預設不能上傳限制為約28.6 MB，改設定成 500 MB
 // Program.cs設定後，在ImageApiController.cs內的上傳api要用[屬性類別]來解除預設限制
 builder.Services.Configure<FormOptions>(options =>
@@ -67,12 +63,9 @@ builder.Services.AddHttpClient<GeminiService>();
 // SignalR服務
 builder.Services.AddSignalR();
 
-
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// ==========================================
 // 3. Cookie
-// ==========================================
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -81,10 +74,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
       options.Cookie.SameSite = SameSiteMode.None; // 
       options.Cookie.SecurePolicy = CookieSecurePolicy.Always; //
       options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-        options.SlidingExpiration = true; // 有使用會自動展延 60 分鐘。
+      options.SlidingExpiration = true; // 有使用會自動展延 60 分鐘。
 
-        // 設定後台 MVC 用的導向路徑
-        options.LoginPath = "/Auth/Login";
+      // 設定後台 MVC 用的導向路徑
+      options.LoginPath = "/Auth/Login";
       options.AccessDeniedPath = "/Auth/AccessDenied";
 
       // 區分 API 還是 網頁
@@ -121,11 +114,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 
-// ==========================================
 // 4.
-// ==========================================
 builder.Services.AddControllersWithViews();
-builder.Services.AddControllers(); 
+builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 //owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
@@ -153,11 +144,8 @@ builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();
 
-// ==========================================
 // 5. HTTP
-// ==========================================
 
-// 
 if (app.Environment.IsDevelopment())
 {
   //  Model Migration
@@ -207,7 +195,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 //以上tim的
 app.UseStaticFiles();
-app.UseRouting(); 
+app.UseRouting();
 app.UseCors("VueApp");
 app.UseAuthentication(); //  Cookie)
 app.UseAuthorization();  //  Role)
