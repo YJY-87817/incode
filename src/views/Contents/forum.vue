@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
+import { useForumPost } from "@/composables/useForumPost";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -19,10 +20,43 @@ const authStore = useAuthStore();
 
 const forumStore = useForumStore();
 const route = useRoute();
+const { hasDraftContent } = useForumPost();
 
 const hasExpandedDraft = computed(() =>
   (forumStore.drafts || []).some((draft) => !draft.isMinimized),
 );
+
+const isCommentLikeDraft = (draft) => {
+  const type = draft?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+};
+
+const getDraftExtraValues = (draft) => {
+  if (!draft?.showEntrustMission) return [];
+  const data = draft?.entrustMission || {};
+  return [
+    data.title,
+    data.detail,
+    data.rewardPoints,
+    data.category,
+    data.deadline,
+  ];
+};
+
+const hasVisibleDraftContent = (draft) => {
+  const titleToCheck = isCommentLikeDraft(draft) ? "" : draft.title;
+  return hasDraftContent(titleToCheck, draft.body, getDraftExtraValues(draft));
+};
+
+const shouldShowSidebar = computed(() => {
+  const drafts = forumStore.drafts || [];
+  // 檢查是否有展開的編輯器或有內容的最小化草稿
+  const hasExpandedEditor = drafts.some((d) => !d.isMinimized);
+  const hasMinimizedWithContent = drafts.some(
+    (d) => d.isMinimized && hasVisibleDraftContent(d),
+  );
+  return hasExpandedEditor || hasMinimizedWithContent;
+});
 
 const tryScrollToPendingTarget = async () => {
   const targetId = forumStore.pendingScrollTargetId;
@@ -129,7 +163,10 @@ watch(
   <div class="container mt-5 mb-5">
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
-      <div class="col-lg-9 order-2 order-lg-1 forum-main">
+      <div
+        class="order-2 order-lg-1 forum-main"
+        :class="shouldShowSidebar ? 'col-lg-9' : 'col-lg-12'"
+      >
         <!-- 分類欄 -->
         <CategoryFilter />
         <!-- 新主題改為使用彈出視窗 -->
@@ -139,6 +176,7 @@ watch(
 
       <!-- 側邊欄 -->
       <div
+        v-if="shouldShowSidebar"
         class="col-lg-3 forum-sidebar"
         :class="{ 'forum-sidebar--no-editor': !hasExpandedDraft }"
       >
