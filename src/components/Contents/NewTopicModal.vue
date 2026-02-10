@@ -1621,6 +1621,15 @@ const handleModalCancel = () => {
   color: #0f4456;
 }
 
+.btn-entrust-toggle:focus,
+.btn-entrust-toggle:active,
+.btn-entrust-toggle.active {
+  background-color: #eaf2f4;
+  border-color: #145369;
+  color: #0f4456;
+  box-shadow: none;
+}
+
 .entrust-mission-panel {
   background: #f6f8f9;
   border-color: #d9e2e6;
