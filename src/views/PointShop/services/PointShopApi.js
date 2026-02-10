@@ -25,3 +25,5 @@ export const postCreateOrder = (neworder) =>
 
 export const putShippedOrder = (shippeddetail, shippedId) =>
   axios.put(`/OrderApi/ShippedPut/${shippedId}`, shippeddetail);
+
+export const getUserInfo = () => axios.get(`/OrderApi/shipaddress`);
