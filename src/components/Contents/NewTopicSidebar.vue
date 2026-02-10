@@ -678,10 +678,10 @@ watch(
 .new-topic-sidebar :deep(.tiptap-editor-wrapper) {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  max-height: 100%;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -697,13 +697,12 @@ watch(
 }
 
 .new-topic-sidebar {
-  position: sticky;
+  position: relative;
   height: auto;
-  max-height: calc(100vh - 120px);
+  max-height: none;
   z-index: 60;
   display: flex;
   flex-direction: column;
-  top: 0;
   margin-bottom: 1rem;
   background: white;
   border: 1px solid #dee2e6;
@@ -714,26 +713,26 @@ watch(
 }
 
 .new-topic-sidebar .sidebar-body {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .new-topic-sidebar .editor-section {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .new-topic-sidebar .editor-wrapper {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  max-height: 100%;
+  max-height: none;
 }
 
 .new-topic-sidebar .btn-primary {
