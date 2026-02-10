@@ -15,10 +15,12 @@ namespace incode2.ApiControllers.Content
   public class ContentApiController : ControllerBase
   {
     private readonly IContentService _contentService;
+    private readonly IContentEntrustMissionService _contentEntrustMissionService;
 
-    public ContentApiController(IContentService contentService)
+    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService)
     {
       _contentService = contentService;
+      _contentEntrustMissionService = contentEntrustMissionService;
     }
 
     //所有content
@@ -55,6 +57,29 @@ namespace incode2.ApiControllers.Content
       if (!ModelState.IsValid) return BadRequest(ModelState);
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
+    }
+
+    // 創立新的貼文並視情況新增委託任務
+    // POST https://localhost:7190/api/ContentApi/with-entrust-mission
+    // Body: CreateContentWithEntrustMissionDto
+    [HttpPost("with-entrust-mission")]
+    public async Task<IActionResult> CreateContentWithEntrustMission([FromBody] CreateContentWithEntrustMissionDto dto)
+    {
+      var userId = User.GetId();
+      if (userId <= 0)
+      {
+        return Unauthorized(new { message = "請先登入" });
+      }
+
+      if (!ModelState.IsValid) return BadRequest(ModelState);
+
+      var result = await _contentEntrustMissionService.CreateContentWithEntrustMissionAsync(dto, userId);
+      if (!result.Ok)
+      {
+        return StatusCode(result.Code, result);
+      }
+
+      return CreatedAtAction(nameof(GetContent), new { id = result.Data?.Content.ContentId }, result);
     }
 
     // 更新content內容
