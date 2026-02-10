@@ -880,16 +880,16 @@ function handleThreadReplyingTargetClick() {
           <table class="table table-hover mb-0">
             <thead class="table-light">
               <tr>
-                <th class="py-2 py-md-3" style="width: 50%">主題</th>
+                <th class="py-2 py-md-3" style="width: 60%">主題</th>
                 <th
                   class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 15%"
+                  style="width: 10%"
                 >
                   發佈時間
                 </th>
                 <th
                   class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 15%"
+                  style="width: 10%"
                 >
                   最後回應時間
                 </th>
