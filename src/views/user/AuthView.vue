@@ -30,6 +30,11 @@
         },
     };
 
+    const handleGoogleLogin = () => {
+        // 這裡不能用 axios，必須直接讓瀏覽器跳轉    
+        window.location.href = "https://localhost:7190/api/AuthApi/login-google";
+    };
+
     const handleLogin = async () => {
         if (!loginFormValid.value) return;
 
@@ -291,6 +296,11 @@
                                     登入
                                 </v-btn>
                             </v-hover>
+
+                            <v-btn block variant="outlined" color="#DB4437" class="mb-4 text-body-1 font-weight-bold"
+                                prepend-icon="mdi-google" @click="handleGoogleLogin">
+                                使用 Google 帳號登入
+                            </v-btn>
 
                             <div class="text-center">
                                 <span class="text-caption text-grey">還沒有帳號嗎？</span>
