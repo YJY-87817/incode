@@ -313,7 +313,7 @@ watch(
 .forum-new-topic-fab {
   position: fixed;
   right: 20px;
-  bottom: 90px;
+  top: 90px;
   z-index: 9997;
   padding: 0.6rem 1rem;
   border-radius: 999px;
