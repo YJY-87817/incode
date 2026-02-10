@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
-using System.Linq; // ★ 新增
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using System.Collections.Generic; // ★ 新增
+using System.Collections.Generic;
 
 namespace incode2.Services.Chat
 {
@@ -28,55 +28,14 @@ namespace incode2.Services.Chat
         }
 
         // ==========================================
-        // ★ [核心新增] 文字向量化 (Embedding)
-        // ==========================================
-        public async Task<float[]> GetEmbeddingAsync(string text)
-        {
-            string geminiApiKey = _configuration["GeminiApiKey"];
-            // 使用專門的 Embedding 模型：text-embedding-004
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={geminiApiKey}";
-
-            var payload = new
-            {
-                model = "models/text-embedding-004",
-                content = new { parts = new[] { new { text = text } } }
-            };
-
-            try
-            {
-                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync(url, jsonContent);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(jsonResponse);
-                    // 解析回傳的向量陣列 (values)
-                    var values = doc.RootElement.GetProperty("embedding").GetProperty("values");
-
-                    return values.EnumerateArray().Select(v => v.GetSingle()).ToArray();
-                }
-
-                throw new Exception($"Embedding API 失敗: {response.StatusCode}");
-            }
-            catch (Exception ex)
-            {
-                // 若失敗，回傳空陣列或拋出異常供 Controller 處理
-                return Array.Empty<float>();
-            }
-        }
-
-        // ==========================================
-        // 1. 純文字對話功能 (更新模型名稱)
+        // 1. 純文字對話功能
         // ==========================================
         public async Task<string> GetGeminiReplyAsync(string fullPrompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
             if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定";
 
-            // 改用 1.5-flash，這是目前效能與速度最平衡的版本
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
 
             var payload = new
             {
@@ -88,7 +47,7 @@ namespace incode2.Services.Chat
         }
 
         // ==========================================
-        // 2. 圖片分析 (Controller 呼叫的入口)
+        // 2. 純圖片分析 (舊功能)
         // ==========================================
         public async Task<string> AnalyzeImageAsync(IFormFile imageFile, string prompt)
         {
@@ -103,15 +62,53 @@ namespace incode2.Services.Chat
 
             return await GetGeminiImageReplyAsync(base64Image, imageFile.ContentType, prompt);
         }
-        
+
+       
+        // Function Calling
+        public async Task<string> AnalyzeImageWithToolAsync(IFormFile imageFile, string prompt)
+        {
+            if (imageFile == null || imageFile.Length == 0) return "錯誤：圖片為空";
+
+            // 1. 轉 Base64
+            string base64Image;
+            using (var ms = new MemoryStream())
+            {
+                await imageFile.CopyToAsync(ms);
+                base64Image = Convert.ToBase64String(ms.ToArray());
+            }
+            string mimeType = imageFile.ContentType;
+
+            // 2. 組裝 Payload (同時包含 圖片 和 文字 Prompt)
+            string geminiApiKey = _configuration["GeminiApiKey"];
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
+
+            var payload = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new object[]
+                        {
+                            new { text = prompt }, // 這裡放包含 "CALL_FUNCTION" 規則的 Prompt
+                            new { inline_data = new { mime_type = mimeType, data = base64Image } } // 這裡放圖片
+                        }
+                    }
+                },
+                generationConfig = new { temperature = 0.5, maxOutputTokens = 1000 }
+            };
+
+            return await SendToGemini(url, payload);
+        }
+
 
         // ==========================================
-        // 3. 核心：影像生成內容 (Gemini Vision)
+        // 4. 核心：影像生成內容 (Gemini Vision 底層方法)
         // ==========================================
         public async Task<string> GetGeminiImageReplyAsync(string base64Image, string mimeType, string prompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={geminiApiKey}";
 
             var payload = new
             {
@@ -132,7 +129,7 @@ namespace incode2.Services.Chat
         }
 
         // ==========================================
-        // 4. AI 生圖功能 (ModelsLab)
+        // 5. AI 生圖功能 (ModelsLab)
         // ==========================================
         public async Task<string> GenerateImageAsync(string prompt)
         {
@@ -169,7 +166,7 @@ namespace incode2.Services.Chat
         }
 
         // ==========================================
-        // 5. [Helper] 通用發送
+        // 6. [Helper] 通用發送
         // ==========================================
         private async Task<string> SendToGemini(string url, object payload)
         {

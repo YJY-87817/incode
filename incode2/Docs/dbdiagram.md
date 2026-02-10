@@ -382,5 +382,6 @@ Table chat_message {
   role varchar(20) [not null, note: "角色: system, user, assistant"]
   body nvarchar(max) [not null, note: "訊息內容"]
   created_at datetime [default: `current_timestamp`, note: "當下發送的時間"] 
+  embedding nvarchar(max) [null, note: "資料庫搜尋"]
   note { "對話內容紀錄" }
 }
