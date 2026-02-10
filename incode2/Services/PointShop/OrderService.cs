@@ -66,7 +66,7 @@ namespace incode2.Services.PointShop
                     })
                     .ToListAsync();
 
-                if (details == null || !details.Any())
+                if (!details.Any())
                     return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details, $"找不到訂單編號為 {orderId} 的資料明細", 204);
 
                 return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details);
@@ -99,7 +99,7 @@ namespace incode2.Services.PointShop
                     })
                     .ToListAsync();
 
-                if (results == null || !results.Any())
+                if (!results.Any())
                     return ResultDTO<IEnumerable<ShippedDTO>>.Success(results, $"找不到訂單編號為{orderId}的寄送資料", 204);
 
                 return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
@@ -119,11 +119,9 @@ namespace incode2.Services.PointShop
                     .Where(e => e.UserId == userId)
                     .Select(e => new ShipAddressDTO
                     {
-                         //根據 ShipAddressDTO 的屬性映射相應欄位
-                         //例如: ShipAddressId = e.ShipAddressId,
-                         RecipientName = e.RecipientName,
-                         RecipientPhone = e.RecipientPhone,
-                         RecipientAddress = e.RecipientAddress
+                        RecipientName = e.RecipientName,
+                        RecipientPhone = e.RecipientPhone,
+                        RecipientAddress = e.RecipientAddress
                     })
                     .ToListAsync();
 
@@ -170,7 +168,7 @@ namespace incode2.Services.PointShop
                     prod.Stock -= item.Quantity;
                 }
 
-                if (newOrder.Orderdetail.Any(e => e.RequiresShipping == true))
+                if (newOrder.Orderdetail.Any(e => e.RequiresShipping))
                 {
                     // 建立寄送資料
                     var recipient = new ShippedDetail
@@ -180,14 +178,13 @@ namespace incode2.Services.PointShop
                         RecipientAddress = order.Recipient.RecipientAddress,
                         IsFailed = false,
                         IsCompleted = false,
-                        Remark = order.Remark ?? "",
-                        ShippedDate = null,
-                        ArrivalDate = null,
+                        Remark = order.Remark ?? ""
                     };
                     newOrder.ShippedDetail.Add(recipient);
+
                     // 檢查是否已存在完全相同的寄送地址
                     var existingAddress = await _context.Shipaddress
-                        .FirstOrDefaultAsync(s => 
+                        .FirstOrDefaultAsync(s =>
                             s.UserId == order.UserId &&
                             s.RecipientName == order.Recipient.RecipientName &&
                             s.RecipientPhone == order.Recipient.RecipientPhone &&
@@ -208,20 +205,13 @@ namespace incode2.Services.PointShop
                 }
 
                 _context.Orders.Add(newOrder);
-
                 await _context.SaveChangesAsync();
 
-                // 扣除使用者點數
                 var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.Order);
 
-                if (!result)
-                {
-                    return ResultDTO<int>.Failure("您的點數不足");
-                }
-                else
-                {
-                    return ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功");
-                }
+                return result
+                    ? ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功")
+                    : ResultDTO<int>.Failure("您的點數不足");
             }
             catch (Exception ex)
             {
@@ -234,13 +224,11 @@ namespace incode2.Services.PointShop
         {
             try
             {
-                // 更新欄位
                 existingShipped.RecipientName = shipped.RecipientName;
                 existingShipped.RecipientPhone = shipped.RecipientPhone;
                 existingShipped.RecipientAddress = shipped.RecipientAddress;
                 existingShipped.Remark = shipped.Remark ?? existingShipped.Remark;
 
-                // 儲存變更
                 await _context.SaveChangesAsync();
 
                 return ResultDTO<int>.Success(existingShipped.ShippedDetailId, "寄送資料修改成功");
@@ -336,19 +324,13 @@ namespace incode2.Services.PointShop
 
                 oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
-                // 儲存變更
                 await _context.SaveChangesAsync();
 
-
-                // 扣除使用者點數
                 var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.Order);
 
-                if (!result)
-                {
-                    return ResultDTO<int>.Failure($"訂單取消失敗:點數回復出錯");
-                }
-
-                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功");
+                return result
+                    ? ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功")
+                    : ResultDTO<int>.Failure($"訂單取消失敗:點數回復出錯");
             }
             catch (Exception ex)
             {
