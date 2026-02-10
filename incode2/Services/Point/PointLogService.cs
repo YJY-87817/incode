@@ -128,7 +128,7 @@ namespace incode2.Services.Point
                     ChangeAmount = points,
                     BalanceAfter = newBalance,
                     Status = "success",
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     PointTypeDefinitionId = 1,
                     SourceType = "mission",
                     SourceId = missionId,
@@ -300,12 +300,12 @@ namespace incode2.Services.Point
                 ChangeAmount = order.PointsGranted,
                 BalanceAfter = newBalance,
                 Status = "success",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             });
 
             // 更新訂單狀態
             order.Status = "success";
-            order.CreatedAt = DateTime.UtcNow;
+            order.CreatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
@@ -354,7 +354,7 @@ namespace incode2.Services.Point
                     ChangeAmount = -amount,
                     BalanceAfter = fromNewBalance,
                     Status = "success",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PointLog
                 {
@@ -365,7 +365,7 @@ namespace incode2.Services.Point
                     ChangeAmount = amount,
                     BalanceAfter = toNewBalance,
                     Status = "success",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 }
             );
 

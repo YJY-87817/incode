@@ -68,7 +68,7 @@ namespace incode2.Services.Point
           return new ResultDTO { Ok = false, Code = 400, Message = $"任務狀態為 {mission.Status}，無法接取" };
         }
 
-        if (mission.Deadline.HasValue && mission.Deadline.Value < DateTime.UtcNow)
+        if (mission.Deadline.HasValue && mission.Deadline.Value < DateTime.Now)
         {
           return new ResultDTO { Ok = false, Code = 400, Message = "任務已過截止時間" };
         }
@@ -102,14 +102,14 @@ namespace incode2.Services.Point
           UserId = userId,
           EntrustMissionId = entrustMissionId,
           Status = "ongoing",
-          AcceptedAt = DateTime.UtcNow
+          AcceptedAt = DateTime.Now
         };
 
         _context.EntrustMissionProgress.Add(progress);
 
         // 更新主表
         mission.Status = "in_progress";
-        mission.UpdatedAt = DateTime.UtcNow;
+        mission.UpdatedAt = DateTime.Now;
 
         await _context.SaveChangesAsync();
         await transaction.CommitAsync();
@@ -163,7 +163,7 @@ namespace incode2.Services.Point
         public async Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto)
         {
             int userId = dto.UserId;
-            DateTime now = DateTime.UtcNow;
+            DateTime now = DateTime.Now;
             // ========= 基本業務驗證 =========
             if (dto.RewardPoints <= 0)
                 return new ResultDTO { Ok = false, Code = 400, Message = "賞金必須大於 0" };
@@ -171,7 +171,7 @@ namespace incode2.Services.Point
             if (dto.ContentId <= 0)
                 return new ResultDTO { Ok = false, Code = 400, Message = "必須選擇關聯內容" };
 
-            if (dto.Deadline.HasValue && dto.Deadline < DateTime.UtcNow)
+            if (dto.Deadline.HasValue && dto.Deadline < DateTime.Now)
                 return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
 
             // ========= Content 是否存在 =========
@@ -290,7 +290,7 @@ namespace incode2.Services.Point
       em.Deadline = dto.Deadline ?? em.Deadline;
       em.IsUrgent = dto.IsUrgent;
       // em.Status = dto.Status ?? em.Status;  ← 建議不要讓前端隨意改狀態，可移除或嚴格限制
-      em.UpdatedAt = DateTime.UtcNow;
+      em.UpdatedAt = DateTime.Now;
 
       await _context.SaveChangesAsync();
       return new ResultDTO { Ok = true, Code = 204, Message = "更新成功" };
@@ -306,7 +306,7 @@ namespace incode2.Services.Point
 
       // 建議改成軟刪除（更安全）
       em.IsActive = false;
-      em.UpdatedAt = DateTime.UtcNow;
+      em.UpdatedAt = DateTime.Now;
 
       //_context.EntrustMission.Remove(em);  // 如果堅持硬刪除
       await _context.SaveChangesAsync();
