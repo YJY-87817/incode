@@ -33,8 +33,6 @@ namespace incode2.ApiControllers
         // GET: api/OrderApi/order
         [HttpGet("order")]
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder() //登入才可找
-        //[HttpGet("order/{UserId}")]
-        //public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrder(int UserId)
         {
             var result = await _orderService.GetOrderAsync(userId);
             return result;
@@ -46,8 +44,8 @@ namespace incode2.ApiControllers
         [HttpGet("orderdetail/{OrderId}")]
         public async Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
         {
-            var res = await _orderService.GetOrderDetailAsync(orderId);
-            return res;
+            var result = await _orderService.GetOrderDetailAsync(orderId);
+            return result;
         }
 
 
@@ -56,8 +54,8 @@ namespace incode2.ApiControllers
         [HttpGet("shippeddetail/{OrderId}")]
         public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int OrderId)
         {
-            var res = await _orderService.GetShippedDetailAsync(OrderId);
-            return res;
+            var result = await _orderService.GetShippedDetailAsync(OrderId);
+            return result;
         }
 
         // 取得輸入過寄送資料
@@ -104,6 +102,11 @@ namespace incode2.ApiControllers
 
             // 計算總點數
             int totalPoints = order.Items.Sum(item => item.Quantity * productDict[item.ProductId].Point);
+
+            // 檢查會員點數是否足夠
+            var usertotalpoint = await _context.PointLog.Where(p => p.UserId == userId).SumAsync(p => p.ChangeAmount);
+            if (usertotalpoint < totalPoints)
+                return ResultDTO<int>.Failure("會員點數不足");
 
             // 交易建立訂單與明細
             await using var transaction = await _context.Database.BeginTransactionAsync();
