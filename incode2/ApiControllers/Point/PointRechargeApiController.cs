@@ -26,12 +26,13 @@ namespace incode2.ApiControllers.Point
             _pointLogService = pointLogService;
         }
 
+
         //AI 綠界儲值Api
         [HttpPost("recharge")]
         public async Task<IActionResult> CreateRecharge(
        [FromBody] PointRechargeDTO dto)
         {
-            var userId = 1; // 之後從 JWT 取
+            var userId = 1; 
 
             var order = new PointRecharge
             {
@@ -77,6 +78,12 @@ namespace incode2.ApiControllers.Point
             recharge.PaymentTradeNo = tradeNo;
 
             await _pointLogService.AddPointsFromRechargeAsync(recharge);
+
+            Console.WriteLine("===== 綠界有打進來 =====");
+            foreach (var key in form.Keys)
+            {
+                Console.WriteLine($"{key} = {form[key]}");
+            }
 
             return Content("1|OK");
         }
@@ -144,64 +151,6 @@ namespace incode2.ApiControllers.Point
 
         //    return CreatedAtAction("GetPointRecharge", new { id = pointRecharge.PointRechargeId }, pointRecharge);
         //}
-
-        [HttpPost]
-        [Route("api/payment/ecpay/return")]
-        public async Task<IActionResult> ECPayReturn([FromForm] ECPayReturnModel model)
-        {
-            // 1. 驗證回傳碼
-            if (model.RtnCode != 1)
-                return BadRequest("付款失敗");
-
-            // 2. 找到訂單
-            var order = await _context.PointRecharge
-                .FirstOrDefaultAsync(o => o.OrderNo == model.MerchantTradeNo);
-
-            if (order == null)
-                return NotFound("訂單不存在");
-
-            if (order.Status == "success")
-                return Ok("已入帳"); // 防重送
-
-            // 3. 驗證金額
-            if (order.CashAmount != model.TradeAmt)
-                return BadRequest("金額不符");
-
-            // 4. 計算新的餘額
-            var lastLog = await _context.PointLog
-                .Where(l => l.UserId == order.UserId)
-                .OrderByDescending(l => l.CreatedAt)
-                .ThenByDescending(l => l.PointLogId)
-                .Select(l => (int?)l.BalanceAfter)
-                .FirstOrDefaultAsync();
-
-            var newBalance = (lastLog ?? 0) + order.PointsGranted;
-
-            using var tx = await _context.Database.BeginTransactionAsync();
-
-            // 5. 新增 PointLog
-            _context.PointLog.Add(new PointLog
-            {
-                UserId = order.UserId,
-                PointTypeDefinitionId = 4, // recharge
-                SourceType = "point_recharge",
-                SourceId = order.PointRechargeId,
-                ChangeAmount = order.PointsGranted,
-                BalanceAfter = newBalance,
-                Status = "success",
-                CreatedAt = DateTime.UtcNow
-            });
-
-            // 6. 更新訂單
-            order.Status = "success";
-            order.CreatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            // 7. 回傳綠界需要的字串
-            return Content("1|OK");
-        }
 
         // 回傳模型
         public class ECPayReturnModel

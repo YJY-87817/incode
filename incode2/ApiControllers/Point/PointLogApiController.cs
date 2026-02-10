@@ -24,6 +24,7 @@ namespace incode2.ApiControllers.Point
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
 
+
         public PointLogApiController(incodedatabaseContext context, IPointLogService pointLogService)
         {
             _context = context;

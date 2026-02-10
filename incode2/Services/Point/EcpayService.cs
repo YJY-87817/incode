@@ -6,6 +6,11 @@ namespace incode2.Services.Point
 {
     public class EcpayService
     {
+        private const string MerchantID = "3002599";
+        private const string HashKey = "spPjZn66i0OhqJsQ";
+        private const string HashIV = "hT5OJckN45isQTTs";
+        private const string ReturnUrl = "https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return";
+
         private readonly IConfiguration _config;
 
         public EcpayService(IConfiguration config)
@@ -18,14 +23,14 @@ namespace incode2.Services.Point
         {
             var data = new Dictionary<string, string>
         {
-            { "MerchantID", "2000132" },
+            { "MerchantID", "3002599" },
             { "MerchantTradeNo", order.OrderNo },
             { "MerchantTradeDate", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") },
             { "PaymentType", "aio" },
             { "TotalAmount", ((int)order.CashAmount).ToString() },
-            { "TradeDesc", "點數儲值" },
-            { "ItemName", $"儲值 {order.PointsGranted} 點" },
-            { "ReturnURL", "  https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return" },
+            { "TradeDesc", "PointRecharge" },
+            { "ItemName", $"Point {order.PointsGranted}" },
+            { "ReturnURL", "https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return" },
             { "ChoosePayment", "ALL" },
             { "EncryptType", "1" }
         };
@@ -36,15 +41,20 @@ namespace incode2.Services.Point
 
         private string GenerateCheckMacValue(Dictionary<string, string> data)
         {
-            var hashKey = "5294y06JbISpM5x9";
-            var hashIV = "v77hoKGq4kWxNNIS";
+            var hashKey = "spPjZn66i0OhqJsQ";
+            var hashIV = "hT5OJckN45isQTTs";
 
-            var raw = $"HashKey={hashKey}&" +
-                      string.Join("&", data.OrderBy(x => x.Key)
-                      .Select(x => $"{x.Key}={x.Value}")) +
-                      $"&HashIV={hashIV}";
+            var ordered = data
+        .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+        .Select(x => $"{x.Key}={x.Value}");
 
-            var encoded = System.Web.HttpUtility.UrlEncode(raw).ToLower();
+            var raw = $"HashKey={hashKey}&{string.Join("&", ordered)}&HashIV={hashIV}";
+
+            var encoded = System.Web.HttpUtility.UrlEncode(raw).ToLower()
+                .Replace("%21", "!")
+                .Replace("%2a", "*")
+                .Replace("%28", "(")
+                .Replace("%29", ")");
 
             using var sha = SHA256.Create();
             var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(encoded));

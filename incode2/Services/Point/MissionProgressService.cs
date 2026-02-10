@@ -41,7 +41,7 @@ namespace incode2.Services.Point
                 if (progress.CurrentCount >= mission.TargetCount && progress.Status != "completed")
                 {
                     progress.Status = "completed";
-                    progress.CompletedAt = DateTime.UtcNow;
+                    progress.CompletedAt = DateTime.Now;
                     justCompleted = true;
                 }
 
@@ -83,7 +83,7 @@ namespace incode2.Services.Point
                                  .AsNoTracking()
                                  .ToListAsync();
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             return rawData.Select(x =>
             {
@@ -167,7 +167,7 @@ namespace incode2.Services.Point
             if (!mission.IsActive)
                 return new ResultDTO { Ok = false, Code = 400, Message = "任務已停用" };
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             string resetType = (mission.ResetType ?? "none").Trim().ToLowerInvariant();
 
             // 已領取過，且為一次性任務 → 不可再領
@@ -236,7 +236,7 @@ namespace incode2.Services.Point
                 if (!canClaim.Ok)
                     return canClaim;
 
-                progress.RewardedAt = DateTime.UtcNow;
+                progress.RewardedAt = DateTime.Now;
                 progress.Status = "Rewarded";
 
                 var pointResult = await _pointLogService.AddPointsAsync(
