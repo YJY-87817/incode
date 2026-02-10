@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 
@@ -9,6 +9,7 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
+import NewTopicBanners from "@/components/Contents/NewTopicBanners.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
 
 // 可以抓到前端userID pinia
@@ -18,6 +19,10 @@ const authStore = useAuthStore();
 
 const forumStore = useForumStore();
 const route = useRoute();
+
+const hasExpandedDraft = computed(() =>
+  (forumStore.drafts || []).some((draft) => !draft.isMinimized),
+);
 
 const tryScrollToPendingTarget = async () => {
   const targetId = forumStore.pendingScrollTargetId;
@@ -133,34 +138,42 @@ watch(
       </div>
 
       <!-- 側邊欄 -->
-      <div class="col-lg-3 forum-sidebar">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h6 class="mb-0">📊 論壇統計</h6>
-          </div>
-          <div class="card-body">
-            <div class="mb-3">
-              <div
-                class="d-flex justify-content-between align-items-center mb-1"
-              >
-                <span class="small text-muted">總主題數</span>
-                <strong class="text-primary">{{
-                  forumStore.pagination.totalCount
-                }}</strong>
-              </div>
+      <div
+        class="col-lg-3 forum-sidebar"
+        :class="{ 'forum-sidebar--no-editor': !hasExpandedDraft }"
+      >
+        <div class="forum-sidebar-top">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+              <h6 class="mb-0">📊 論壇統計</h6>
             </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-1"
+                >
+                  <span class="small text-muted">總主題數</span>
+                  <strong class="text-primary">{{
+                    forumStore.pagination.totalCount
+                  }}</strong>
+                </div>
+              </div>
 
-            <button
-              class="btn btn-forum-primary w-100"
-              type="button"
-              @click="openNewTopicModal"
-            >
-              <i class="fas fa-plus"></i>
-              <span class="ms-2">發佈新主題</span>
-            </button>
+              <button
+                class="btn btn-forum-primary w-100"
+                type="button"
+                @click="openNewTopicModal"
+              >
+                <i class="fas fa-plus"></i>
+                <span class="ms-2">發佈新主題</span>
+              </button>
+            </div>
           </div>
+          <NewTopicSidebar />
         </div>
-        <NewTopicSidebar />
+        <div class="forum-sidebar-bottom">
+          <NewTopicBanners />
+        </div>
       </div>
     </div>
   </div>
@@ -240,16 +253,29 @@ watch(
 
 /* 側邊欄排版，確保 banner 貼底 */
 .forum-sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
 @media (min-width: 992px) {
-  .forum-sidebar {
+  .forum-sidebar-top {
     position: sticky;
     top: 1rem;
-    align-self: flex-start;
+    width: 100%;
+    z-index: 60;
+  }
+
+  .forum-sidebar-bottom {
+    position: sticky;
+    bottom: 1rem;
+    margin-top: auto;
+    z-index: 40;
+  }
+
+  .forum-sidebar--no-editor .forum-sidebar-bottom {
+    z-index: 80;
   }
 }
 
