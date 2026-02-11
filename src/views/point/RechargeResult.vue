@@ -8,7 +8,7 @@ import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 const router = useRouter();
 const pointStore = usePointStore();
 
-const countdown = ref(5);
+const countdown = ref(5); // 改回 5 秒
 let timer = null; // 宣告 timer 變數
 
 onMounted(async () => {
@@ -39,42 +39,68 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DefaultNavbar light />
-  <div class="container mt-9 text-center">
-    <div class="card shadow-lg p-5 border-radius-xl">
+  <div class="page-container">
+    <DefaultNavbar light />
+    <div class="container mt-9 text-center">
       <div
-        class="icon-shape icon-lg bg-gradient-success shadow-success text-center border-radius-xl mt-n4 mx-auto"
+        class="card shadow-dark-deep p-5 border-radius-xl border-0 mx-auto custom-card"
       >
-        <i class="fas fa-check text-white opacity-10"></i>
-      </div>
-      <h2 class="mt-4 font-weight-bolder">結帳手續已完成</h2>
-      <p class="text-secondary">
-        感謝您的購買！由於銀行與金流端作業時間不同，<br />
-        點數若未即時入帳，請稍候 1-3 分鐘並重新整理頁面。
-      </p>
-
-      <div class="mt-4">
-        <button @click="router.push('/')" class="btn btn-outline-dark me-2">
-          回首頁
-        </button>
-        <button
-          @click="router.push('/point-log')"
-          class="btn bg-gradient-primary"
+        <div
+          class="icon-shape icon-lg bg-gradient-success shadow-success text-center border-radius-xl mt-n4 mx-auto"
         >
-          查看點數餘額
-        </button>
-      </div>
+          <i class="fas fa-check text-white opacity-10"></i>
+        </div>
+        <h2 class="mt-4 font-weight-bolder">交易已完成！點數準備入帳中...</h2>
+        <p class="text-secondary">
+          由於金流端處理時間不一，若未即時看到點數更新，請先別擔心<br />
+          請於 <strong>1-3 分鐘後</strong> 重新整理，祝您在 incode 玩得愉快！
+        </p>
 
-      <p class="text-xs text-secondary mt-4">
-        <span class="badge badge-secondary text-dark">{{ countdown }}</span>
-        秒後自動返回首頁...
-      </p>
+        <div class="mt-4">
+          <button @click="router.push('/')" class="btn btn-outline-dark me-2">
+            回首頁
+          </button>
+          <button
+            @click="router.push('/point-log')"
+            class="btn bg-gradient-primary"
+          >
+            查看點數明細
+          </button>
+        </div>
+
+        <p class="text-xs text-secondary mt-4">
+          <span class="badge badge-secondary text-dark">{{ countdown }}</span>
+          秒後自動返回首頁...
+        </p>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* 確保背景是純白 */
+.page-container {
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
 .mt-9 {
   margin-top: 9rem !important;
+}
+
+/* 限制卡片寬度，讓視覺比例集中 */
+.custom-card {
+  max-width: 600px; /* 根據截圖，這個寬度最為適中 */
+  width: 100%;
+}
+
+/* 針對純白背景加強陰影深度與柔和度 */
+.shadow-dark-deep {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 確保卡片也是純白 */
+.card {
+  background-color: #ffffff !important;
 }
 </style>

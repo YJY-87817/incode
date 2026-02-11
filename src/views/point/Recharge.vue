@@ -3,14 +3,6 @@ import { ref, computed, onMounted } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import axios from "axios";
 
-// 1. 使用者資料
-const user = ref({
-  name: "Gemini User",
-  balance: 2840,
-  avatar:
-    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-});
-
 // 2. 儲值方案設定
 const plans = ref([
   { id: 1, points: 500, price: 50, popular: false, bonus: 0 },
@@ -20,33 +12,10 @@ const plans = ref([
 
 // 3. 狀態控制
 const selectedPlan = ref(2); // 預設選中熱門方案
-const selectedPayment = ref("credit-card"); // 預設支付方式
+// const selectedPayment = ref("credit-card"); // 預設支付方式
 const customAmount = ref(null);
 const isLoading = ref(false);
 const exchangeRate = 1;
-
-// 4. 支付方式清單
-const payments = [
-  {
-    id: "credit-card",
-    name: "信用卡",
-    icon: "fas fa-credit-card",
-    color: "text-dark",
-  },
-  {
-    id: "line-pay",
-    name: "Line Pay",
-    icon: "fab fa-line",
-    color: "text-success",
-  },
-  { id: "jkos", name: "街口支付", icon: "fas fa-wallet", color: "text-info" },
-  {
-    id: "bank",
-    name: "銀行轉帳",
-    icon: "fas fa-university",
-    color: "text-primary",
-  },
-];
 
 // 5. 計算屬性
 const finalDetails = computed(() => {
@@ -87,7 +56,7 @@ const handleCheckout = async () => {
     // 1. 根據你 Postman 的圖示，payload 欄位名稱要跟後端對上
     const payload = {
       cashAmount: finalDetails.value.price, // 對應後端 cashAmount
-      paymentMethod: selectedPayment.value === "credit-card" ? "credit" : "ALL", // 依後端邏輯決定
+      paymentMethod: "credit", // 依後端邏輯決定
     };
 
     // 2. 呼叫後端生成訂單資料
@@ -107,22 +76,13 @@ const handleCheckout = async () => {
     form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 
     // 4. 自動將後端傳回的所有 Key-Value 轉為 input hidden 欄位
-    for (const key in ecpayData) {
-      if (Object.prototype.hasOwnProperty.call(ecpayData, key)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key; // 例如: MerchantID
-        input.value = ecpayData[key]; // 例如: 3002599
-        form.appendChild(input);
-      }
-    }
-
-    // 5. 也可以在這裡手動追加 ClientBackURL (如果後端沒給的話)
-    // const backUrlInput = document.createElement("input");
-    // backUrlInput.type = "hidden";
-    // backUrlInput.name = "ClientBackURL";
-    // backUrlInput.value = "https://你的前端網址/point/recharge/result";
-    // form.appendChild(backUrlInput);
+    Object.entries(ecpayData).forEach(([key, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = ecpayData[key];
+      form.appendChild(input);
+    });
 
     // 6. 插入 DOM 並執行提交
     document.body.appendChild(form);
@@ -159,7 +119,7 @@ onMounted(async () => {
         <div class="col-lg-10 mx-auto">
           <!-- 選擇方案區 -->
           <div class="container mt-4">
-            <h4 class="mb-3 ps-2 font-weight-bolder">1. 選擇方案</h4>
+            <h4 class="mb-3 ps-2 font-weight-bolder">選擇方案</h4>
             <div class="row">
               <div v-for="plan in plans" :key="plan.id" class="col-md-4 mb-4">
                 <div
@@ -246,37 +206,9 @@ onMounted(async () => {
           </div>
 
           <!-- 支付方式 & 總金額 -->
-          <h4 class="mb-3 ps-2 font-weight-bolder">2. 支付方式</h4>
+          <h4 class="mb-3 ps-2 font-weight-bolder">支付金額</h4>
           <div class="card shadow-sm mb-4 border-0">
             <div class="card-body p-4">
-              <div class="row">
-                <div
-                  v-for="pay in payments"
-                  :key="pay.id"
-                  class="col-6 col-md-3 mb-3"
-                >
-                  <button
-                    @click="selectedPayment = pay.id"
-                    :class="[
-                      'btn w-100 py-3 mb-0 transition-all pay-btn',
-                      selectedPayment === pay.id
-                        ? 'btn-outline-primary active'
-                        : 'btn-outline-secondary',
-                    ]"
-                    type="button"
-                  >
-                    <i
-                      :class="[pay.icon, pay.color, 'd-block mb-2 text-lg']"
-                    ></i>
-                    <span class="text-xs font-weight-bold d-block">{{
-                      pay.name
-                    }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <hr class="horizontal dark my-4" />
-
               <div class="row justify-content-center">
                 <div class="col-lg-6 text-center">
                   <div class="d-flex justify-content-between mb-2">
