@@ -21,6 +21,7 @@ import Task from "../views/point/Task.vue";
 import Mytask from "../views/point/Mytask.vue";
 import Recharge from "../views/point/Recharge.vue";
 import PointLog from "../views/point/PointLog.vue";
+import RechargeResult from "../views/point/RechargeResult.vue";
 // qiu以上
 // yjy 以下
 import ProductView from "@/views/PointShop/ProductView.vue";
@@ -166,6 +167,11 @@ const routes = [
     path: "/recharge",
     name: "recharge",
     component: Recharge, //views的檔案名稱
+  },
+  {
+    path: "/recharge-result",
+    name: "recharge-result",
+    component: RechargeResult, //views的檔案名稱
   },
   // qiu以上
 
