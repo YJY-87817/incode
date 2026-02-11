@@ -1,0 +1,78 @@
+﻿@model incode2.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "後台管理員登入";
+    // 如果你有後台專用的 Layout，可以設為 Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    // 這裡暫時用 null (空白頁) 或預設 Layout，視您需求而定
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewData["Title"] - Incode</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #2c3e50; /* 深色背景，區分後台 */
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-admin {
+            background-color: #d35400; /* 橘紅色按鈕 */
+            color: white;
+        }
+        .btn-admin:hover {
+            background-color: #e67e22;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark">Incode 後台管理</h3>
+            <p class="text-muted">請輸入管理員帳號密碼</p>
+        </div>
+
+        <form asp-controller="AdminAccount" asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="All" class="text-danger mb-3 text-center small"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">管理員信箱</label>
+                <input asp-for="Email" class="form-control" placeholder="admin@incode.com" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">密碼</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-admin btn-lg">安全登入</button>
+            </div>
+
+            <div class="mt-3 text-center">
+                <a href="/" class="text-decoration-none text-muted small">← 返回前台首頁</a>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

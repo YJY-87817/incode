@@ -1,22 +1,29 @@
 ﻿<ul class="navbar-nav ml-auto">
-    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    @* 1. 判斷是否有登入 (且必須是 Admin 角色，雙重保險) *@
+    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
     {
         <li class="nav-item">
-            <span class="nav-link text-dark">你好, @User.Identity.Name!</span>
+            <span class="nav-link text-gray-600 small">
+                你好, <strong>@User.Identity.Name</strong> (管理員)
+            </span>
         </li>
+
+        <div class="topbar-divider d-none d-sm-block"></div>
+
         <li class="nav-item">
-            <form class="form-inline" asp-controller="Account" asp-action="Logout" method="post">
-                <button type="submit" class="nav-link btn btn-link text-dark">登出</button>
-            </form>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                登出
+            </a>
         </li>
     }
     else
     {
         <li class="nav-item">
-            <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">登入</a>
+            <a class="nav-link text-dark" asp-controller="AdminAccount" asp-action="Login">
+                <i class="fas fa-user-shield mr-1"></i> 管理員登入
+            </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">註冊</a>
-        </li>
+        @* 後台不需要註冊按鈕，直接移除 *@
     }
 </ul>
