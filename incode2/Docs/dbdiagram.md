@@ -99,8 +99,8 @@ table user{
   is_active bit [default: 1]
   role_id integer [ref: > role.role_id]
   employeeid integer
-   ResetToken nvarchar(max)  [unique, not null]
-ResetTokenExpiry datetime2(7)  [unique, not null]
+   ResetToken nvarchar(500) 
+ResetTokenExpiry datetime2(7)  
 }
 
 // 管理者權限
