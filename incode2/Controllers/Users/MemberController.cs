@@ -2,10 +2,11 @@
 using incode2.Models;
 using incode2.Services.Users;
 using incode2.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.Controllers.Users
-{
+{   
     public class MemberController : Controller
     {
         private readonly IAuthService _authService;

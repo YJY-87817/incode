@@ -31,6 +31,9 @@ public partial class User
 
     public int? Employeeid { get; set; }
 
+    public string? ResetToken { get; set; } // 儲存亂碼
+    public DateTime? ResetTokenExpiry { get; set; } // 儲存過期時間
+
     public virtual ICollection<ChatSession> ChatSession { get; set; } = new List<ChatSession>();
 
     public virtual ICollection<Content> Content { get; set; } = new List<Content>();

@@ -3,11 +3,13 @@ using incode2.Services.Users;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace incode2.Controllers.Users
 {
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class AccountController : Controller
     {
         private readonly IAuthService _authService;
@@ -97,7 +99,7 @@ namespace incode2.Controllers.Users
                 new Claim(ClaimTypes.Role, roleName)
             };
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsIdentity = new ClaimsIdentity(claims, "MemberAuth");
 
             var authProperties = new AuthenticationProperties
             {
@@ -108,7 +110,7 @@ namespace incode2.Controllers.Users
 
             // 3. 登入 (寫入 Cookie)
             await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+                "MemberAuth",
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
@@ -122,7 +124,7 @@ namespace incode2.Controllers.Users
         [ValidateAntiForgeryToken] // MVC 表單建議加上這行防護
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync("MemberAuth");
 
             // 登出後導向首頁
             return RedirectToAction("Index", "Home");
