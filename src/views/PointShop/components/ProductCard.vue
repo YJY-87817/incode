@@ -1,9 +1,8 @@
 <script setup>
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 // 引入 SweetAlert2 的套件
-import CartSwal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
-
+import CartSwal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 const props = defineProps({
   product: {
@@ -18,28 +17,41 @@ const handleAddToCart = () => {
   cartStore.addToCart(props.product);
 
   CartSwal.fire({
-    title: '成功！',
+    title: "成功！",
     text: `${props.product.name}已成功加入購物車`,
-    icon: 'success',
-    confirmButtonText: '確定',
-    confirmButtonColor: '#145369'
+    icon: "success",
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+    didOpen: (modal) => {
+      modal.querySelector(".swal2-confirm").style.color = "#fff";
+    },
   });
 };
 </script>
 
 <template>
-
-
   <div class="card h-auto shadow-sm border-0 product-hover-effect">
     <div class="row g-0">
       <!-- 圖片區域 -->
       <div class="col-md-4">
-        <router-link :to="{ name: 'ProductDetail', params: { id: product.productId } }">
-          <div class="product-image-container position-relative bg-light overflow-hidden">
-            <img :src="`https://localhost:7190/img/product/${product.imageName}`" :alt="product.name"
-              class="img-fluid product-image" />
+        <router-link
+          :to="{ name: 'ProductDetail', params: { id: product.productId } }"
+        >
+          <div
+            class="product-image-container position-relative bg-light overflow-hidden"
+          >
+            <img
+              :src="`https://localhost:7190/img/product/${product.imageName}`"
+              :alt="product.name"
+              class="img-fluid product-image"
+            />
             <div class="position-absolute top-0 start-0 m-2">
-              <span class="badge opacity-75 fw-normal" style="background-color: #145369;">{{ product.type }}</span>
+              <h5
+                class="badge opacity-75 fw-normal"
+                style="background-color: #145369"
+              >
+                {{ product.type }}
+              </h5>
             </div>
           </div>
         </router-link>
@@ -48,25 +60,34 @@ const handleAddToCart = () => {
       <!-- 內容區域 -->
       <div class="col-md-8">
         <div class="card-body d-flex flex-column h-100">
-          <router-link :to="{ name: 'ProductDetail', params: { id: product.productId } }">
-
+          <router-link
+            :to="{ name: 'ProductDetail', params: { id: product.productId } }"
+          >
             <h5 class="card-title fw-bold text-truncate" :title="product.name">
               {{ product.name }}
             </h5>
-            <p class="card-text text-muted small flex-grow-1 text-multi-line-truncate">
+            <p
+              class="card-text text-muted small flex-grow-1 text-multi-line-truncate"
+            >
               {{ product.description }}
             </p>
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <span class="fw-bold fs-5" style="color: #86B0BD;">{{ product.point }} <small>P</small></span>
+              <span class="fw-bold fs-5" style="color: #86b0bd"
+                >{{ product.point }} <small>P</small></span
+              >
               <span class="badge rounded-pill bg-light text-dark border">
                 庫存: {{ product.stock }}
               </span>
             </div>
           </router-link>
 
-          <button @click="handleAddToCart" :disabled="product.stock <= 0" class="btn w-100 fw-bold transition"
-            :class="product.stock > 0 ? 'btn-custom-primary' : 'btn-secondary'">
+          <button
+            @click="handleAddToCart"
+            :disabled="product.stock <= 0"
+            class="btn w-100 fw-bold transition"
+            :class="product.stock > 0 ? 'btn-custom-primary' : 'btn-secondary'"
+          >
             {{ product.stock > 0 ? "加入購物車" : "已售完" }}
           </button>
         </div>

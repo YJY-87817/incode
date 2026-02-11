@@ -40,7 +40,10 @@ const handleAddToCart = () => {
         text: `${count}件${product.value.name}已成功加入購物車`,
         icon: 'success',
         confirmButtonText: '確定',
-        confirmButtonColor: '#145369'
+        confirmButtonColor: '#145369',
+        didOpen: (modal) => {
+          modal.querySelector('.swal2-confirm').style.color = '#fff';
+        }
     });
 };
 

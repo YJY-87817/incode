@@ -31,9 +31,8 @@ const currentSessionId = ref(0);
 
 const API_BASE_URL = "https://localhost:7190";
 
-// ==========================================
-// ★ 1. 設定「不顯示按鈕」的頁面黑名單
-// ==========================================
+
+// 設定「不顯示按鈕」的頁面黑名單
 const excludedPaths = [
     '/login', 
     '/register', 
@@ -356,8 +355,6 @@ const triggerTransfer = async () => {
         isSending.value = true;
         const sid = currentSessionId.value; 
         
-        // ★ 移除原本的 if (!sid) return; 
-        // 讓 sid = 0 也能通過，後端會自動建立房間
 
         const payload = { sessionId: sid, ishumanmode: true, connectionId: connectionId.value };
         
