@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "商品管理";
 }
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm">
         <div class="card-header d-flex align-items-center">
@@ -15,20 +16,14 @@
         </div>
 
         <div class="card-body">
-            <div class="mb-3 row">
-                <div class="col-md-4">
-                    <input id="productSearch" class="form-control" placeholder="搜尋商品名稱或類別..." />
-                </div>
-            </div>
-
             <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover align-middle">
+                <table id="productTable" class="table table-bordered table-striped table-hover align-middle" style="visibility: hidden;">
                     <thead class="table-light">
                         <tr class="text-center">
                             <th style="width:80px">商品ID</th>
-                            <th>商品名稱</th>
-                            <th style="width:120px">類別</th>
-                            <th style="width:120px">系列</th>
+                            <th style="min-width:200px">商品名稱</th>
+                            <th style="width:90px">類別</th>
+                            <th style="width:90px">系列</th>
                             <th style="width:120px">照片</th>
                             <th style="width:100px">有實體</th>
                             <th style="width:90px">點數</th>
@@ -57,7 +52,7 @@
                                         <img src="~/img/product/noimage.png" alt="暫無照片" class="img-fluid rounded" style="max-width:80px; height:auto;" />
                                     }
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-order="@(item.IsPhysical ? "1" : "0")">
                                     @if (item.IsPhysical)
                                     {
                                         <span class="badge bg-primary">實體</span>
@@ -69,9 +64,9 @@
                                 </td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.Point)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.Stock)</td>
-                                <td class="text-center">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td class="text-center">@item.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td class="text-center">
+                                <td class="text-center" data-order="@item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-center" data-order="@item.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")">@item.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-center" data-order="@(item.OnSale ? "1" : "0")">
                                     @if (item.OnSale)
                                     {
                                         <span class="badge bg-success">販售中</span>
@@ -104,13 +99,20 @@
 @section Scripts
 {
     <script>
-        // 簡單前端搜尋（客戶端 filter）
-        document.getElementById('productSearch')?.addEventListener('input', function (e) {
-            var q = e.target.value.toLowerCase();
-            document.querySelectorAll('table tbody tr').forEach(function (tr) {
-                var name = (tr.children[1]?.innerText || '').toLowerCase();
-                var type = (tr.children[2]?.innerText || '').toLowerCase();
-                tr.style.display = (name.indexOf(q) !== -1 || type.indexOf(q) !== -1) ? '' : 'none';
+        $(function () {
+            $('#productTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.3.6/i18n/zh-HANT.json'
+                },
+                columnDefs: [
+                    { targets: [4, 11], orderable: false }
+                ],
+                initComplete: function() {
+                    $('#productTable').css('visibility', 'visible');
+                }
             });
         });
     </script>
