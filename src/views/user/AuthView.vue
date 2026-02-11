@@ -14,7 +14,7 @@
     const step = ref(0);
 
     // 動態調整卡片寬度：登入時窄一點，註冊時因為有兩欄所以寬一點
-    const cardMaxWidth = computed(() => step.value === 0 ? 450 : 800);
+    const cardMaxWidth = computed(() => step.value === 1 ? 800 : 450);
 
     const loginFormValid = ref(false);
     const rememberMe = ref(false);
@@ -28,6 +28,11 @@
             const pattern = /^[^@]+@[^@]+\.[^@]+$/;
             return pattern.test(value) || "Email 格式不正確";
         },
+    };
+
+    const handleGoogleLogin = () => {
+        // 這裡不能用 axios，必須直接讓瀏覽器跳轉    
+        window.location.href = "https://localhost:7190/api/AuthApi/login-google";
     };
 
     const handleLogin = async () => {
@@ -175,6 +180,55 @@
             isLoading.value = false;
         }
     };
+
+    // 1. 新增忘記密碼的表單資料
+    const forgotPasswordEmail = ref("");
+    const forgotPasswordLoading = ref(false);
+
+    // 2. 處理發送重設信的邏輯
+    const handleForgotPassword = async () => {
+        // 簡單驗證
+        if (!forgotPasswordEmail.value) {
+            Swal.fire({ icon: 'warning', text: '請輸入 Email' });
+            return;
+        }
+        const emailPattern = /^[^@]+@[^@]+\.[^@]+$/;
+        if (!emailPattern.test(forgotPasswordEmail.value)) {
+            Swal.fire({ icon: 'warning', text: 'Email 格式不正確' });
+            return;
+        }
+
+        forgotPasswordLoading.value = true;
+        try {
+            await authStore.forgotPassword(forgotPasswordEmail.value);
+
+            Swal.fire({
+                icon: "success",
+                title: "郵件已發送",
+                text: "請前往信箱查收重設密碼連結",
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            // 發送成功後，自動切換回登入頁 (step 0)
+            step.value = 0;
+            forgotPasswordEmail.value = ""; // 清空欄位
+
+        } catch (error) {
+            let errorMsg = "請稍後再試";
+            if (error.response && error.response.data && error.response.data.message) {
+                errorMsg = error.response.data.message;
+            }
+            Swal.fire({
+                icon: "error",
+                title: "發送失敗",
+                text: errorMsg,
+            });
+        } finally {
+            forgotPasswordLoading.value = false;
+        }
+    };
+
     onMounted(() => {
         // 檢查網址參數，如果是 'register' 就切換到註冊分頁 (step 1)
         if (route.query.tab === 'register') {
@@ -226,9 +280,9 @@
                                 <v-checkbox v-model="rememberMe" label="記住我" color="primary" hide-details
                                     density="compact" class="ma-0 pa-0"></v-checkbox>
 
-                                <a href="#" class="text-caption text-primary text-decoration-none font-weight-bold">
+                                <a href="#" class="text-caption text-primary text-decoration-none font-weight-bold"
+                                    @click.prevent="step = 2">
                                     忘記密碼?
-                                    <!-- 之後做 -->
                                 </a>
                             </div>
 
@@ -242,6 +296,11 @@
                                     登入
                                 </v-btn>
                             </v-hover>
+
+                            <v-btn block variant="outlined" color="#DB4437" class="mb-4 text-body-1 font-weight-bold"
+                                prepend-icon="mdi-google" @click="handleGoogleLogin">
+                                使用 Google 帳號登入
+                            </v-btn>
 
                             <div class="text-center">
                                 <span class="text-caption text-grey">還沒有帳號嗎？</span>
@@ -358,6 +417,39 @@
                                 </a>
                             </div>
                         </div>
+                    </v-window-item>
+                    <v-window-item :value="2">
+                        <v-card-text class="pa-8">
+                            <div class="text-center mb-6">
+                                <h2 class="text-h5 font-weight-bold text-grey-darken-3">重設密碼</h2>
+                                <p class="text-subtitle-1 text-grey">輸入您的 Email 以接收重設連結</p>
+                            </div>
+
+                            <v-form @submit.prevent="handleForgotPassword">
+                                <v-text-field v-model="forgotPasswordEmail" label="Email" placeholder="請輸入註冊時的 Email"
+                                    prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable"
+                                    color="primary" class="mb-4"
+                                    :rules="[loginRules.required, loginRules.email]"></v-text-field>
+
+                                <v-hover v-slot="{ isHovering, props }">
+                                    <v-btn v-bind="props" type="submit" size="large" block rounded="lg" variant="flat"
+                                        class="text-body-1 font-weight-bold" :loading="forgotPasswordLoading"
+                                        :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
+                                  color: isHovering ? '#145369 !important' : '#FFFFFF !important',
+                                  border: '1px solid #145369',
+                                }">
+                                        發送重設信
+                                    </v-btn>
+                                </v-hover>
+                            </v-form>
+
+                            <div class="text-center mt-6">
+                                <v-btn variant="text" size="small" color="grey-darken-1" prepend-icon="mdi-arrow-left"
+                                    @click="step = 0">
+                                    返回登入
+                                </v-btn>
+                            </div>
+                        </v-card-text>
                     </v-window-item>
                 </v-window>
             </v-card>
