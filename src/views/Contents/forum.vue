@@ -347,12 +347,12 @@ watch(
   color: #145369 !important;
 }
 
-/* 右下角浮動發佈按鈕，放在 AI 助手上方 */
+/* 浮動發佈新主題按鈕*/
 .forum-new-topic-fab {
   position: fixed;
   right: 20px;
   top: 90px;
-  z-index: 9997;
+  z-index: 999;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
