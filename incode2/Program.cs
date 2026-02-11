@@ -123,7 +123,7 @@ builder.Services.AddAuthentication(options =>
 
     // 關鍵安全性設定：這張 Cookie 只在 /Admin 路徑下才會被瀏覽器送出！
     // 這樣前台 Vue 怎麼樣都拿不到這張 Cookie
-    options.Cookie.Path = "/Admin";
+    options.Cookie.Path = "/";
 
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;

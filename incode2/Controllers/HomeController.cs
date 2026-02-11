@@ -1,5 +1,6 @@
 using incode2.Models;
 using incode2.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -9,7 +10,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace incode2.Controllers
-{
+{    
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]   
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
