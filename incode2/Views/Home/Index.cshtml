@@ -1,7 +1,7 @@
 ﻿@model incode2.ViewModels.HomeViewModel
 
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "後臺管理";
 }
 
 
@@ -87,7 +87,8 @@
         </div>
     </div>
     <!-- 儀錶板 -->
-    <!-- Area Chart -->
+
+    <!-- UserChart -->
     <div class="col-lg-7">
         <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -98,7 +99,7 @@
             </div>
             <div class="card-body">
                 <div class="chart-area">
-                    <canvas id="myAreaChart"></canvas>
+                    <canvas id="UserChart"></canvas>
                 </div>
                 <hr>
                 每月新增會員數量
@@ -106,20 +107,20 @@
         </div>
     </div>
 
-    <!-- Bar Chart -->
+    <!-- ReportChart -->
     <div class="col-lg-5">
         <div class="card shadow mb-4">
             <!-- Card Header - Dropdown -->
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">發文類型</h6>
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">前10發文者</h6>
             </div>
             <!-- Card Body -->
             <div class="card-body">
-                <div class="chart-pie pt-4">
-                    <canvas id="myPieChart"></canvas>
+                <div class="chart-area">
+                    <canvas id="reportChart"></canvas>
                 </div>
                 <hr>
-                發文類型
+                發文者
             </div>
         </div>
     </div>
@@ -128,10 +129,49 @@
 
 @section Scripts
 {
-    <!-- Bar Chart -->
-    <script src="~/js/chart-pie.js"></script>
     <script>
         var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay));
+
+        var userContentCount = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userContentCounts));
+
+        console.log(userContentCount);
+
+        const reportChart = document.getElementById('reportChart');
+
+        new Chart(reportChart, {
+          type: 'bar',
+          data: {
+            labels: userContentCount.map(item => item.UserName),
+            datasets: [{
+              label: '發文數',
+              data: userContentCount.map(item => item.ContentCount),
+              backgroundColor: 'rgba(255, 0, 0, 0.5)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            maintainAspectRatio: false,
+            indexAxis: 'y', // 橫向長條圖
+            scales: {
+              x: {
+                beginAtZero: true,
+                // 1. 讓最大刻度比資料最大值多出一段空間 (例如 10% 或 固定數值)
+                grace: '10%',
+                ticks: {
+                  // 2. 強制只顯示整數，不顯示小數點（如 1.5, 2.5）
+                  precision: 0,
+                  stepSize: 1 // 確保跳號是以 1 為單位
+                }
+              }
+            },
+            plugins: {
+              // 如果你想在長條圖上方直接顯示數字，可以考慮加上這個提示
+              legend: {
+                display: true
+              }
+            }
+          }
+        });
     </script>
     <script src="~/js/chart-area.js"></script>
 }

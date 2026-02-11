@@ -26,7 +26,17 @@ namespace incode2.ApiControllers
         [HttpGet]
         public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct()
         {
-            return await _productService.GetProductAsync();
+            var result = await _productService.GetProductAsync();
+            return result;
+        }
+
+        // 搜尋商品
+        // GET: api/ProductApi/search?keyword=xxx
+        [HttpGet("search")]
+        public async Task<ResultDTO<IEnumerable<ProductDTO>>> SearchProduct([FromQuery] string keyword)
+        {
+            var result = await _productService.SearchProductAsync(keyword);
+            return result;
         }
     }
 }

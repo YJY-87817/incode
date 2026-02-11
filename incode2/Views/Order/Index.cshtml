@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "訂單管理";
 }
+
 <div class="container-fluid py-4">
     <div class="card shadow-sm">
         <div class="card-header d-flex align-items-center">
@@ -15,14 +16,8 @@
         </div>
 
         <div class="card-body">
-            <div class="mb-3 row">
-                <div class="col-md-4">
-                    <input id="orderSearch" class="form-control" placeholder="搜尋訂單ID、會員ID或狀態..." />
-                </div>
-            </div>
-
             <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover align-middle">
+                <table id="orderTable" class="table table-bordered table-striped table-hover align-middle" style="visibility: hidden;">
                     <thead class="table-light">
                         <tr class="text-center">
                             <th style="width:90px">訂單ID</th>
@@ -42,17 +37,17 @@
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.OrderId)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.UserId)</td>
                                 <td class="text-center">@Html.DisplayFor(modelItem => item.TotalPoint)</td>
-                                <td class="text-center">@item.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-center" data-order="@item.OrderDate.ToString("yyyy-MM-dd HH:mm:ss")">@item.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>@Html.DisplayFor(modelItem => item.Remark)</td>
-                                <td class="text-center">
+                                <td class="text-center" data-order="@(item.Status ?? "")">
                                     @if (!string.IsNullOrEmpty(item.Status))
                                     {
-                                        <span class="badge @(item.Status == "已完成" ? "bg-success" : item.Status == "已取消" ? "bg-danger" : "bg-secondary")">
+                                        <span class="badge @(item.Status == "已完成" ? "bg-success" : item.Status == "已取消" ? "bg-danger" : item.Status == "待處理" ? "bg-warning" : "bg-secondary")">
                                             @item.Status
                                         </span>
                                     }
                                 </td>
-                                <td class="text-center">@(item.CanceledAt?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center" data-order="@(item.CanceledAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">@(item.CanceledAt?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
                                         <a class="btn btn-sm btn-primary" asp-controller="Order" asp-action="Edit" asp-route-OrderId="@item.OrderId">查看修改</a>
@@ -74,14 +69,20 @@
 @section Scripts
 {
     <script>
-        // 簡單前端搜尋（客戶端 filter）
-        document.getElementById('orderSearch')?.addEventListener('input', function (e) {
-            var q = e.target.value.toLowerCase();
-            document.querySelectorAll('table tbody tr').forEach(function (tr) {
-                var orderId = (tr.children[0]?.innerText || '').toLowerCase();
-                var userId = (tr.children[1]?.innerText || '').toLowerCase();
-                var status = (tr.children[5]?.innerText || '').toLowerCase();
-                tr.style.display = (orderId.indexOf(q) !== -1 || userId.indexOf(q) !== -1 || status.indexOf(q) !== -1) ? '' : 'none';
+        $(function () {
+            $('#orderTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/2.3.6/i18n/zh-HANT.json'
+                },
+                columnDefs: [
+                    { targets: [7], orderable: false }
+                ],
+                initComplete: function() {
+                    $('#orderTable').css('visibility', 'visible');
+                }
             });
         });
     </script>

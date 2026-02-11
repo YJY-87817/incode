@@ -6,7 +6,7 @@ namespace incode2.Dtos.PointShop
     public class OrderRequest
     {
         public int UserId { get; set; }
-        public string Remark { get; set; }
+        public string? Remark { get; set; }
         // 這裡的 Detail 只需要 ID 跟數量
         public List<OrderItemRequest> Items { get; set; }
 
@@ -40,6 +40,6 @@ namespace incode2.Dtos.PointShop
 
         public string RecipientPhone { get; set; }
 
-        public string Remark { get; set; }
+        public string? Remark { get; set; } 
     }
 }

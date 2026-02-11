@@ -10,6 +10,7 @@
     <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet" />
     <!-- Custom styles for this template-->
     <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" asp-fallback-href="~/lib/datatables/css/datatables.bootstrap4.min.css" rel="stylesheet">
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -212,7 +213,6 @@
     <!-- JavaScript 區塊 -->
     <!-- jQuery -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/jquery-easing/jquery.easing.min.js"></script>
     
     <!-- Bootstrap 5 -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -222,6 +222,10 @@
     
     <!-- 自訂腳本 (更新為 Bootstrap 5 版本) -->
     <script src="~/js/sb-admin-2.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js" asp-fallback-src="~/lib/datatables/js/datatables.jqueryui.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js" asp-fallback-src="~/lib/datatables/js/datatables.bootstrap4.min.js"></script>
 
     <!-- 環境相關的 site.js -->                                                          
     <environment include="Development">

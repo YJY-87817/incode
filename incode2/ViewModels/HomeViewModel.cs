@@ -8,6 +8,8 @@ namespace incode2.ViewModels
         
         public List<HomeUser>? userdisplay { get; set; }
 
+        public List<UserContentCount> userContentCounts { get; set; }
+
     }
 
     public class HomeUser 
@@ -17,5 +19,12 @@ namespace incode2.ViewModels
         public string createmonth { get; set; }
 
         public int usercount { get; set; }
+    }
+
+    public class UserContentCount
+        {
+            public string? UserName { get; set; }
+    
+            public int ContentCount { get; set; }
     }
 }
