@@ -1,4 +1,6 @@
-﻿using incode2.Models;
+﻿using incode2.Constants;
+using incode2.Models;
+using incode2.Services.Point;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,10 +13,13 @@ namespace incode2.Controllers
     public class OrderController : Controller
     {
         private readonly incodedatabaseContext _context;
+        private readonly IPointLogService _pointlogService;
 
-        public OrderController(incodedatabaseContext context)
+
+        public OrderController(incodedatabaseContext context, IPointLogService pointLogService)
         {
             _context = context;
+            _pointlogService = pointLogService;
         }
 
         // GET: Order
@@ -41,36 +46,40 @@ namespace incode2.Controllers
         {
             //if (ModelState.IsValid)
             //{
-                var orders = new Orders();
-                orders.OrderId = 0;
-                orders.UserId = NewOrder.UserId;
-                orders.TotalPoint = NewOrder.TotalPoint;
-                orders.Status = NewOrder.Status;
-                orders.Remark = NewOrder.Remark;
-                orders.OrderDate = DateTime.Now;
-                _context.Add(orders);
-                await _context.SaveChangesAsync();
-                foreach (var item in NewOrder.orderdetails)
-                {
-                    //orderdetai
-                    var orderdetail = new Orderdetail();
-                    orderdetail.OrderId = orders.OrderId;
-                    orderdetail.ProductId = item.ProductId;
-                    orderdetail.Quantity = item.Quantity;
-                    orderdetail.UnitPointAtPurchase = item.UnitPointAtPurchase;
-                    orderdetail.RequiresShipping = item.RequiresShipping;
-                    _context.Add(orderdetail);
+            var orders = new Orders();
+            orders.OrderId = 0;
+            orders.UserId = NewOrder.UserId;
+            orders.TotalPoint = NewOrder.TotalPoint;
+            orders.Status = NewOrder.Status;
+            orders.Remark = NewOrder.Remark;
+            orders.OrderDate = DateTime.Now;
+            _context.Add(orders);
+            await _context.SaveChangesAsync();
+            foreach (var item in NewOrder.orderdetails)
+            {
+                //orderdetai
+                var orderdetail = new Orderdetail();
+                orderdetail.OrderId = orders.OrderId;
+                orderdetail.ProductId = item.ProductId;
+                orderdetail.Quantity = item.Quantity;
+                orderdetail.UnitPointAtPurchase = item.UnitPointAtPurchase;
+                orderdetail.RequiresShipping = item.RequiresShipping;
+                _context.Add(orderdetail);
 
-                    // 扣除庫存
-                    var product = await _context.Product.FindAsync(item.ProductId);
-                    if (product != null)
-                    {
-                        product.Stock -= item.Quantity;
-                        _context.Update(product);
-                    }
+                // 扣除庫存
+                var product = await _context.Product.FindAsync(item.ProductId);
+                if (product != null)
+                {
+                    product.Stock -= item.Quantity;
+                    _context.Update(product);
                 }
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+            }
+            // 扣除會員點數（寫入點數紀錄）
+            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", NewOrder.OrderId, PointType.Order);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
             //}
             //else 
             //{
@@ -195,9 +204,9 @@ namespace incode2.Controllers
                             var oldProduct = await _context.Product.FindAsync(exist.ProductId);
                             if (oldProduct != null)
                             {
-                                oldProduct.Stock += exist.Quantity; 
+                                oldProduct.Stock += exist.Quantity;
                             }
-                            
+
                             // 2. 扣除新商品的庫存
                             var newProduct = await _context.Product.FindAsync(item.ProductId);
                             if (newProduct != null)
@@ -209,7 +218,7 @@ namespace incode2.Controllers
                         {
                             // 情境B：商品沒變，只改數量
                             var diff = item.Quantity - exist.Quantity; // 差異量 (例如原本 2 改成 5，diff = 3)
-                            
+
                             if (diff != 0)
                             {
                                 var product = await _context.Product.FindAsync(exist.ProductId);
@@ -296,9 +305,22 @@ namespace incode2.Controllers
 
                 _context.Orderdetail.RemoveRange(toDelete);
             }
-
-            await _context.SaveChangesAsync();
             // ===============================================
+            // 扣除會員點數（寫入點數紀錄）
+            // 處理點數變更：計算差額並進行多退少補
+            // 因為 orders 物件的 TotalPoint 已經被更新為新值，
+            // 這裡利用 EF Core 的 Entry().OriginalValue 取得修改前的原始點數
+            var originalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
+            var ordcha = originalTotalPoint - orders.TotalPoint; // 差異 = 舊消費 - 新消費
+
+            // 只有當點數金額有變動時才呼叫 Service
+            if (ordcha != 0)
+            {
+                // diff > 0 : 原本買比較多，現在買比較少 -> 退還點數 (增加)
+                // diff < 0 : 原本買比較少，現在買比較多 -> 補扣點數 (減少)
+                await _pointlogService.ChangePointsAsync(orders.UserId, ordcha, "order", orders.OrderId, PointType.Order);
+            }
+            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
