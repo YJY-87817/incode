@@ -1,7 +1,8 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
+import { useForumPost } from "@/composables/useForumPost";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -9,11 +10,53 @@ import DefaultFooter from "@/examples/footers/FooterDefault.vue";
 import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
+import NewTopicBanners from "@/components/Contents/NewTopicBanners.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
-import ForumSearchBar from "@/components/Contents/ForumSearchBar.vue";
+
+// 可以抓到前端userID pinia
+import { useAuthStore } from "@/stores/user/auth.js";
+const authStore = useAuthStore();
+// 可以抓到前端userID pinia
 
 const forumStore = useForumStore();
 const route = useRoute();
+const { hasDraftContent } = useForumPost();
+
+const hasExpandedDraft = computed(() =>
+  (forumStore.drafts || []).some((draft) => !draft.isMinimized),
+);
+
+const isCommentLikeDraft = (draft) => {
+  const type = draft?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+};
+
+const getDraftExtraValues = (draft) => {
+  if (!draft?.showEntrustMission) return [];
+  const data = draft?.entrustMission || {};
+  return [
+    data.title,
+    data.detail,
+    data.rewardPoints,
+    data.category,
+    data.deadline,
+  ];
+};
+
+const hasVisibleDraftContent = (draft) => {
+  const titleToCheck = isCommentLikeDraft(draft) ? "" : draft.title;
+  return hasDraftContent(titleToCheck, draft.body, getDraftExtraValues(draft));
+};
+
+const shouldShowSidebar = computed(() => {
+  const drafts = forumStore.drafts || [];
+  // 檢查是否有展開的編輯器或有內容的最小化草稿
+  const hasExpandedEditor = drafts.some((d) => !d.isMinimized);
+  const hasMinimizedWithContent = drafts.some(
+    (d) => d.isMinimized && hasVisibleDraftContent(d),
+  );
+  return hasExpandedEditor || hasMinimizedWithContent;
+});
 
 const tryScrollToPendingTarget = async () => {
   const targetId = forumStore.pendingScrollTargetId;
@@ -22,7 +65,9 @@ const tryScrollToPendingTarget = async () => {
   await nextTick();
   const targetEl = document.getElementById(`content-${targetId}`);
   if (targetEl) {
-    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    const offsetTop =
+      targetEl.getBoundingClientRect().top + window.scrollY - 60;
+    window.scrollTo({ top: offsetTop, behavior: "smooth" });
     forumStore.pendingScrollTargetId = null;
   }
 };
@@ -73,7 +118,7 @@ watch(
   () => forumStore.lastRefreshTime,
   () => {
     forumStore.fetchTopics();
-  }
+  },
 );
 
 watch(
@@ -86,7 +131,7 @@ watch(
       forumStore.closeThread();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -95,7 +140,7 @@ watch(
     if (forumStore.pendingScrollTargetId) {
       tryScrollToPendingTarget();
     }
-  }
+  },
 );
 
 watch(
@@ -108,7 +153,7 @@ watch(
     if (forumStore.pendingScrollTargetId) {
       tryScrollToPendingTarget();
     }
-  }
+  },
 );
 </script>
 
@@ -116,58 +161,44 @@ watch(
   <DefaultNavbar light />
 
   <div class="container mt-5 mb-5">
-    <!-- <ForumHeader /> -->
-
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
-      <div class="col-lg-9 order-2 order-lg-1">
+      <div
+        class="order-2 order-lg-1 forum-main"
+        :class="shouldShowSidebar ? 'col-lg-9' : 'col-lg-12'"
+      >
         <!-- 分類欄 -->
         <CategoryFilter />
-        <!-- 搜尋欄 -->
-        <ForumSearchBar />
         <!-- 新主題改為使用彈出視窗 -->
         <NewTopicModal />
         <TopicListView />
       </div>
 
       <!-- 側邊欄 -->
-      <div class="col-lg-3 forum-sidebar">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h6 class="mb-0">📊 論壇統計</h6>
-          </div>
-          <div class="card-body">
-            <div class="mb-3">
-              <div
-                class="d-flex justify-content-between align-items-center mb-1"
-              >
-                <span class="small text-muted">總主題數</span>
-                <strong class="text-primary">{{
-                  forumStore.pagination.totalCount
-                }}</strong>
-              </div>
-
-              <div
-                class="d-flex justify-content-between align-items-center"
-              ></div>
-            </div>
-
-            <button
-              class="btn btn-forum-primary w-100"
-              type="button"
-              @click="openNewTopicModal"
-            >
-              <i class="fas fa-plus"></i>
-              <span class="ms-2">發表新主題</span>
-            </button>
-          </div>
+      <div
+        v-if="shouldShowSidebar"
+        class="col-lg-3 forum-sidebar"
+        :class="{ 'forum-sidebar--no-editor': !hasExpandedDraft }"
+      >
+        <div class="forum-sidebar-top">
+          <NewTopicSidebar />
         </div>
-        <NewTopicSidebar />
+        <div class="forum-sidebar-bottom">
+          <NewTopicBanners />
+        </div>
       </div>
     </div>
   </div>
-
   <DefaultFooter />
+
+  <button
+    class="btn btn-forum-primary forum-new-topic-fab"
+    type="button"
+    @click="openNewTopicModal"
+  >
+    <i class="fas fa-plus"></i>
+    <span class="ms-2">發佈新主題</span>
+  </button>
 </template>
 
 <style scoped>
@@ -243,9 +274,30 @@ watch(
 
 /* 側邊欄排版，確保 banner 貼底 */
 .forum-sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+@media (min-width: 992px) {
+  .forum-sidebar-top {
+    position: sticky;
+    top: 1rem;
+    width: 100%;
+    z-index: 60;
+  }
+
+  .forum-sidebar-bottom {
+    position: sticky;
+    bottom: 1rem;
+    margin-top: auto;
+    z-index: 40;
+  }
+
+  .forum-sidebar--no-editor .forum-sidebar-bottom {
+    z-index: 80;
+  }
 }
 
 /* 表格樣式 */
@@ -293,6 +345,25 @@ watch(
 /* 文字顏色 */
 .text-primary {
   color: #145369 !important;
+}
+
+/* 浮動發佈新主題按鈕*/
+.forum-new-topic-fab {
+  position: fixed;
+  right: 20px;
+  top: 90px;
+  z-index: 999;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
+}
+
+@media (max-width: 576px) {
+  .forum-new-topic-fab {
+    right: 12px;
+    bottom: 80px;
+    font-size: 0.9rem;
+  }
 }
 
 /* 留言框樣式 */

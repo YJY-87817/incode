@@ -13,6 +13,8 @@ export const putCancelOrder = (orderId) =>
 
 export const getProducts = () => axios.get("/ProductApi");
 
+export const getProductSearch = (keyword) => axios.get(`/ProductApi/search?keyword=${keyword}`);
+
 export const postCreateOrder = (neworder) =>
   axios.post(`/OrderApi/OrderPost`, neworder, {
     headers: {
@@ -20,3 +22,8 @@ export const postCreateOrder = (neworder) =>
     }
   }
   );
+
+export const putShippedOrder = (shippeddetail, shippedId) =>
+  axios.put(`/OrderApi/ShippedPut/${shippedId}`, shippeddetail);
+
+export const getUserInfo = () => axios.get(`/OrderApi/shipaddress`);

@@ -15,7 +15,7 @@ const contentInteractionApi = {
   /**
    * Fetch all interaction categories.
    *
-   * GET /InteractionCategoryApi
+   * GET /ContentInteractionApi/category
    *
    * @returns {Promise<Array>} Array of categories, each containing:
    *   {
@@ -26,7 +26,7 @@ const contentInteractionApi = {
    *   }
    */
   getCategories() {
-    return apiClient.get("/InteractionCategoryApi");
+    return apiClient.get("/ContentInteractionApi/category");
   },
 
   /**
@@ -56,12 +56,12 @@ const contentInteractionApi = {
   /**
    * Convenience helpers for common actions.
    * These simply call postInteraction with the appropriate category ID.
-   * Category IDs: 1=Like, 3=Bookmark, 4=Block, 5=Hide
+   * Category IDs: 1=Like, 2=Hide, 3=Bookmark, 4=Report
    */
   like(contentId) {
     return this.postInteraction({ interactionCategoryId: 1, contentId });
   },
-  
+
   bookmark(contentId) {
     return this.postInteraction({ interactionCategoryId: 3, contentId });
   },
@@ -69,25 +69,10 @@ const contentInteractionApi = {
     return this.postInteraction({ interactionCategoryId: 4, contentId });
   },
   hide(contentId) {
-    return this.postInteraction({ interactionCategoryId: 5, contentId });
+    return this.postInteraction({ interactionCategoryId: 2, contentId });
   },
 
-  /**
-   * Fetch comments for a specific content item.
-   *
-   * GET /ContentApi/{contentId}/comments
-   *
-   * @param {number} contentId - The ID of the content to fetch comments for
-   * @returns {Promise<Object>} Object containing:
-   *   {
-   *     contentId: number,
-   *     comments: Array,
-   *     count: number
-   *   }
-   */
-  getComments(contentId) {
-    return apiClient.get(`/ContentApi/${contentId}/comments`);
-  },
+  // Content CRUD and child pagination are handled by contentApi.
 };
 
 export default contentInteractionApi;

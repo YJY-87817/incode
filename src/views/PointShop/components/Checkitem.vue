@@ -13,6 +13,7 @@ const decrease = (item) => {
   if (item.quantity > 1) item.quantity -= 1;
   CartNow.updateQuantity(item.productId, item.quantity);
 };
+
 </script>
 
 <template>

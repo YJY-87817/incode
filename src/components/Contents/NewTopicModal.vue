@@ -3,27 +3,43 @@ import { reactive, onMounted, watch, ref, computed } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
+import { useForumPost } from "@/composables/useForumPost";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const { getModeTitle, validatePost, publishPost, hasDraftContent } =
+  useForumPost();
 
 const modalMode = computed(() => forumStore.newTopic?.mode || "post");
 const isPostMode = computed(() => modalMode.value === "post");
-const modalTitle = computed(() => {
-  switch (modalMode.value) {
-    case "comment":
-      return "詳細留言";
-    case "reply":
-      return "詳細回文";
-    case "commentReply":
-      return "詳細回覆";
-    default:
-      return "發表新主題";
-  }
+const isEditMode = computed(() => modalMode.value === "edit");
+const isEditingCommentLike = computed(() => {
+  if (!isEditMode.value) return false;
+  const type = forumStore.newTopic?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
 });
-const submitLabel = computed(() =>
-  modalMode.value === "post" ? "發佈" : "發佈"
+const isReplyLikeMode = computed(
+  () => modalMode.value === "comment" || modalMode.value === "commentReply",
 );
+const shouldHideTitleInput = computed(
+  () => isEditingCommentLike.value || isReplyLikeMode.value,
+);
+const modalTitle = computed(() => getModeTitle(modalMode.value));
+const submitLabel = computed(() => {
+  if (modalMode.value === "edit") return "更新";
+  return modalMode.value === "post" ? "發佈" : "發佈";
+});
+
+const buildReplyTitle = (baseTitle) => {
+  const base = String(baseTitle || "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
+const replyAutoTitle = computed(() => {
+  const data = forumStore.replyingToContentData;
+  const baseTitle = data?.title || data?.contentText || "";
+  return buildReplyTitle(baseTitle);
+});
 
 const newTopicState = reactive({
   title: forumStore.newTopic.title || "",
@@ -49,7 +65,32 @@ const showCategoryDescriptionModal = ref(false);
 const showCategoryNameModal = ref(false);
 const showTitleBodyRequiredModal = ref(false);
 
-const NO_REPLY_LABEL = "無(發表新主題)";
+const showEntrustMission = ref(Boolean(forumStore.newTopic.showEntrustMission));
+const entrustMissionState = reactive({
+  title: forumStore.newTopic.entrustMission?.title || "",
+  detail: forumStore.newTopic.entrustMission?.detail || "",
+  rewardPoints: forumStore.newTopic.entrustMission?.rewardPoints || "",
+  category: forumStore.newTopic.entrustMission?.category || "",
+  deadline: forumStore.newTopic.entrustMission?.deadline || "",
+});
+
+const canUseEntrustMission = computed(
+  () => isPostMode.value && !newTopicState.parentContentId,
+);
+
+const syncEntrustMissionFromStore = () => {
+  showEntrustMission.value = Boolean(forumStore.newTopic.showEntrustMission);
+  entrustMissionState.title = forumStore.newTopic.entrustMission?.title || "";
+  entrustMissionState.detail = forumStore.newTopic.entrustMission?.detail || "";
+  entrustMissionState.rewardPoints =
+    forumStore.newTopic.entrustMission?.rewardPoints || "";
+  entrustMissionState.category =
+    forumStore.newTopic.entrustMission?.category || "";
+  entrustMissionState.deadline =
+    forumStore.newTopic.entrustMission?.deadline || "";
+};
+
+const NO_REPLY_LABEL = "無(發佈新主題)";
 
 const getCategoryIdValue = (cat) =>
   cat?.id ??
@@ -87,7 +128,7 @@ const filteredCategories = computed(() => {
   return categories.filter((cat) =>
     String(getCategoryName(cat) || "")
       .toLowerCase()
-      .includes(keyword)
+      .includes(keyword),
   );
 });
 
@@ -105,7 +146,7 @@ const childCategories = computed(() => {
   if (!newTopicState.categoryId) return [];
   const parentKey = toCategoryKey(newTopicState.categoryId);
   return (forumStore.categories || []).filter(
-    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey
+    (cat) => toCategoryKey(getParentCategoryIdValue(cat)) === parentKey,
   );
 });
 
@@ -116,7 +157,7 @@ const filteredSubCategories = computed(() => {
   return categories.filter((cat) =>
     String(getCategoryName(cat) || "")
       .toLowerCase()
-      .includes(keyword)
+      .includes(keyword),
   );
 });
 
@@ -138,7 +179,7 @@ const filteredReplyTopics = computed(() => {
     filtered = filtered.filter((topic) =>
       String(getTopicTitle(topic) || "")
         .toLowerCase()
-        .includes(keyword)
+        .includes(keyword),
     );
   }
 
@@ -175,13 +216,13 @@ const replySuggestions = computed(() => {
 });
 
 const effectiveCategoryId = computed(
-  () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null
+  () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null,
 );
 
 const fetchTopics = (categoryId = null) => {
   const params = {};
   if (categoryId) params.categoryId = categoryId;
-  // 獲取足夠的資料來計算回文統計
+  // 後端現在直接提供回覆統計資訊
   params.pageSize = 9999;
 
   apiClient
@@ -189,29 +230,17 @@ const fetchTopics = (categoryId = null) => {
     .then((data) => {
       const allItems = data.items || [];
 
-      // 計算每個貼文/回文的回文統計資訊
+      // 後端現在直接在 ContentDto 中提供回覆統計資訊
+      // 不再需要前端計算，直接使用後端提供的資料
       newTopicState.topics = allItems.map((item) => {
-        // 找出該貼文的所有回應
-        const replies = allItems.filter(
-          (c) =>
-            c.parentContentId === item.contentId &&
-            (c.type === 2 || c.type === 3 || c.type === 4)
-        );
-
-        let lastReplyTime = null;
-        if (replies.length > 0) {
-          const sortedReplies = replies.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          lastReplyTime = sortedReplies[0].createdAt;
-        }
-
         return {
           id: item.contentId,
           title: item.title,
-          replyCount: replies.length,
-          lastReplyTime: lastReplyTime,
+          // 使用後端提供的統計資訊
+          replyCount: item.replyCount ?? 0,
+          lastReplyTime: item.lastReplyTime ?? null,
+          lastReplyUser: item.lastReplyUser ?? null,
+          lastReplyUserId: item.lastReplyUserId ?? null,
           createdAt: item.createdAt,
         };
       });
@@ -231,7 +260,7 @@ const syncCategorySelection = (categoryId) => {
   const categories = forumStore.categories || [];
   const targetKey = toCategoryKey(categoryId);
   const target = categories.find(
-    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey
+    (cat) => toCategoryKey(getCategoryIdValue(cat)) === targetKey,
   );
 
   if (!target) {
@@ -252,7 +281,7 @@ const syncCategorySelection = (categoryId) => {
   const parentMatch = categories.find(
     (cat) =>
       toCategoryKey(getCategoryIdValue(cat)) ===
-      toCategoryKey(newTopicState.categoryId)
+      toCategoryKey(newTopicState.categoryId),
   );
   if (parentMatch?.name) {
     categorySearch.value = getCategoryName(parentMatch);
@@ -272,7 +301,7 @@ onMounted(() => {
     const match = (forumStore.categories || []).find(
       (cat) =>
         toCategoryKey(getCategoryIdValue(cat)) ===
-        toCategoryKey(newTopicState.categoryId)
+        toCategoryKey(newTopicState.categoryId),
     );
     if (match?.name) {
       categorySearch.value = getCategoryName(match);
@@ -281,17 +310,69 @@ onMounted(() => {
 });
 
 watch(
+  () => forumStore.showNewTopicModal,
+  (value) => {
+    if (value) {
+      syncEntrustMissionFromStore();
+    }
+  },
+);
+
+watch(
+  () => showEntrustMission.value,
+  (value) => {
+    forumStore.newTopic.showEntrustMission = value;
+    if (!value) {
+      resetEntrustMission();
+      forumStore.newTopic.entrustMission = {
+        title: "",
+        detail: "",
+        rewardPoints: "",
+        category: "",
+        deadline: "",
+      };
+    }
+  },
+);
+
+watch(
+  () => ({ ...entrustMissionState }),
+  (value) => {
+    forumStore.newTopic.entrustMission = {
+      title: value.title || "",
+      detail: value.detail || "",
+      rewardPoints: value.rewardPoints || "",
+      category: value.category || "",
+      deadline: value.deadline || "",
+    };
+  },
+  { deep: true },
+);
+
+watch(
   () => newTopicState.title,
   (value) => {
     forumStore.newTopic.title = value;
-  }
+  },
+);
+
+watch(
+  () => [isReplyLikeMode.value, replyAutoTitle.value],
+  ([replyLikeMode, autoTitle]) => {
+    if (!replyLikeMode) return;
+    if (!autoTitle) return;
+    if (newTopicState.title !== autoTitle) {
+      newTopicState.title = autoTitle;
+    }
+  },
+  { immediate: true },
 );
 
 watch(
   () => newTopicState.body,
   (value) => {
     forumStore.newTopic.body = value;
-  }
+  },
 );
 
 watch(
@@ -299,14 +380,14 @@ watch(
   (value) => {
     selectedSubCategoryId.value = null;
     subCategorySearch.value = "";
-  }
+  },
 );
 
 watch(
   () => effectiveCategoryId.value,
   (value) => {
     forumStore.newTopic.categoryId = value;
-  }
+  },
 );
 
 watch(
@@ -317,16 +398,20 @@ watch(
       replySearch.value = "";
       return;
     }
+    if (showEntrustMission.value) {
+      showEntrustMission.value = false;
+      resetEntrustMission();
+    }
     if (modalMode.value !== "post") {
       return;
     }
     const match = (newTopicState.topics || []).find(
-      (topic) => String(topic.id) === String(value)
+      (topic) => String(topic.id) === String(value),
     );
     if (match) {
       replySearch.value = getTopicTitle(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -341,10 +426,22 @@ watch(
 
     const match = (newTopicState.topics || []).find(
       (topic) =>
-        String(getTopicTitle(topic) || "").toLowerCase() === input.toLowerCase()
+        String(getTopicTitle(topic) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     newTopicState.parentContentId = match ? match.id : null;
-  }
+  },
+);
+
+watch(
+  () => canUseEntrustMission.value,
+  (value) => {
+    if (value) return;
+    if (showEntrustMission.value) {
+      showEntrustMission.value = false;
+      resetEntrustMission();
+    }
+  },
 );
 
 // 監聽 store 的 selectedCategory 變化
@@ -354,7 +451,7 @@ watch(
     if (newCategory) {
       syncCategorySelection(newCategory);
     }
-  }
+  },
 );
 
 watch(
@@ -367,13 +464,13 @@ watch(
       const match = (categories || []).find(
         (cat) =>
           toCategoryKey(getCategoryIdValue(cat)) ===
-          toCategoryKey(newTopicState.categoryId)
+          toCategoryKey(newTopicState.categoryId),
       );
       if (match?.name) {
         categorySearch.value = getCategoryName(match);
       }
     }
-  }
+  },
 );
 
 watch(
@@ -384,12 +481,12 @@ watch(
       return;
     }
     const match = childCategories.value.find(
-      (cat) => toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value)
+      (cat) => toCategoryKey(getCategoryIdValue(cat)) === toCategoryKey(value),
     );
     if (match) {
       subCategorySearch.value = getCategoryName(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -403,10 +500,11 @@ watch(
 
     const match = childCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     selectedSubCategoryId.value = match ? getCategoryIdValue(match) : null;
-  }
+  },
 );
 
 watch(
@@ -425,7 +523,7 @@ watch(
     } else {
       newTopicState.topics = [];
     }
-  }
+  },
 );
 
 watch(
@@ -434,7 +532,7 @@ watch(
     if (modalMode.value !== "post") return;
     if (!newTopicState.parentContentId) return;
     const match = (topics || []).find(
-      (topic) => String(topic.id) === String(newTopicState.parentContentId)
+      (topic) => String(topic.id) === String(newTopicState.parentContentId),
     );
     if (!match) {
       newTopicState.parentContentId = null;
@@ -444,7 +542,7 @@ watch(
     if (!replySearch.value) {
       replySearch.value = getTopicTitle(match) || "";
     }
-  }
+  },
 );
 
 watch(
@@ -459,10 +557,11 @@ watch(
 
     const match = rootCategories.value.find(
       (cat) =>
-        String(getCategoryName(cat) || "").toLowerCase() === input.toLowerCase()
+        String(getCategoryName(cat) || "").toLowerCase() ===
+        input.toLowerCase(),
     );
     newTopicState.categoryId = match ? getCategoryIdValue(match) : null;
-  }
+  },
 );
 
 // 監聽 modal 打開時同步分類選擇
@@ -472,6 +571,25 @@ watch(
     if (isOpen) {
       newTopicState.title = forumStore.newTopic.title || "";
       newTopicState.body = forumStore.newTopic.body || "";
+
+      // 編輯模式下，直接同步分類（不依賴於搜索）
+      if (
+        forumStore.newTopic.mode === "edit" &&
+        forumStore.newTopic.categoryId
+      ) {
+        newTopicState.categoryId = forumStore.newTopic.categoryId;
+        selectedSubCategoryId.value = null;
+        // 同時更新搜索框以顯示當前分類
+        const currentCategory = (forumStore.categories || []).find(
+          (cat) =>
+            toCategoryKey(getCategoryIdValue(cat)) ===
+            toCategoryKey(forumStore.newTopic.categoryId),
+        );
+        if (currentCategory?.name) {
+          categorySearch.value = getCategoryName(currentCategory);
+        }
+        return;
+      }
     }
 
     if (isOpen && forumStore.newTopic.categoryId) {
@@ -506,7 +624,7 @@ watch(
       forumStore.newTopic.contentType = CONTENT_TYPES.POST;
     }
   },
-  { immediate: false, flush: "post" }
+  { immediate: false, flush: "post" },
 );
 
 // 監聽 newTopicState.topics 加載完成後，自動填充 replySearch
@@ -516,13 +634,13 @@ watch(
     if (forumStore.showNewTopicModal && forumStore.newTopic.parentContentId) {
       const parentId = forumStore.newTopic.parentContentId;
       const match = (newTopicState.topics || []).find(
-        (topic) => String(topic.id) === String(parentId)
+        (topic) => String(topic.id) === String(parentId),
       );
       if (match && !replySearch.value) {
         replySearch.value = getTopicTitle(match) || "";
       }
     }
-  }
+  },
 );
 
 const selectCategoryFromDropdown = (category) => {
@@ -575,7 +693,7 @@ const createCategoryFromSearch = async () => {
 
   const existing = (forumStore.categories || []).find(
     (cat) =>
-      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase(),
   );
   if (existing) {
     newTopicState.categoryId = getCategoryIdValue(existing);
@@ -595,7 +713,7 @@ const createSubCategoryFromSearch = async () => {
 
   const existing = childCategories.value.find(
     (cat) =>
-      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase()
+      String(getCategoryName(cat) || "").toLowerCase() === name.toLowerCase(),
   );
   if (existing) {
     selectedSubCategoryId.value = getCategoryIdValue(existing);
@@ -632,7 +750,7 @@ const submitCreateCategory = async () => {
     const created = await forumStore.createCategory(
       name,
       description,
-      parentId
+      parentId,
     );
 
     if (parentId) {
@@ -651,7 +769,7 @@ const submitCreateCategory = async () => {
       categorySearch.value = created.name || name;
     } else {
       const fallback = (forumStore.categories || []).find(
-        (cat) => cat.name === name
+        (cat) => cat.name === name,
       );
       if (fallback) {
         newTopicState.categoryId = fallback.id;
@@ -686,73 +804,163 @@ const closeTitleBodyRequiredModal = () => {
   showTitleBodyRequiredModal.value = false;
 };
 
-const submitNewTopic = async () => {
-  if (!newTopicState.title || !newTopicState.body) {
-    showTitleBodyRequiredModal.value = true;
-    return;
+const resetEntrustMission = () => {
+  entrustMissionState.title = "";
+  entrustMissionState.detail = "";
+  entrustMissionState.rewardPoints = "";
+  entrustMissionState.category = "";
+  entrustMissionState.deadline = "";
+};
+
+const toggleEntrustMission = () => {
+  if (!canUseEntrustMission.value) return;
+  showEntrustMission.value = !showEntrustMission.value;
+  if (!showEntrustMission.value) {
+    resetEntrustMission();
   }
+};
 
-  // 若有 parentContentId，不需檢查 categoryId（會使用 parent 的 category）
-  // 若無 parentContentId，需檢查 categoryId
-  if (!newTopicState.parentContentId && !effectiveCategoryId.value) {
-    alert("請選擇分類");
-    return;
-  }
+const validateEntrustMission = async () => {
+  if (!showEntrustMission.value) return true;
 
-  const isReply = Boolean(newTopicState.parentContentId);
-  const resolvedContentType =
-    forumStore.newTopic?.contentType ??
-    (isReply ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
-  const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
-    categoryId: effectiveCategoryId.value,
-    parentContentId: newTopicState.parentContentId,
-    title: newTopicState.title,
-    body: newTopicState.body,
-    type: resolvedContentType,
-  };
+  const title = String(entrustMissionState.title || "").trim();
+  const detail = String(entrustMissionState.detail || "").trim();
+  const category = String(entrustMissionState.category || "").trim();
+  const rewardPoints = Number(entrustMissionState.rewardPoints);
 
-  try {
-    await apiClient.post("/ContentApi", dto);
+  if (!title || !detail || !category || !Number.isFinite(rewardPoints)) {
     await Swal.fire({
-      icon: "success",
-      title: "發表成功",
-      showConfirmButton: false,
-      timer: 1500,
+      icon: "warning",
+      title: "提醒",
+      text: "請完整填寫委託任務資訊",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
     });
-
-    // 直接刷新主題列表而不是只觸發信號
-    forumStore.pagination.currentPage = 1;
-    await forumStore.fetchTopics();
-
-    // 若是回文/留言/回覆，且當前已開啟該主題，刷新詳情內容
-    if (isReply && forumStore.selectedThread) {
-      await forumStore.fetchThreadDetail(forumStore.selectedThread);
-    }
-
-    // 如果是從草稿打開的，刪除該草稿
-    if (forumStore.currentEditingDraftId) {
-      forumStore.removeDraft(forumStore.currentEditingDraftId);
-      forumStore.currentEditingDraftId = null;
-    }
-
-    resetNewTopicDraft();
-    closeNewTopic();
-  } catch (error) {
-    console.error("[NewTopicModal] submitNewTopic - 發表失敗:", error);
-    alert("發表失敗，請稍後再試");
+    return false;
   }
+
+  if (rewardPoints <= 0) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "獎勵點數需大於 0",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const buildEntrustMissionPayload = () => {
+  if (!showEntrustMission.value) return null;
+
+  const rewardPoints = Number(entrustMissionState.rewardPoints);
+  const deadline = String(entrustMissionState.deadline || "").trim();
+
+  return {
+    title: String(entrustMissionState.title || "").trim(),
+    detail: String(entrustMissionState.detail || "").trim(),
+    rewardPoints: Number.isFinite(rewardPoints) ? rewardPoints : 0,
+    category: String(entrustMissionState.category || "").trim(),
+    deadline: deadline || null,
+  };
+};
+
+const getModalExtraValues = () => {
+  if (!showEntrustMission.value) return [];
+  return [
+    entrustMissionState.title,
+    entrustMissionState.detail,
+    entrustMissionState.rewardPoints,
+    entrustMissionState.category,
+    entrustMissionState.deadline,
+  ];
+};
+
+const submitNewTopic = async () => {
+  // 判斷是否為編輯模式
+  const isEdit = modalMode.value === "edit";
+
+  if (showEntrustMission.value && !(await validateEntrustMission())) {
+    return;
+  }
+
+  const entrustMissionPayload = buildEntrustMissionPayload();
+
+  // 使用 composable 的 publishPost 進行驗證和提交
+  const success = await publishPost(
+    {
+      title: newTopicState.title,
+      body: newTopicState.body,
+      categoryId: effectiveCategoryId.value,
+      parentContentId: newTopicState.parentContentId,
+      contentType: forumStore.newTopic?.contentType,
+      editingContentId: forumStore.newTopic?.editingContentId,
+      entrustMission: entrustMissionPayload,
+    },
+    isEdit,
+  );
+
+  if (!success) {
+    return;
+  }
+
+  // 如果是從草稿打開的，刪除該草稿
+  if (forumStore.currentEditingDraftId) {
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
+    forumStore.currentEditingDraftId = null;
+  }
+
+  // 關閉 modal 和重置內容
+  resetNewTopicDraft();
+  closeNewTopic();
 };
 
 const closeNewTopic = () => {
   forumStore.toggleNewTopicModal(false);
 };
 
-const handleModalCancel = () => {
-  const hasTitle = newTopicState.title && newTopicState.title.trim().length > 0;
-  const hasContent = newTopicState.body && newTopicState.body.trim().length > 0;
+const resetNewTopicDraft = () => {
+  newTopicState.title = "";
+  newTopicState.body = "";
+  newTopicState.categoryId = null;
+  newTopicState.parentContentId = null;
+  selectedSubCategoryId.value = null;
+  categorySearch.value = "";
+  subCategorySearch.value = "";
+  replySearch.value = "";
+  showEntrustMission.value = false;
+  resetEntrustMission();
+  forumStore.newTopic.showEntrustMission = false;
+  forumStore.newTopic.entrustMission = {
+    title: "",
+    detail: "",
+    rewardPoints: "",
+    category: "",
+    deadline: "",
+  };
+  forumStore.newTopic.title = "";
+  forumStore.newTopic.body = "";
+  forumStore.newTopic.categoryId = null;
+  forumStore.newTopic.parentContentId = null;
+  forumStore.newTopic.categorySearch = "";
+  forumStore.newTopic.mode = "post";
+  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  forumStore.newTopic.editingContentId = null;
+};
 
-  if (hasTitle || hasContent) {
+const handleModalCancel = () => {
+  const isEditModeActive = modalMode.value === "edit";
+  const titleToCheck = shouldHideTitleInput.value ? "" : newTopicState.title;
+  const hasContent = hasDraftContent(
+    titleToCheck,
+    newTopicState.body,
+    getModalExtraValues(),
+  );
+
+  if (hasContent) {
     // 檢查是否是從草稿打開的
     if (forumStore.currentEditingDraftId) {
       // 同步內容回原草稿
@@ -762,9 +970,17 @@ const handleModalCancel = () => {
         categoryId: newTopicState.categoryId,
         parentContentId: newTopicState.parentContentId,
         categorySearch: categorySearch.value,
+        showEntrustMission: showEntrustMission.value,
+        entrustMission: buildEntrustMissionPayload() || {
+          title: "",
+          detail: "",
+          rewardPoints: "",
+          category: "",
+          deadline: "",
+        },
       });
-      // 保持草稿最小化
-      forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, true);
+      // 回到 sidebar 編輯器
+      forumStore.toggleDraftMinimize(forumStore.currentEditingDraftId, false);
     } else {
       // 創建新草稿並最小化
       const draftId = forumStore.createDraft({
@@ -775,11 +991,20 @@ const handleModalCancel = () => {
         categorySearch: categorySearch.value,
         mode: forumStore.newTopic.mode,
         contentType: forumStore.newTopic.contentType,
+        editingContentId: forumStore.newTopic.editingContentId,
         replyingToContentId: forumStore.replyingToContentId,
         replyingToContentData: forumStore.replyingToContentData,
         replyingToThreadId: forumStore.replyingToThreadId,
+        showEntrustMission: showEntrustMission.value,
+        entrustMission: buildEntrustMissionPayload() || {
+          title: "",
+          detail: "",
+          rewardPoints: "",
+          category: "",
+          deadline: "",
+        },
       });
-      forumStore.toggleDraftMinimize(draftId, true);
+      forumStore.toggleDraftMinimize(draftId, !isEditModeActive);
     }
 
     forumStore.toggleNewTopicModal(false);
@@ -790,20 +1015,13 @@ const handleModalCancel = () => {
     return;
   }
 
-  // 沒有內容時，只關閉 modal
-  forumStore.toggleNewTopicModal(false);
+  // 沒有內容時，只關閉 modal，不建立草稿
+  if (forumStore.currentEditingDraftId) {
+    forumStore.removeDraft(forumStore.currentEditingDraftId);
+  }
   forumStore.currentEditingDraftId = null;
-  newTopicState.categoryId = null;
-  newTopicState.parentContentId = null;
-  selectedSubCategoryId.value = null;
-  categorySearch.value = "";
-  forumStore.newTopic.title = "";
-  forumStore.newTopic.body = "";
-  forumStore.newTopic.categoryId = null;
-  forumStore.newTopic.parentContentId = null;
-  forumStore.newTopic.categorySearch = "";
-  forumStore.newTopic.mode = "post";
-  forumStore.newTopic.contentType = CONTENT_TYPES.POST;
+  resetNewTopicDraft();
+  closeNewTopic();
 };
 </script>
 
@@ -1076,7 +1294,7 @@ const handleModalCancel = () => {
                             <small class="text-muted">{{
                               topic.lastReplyTime
                                 ? new Date(
-                                    topic.lastReplyTime
+                                    topic.lastReplyTime,
                                   ).toLocaleDateString("zh-TW")
                                 : "無回文"
                             }}</small>
@@ -1094,7 +1312,7 @@ const handleModalCancel = () => {
                 </div>
               </div>
               <div v-else class="mb-3"></div>
-              <div class="mb-3">
+              <div v-if="!shouldHideTitleInput" class="mb-3">
                 <label class="form-label">標題</label>
                 <input
                   v-model="newTopicState.title"
@@ -1109,6 +1327,67 @@ const handleModalCancel = () => {
                   v-model="newTopicState.body"
                   placeholder="請輸入貼文內容..."
                 />
+              </div>
+              <div v-if="canUseEntrustMission" class="mb-3">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-entrust-toggle"
+                  @click="toggleEntrustMission"
+                >
+                  {{ showEntrustMission ? "取消委託任務" : "發佈委託任務" }}
+                </button>
+              </div>
+              <div
+                v-if="showEntrustMission"
+                class="entrust-mission-panel border rounded p-3 mb-3"
+              >
+                <h6 class="mb-3">委託任務資訊</h6>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">任務標題</label>
+                    <input
+                      v-model="entrustMissionState.title"
+                      class="form-control"
+                      placeholder="請輸入任務標題"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">任務分類</label>
+                    <input
+                      v-model="entrustMissionState.category"
+                      class="form-control"
+                      placeholder="請輸入任務分類"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">獎勵點數</label>
+                    <input
+                      v-model="entrustMissionState.rewardPoints"
+                      type="number"
+                      min="1"
+                      step="1"
+                      class="form-control"
+                      placeholder="請輸入獎勵點數"
+                    />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">截止日期</label>
+                    <input
+                      v-model="entrustMissionState.deadline"
+                      type="date"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">任務說明</label>
+                    <textarea
+                      v-model="entrustMissionState.detail"
+                      class="form-control"
+                      rows="4"
+                      placeholder="請輸入任務內容"
+                    ></textarea>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="modal-footer d-flex justify-content-end">
@@ -1304,6 +1583,30 @@ const handleModalCancel = () => {
   background-color: #fff0dd;
   border-color: #86b0bd;
   color: #145369;
+}
+
+.btn-entrust-toggle {
+  border-color: #145369;
+  color: #145369;
+}
+
+.btn-entrust-toggle:hover {
+  background-color: #eaf2f4;
+  color: #0f4456;
+}
+
+.btn-entrust-toggle:focus,
+.btn-entrust-toggle:active,
+.btn-entrust-toggle.active {
+  background-color: #eaf2f4;
+  border-color: #145369;
+  color: #0f4456;
+  box-shadow: none;
+}
+
+.entrust-mission-panel {
+  background: #f6f8f9;
+  border-color: #d9e2e6;
 }
 
 .custom-modal-backdrop {
