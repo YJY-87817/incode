@@ -27,10 +27,10 @@ namespace incode2.ApiControllers.Chat
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         public ChatMessagesApiController(
-            incodedatabaseContext context,
-            GeminiService geminiService,
-            IHubContext<ChatHub> hubContext,
-            IWebHostEnvironment webHostEnvironment)
+          incodedatabaseContext context,
+          GeminiService geminiService,
+          IHubContext<ChatHub> hubContext,
+          IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
             _geminiService = geminiService;
@@ -38,9 +38,6 @@ namespace incode2.ApiControllers.Chat
             _webHostEnvironment = webHostEnvironment;
         }
 
-        // ==========================================
-        // ★ 私有 Helper 方法 (解決重複代碼問題)
-        // ==========================================
 
         private int GetCurrentUserId()   //定義取得使用者方法，回傳值為整數
         {
@@ -73,7 +70,7 @@ namespace incode2.ApiControllers.Chat
             }
         }
 
-        // ★ [使用者專用] 當前端給我 [使用者ID] 和 [房間ID] 時
+        // 當前端給我 [使用者ID] 和 [房間ID] 時
         // 我會去處理(找舊的或開新的)，最後打包回傳兩樣結果 (聊天室物件, 是否為新建)
         private async Task<(ChatSession Session, bool IsNew)> GetOrInitSessionAsync(int userId, int requestedSessionId, string initialTitle = "我的對話")
         {
@@ -92,9 +89,9 @@ namespace incode2.ApiControllers.Chat
             if (session == null)
             {
                 session = await _context.ChatSession
-                    .Where(s => s.UserId == userId)
-                    .OrderByDescending(s => s.UpdatedAt)
-                    .FirstOrDefaultAsync();
+                  .Where(s => s.UserId == userId)
+                  .OrderByDescending(s => s.UpdatedAt)
+                  .FirstOrDefaultAsync();
             }
 
             // 3. 真的沒有 (第一次使用 / 資料庫空的) -> 建立新的
@@ -118,11 +115,51 @@ namespace incode2.ApiControllers.Chat
             return (session, false);
         }
 
-        // ==========================================
-        // API Actions
-        // ==========================================
+        // Function Calling 的資料庫查詢方法 (商品)
+        private string GetProductInfo(string keyword)
+        {
+            // 簡單模擬：如果關鍵字包含以下詞彙，就回傳該商品資料
+            if (keyword.Contains("電影") || keyword.Contains("票") || keyword.Contains("兌換"))
+            {
+                var productData = new
+                {
+                    productId = 1,
+                    name = "電影兌換卷*1",
+                    description = "全台通用電影兌換券，不限平假日皆可使用。適用於首輪電影，提供最震撼的感官體驗，是下班休閒或週末約會的最佳選擇。",
+                    imageName = "2026010611432290af.jpg",
+                    type = "兌換票券",
+                    series = "票券",
+                    isPhysical = true,
+                    point = 2000,
+                    stock = 200
+                };
+                return JsonSerializer.Serialize(productData);
+            }
+            return "查無相關商品資料。";
+        }
 
-        // 1. [使用者 API] 取得或建立唯一對話
+        // ★★★ 新增：Function Calling 的資料庫查詢方法 (文章) ★★★
+        private string SearchContents(string keyword)
+        {
+            // 簡單模擬：如果關鍵字包含以下詞彙，就回傳文章資料
+            if (keyword.Contains("寄生上流") || keyword.Contains("亞洲") || keyword.Contains("電影"))
+            {
+                var contentData = new
+                {
+                    contentId = 3,
+                    title = "寄生上流這部片",
+                    categoryName = "亞洲電影",
+                    username = "吳建豪",
+                    body = "/contents/content-3.html",
+                    createdAt = "2026-02-02"
+                };
+                return JsonSerializer.Serialize(contentData);
+            }
+            return "查無相關文章。";
+        }
+
+
+        // 取得或建立唯一對話
         [HttpPost]
         [Route("api/ChatMessages/GetOrCreateSession")]
         public async Task<IActionResult> GetOrCreateSession()
@@ -132,7 +169,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // ★ 改用 Helper，一行搞定：自動找舊的，沒有就開新的
+                // 一行搞定：自動找舊的，沒有就開新的
                 var result = await GetOrInitSessionAsync(userId, 0);
 
                 return Ok(new { sessionId = result.Session.ChatSessionId, isNew = result.IsNew });
@@ -154,7 +191,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // 1. 取得 Session：自動接續舊房或開新房
+                // 1. Session 處理
                 var (currentSession, _) = await GetOrInitSessionAsync(userId, request.SessionId,
                     request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent);
 
@@ -163,34 +200,32 @@ namespace incode2.ApiControllers.Chat
                 string sessionIdStr = currentSession.ChatSessionId.ToString();
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
 
-                // 2. 處理 User 訊息：生成向量並存檔
-                float[] userVector = await _geminiService.GetEmbeddingAsync(request.UserContent);
+                // 2. 存 User 訊息
                 var userMsg = new ChatMessage
                 {
                     SessionId = currentSession.ChatSessionId,
                     Role = "user",
                     Body = request.UserContent,
-                    Embedding = JsonSerializer.Serialize(userVector),
                     CreatedAt = DateTime.Now
                 };
                 _context.ChatMessage.Add(userMsg);
                 await _context.SaveChangesAsync();
 
-                // 3. 廣播 User 訊息
                 var sessionGroup = _hubContext.Clients.Group(sessionIdStr);
                 await sessionGroup.SendAsync("ReceiveMessage", "User", request.UserContent);
 
-                // ★ 關鍵：如果是真人客服模式，AI 直接結束，不介入
+                // 3. 真人客服模式攔截
                 if (currentSession.Ishumanmode == true)
                 {
                     await _hubContext.Clients.Group("SupportAgents").SendAsync("ReceiveSupportRequest", currentSession.ChatSessionId, request.UserContent);
                     return Ok(new { success = true, mode = "live", sessionId = currentSession.ChatSessionId });
                 }
 
-                // 4. AI 模式處理
+                // 4. AI 處理邏輯
                 string aiResponseText = "";
                 string messageType = "AI";
 
+                // A. 生圖指令
                 if (request.UserContent.Contains("生圖") || request.UserContent.Contains("產生圖片"))
                 {
                     string imageDescription = request.UserContent.Replace("生圖", "").Replace("產生圖片", "").Trim();
@@ -199,33 +234,79 @@ namespace incode2.ApiControllers.Chat
                 }
                 else
                 {
-                    // 向量檢索 (RAG)
-                    string vectorContext = await GetVectorContextAsync(request.UserContent);
+                    // B. 一般對話 (包含工具判斷)
+
+                    // ★ 從 Prompts.md 讀取系統提示詞
                     string basePrompt = await GetSystemPromptAsync();
 
-                    string finalPrompt = $@"{basePrompt}
-                    ---
-                    【嚴格規則】:
-                    1. 你「只能」根據下方提供的【資料庫檢索內容】回答。
-                    2. 若內容中找不到答案，請回答：「抱歉，根據資料庫目前的紀錄，我無法回答這個問題。」
-                    3. 嚴禁使用你的外部訓練知識庫。
-                    
-                    【資料庫檢索內容】:
-                    {vectorContext}
+                    // 第一次呼叫 AI (意圖判斷)
+                    string toolSystemPrompt = $@"{basePrompt}
                     
                     使用者問題: {request.UserContent}";
 
-                    aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
+                    string firstResponse = await _geminiService.GetGeminiReplyAsync(toolSystemPrompt);
+
+                    // 檢查 AI 是否回傳了呼叫指令
+                    if (firstResponse.Contains("CALL_FUNCTION:GetProductInfo"))
+                    {
+                        // --- 呼叫商品工具 ---
+                        string keyword = firstResponse.Split('|')[1].Trim();
+                        string productDataJson = GetProductInfo(keyword);
+                        string imagePathPrefix = "/img/product/";
+
+                        string finalPrompt = $@"{basePrompt}
+                        ---
+                        你剛剛針對關鍵字「{keyword}」查詢了資料庫。
+                        【查詢結果 JSON】:
+                        {productDataJson}
+
+                        請根據上述 JSON 資料，親切地回答使用者的問題 (包含價格、庫存)。
+                        
+                        ★【圖片顯示強制規則】：
+                        資料中包含 'imageName' 欄位 (例如 'xxx.jpg')。
+                        請務必在回答的最後面，換行並插入一張圖片，使用 Markdown 語法：
+                        ![商品圖片]({imagePathPrefix}{{imageName}})
+                        (注意：請直接將 JSON 中的 imageName 填入，不要自行捏造網址)
+                        ---
+                        使用者問題: {request.UserContent}";
+
+                        aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
+                    }
+                    else if (firstResponse.Contains("CALL_FUNCTION:SearchContents"))
+                    {
+                        // --- 呼叫文章工具 ---
+                        string keyword = firstResponse.Split('|')[1].Trim();
+                        string contentDataJson = SearchContents(keyword);
+                        string frontendUrl = "https://localhost:5173";
+
+                        string finalPrompt = $@"{basePrompt}
+                        ---
+                        你剛剛針對關鍵字「{keyword}」查詢了文章資料庫。
+                        【查詢結果 JSON】:
+                        {contentDataJson}
+
+                        請根據上述 JSON 資料回答，並務必提供文章連結。
+                        ★【連結顯示規則】：
+                        請使用 Markdown 格式產生連結：[文章標題]({frontendUrl}/forum/{{contentId}})
+                        例如：[寄生上流這部片]({frontendUrl}/forum/3)
+                        ---
+                        使用者問題: {request.UserContent}";
+
+                        aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
+                    }
+                    else
+                    {
+                        // --- 沒有呼叫工具，直接回覆 ---
+                        aiResponseText = firstResponse;
+                    }
                 }
 
-                // 5. 存 AI 訊息與向量
-                float[] aiVector = await _geminiService.GetEmbeddingAsync(aiResponseText);
+                // 5. 存 AI 訊息 (您可能漏了這一段)
                 var aiMsg = new ChatMessage
                 {
                     SessionId = currentSession.ChatSessionId,
                     Role = "assistant",
                     Body = aiResponseText,
-                    Embedding = JsonSerializer.Serialize(aiVector),
                     CreatedAt = DateTime.Now
                 };
                 _context.ChatMessage.Add(aiMsg);
@@ -233,14 +314,17 @@ namespace incode2.ApiControllers.Chat
 
                 // 6. 廣播 AI 回應
                 await sessionGroup.SendAsync("ReceiveMessage", messageType, aiResponseText);
+
+                // ★★★ 關鍵：這裡必須要回傳 Ok，否則就會報錯 ★★★
                 return Ok(new { success = true, sessionId = currentSession.ChatSessionId, mode = "ai" });
             }
-            catch (Exception ex) { return StatusCode(500, new { error = $"伺服器錯誤: {ex.Message}" }); }
+            catch (Exception ex)
+            {
+                // Catch 區塊也必須有回傳值
+                return StatusCode(500, new { error = $"伺服器錯誤: {ex.Message}" });
+            }
         }
 
-        // ==========================================================
-        // ★ [客服專用 API] 取得所有等待中的對話列表 (新功能)
-        // ==========================================================
         [HttpGet]
         [Route("api/ChatMessages/GetActiveSupportSessions")]
         public async Task<IActionResult> GetActiveSupportSessions()
@@ -252,7 +336,7 @@ namespace incode2.ApiControllers.Chat
             {
                 // 客服不需要自動建立 Session，而是撈取已經存在的、且 Ishumanmode 為 true 的 Session
                 var sessions = await _context.ChatSession
-                    .Where(s => s.Ishumanmode == true) // ★ 只撈取正在請求真人支援的
+          .Where(s => s.Ishumanmode == true) // 取正在請求真人支援的
                     .OrderByDescending(s => s.UpdatedAt) // 最新的在上面
                     .Select(s => new
                     {
@@ -262,12 +346,12 @@ namespace incode2.ApiControllers.Chat
                         LastUpdate = s.UpdatedAt.HasValue ? s.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm") : "",
                         // 順便撈最後一則訊息當預覽，讓客服知道客戶在問什麼
                         LastMessage = _context.ChatMessage
-                                        .Where(m => m.SessionId == s.ChatSessionId)
-                                        .OrderByDescending(m => m.CreatedAt)
-                                        .Select(m => m.Body)
-                                        .FirstOrDefault()
+                      .Where(m => m.SessionId == s.ChatSessionId)
+                      .OrderByDescending(m => m.CreatedAt)
+                      .Select(m => m.Body)
+                      .FirstOrDefault()
                     })
-                    .ToListAsync();
+          .ToListAsync();
 
                 return Ok(sessions);
             }
@@ -292,22 +376,19 @@ namespace incode2.ApiControllers.Chat
                 string sessionIdStr = request.SessionId.ToString();
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
 
-                // ★ 新增：將客服的回覆也轉成向量，讓 AI 以後能學習客服的回答
-                float[] adminVector = await _geminiService.GetEmbeddingAsync(request.UserContent);
-
+                // 客服回覆存檔 
                 var adminMsg = new ChatMessage
                 {
                     SessionId = request.SessionId,
                     Role = "assistant", // 客服與 AI 統一使用 assistant 角色
                     Body = request.UserContent,
-                    Embedding = JsonSerializer.Serialize(adminVector), // 存入向量
                     CreatedAt = DateTime.Now
                 };
                 _context.ChatMessage.Add(adminMsg);
                 await _context.SaveChangesAsync();
 
                 await _hubContext.Clients.Group(sessionIdStr)
-                    .SendAsync("ReceiveMessage", "Live", request.UserContent);
+                  .SendAsync("ReceiveMessage", "Live", request.UserContent);
 
                 return Ok(new { success = true });
             }
@@ -355,18 +436,16 @@ namespace incode2.ApiControllers.Chat
                 await sessionGroup.SendAsync("ReceiveMessage", "System", $"已切換至 {modeName} 模式");
                 await sessionGroup.SendAsync("UpdateModeState", session.ChatSessionId, request.Ishumanmode);
 
-                // 4. 若切換為真人，處理向量存檔與通知
+                // 4. 若切換為真人，處理存檔與通知
                 if (request.Ishumanmode)
                 {
                     string autoReplyText = "收到您的請求，請稍等 1-2 分鐘，客服人員將為您服務。";
-                    float[] autoVector = await _geminiService.GetEmbeddingAsync(autoReplyText);
 
                     _context.ChatMessage.Add(new ChatMessage
                     {
                         SessionId = session.ChatSessionId,
                         Role = "assistant",
                         Body = autoReplyText,
-                        Embedding = JsonSerializer.Serialize(autoVector),
                         CreatedAt = DateTime.Now
                     });
                     await _context.SaveChangesAsync();
@@ -387,7 +466,6 @@ namespace incode2.ApiControllers.Chat
 
 
 
-        // 上傳圖片
         [HttpPost]
         [Route("api/ChatMessages/UploadImage")]
         [IgnoreAntiforgeryToken]
@@ -403,7 +481,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // 1. 圖片存檔
+                // 1. 圖片實體存檔 (這部分不變)
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img", "chat");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
                 string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Image.FileName;
@@ -411,28 +489,128 @@ namespace incode2.ApiControllers.Chat
                 using (var fileStream = new FileStream(filePath, FileMode.Create)) { await request.Image.CopyToAsync(fileStream); }
                 string dbRelativeUrl = $"/img/chat/{uniqueFileName}";
 
-                // 呼叫imgapi 
-                string systemPrompt = await GetSystemPromptAsync();
-                string userMessage = string.IsNullOrWhiteSpace(request.UserContent) ? "請分析這張圖" : request.UserContent;
-                string fullPrompt = $"{systemPrompt}\n\n[圖片分析請求]\n使用者說明：{userMessage}";
-
-                // ★ 呼叫 Gemini 2.5 Pro
-                string aiReplyText = await _geminiService.AnalyzeImageAsync(request.Image, fullPrompt);
-
-                // 3. 資料庫存檔
+                // 存入 User 圖片訊息
                 await EnsureGroupAsync(request.ConnectionId, validSessionIdStr);
-                _context.ChatMessage.Add(new ChatMessage { SessionId = validSessionId, Role = "user", Body = $"<img src='{dbRelativeUrl}' /> {request.UserContent}", CreatedAt = DateTime.Now });
-                _context.ChatMessage.Add(new ChatMessage { SessionId = validSessionId, Role = "assistant", Body = aiReplyText, CreatedAt = DateTime.Now });
+                _context.ChatMessage.Add(new ChatMessage
+                {
+                    SessionId = validSessionId,
+                    Role = "user",
+                    Body = $"<img src='{dbRelativeUrl}' /> {request.UserContent}",
+                    CreatedAt = DateTime.Now
+                });
                 await _context.SaveChangesAsync();
 
-                // 4. SignalR 推播
+                // 推播圖片給前端
                 await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "User_Image", dbRelativeUrl);
-                await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "AI", aiReplyText);
 
-                if (currentSession.Ishumanmode == true)
+                // 2. 判斷模式
+                if (currentSession.Ishumanmode)
                 {
-                    await _hubContext.Clients.Group("SupportAgents").SendAsync("ReceiveSupportRequest", validSessionId, "(傳送了圖片)");
+                    // 真人模式：通知客服
+                    await _hubContext.Clients.Group("SupportAgents").SendAsync("ReceiveSupportRequest", validSessionId, "(使用者傳送了圖片)");
+                    return Ok(new { success = true, sessionId = validSessionId, isNew = isNew });
                 }
+
+
+                // AI 模式：圖片 + Function Calling 
+
+                string aiReplyText = "";
+                string basePrompt = await GetSystemPromptAsync();
+                string userText = string.IsNullOrWhiteSpace(request.UserContent) ? "這張圖是什麼？" : request.UserContent;
+
+                // Step 1: 第一次呼叫 (看圖 + 判斷是否需要查資料) (★ 修改處：加入文章查詢規則)
+                string toolSystemPrompt = $@"{basePrompt}
+                ---
+                【圖片分析與工具使用指示】
+                使用者上傳了一張圖片並附帶文字：「{userText}」。
+                
+                請辨識圖片內容，並判斷使用者的意圖：
+
+                1. **[查商品]**
+                   - 觸發條件：圖片是「商品」、「電影票」、「票券」，且使用者詢問「庫存」、「價格」。
+                   - 回傳格式：CALL_FUNCTION:GetProductInfo|{{商品名稱}}
+
+                2. **[查文章]**
+                   - 觸發條件：圖片是「電影海報」、「劇照」，且使用者詢問「影評」、「連結」、「介紹」、「好不好看」。
+                   - 回傳格式：CALL_FUNCTION:SearchContents|{{電影名稱}}
+
+                3. **[純閒聊/描述]**
+                   - 觸發條件：無需使用工具。
+                   - 回傳格式：直接回答使用者。
+
+                範例：
+                (圖是電影票) -> 回傳: CALL_FUNCTION:GetProductInfo|電影兌換卷
+                (圖是寄生上流海報, 問影評) -> 回傳: CALL_FUNCTION:SearchContents|寄生上流
+                (圖是風景照) -> 直接回答: 這是一張美麗的風景照。
+                ---
+                使用者文字: {userText}";
+
+                // 呼叫新寫的 Service 方法 (傳入圖片 + Prompt)
+                string firstResponse = await _geminiService.AnalyzeImageWithToolAsync(request.Image, toolSystemPrompt);
+
+                // Step 2: 檢查是否觸發 Function Calling (★ 修改處：加入 SearchContents 判斷)
+                if (firstResponse.Contains("CALL_FUNCTION:GetProductInfo"))
+                {
+                    // A. 解析關鍵字
+                    string keyword = firstResponse.Split('|')[1].Trim();
+
+                    // B. 查資料庫 (模擬)
+                    string productDataJson = GetProductInfo(keyword);
+                    string imagePathPrefix = "/img/product/";
+
+                    // C. 帶著資料 + 圖片 + 原始問題，再次問 AI
+                    string finalPrompt = $@"{basePrompt}
+                    ---
+                    你剛剛辨識出圖片中的商品為「{keyword}」，並查詢了資料庫。
+                    
+                    【查詢結果 JSON】:
+                    {productDataJson}
+
+                    請根據圖片內容以及上述 JSON 資料，回答使用者的問題。
+                    如果資料中有 'imageName'，請在最後插入圖片：![商品圖片]({imagePathPrefix}{{imageName}})
+                    ---
+                    使用者文字: {userText}";
+
+                    // ★ 注意：這裡第二次呼叫也建議把圖片帶進去，讓 AI 可以對照圖片細節與資料庫描述
+                    aiReplyText = await _geminiService.AnalyzeImageWithToolAsync(request.Image, finalPrompt);
+                }
+                else if (firstResponse.Contains("CALL_FUNCTION:SearchContents")) // ★ 新增：處理文章查詢
+                {
+                    string keyword = firstResponse.Split('|')[1].Trim();
+                    string contentDataJson = SearchContents(keyword);
+                    string frontendUrl = "https://localhost:5173";
+
+                    string finalPrompt = $@"{basePrompt}
+                    ---
+                    你剛剛辨識出圖片中的電影為「{keyword}」，並查詢了文章資料庫。
+                    
+                    【查詢結果 JSON】:
+                    {contentDataJson}
+
+                    請根據 JSON 資料回答，並提供文章連結：[文章標題]({frontendUrl}/forum/{{contentId}})
+                    ---
+                    使用者文字: {userText}";
+
+                    aiReplyText = await _geminiService.AnalyzeImageWithToolAsync(request.Image, finalPrompt);
+                }
+                else
+                {
+                    // 沒觸發工具，直接用 AI 的看圖回答
+                    aiReplyText = firstResponse;
+                }
+
+                // 3. 存入 AI 回覆
+                _context.ChatMessage.Add(new ChatMessage
+                {
+                    SessionId = validSessionId,
+                    Role = "assistant",
+                    Body = aiReplyText,
+                    CreatedAt = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+
+                // 4. 推播 AI 回覆
+                await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "AI", aiReplyText);
 
                 return Ok(new { success = true, sessionId = validSessionId, isNew = isNew });
             }
@@ -450,64 +628,20 @@ namespace incode2.ApiControllers.Chat
             try
             {
                 var history = await _context.ChatMessage
-                    .Where(m => m.SessionId == sessionId)
-                    .OrderBy(m => m.CreatedAt)
-                    .Select(m => new ChatMessageDto
-                    {
-                        ChatMessageId = m.ChatMessageId,
-                        SessionId = m.SessionId,
-                        Role = m.Role,
-                        Body = m.Body,
-                        CreatedAt = m.CreatedAt.HasValue ? m.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""
-                    })
-                    .ToListAsync();
+                  .Where(m => m.SessionId == sessionId)
+                  .OrderBy(m => m.CreatedAt)
+                  .Select(m => new ChatMessageDto
+                  {
+                      ChatMessageId = m.ChatMessageId,
+                      SessionId = m.SessionId,
+                      Role = m.Role,
+                      Body = m.Body,
+                      CreatedAt = m.CreatedAt.HasValue ? m.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""
+                  })
+                  .ToListAsync();
                 return Ok(history);
             }
             catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
-        }
-
-        // 在 ChatMessagesApiController 中新增/修改方法
-
-        private async Task<string> GetVectorContextAsync(string userContent)
-        {
-            // 1. 呼叫 GeminiService 取得問題的 Embedding (數字陣列)
-            float[] queryVector = await _geminiService.GetEmbeddingAsync(userContent);
-
-            // 2. 從資料庫撈出有向量資料的訊息 (排除系統訊息)
-            var messagesWithVector = await _context.ChatMessage
-                .AsNoTracking()
-                .Where(m => m.Embedding != null && m.Role != "system")
-                .ToListAsync();
-
-            // 3. 在記憶體中計算餘弦相似度 (Cosine Similarity)
-            var topMatches = messagesWithVector
-                .Select(m => new {
-                    m.Body,
-                    m.Role,
-                    Similarity = CalculateCosineSimilarity(queryVector, JsonSerializer.Deserialize<float[]>(m.Embedding))
-                })
-                .Where(x => x.Similarity > 0.7) // 相似度門檻，可依需求調整
-                .OrderByDescending(x => x.Similarity)
-                .Take(5) // 只取最相關的前 5 筆
-                .ToList();
-
-            if (!topMatches.Any()) return "資料庫中無直接相關參考內容。";
-
-            return string.Join("\n", topMatches.Select(x => $"[{x.Role}]: {x.Body}"));
-        }
-
-        // 餘弦相似度計算公式
-        private float CalculateCosineSimilarity(float[] vecA, float[] vecB)
-        {
-            if (vecA.Length != vecB.Length) return 0;
-            float dotProduct = 0, magA = 0, magB = 0;
-            for (int i = 0; i < vecA.Length; i++)
-            {
-                dotProduct += vecA[i] * vecB[i];
-                magA += vecA[i] * vecA[i];
-                magB += vecB[i] * vecB[i];
-            }
-            return dotProduct / (MathF.Sqrt(magA) * MathF.Sqrt(magB));
         }
 
         // 檢查登入狀態
