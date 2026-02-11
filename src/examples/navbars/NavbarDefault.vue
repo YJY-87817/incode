@@ -59,51 +59,6 @@ const menuItems = computed(() => [
   },
 ]);
 
-// 搜尋框
-const API_KEY = "a6c7cb6a572961e259b16765e8726e85"; // 替換為你的 TMDb API 金鑰
-const searchQuery = ref("");
-const searchResults = ref([]);
-const SEARCH_API = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&language=zh-TW&query=`;
-function searchget() {
-  // 在這裡實現搜尋邏輯，將結果存入 searchResults
-  // console.log("搜尋內容:", searchQuery.value);
-  console.log(SEARCH_API + searchQuery.value);
-  if (searchQuery.value == "") {
-    searchResults.value = [];
-    mysweet.fire({
-      icon: "warning",
-      title: "請輸入搜尋內容",
-      showConfirmButton: false,
-      timer: 1500,
-    });
-    return;
-  }
-  axio
-    .get(SEARCH_API + searchQuery.value, {
-      // 關閉憑證帶入
-      withCredentials: false,
-    })
-    .then((res) => {
-      // console.log("API 回應:", res.data.results);
-      searchResults.value = res.data.results;
-      console.log("搜尋結果:", searchResults.value);
-      if (searchResults.value.length === 0) {
-        mysweet.fire({
-          icon: "info",
-          title: "沒有找到相關電影",
-          showConfirmButton: false,
-          timer: 1500,
-        });
-      } else {
-        for (let i = 0; i < searchResults.value.length; i++) {
-          console.log(
-            `https://image.tmdb.org/t/p/w500/${searchResults.value[i].poster_path}`,
-          );
-        }
-      }
-    });
-}
-
 const handleLogout = async () => {
   await authStore.logout();
   router.push("/login");
@@ -404,7 +359,6 @@ watch(
                 box-shadow: none !important;
                 background-image: none !important;
               "
-              v-model="searchQuery"
             />
             <button
               type="button"
@@ -415,7 +369,6 @@ watch(
                 margin: 0;
                 line-height: 1;
               "
-              @click="searchget"
             >
               <i
                 class="material-icons text-muted"
