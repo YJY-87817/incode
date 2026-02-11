@@ -63,7 +63,7 @@ namespace incode2.Controllers
                 });
 
             // 4. 導向後台首頁 (請確保 DashboardController 存在且有 [Area("Admin")])
-            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+            return RedirectToAction("Index", "Home");
         }
 
         public async Task<IActionResult> Logout()
