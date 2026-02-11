@@ -203,11 +203,11 @@ namespace incode2.Services.PointShop
                         _context.Shipaddress.Add(rec);
                     }
                 }
-
                 _context.Orders.Add(newOrder);
-                await _context.SaveChangesAsync();
 
                 var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.Order);
+
+                await _context.SaveChangesAsync();
 
                 return result
                     ? ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功")
@@ -324,10 +324,10 @@ namespace incode2.Services.PointShop
 
                 oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
-                await _context.SaveChangesAsync();
 
                 var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.Order);
 
+                await _context.SaveChangesAsync();
                 return result
                     ? ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功")
                     : ResultDTO<int>.Failure($"訂單取消失敗:點數回復出錯");
