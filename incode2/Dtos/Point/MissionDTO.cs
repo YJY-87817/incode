@@ -37,4 +37,9 @@
         public DateTime? UpdatedAt { get; set; }
 
     }
+
+    public class ClaimMissionRequest
+    {
+        public int MissionId { get; set; }
+    }
 }

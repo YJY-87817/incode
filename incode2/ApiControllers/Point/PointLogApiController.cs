@@ -1,5 +1,7 @@
-﻿using incode2.DTO;
+﻿using incode2.Constants;
+using incode2.DTO;
 using incode2.Dtos;
+using incode2.Dtos.Point;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Point;
@@ -28,43 +30,52 @@ namespace incode2.ApiControllers.Point
             _pointLogService = pointLogService;
         }
 
+        /// 模擬領取任務獎勵 (加點)
+        /// POST: /api/point/add-reward
+        [HttpPost("add-reward")]
+        [Authorize]
+        public async Task<IActionResult> AddReward([FromForm] int userId, [FromForm] int changeAmount, [FromForm] int sourceId)
+        {
+            // 直接從登入資訊拿 ID，不從參數拿，更安全
+            int currentLoginUserId = User.GetId();
+
+            // 檢查點數是否為 0，避免無謂的寫入
+            //if (changeAmount <= 0) return BadRequest("點數必須大於 0");
+
+            // 調用你的 Service
+            var success = await _pointLogService.ChangePointsAsync(
+                userId = currentLoginUserId,
+                changeAmount,
+                "entrust_mission",
+                sourceId,
+                PointType.EntrustMission // 使用 Enum
+            );
+
+            if (!success) return BadRequest("獎勵領取失敗");
+            return Ok("獎勵已發放");
+        }
+
         //GET: api/PointLogApi
        [HttpGet]
         public async Task<IEnumerable<PointLogDTO>> GetPointLog()
         {
-            return _context.PointLog.Select(pl => new PointLogDTO
-            {
-                PointLogId = pl.PointLogId,
-                UserId = pl.UserId,
-                SourceType = pl.SourceType,
-                SourceId = pl.SourceId,
-                PointTypeDefinitionId = pl.PointTypeDefinitionId,
-                ChangeAmount = pl.ChangeAmount,
-                Status = pl.Status,
-                CreatedAt = pl.CreatedAt
-            });
+            return await _context.PointLog
+        .AsNoTracking() // 建議查詢列表時加上，效能較好
+        .Select(pl => new PointLogDTO
+        {
+            PointLogId = pl.PointLogId,
+            UserId = pl.UserId,
+            SourceType = pl.SourceType,
+            SourceId = pl.SourceId,
+            PointTypeDefinitionId = pl.PointTypeDefinitionId,
+            ChangeAmount = pl.ChangeAmount,           
+            BalanceAfter = pl.BalanceAfter,            
+            Status = pl.Status,
+            CreatedAt = pl.CreatedAt,
+            DisplayName = pl.PointTypeDefinition.TypeName
+        })
+        .ToListAsync(); // 記得補上非同步執行
         }
-
-        //GET: api/PointLogApi/5
-        //[HttpGet("{id}")]
-        //public async Task<PointLogDTO> GetPointLog(int id)
-        //{
-        //    PointLogDTO? PlDTO = await _context.PointLog.Select(pl => new PointLogDTO
-        //    {
-        //        PointLogId = pl.PointLogId,
-        //        UserId = pl.UserId,
-        //        SourceType = pl.SourceType,
-        //        SourceId = pl.SourceId,
-        //        PointTypeDefinitionId = pl.PointTypeDefinitionId,
-        //        ChangeAmount = pl.ChangeAmount,
-        //        BalanceAfter = pl.BalanceAfter,
-        //        CreatedAt = pl.CreatedAt
-        //    }).FirstOrDefaultAsync(pl => pl.PointLogId == id);
-
-        //    return PlDTO;
-        //}
-
-        // 修改後的 GET：只抓特定使用者的紀錄
 
         [HttpGet("user/my-logs")]
         [Authorize]
@@ -72,23 +83,6 @@ namespace incode2.ApiControllers.Point
         {
             int UserId = User.GetId(); 
             return await _pointLogService.GetUserLogsAsync(UserId);
-            //return await _context.PointLog
-            //    .AsNoTracking()
-            //    .Where(pl => pl.UserId == UserId) // 關鍵：過濾使用者
-            //    .OrderByDescending(pl => pl.CreatedAt) // 讓最新的在上面
-            //    .Select(pl => new PointLogDTO
-            //    {
-            //        PointLogId = pl.PointLogId,
-            //        UserId = pl.UserId,
-            //        SourceType = pl.SourceType,
-            //        SourceId = pl.SourceId,
-            //        PointTypeDefinitionId = pl.PointTypeDefinitionId,
-            //        ChangeAmount = pl.ChangeAmount,
-            //        BalanceAfter = pl.BalanceAfter,
-            //        Status = pl.Status,
-            //        CreatedAt = pl.CreatedAt
-            //    })
-            //    .ToListAsync();
         }
 
         // PUT: api/PointLogApi/5

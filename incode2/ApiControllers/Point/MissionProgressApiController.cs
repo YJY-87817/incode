@@ -1,13 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.DTO;
+using incode2.Dtos;
+using incode2.Extensions;
+using incode2.Models;
+using incode2.Services.Point;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
-using incode2.DTO;
-using incode2.Dtos;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace incode2.ApiControllers.Point
 {
@@ -16,27 +19,109 @@ namespace incode2.ApiControllers.Point
     public class MissionProgressApiController : ControllerBase
     {
         private readonly incodedatabaseContext _context;
+        private readonly IMissionProgressService _missionProgressService;
 
-        public MissionProgressApiController(incodedatabaseContext context)
+        public MissionProgressApiController(incodedatabaseContext context, IMissionProgressService missionProgressService)
         {
             _context = context;
+            _missionProgressService = missionProgressService;
+        }
+
+        //我的任務
+        [HttpGet("my-missions")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<UserMissionViewDTO>>> GetMyMissions()
+        {
+            int UserId = User.GetId();
+
+            if (UserId <= 0)
+            {
+                return Unauthorized(new ResultDTO
+                {
+                    Ok = false,
+                    Code = 401,
+                    Message = "使用者身份無效"
+                });
+            }
+
+            var missions = await _missionProgressService.GetUserMissionsAsync(UserId);
+
+            return Ok(missions);
+        }
+
+        //進度更新
+        [HttpPost("{missionId}/increment")]
+        [Authorize]
+        public async Task<ActionResult<ResultDTO>> IncrementProgress(int missionId, [FromBody] IncrementRequest request = null)
+        {
+            int UserId = User.GetId();
+            int increment = request?.Increment ?? 1;
+
+            var result = await _missionProgressService.IncrementProgressAsync(UserId, missionId, increment);
+            if (!result.Ok)
+            {
+                return result.Code switch
+                {
+                    400 => BadRequest(result),
+                    404 => NotFound(result),
+                    _ => StatusCode(500, result)
+                };
+            }
+            return Ok(result);
+        }
+
+        public class IncrementRequest
+        {
+            public int Increment { get; set; } = 1;
+        }
+
+
+        [HttpPost("claim-reward")]
+        [Authorize]
+        public async Task<ActionResult<ResultDTO>> ClaimReward([FromBody] ClaimRewardRequest request)
+        {
+            int UserId = User.GetId();
+            if (UserId <= 0)
+            {
+                return Unauthorized(new ResultDTO { Ok = false, Code = 401, Message = "使用者 ID 無效" });
+            }
+
+            int missionId = request.MissionId;
+
+            // 先找到該使用者的該任務進度
+            var progress = await _context.MissionProgress
+                .FirstOrDefaultAsync(p => p.UserId == UserId && p.MissionId == missionId);
+
+            if (progress == null)
+                return NotFound(new ResultDTO { Ok = false, Code = 404, Message = "尚未領取此任務" });
+
+            // 再用 missionId 呼叫服務（保持服務層不變）
+            var result = await _missionProgressService.ClaimRewardAsync(UserId, missionId);
+
+            if (!result.Ok)
+            {
+                return result.Code switch
+                {
+                    400 => BadRequest(result),
+                    404 => NotFound(result),
+                    _ => StatusCode(500, result)
+                };
+            }
+
+            return Ok(result);
+        }
+
+        public class ClaimRewardRequest
+        {
+            public int MissionId { get; set; }
         }
 
         // GET: api/MissionProgressApi
         [HttpGet]
-        public async Task<IEnumerable<MissionProgressDTO>> GetMissionProgress()
+        public async Task<ActionResult<IEnumerable<MissionProgressDTO>>> GetMissionProgress()
         {
-            return _context.MissionProgress.Select(mg=>new MissionProgressDTO
-            {
-                MissionProgressId=mg.MissionProgressId,
-                UserId=mg.UserId,
-                MissionId=mg.MissionId,
-                CurrentCount=mg.CurrentCount,
-                Status=mg.Status,
-                AcceptedAt=mg.AcceptedAt,
-                CompletedAt=mg.CompletedAt,
-                RewardedAt=mg.RewardedAt
-            });
+            var list = await _missionProgressService.GetAllProgressAsync();
+            return Ok(list);
         }
 
         // GET: api/MissionProgressApi/5

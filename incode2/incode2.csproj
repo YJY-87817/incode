@@ -49,4 +49,10 @@
     <Folder Include="wwwroot\img\chat\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="ECPay.Payment.Integration">
+      <HintPath>..\..\ECPayAIO_Net\ECPay.Payment.Integration.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
