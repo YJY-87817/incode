@@ -41,6 +41,7 @@ export const useUserStore = defineStore("user", () => {
   // 取得特定用戶的個人檔案
   const fetchUserProfile = async (username) => {
     isLoading.value = true;
+    userProfile.value.id = 0;
     try {
       let url = '/User/profile';
       const timestamp = new Date().getTime();
@@ -53,7 +54,7 @@ export const useUserStore = defineStore("user", () => {
 
       const response = await axios.get(url);
       const data = response.data;
-      const currentUserId = data.userId || data.UserId || data.id || 0;
+      const currentUserId = data.userId ||data.userid||  data.UserId || data.id || 0;
 
       userProfile.value = {
         ...userProfile.value,

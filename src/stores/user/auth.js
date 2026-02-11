@@ -55,7 +55,7 @@ export const useAuthStore = defineStore("auth", () => {
       if (response.status === 200) {
         const userData = response.data.user;
         user.value = {
-          id: userData.userid || userData.UserId,
+          id: userData.userId || userData.userid || userData.UserId || userData.id,
           username: userData.username,
           role: userData.role,
           avatar: userData.avatarUrl || userData.ImageUrl
@@ -118,7 +118,7 @@ export const useAuthStore = defineStore("auth", () => {
         const profileData = profileRes.data;
         user.value = {
           // 使用 profile API 回傳的最新資料
-          id: profileData.userId || profileData.UserId,
+          id: profileData.userId || profileData.userid || profileData.UserId || profileData.id,
           username: profileData.username || profileData.Username,
           role: res.data.role,
           avatar: profileData.imageUrl || profileData.ImageUrl
