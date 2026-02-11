@@ -393,7 +393,7 @@ Table chat_message {
   session_id int [not null, ref: > chat_session.chat_session_id, note: "所屬對話ID(FK)"]
   role varchar(20) [not null, note: "角色: system, user, assistant"]
   body nvarchar(max) [not null, note: "訊息內容"]
-  created_at datetime [default: `current_timestamp`, note: "當下發送的時間"]
-  embedding nvarchar(max) [null, note: "資料庫搜尋"]
+  created_at datetime [default: `current_timestamp`, note: "當下發送的時間"] 
+  embedding nvarchar(max) [null, note: "資料庫搜尋"] //這行刪除
   note { "對話內容紀錄" }
 }
