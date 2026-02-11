@@ -210,7 +210,7 @@ const router = createRouter({
     }
 
     // B. 定義切換 Tab 時不捲動的頁面
-    const noScrollRoutes = ['UserMission', 'UserCollections', 'UserPost', 'UserLike', 'UserSave'];
+    const noScrollRoutes = ['UserIndex', 'UserMission', 'UserCollections', 'UserPost', 'UserLike', 'UserSave'];
 
     // 如果是在 Tab 之間切換，保持原位 (return false 或不回傳 top)
     if (noScrollRoutes.includes(to.name) && noScrollRoutes.includes(from.name)) {
