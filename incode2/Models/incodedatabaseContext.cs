@@ -51,6 +51,8 @@ public partial class incodedatabaseContext : DbContext
 
     public virtual DbSet<PointRecharge> PointRecharge { get; set; }
 
+    public virtual DbSet<PointTip> PointTip { get; set; }
+
     public virtual DbSet<PointTypeDefinition> PointTypeDefinition { get; set; }
 
     public virtual DbSet<Pointchange> Pointchange { get; set; }
@@ -81,7 +83,7 @@ public partial class incodedatabaseContext : DbContext
     {
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F89771687D2DCE7");
+            entity.HasKey(e => e.ChatMessageId).HasName("PK__chat_mes__1F89771691321F91");
 
             entity.ToTable("chat_message");
 
@@ -104,12 +106,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Session).WithMany(p => p.ChatMessage)
                 .HasForeignKey(d => d.SessionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__chat_mess__sessi__625A9A57");
+                .HasConstraintName("FK__chat_mess__sessi__32767D0B");
         });
 
         modelBuilder.Entity<ChatSession>(entity =>
         {
-            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D4DE1BCDC9");
+            entity.HasKey(e => e.ChatSessionId).HasName("PK__chat_ses__B39120D4BBF58FCB");
 
             entity.ToTable("chat_session");
 
@@ -132,12 +134,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.ChatSession)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__chat_sess__user___6166761E");
+                .HasConstraintName("FK__chat_sess__user___318258D2");
         });
 
         modelBuilder.Entity<Content>(entity =>
         {
-            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE5106FBA3E17");
+            entity.HasKey(e => e.ContentId).HasName("PK__content__655FE510FBC0C75B");
 
             entity.ToTable("content");
 
@@ -165,21 +167,21 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.Content)
                 .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__content__categor__3D2915A8");
+                .HasConstraintName("FK__content__categor__0A688BB1");
 
             entity.HasOne(d => d.ParentContent).WithMany(p => p.InverseParentContent)
                 .HasForeignKey(d => d.ParentContentId)
-                .HasConstraintName("FK__content__parent___3C34F16F");
+                .HasConstraintName("FK__content__parent___09746778");
 
             entity.HasOne(d => d.User).WithMany(p => p.Content)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__content__user_id__3E1D39E1");
+                .HasConstraintName("FK__content__user_id__0B5CAFEA");
         });
 
         modelBuilder.Entity<ContentCategory>(entity =>
         {
-            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C56E9A8475C");
+            entity.HasKey(e => e.ContentCategoryId).HasName("PK__content___0FFD1C564B14F139");
 
             entity.ToTable("content_category");
 
@@ -196,12 +198,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.ParentCategory).WithMany(p => p.InverseParentCategory)
                 .HasForeignKey(d => d.ParentCategoryId)
-                .HasConstraintName("FK__content_c__paren__3F115E1A");
+                .HasConstraintName("FK__content_c__paren__0C50D423");
         });
 
         modelBuilder.Entity<ContentHistory>(entity =>
         {
-            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094A2463957");
+            entity.HasKey(e => e.ContentHistoryId).HasName("PK__content___B7830094CA2BDD5E");
 
             entity.ToTable("content_history");
 
@@ -226,16 +228,16 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.Content).WithMany(p => p.ContentHistory)
                 .HasForeignKey(d => d.ContentId)
-                .HasConstraintName("FK__content_h__conte__42E1EEFE");
+                .HasConstraintName("FK__content_h__conte__10216507");
 
             entity.HasOne(d => d.User).WithMany(p => p.ContentHistory)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__content_h__user___43D61337");
+                .HasConstraintName("FK__content_h__user___11158940");
         });
 
         modelBuilder.Entity<ContentInteraction>(entity =>
         {
-            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE5D9707E61");
+            entity.HasKey(e => e.ContentInteractionId).HasName("PK__content___AA89BFE5EE0CC50A");
 
             entity.ToTable("content_interaction");
 
@@ -255,22 +257,22 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Category).WithMany(p => p.ContentInteraction)
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__content_i__categ__40058253");
+                .HasConstraintName("FK__content_i__categ__0D44F85C");
 
             entity.HasOne(d => d.Content).WithMany(p => p.ContentInteraction)
                 .HasForeignKey(d => d.ContentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__content_i__conte__40F9A68C");
+                .HasConstraintName("FK__content_i__conte__0E391C95");
 
             entity.HasOne(d => d.User).WithMany(p => p.ContentInteraction)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__content_i__user___41EDCAC5");
+                .HasConstraintName("FK__content_i__user___0F2D40CE");
         });
 
         modelBuilder.Entity<ContentNotification>(entity =>
         {
-            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B284FFF22AD");
+            entity.HasKey(e => e.ContentNotificationId).HasName("PK__content___42595B280C912812");
 
             entity.ToTable("content_notification");
 
@@ -297,20 +299,20 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.ContentNotification)
                 .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__content_n__categ__46B27FE2");
+                .HasConstraintName("FK__content_n__categ__13F1F5EB");
 
             entity.HasOne(d => d.Content).WithMany(p => p.ContentNotification)
                 .HasForeignKey(d => d.ContentId)
-                .HasConstraintName("FK__content_n__conte__45BE5BA9");
+                .HasConstraintName("FK__content_n__conte__12FDD1B2");
 
             entity.HasOne(d => d.User).WithMany(p => p.ContentNotification)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__content_n__user___44CA3770");
+                .HasConstraintName("FK__content_n__user___1209AD79");
         });
 
         modelBuilder.Entity<EntrustMission>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E956C347C5F");
+            entity.HasKey(e => e.EntrustMissionId).HasName("PK__entrust___19471E95F22B72E8");
 
             entity.ToTable("entrust_mission");
 
@@ -324,9 +326,6 @@ public partial class incodedatabaseContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.CurrentParticipants)
-                .HasDefaultValue(0)
-                .HasColumnName("current_participants");
             entity.Property(e => e.Deadline)
                 .HasColumnType("datetime")
                 .HasColumnName("deadline");
@@ -340,9 +339,6 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.IsUrgent)
                 .HasDefaultValue(false)
                 .HasColumnName("is_urgent");
-            entity.Property(e => e.MaxParticipants)
-                .HasDefaultValue(1)
-                .HasColumnName("max_participants");
             entity.Property(e => e.RewardPoints).HasColumnName("reward_points");
             entity.Property(e => e.Status)
                 .IsRequired()
@@ -361,17 +357,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Content).WithMany(p => p.EntrustMission)
                 .HasForeignKey(d => d.ContentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__conte__540C7B00");
+                .HasConstraintName("FK__entrust_m__conte__214BF109");
 
             entity.HasOne(d => d.User).WithMany(p => p.EntrustMission)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__user___531856C7");
+                .HasConstraintName("FK__entrust_m__user___2057CCD0");
         });
 
         modelBuilder.Entity<EntrustMissionPointReserve>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___150064700A8C3CA8");
+            entity.HasKey(e => e.EntrustMissionPointReserveId).HasName("PK__entrust___150064708CF174DB");
 
             entity.ToTable("entrust_mission_point_reserve");
 
@@ -395,17 +391,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.EntrustMission).WithMany(p => p.EntrustMissionPointReserve)
                 .HasForeignKey(d => d.EntrustMissionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__entru__57DD0BE4");
+                .HasConstraintName("FK__entrust_m__entru__251C81ED");
 
             entity.HasOne(d => d.User).WithMany(p => p.EntrustMissionPointReserve)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__user___56E8E7AB");
+                .HasConstraintName("FK__entrust_m__user___24285DB4");
         });
 
         modelBuilder.Entity<EntrustMissionProgress>(entity =>
         {
-            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F43221C50B");
+            entity.HasKey(e => e.EntrustMissionProgressId).HasName("PK__entrust___8F68D7F450F29601");
 
             entity.ToTable("entrust_mission_progress");
 
@@ -430,17 +426,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.EntrustMission).WithMany(p => p.EntrustMissionProgress)
                 .HasForeignKey(d => d.EntrustMissionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__entru__55F4C372");
+                .HasConstraintName("FK__entrust_m__entru__2334397B");
 
             entity.HasOne(d => d.User).WithMany(p => p.EntrustMissionProgress)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__entrust_m__user___55009F39");
+                .HasConstraintName("FK__entrust_m__user___22401542");
         });
 
         modelBuilder.Entity<Follow>(entity =>
         {
-            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E6A0D41160");
+            entity.HasKey(e => new { e.FollowerId, e.FolloweeId }).HasName("PK__follow__710D19E68C57B971");
 
             entity.ToTable("follow");
 
@@ -454,17 +450,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Followee).WithMany(p => p.FollowFollowee)
                 .HasForeignKey(d => d.FolloweeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__follow__followee__4A8310C6");
+                .HasConstraintName("FK__follow__followee__17C286CF");
 
             entity.HasOne(d => d.Follower).WithMany(p => p.FollowFollower)
                 .HasForeignKey(d => d.FollowerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__follow__follower__498EEC8D");
+                .HasConstraintName("FK__follow__follower__16CE6296");
         });
 
         modelBuilder.Entity<InteractionCategory>(entity =>
         {
-            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC996C854D3C0");
+            entity.HasKey(e => e.InteractionCategoryId).HasName("PK__interact__45DCC996911740F0");
 
             entity.ToTable("interaction_category");
 
@@ -489,7 +485,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Mission>(entity =>
         {
-            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB244BB644D");
+            entity.HasKey(e => e.MissionId).HasName("PK__mission__B5419AB2F8A2FC9C");
 
             entity.ToTable("mission");
 
@@ -548,7 +544,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<MissionProgress>(entity =>
         {
-            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D5BA59225");
+            entity.HasKey(e => e.MissionProgressId).HasName("PK__mission___F43E603D97F84B40");
 
             entity.ToTable("mission_progress");
 
@@ -561,6 +557,12 @@ public partial class incodedatabaseContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("completed_at");
             entity.Property(e => e.CurrentCount).HasColumnName("current_count");
+            entity.Property(e => e.CycleEndAt)
+                .HasColumnType("datetime")
+                .HasColumnName("cycle_end_at");
+            entity.Property(e => e.CycleStartAt)
+                .HasColumnType("datetime")
+                .HasColumnName("cycle_start_at");
             entity.Property(e => e.MissionId).HasColumnName("mission_id");
             entity.Property(e => e.RewardedAt)
                 .HasColumnType("datetime")
@@ -575,17 +577,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Mission).WithMany(p => p.MissionProgress)
                 .HasForeignKey(d => d.MissionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__mission_p__missi__5224328E");
+                .HasConstraintName("FK__mission_p__missi__1F63A897");
 
             entity.HasOne(d => d.User).WithMany(p => p.MissionProgress)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__mission_p__user___51300E55");
+                .HasConstraintName("FK__mission_p__user___1E6F845E");
         });
 
         modelBuilder.Entity<Notifications>(entity =>
         {
-            entity.HasKey(e => e.NotificationsId).HasName("PK__notifica__144A108B8A2916D3");
+            entity.HasKey(e => e.NotificationsId).HasName("PK__notifica__144A108BA72C6F87");
 
             entity.ToTable("notifications");
 
@@ -618,12 +620,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.TargetUser).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.TargetUserId)
-                .HasConstraintName("FK__notificat__targe__59C55456");
+                .HasConstraintName("FK__notificat__targe__29E1370A");
         });
 
         modelBuilder.Entity<Orderdetail>(entity =>
         {
-            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE741122D39B5D");
+            entity.HasKey(e => e.OrderdetailId).HasName("PK__orderdet__59AE7411CD79513B");
 
             entity.ToTable("orderdetail");
 
@@ -637,17 +639,17 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Order).WithMany(p => p.Orderdetail)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__orderdeta__order__5BAD9CC8");
+                .HasConstraintName("FK__orderdeta__order__2BC97F7C");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Orderdetail)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__orderdeta__produ__5CA1C101");
+                .HasConstraintName("FK__orderdeta__produ__2CBDA3B5");
         });
 
         modelBuilder.Entity<Orders>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__orders__46596229575EAD85");
+            entity.HasKey(e => e.OrderId).HasName("PK__orders__46596229A7119C0E");
 
             entity.ToTable("orders");
 
@@ -672,12 +674,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__orders__user_id__5AB9788F");
+                .HasConstraintName("FK__orders__user_id__2AD55B43");
         });
 
         modelBuilder.Entity<PointLog>(entity =>
         {
-            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C271C9F78");
+            entity.HasKey(e => e.PointLogId).HasName("PK__point_lo__E2EBFE7C752B4410");
 
             entity.ToTable("point_log");
 
@@ -704,21 +706,23 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.PointTypeDefinition).WithMany(p => p.PointLog)
                 .HasForeignKey(d => d.PointTypeDefinitionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__point_log__point__503BEA1C");
+                .HasConstraintName("FK__point_log__point__1D7B6025");
 
             entity.HasOne(d => d.User).WithMany(p => p.PointLog)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__point_log__user___4F47C5E3");
+                .HasConstraintName("FK__point_log__user___1C873BEC");
         });
 
         modelBuilder.Entity<PointRecharge>(entity =>
         {
-            entity.HasKey(e => e.PointRechargeId).HasName("PK__point_re__2FCEC81C163E27F3");
+            entity.HasKey(e => e.PointRechargeId).HasName("PK__point_re__2FCEC81CE49D2964");
 
             entity.ToTable("point_recharge");
 
-            entity.HasIndex(e => e.OrderNo, "UQ__point_re__465C81B803B2EA84").IsUnique();
+            entity.HasIndex(e => e.OrderNo, "UQ__point_re__465C81B851E11A4C").IsUnique();
+
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }, "point_recharge_index_0");
 
             entity.Property(e => e.PointRechargeId).HasColumnName("point_recharge_id");
             entity.Property(e => e.CashAmount)
@@ -736,13 +740,12 @@ public partial class incodedatabaseContext : DbContext
             entity.Property(e => e.PaymentMethod)
                 .IsRequired()
                 .HasMaxLength(50)
-                .IsUnicode(false)
                 .HasColumnName("payment_method");
-            entity.Property(e => e.PointsGranted).HasColumnName("points_granted");
-            entity.Property(e => e.RelatedOrderId)
+            entity.Property(e => e.PaymentTradeNo)
                 .HasMaxLength(100)
                 .IsUnicode(false)
-                .HasColumnName("related_order_id");
+                .HasColumnName("payment_trade_no");
+            entity.Property(e => e.PointsGranted).HasColumnName("points_granted");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .HasDefaultValue("pending")
@@ -752,12 +755,44 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.PointRecharge)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__point_rec__user___58D1301D");
+                .HasConstraintName("FK__point_rec__user___2610A626");
+        });
+
+        modelBuilder.Entity<PointTip>(entity =>
+        {
+            entity.HasKey(e => e.PointTipId).HasName("PK__point_ti__7A2BD62489271FF0");
+
+            entity.ToTable("point_tip");
+
+            entity.Property(e => e.PointTipId).HasColumnName("point_tip_id");
+            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.ContentId).HasColumnName("content_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FromUserId).HasColumnName("from_user_id");
+            entity.Property(e => e.ToUserId).HasColumnName("to_user_id");
+
+            entity.HasOne(d => d.Content).WithMany(p => p.PointTip)
+                .HasForeignKey(d => d.ContentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__point_tip__conte__28ED12D1");
+
+            entity.HasOne(d => d.FromUser).WithMany(p => p.PointTipFromUser)
+                .HasForeignKey(d => d.FromUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__point_tip__from___2704CA5F");
+
+            entity.HasOne(d => d.ToUser).WithMany(p => p.PointTipToUser)
+                .HasForeignKey(d => d.ToUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__point_tip__to_us__27F8EE98");
         });
 
         modelBuilder.Entity<PointTypeDefinition>(entity =>
         {
-            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541F43E6C5A9");
+            entity.HasKey(e => e.PointTypeDefinitionId).HasName("PK__point_ty__E69D541F0DACC46D");
 
             entity.ToTable("point_type_definition");
 
@@ -787,7 +822,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Pointchange>(entity =>
         {
-            entity.HasKey(e => e.PointchangeId).HasName("PK__pointcha__314D95DC036ECA8C");
+            entity.HasKey(e => e.PointchangeId).HasName("PK__pointcha__314D95DC452EBC67");
 
             entity.ToTable("pointchange");
 
@@ -802,12 +837,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.Pointchange)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__pointchan__produ__5E8A0973");
+                .HasConstraintName("FK__pointchan__produ__2EA5EC27");
         });
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF55F3A44FD");
+            entity.HasKey(e => e.ProductId).HasName("PK__product__47027DF5CD259D59");
 
             entity.ToTable("product");
 
@@ -846,7 +881,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Productimage>(entity =>
         {
-            entity.HasKey(e => e.ProductimageId).HasName("PK__producti__EBDC9A4ACA0C5A28");
+            entity.HasKey(e => e.ProductimageId).HasName("PK__producti__EBDC9A4A5B684B98");
 
             entity.ToTable("productimage");
 
@@ -859,12 +894,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Product).WithMany(p => p.Productimage)
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__productim__produ__5F7E2DAC");
+                .HasConstraintName("FK__productim__produ__2F9A1060");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__role__760965CCF9E8A448");
+            entity.HasKey(e => e.RoleId).HasName("PK__role__760965CCCB43C6BF");
 
             entity.ToTable("role");
 
@@ -880,7 +915,7 @@ public partial class incodedatabaseContext : DbContext
 
         modelBuilder.Entity<Shipaddress>(entity =>
         {
-            entity.HasKey(e => e.ShipaddressId).HasName("PK__shipaddr__92A61417863D7A34");
+            entity.HasKey(e => e.ShipaddressId).HasName("PK__shipaddr__92A61417900819F9");
 
             entity.ToTable("shipaddress");
 
@@ -902,12 +937,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Shipaddress)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__shipaddre__user___607251E5");
+                .HasConstraintName("FK__shipaddre__user___308E3499");
         });
 
         modelBuilder.Entity<ShippedDetail>(entity =>
         {
-            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C931D3DDBFA");
+            entity.HasKey(e => e.ShippedDetailId).HasName("PK__shipped___26C93C93F06C1255");
 
             entity.ToTable("shipped_detail");
 
@@ -940,18 +975,18 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.Order).WithMany(p => p.ShippedDetail)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__shipped_d__order__5D95E53A");
+                .HasConstraintName("FK__shipped_d__order__2DB1C7EE");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FB9F63057");
+            entity.HasKey(e => e.UserId).HasName("PK__user__B9BE370FC3440408");
 
             entity.ToTable("user");
 
-            entity.HasIndex(e => e.Email, "UQ__user__AB6E6164963F866E").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__user__AB6E61640A03D6F9").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__user__F3DBC572A87805B3").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__user__F3DBC5722A896576").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Address)
@@ -990,12 +1025,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.Role).WithMany(p => p.User)
                 .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("FK__user__role_id__489AC854");
+                .HasConstraintName("FK__user__role_id__15DA3E5D");
         });
 
         modelBuilder.Entity<UserImage>(entity =>
         {
-            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9DDE00E48B");
+            entity.HasKey(e => e.UserImageId).HasName("PK__user_ima__A9249C9DF371726F");
 
             entity.ToTable("user_image");
 
@@ -1023,12 +1058,12 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.UserImage)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__user_imag__user___47A6A41B");
+                .HasConstraintName("FK__user_imag__user___14E61A24");
         });
 
         modelBuilder.Entity<UserInventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__user_inv__B59ACC49B87F0ABF");
+            entity.HasKey(e => e.InventoryId).HasName("PK__user_inv__B59ACC49AF9CC995");
 
             entity.ToTable("user_inventory");
 
@@ -1041,12 +1076,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.UserInventory)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__user_inve__user___4D5F7D71");
+                .HasConstraintName("FK__user_inve__user___1A9EF37A");
         });
 
         modelBuilder.Entity<UserLoginlog>(entity =>
         {
-            entity.HasKey(e => e.LoginlogId).HasName("PK__user_log__2AF68B1EFF6B57FC");
+            entity.HasKey(e => e.LoginlogId).HasName("PK__user_log__2AF68B1EBDA405BF");
 
             entity.ToTable("user_loginlog");
 
@@ -1063,12 +1098,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.UserLoginlog)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__user_logi__user___4B7734FF");
+                .HasConstraintName("FK__user_logi__user___18B6AB08");
         });
 
         modelBuilder.Entity<UserNotification>(entity =>
         {
-            entity.HasKey(e => e.UserNotificationId).HasName("PK__user_not__64BFFBDB70D39984");
+            entity.HasKey(e => e.UserNotificationId).HasName("PK__user_not__64BFFBDB2F033306");
 
             entity.ToTable("user_notification");
 
@@ -1097,12 +1132,12 @@ public partial class incodedatabaseContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.UserNotification)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__user_noti__user___4E53A1AA");
+                .HasConstraintName("FK__user_noti__user___1B9317B3");
         });
 
         modelBuilder.Entity<UserStatus>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__user_sta__B9BE370F653694AE");
+            entity.HasKey(e => e.UserId).HasName("PK__user_sta__B9BE370F7A7E961F");
 
             entity.ToTable("user_status");
 
@@ -1122,7 +1157,7 @@ public partial class incodedatabaseContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.UserStatus)
                 .HasForeignKey<UserStatus>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__user_stat__user___4C6B5938");
+                .HasConstraintName("FK__user_stat__user___19AACF41");
         });
 
         OnModelCreatingPartial(modelBuilder);

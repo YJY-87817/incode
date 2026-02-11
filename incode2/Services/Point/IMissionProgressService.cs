@@ -10,5 +10,9 @@ namespace incode2.Services.Point
         Task<ResultDTO> CreateProgressAsync(MissionProgressDTO dto);
         Task<ResultDTO> UpdateProgressAsync(int id, MissionProgressDTO dto);
         Task<ResultDTO> DeleteProgressAsync(int id);
+        Task<ResultDTO> CanClaimRewardAsync(int userId, int missionId);
+        Task<ResultDTO> ClaimRewardAsync(int userId, int missionId);
+        Task<ResultDTO> IncrementProgressAsync(int userId, int missionId, int increment);
+        Task<IEnumerable<UserMissionViewDTO>> GetUserMissionsAsync(int userId);
     }
 }

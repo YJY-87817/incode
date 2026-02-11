@@ -1,9 +1,7 @@
 ﻿namespace incode2.Dtos
 {
-  /// <summary>
-  /// 建立內容 Request DTO（客戶端傳送的資料）
-  /// 只包含建立內容時需要的欄位
-  /// </summary>
+  // 建立內容 Request DTO（客戶端傳送的資料）
+  // 只包含建立內容時需要的欄位
   public class CreateContentDto
   {
     public int? ParentContentId { get; set; }

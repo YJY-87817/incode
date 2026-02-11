@@ -95,6 +95,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[point_tip]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[point_type_definition]",
          "ObjectType": 0
       },
