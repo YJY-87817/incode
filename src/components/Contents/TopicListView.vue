@@ -6,19 +6,63 @@
 -->
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
-import { formatDate, formatTimeAgo } from "./forumUtils";
+import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
+
+const getAvatarUrl = (name, explicitUrl = "") => {
+  if (explicitUrl) return explicitUrl;
+  const safeName = String(name || "User").trim() || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
+};
+
+const basePreviewCss = `
+  body {
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  p, div, br {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+  }
+  br {
+    display: none;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 2px 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+`;
+
+const getTopicPreviewCss = (topic) => {
+  const hasImages = Array.isArray(topic?.imageUrls) && topic.imageUrls.length;
+  if (hasImages) return `${basePreviewCss} img { display: none; }`;
+  return basePreviewCss;
+};
 
 const goToThread = (threadId) => {
   if (!threadId) return;
@@ -36,14 +80,28 @@ const threadHasInlineImages = computed(() => {
 
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
-const quickReplyContent = ref("");
-const isSubmittingQuickReply = ref(false);
+const replyTab = ref(null);
 
 /**
  * 處理主題互動成功
  */
-const handleTopicInteractionSuccess = (data) => {
-  // 可以在此顯示 toast 或其他反饋
+const handleTopicInteractionSuccess = async (data) => {
+  // 隱藏功能的特殊處理
+  if (data.categoryId === 2 && data.categoryName === "hide") {
+    // 立即從列表中移除隱藏的主題
+    forumStore.topics = forumStore.topics.filter(
+      (topic) => topic.id !== data.contentId,
+    );
+
+    // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
+    // fetchTopics 會更新分類統計
+    await forumStore.fetchTopics();
+
+    if (forumStore.selectedThread) {
+      // 在詳情視圖中，隱藏後返回列表
+      goToList();
+    }
+  }
 };
 
 /**
@@ -58,6 +116,38 @@ const handleTopicInteractionError = async (data) => {
     confirmButtonText: "確定",
     confirmButtonColor: "#145369",
   });
+};
+
+/**
+ * 處理主題編輯操作
+ */
+const handleTopicEditContent = (contentId) => {
+  // 尋找對應的主題或回文進行編輯
+  const targetContent =
+    forumStore.threadDetail?.id === contentId
+      ? forumStore.threadDetail
+      : forumStore.topics.find((t) => t.id === contentId);
+
+  if (targetContent) {
+    forumStore.openEditMode(contentId, targetContent);
+  }
+};
+
+/**
+ * 處理主題刪除操作
+ */
+const handleTopicDeleteContent = async (contentId) => {
+  // 刪除成功後重新載入數據
+  // fetchTopics 會更新分類統計
+  await forumStore.fetchTopics();
+
+  if (forumStore.threadDetail?.id === contentId) {
+    // 如果刪除的是當前詳情中的主題，返回列表
+    goToList();
+  } else if (forumStore.threadDetail?.id) {
+    // 否則重新載入詳情
+    forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+  }
 };
 
 /**
@@ -78,11 +168,11 @@ const threadTotalPages = computed(() => forumStore.threadTotalPages);
 const paginatedThreadPosts = computed(() => forumStore.paginatedThreadPosts);
 
 const threadCommentsTotalPages = computed(
-  () => forumStore.threadCommentsTotalPages
+  () => forumStore.threadCommentsTotalPages,
 );
 
 const paginatedThreadComments = computed(
-  () => forumStore.paginatedThreadComments
+  () => forumStore.paginatedThreadComments,
 );
 
 /**
@@ -115,7 +205,7 @@ const nextThreadPage = () => {
 const prevCommentPage = () => {
   if (forumStore.threadCommentsCurrentPage > 1) {
     forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage - 1
+      forumStore.threadCommentsCurrentPage - 1,
     );
   }
 };
@@ -123,7 +213,7 @@ const prevCommentPage = () => {
 const nextCommentPage = () => {
   if (forumStore.threadCommentsCurrentPage < threadCommentsTotalPages.value) {
     forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage + 1
+      forumStore.threadCommentsCurrentPage + 1,
     );
   }
 };
@@ -131,14 +221,31 @@ const nextCommentPage = () => {
 /**
  * 留言/回文輸入框相關
  */
-const resetQuickReply = () => {
-  quickReplyContent.value = "";
+const selectQuickReply = () => {
+  // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
+  if (replyTab.value === "quick" && showQuickReply.value) {
+    showQuickReply.value = false;
+    replyTab.value = null;
+  } else {
+    replyTab.value = "quick";
+    showQuickReply.value = true;
+  }
 };
 
-const toggleQuickReply = () => {
-  showQuickReply.value = !showQuickReply.value;
-  if (!showQuickReply.value) {
-    resetQuickReply();
+const selectDetailedComment = () => {
+  replyTab.value = "detailed";
+  if (showQuickReply.value && forumStore.threadDetail?.id) {
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
+  }
+  showQuickReply.value = false;
+  openDetailedComment();
+};
+
+const closeQuickReply = () => {
+  showQuickReply.value = false;
+  replyTab.value = null;
+  if (forumStore.threadDetail?.id) {
+    forumStore.cancelQuickReply(forumStore.threadDetail.id);
   }
 };
 
@@ -154,7 +261,11 @@ const submitQuickReply = async () => {
     return;
   }
 
-  if (!quickReplyContent.value.trim()) {
+  const quickReplyContent = forumStore.getQuickReplyContent(
+    forumStore.threadDetail.id,
+  );
+
+  if (!quickReplyContent.trim()) {
     await Swal.fire({
       icon: "warning",
       title: "提醒",
@@ -165,15 +276,19 @@ const submitQuickReply = async () => {
     return;
   }
 
-  if (isSubmittingQuickReply.value) return;
-  isSubmittingQuickReply.value = true;
+  const isSubmitting = forumStore.getQuickReplySubmitting(
+    forumStore.threadDetail.id,
+  );
+  if (isSubmitting) return;
+
+  forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, true);
 
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
-    title: `留言: ${forumStore.threadDetail.title}`,
-    body: quickReplyContent.value.trim(),
+    title: buildReplyTitle(forumStore.threadDetail.title),
+    body: quickReplyContent.trim(),
     type: CONTENT_TYPES.COMMENT,
   };
 
@@ -192,8 +307,9 @@ const submitQuickReply = async () => {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
 
-    resetQuickReply();
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
     showQuickReply.value = false;
+    replyTab.value = null;
   } catch (error) {
     console.error("送出留言/回文失敗:", error);
     await Swal.fire({
@@ -204,7 +320,7 @@ const submitQuickReply = async () => {
       confirmButtonColor: "#145369",
     });
   } finally {
-    isSubmittingQuickReply.value = false;
+    forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, false);
   }
 };
 
@@ -232,57 +348,88 @@ const getParentCategoryIdValue = (cat) =>
 const getCategoryName = (cat) =>
   cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
 
+const buildReplyTitle = (parentTitle) => {
+  const base = String(parentTitle ?? "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
 const openDetailedComment = () => {
   if (!forumStore.threadDetail?.id) {
     console.error("[openDetailedComment] No threadDetail.id found");
     return;
   }
 
-  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-
-  const categories = forumStore.categories || [];
-
-  const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+  // 檢查是否已經有針對這個主文的詳細留言草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) =>
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "comment",
   );
 
-  const parentCategoryId = matchedCategory
-    ? getParentCategoryIdValue(matchedCategory)
-    : null;
+  if (existingDraft) {
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
+  } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
 
-  const parentCategory = parentCategoryId
-    ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
-      )
-    : null;
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
 
-  const categorySearchName = parentCategory
-    ? getCategoryName(parentCategory)
-    : matchedCategory
-      ? getCategoryName(matchedCategory)
-      : "";
+    const categories = forumStore.categories || [];
 
-  forumStore.selectedCategory = threadCategoryId;
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
+    );
 
-  // 創建新的草稿
-  forumStore.createDraft({
-    title: "",
-    body: "",
-    categoryId: threadCategoryId,
-    parentContentId: forumStore.threadDetail.id,
-    categorySearch: categorySearchName,
-    mode: "comment",
-    contentType: CONTENT_TYPES.COMMENT,
-    replyingToContentId: forumStore.threadDetail.id,
-    replyingToContentData: {
-      id: forumStore.threadDetail.id,
-      title: forumStore.threadDetail.title,
-      author: forumStore.threadDetail.author,
-      createdAt: forumStore.threadDetail.createdAt,
-      contentText: forumStore.threadDetail.contentText,
-    },
-    replyingToThreadId: forumStore.threadDetail.id,
-  });
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
+
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
+        )
+      : null;
+
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: buildReplyTitle(forumStore.threadDetail.title),
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "comment",
+      contentType: CONTENT_TYPES.COMMENT,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
 };
 
 const openDetailedReply = () => {
@@ -291,51 +438,105 @@ const openDetailedReply = () => {
     return;
   }
 
-  const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
-  const categories = forumStore.categories || [];
-
-  const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId)
+  // 檢查是否已經有針對這個主文的詳細回文草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) =>
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "reply",
   );
 
-  const parentCategoryId = matchedCategory
-    ? getParentCategoryIdValue(matchedCategory)
-    : null;
+  if (existingDraft) {
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
+  } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
 
-  const parentCategory = parentCategoryId
-    ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
-      )
-    : null;
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+    const categories = forumStore.categories || [];
 
-  const categorySearchName = parentCategory
-    ? getCategoryName(parentCategory)
-    : matchedCategory
-      ? getCategoryName(matchedCategory)
-      : "";
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
+    );
 
-  forumStore.selectedCategory = threadCategoryId;
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
 
-  // 創建新的草稿
-  forumStore.createDraft({
-    title: "",
-    body: "",
-    categoryId: threadCategoryId,
-    parentContentId: forumStore.threadDetail.id,
-    categorySearch: categorySearchName,
-    mode: "reply",
-    contentType: CONTENT_TYPES.REPLY,
-    replyingToContentId: forumStore.threadDetail.id,
-    replyingToContentData: {
-      id: forumStore.threadDetail.id,
-      title: forumStore.threadDetail.title,
-      author: forumStore.threadDetail.author,
-      createdAt: forumStore.threadDetail.createdAt,
-      contentText: forumStore.threadDetail.contentText,
-    },
-    replyingToThreadId: forumStore.threadDetail.id,
-  });
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
+        )
+      : null;
+
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: "",
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "reply",
+      contentType: CONTENT_TYPES.REPLY,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
 };
+
+// 主文是否為正在回覆的目標（檢查所有草稿）
+const isThreadReplyingTarget = computed(() => {
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return false;
+  return forumStore.drafts.some(
+    (draft) => draft.replyingToContentId === targetId,
+  );
+});
+
+/**
+ * 過濾掉已隱藏的主題
+ */
+// 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
+function handleThreadReplyingTargetClick() {
+  if (!isThreadReplyingTarget.value) return;
+
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return;
+
+  const targetDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === targetId,
+  );
+
+  if (targetDraft) {
+    forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
+  }
+}
 </script>
 
 <template>
@@ -360,8 +561,6 @@ const openDetailedReply = () => {
             aria-label="主題排序"
           >
             <option value="createdAt_desc">發佈時間（新→舊）</option>
-            <option value="lastReply_desc">最新回覆</option>
-            <option value="replyCount_desc">回覆數（多→少）</option>
           </select>
         </div>
       </div>
@@ -380,12 +579,58 @@ const openDetailedReply = () => {
         </div>
 
         <!-- 帖文內容 -->
-        <div class="card-body">
+        <div
+          class="card-body thread-detail-card"
+          :class="{
+            'replying-target': isThreadReplyingTarget,
+            'cursor-pointer': isThreadReplyingTarget,
+          }"
+          :id="
+            forumStore.threadDetail?.id != null
+              ? `content-${forumStore.threadDetail.id}`
+              : null
+          "
+          @click="handleThreadReplyingTargetClick"
+        >
+          <!-- 主題徽章 -->
+          <div class="d-flex flex-wrap gap-1">
+            <span
+              v-if="forumStore.threadDetail?.categoryName"
+              class="badge bg-secondary-light text-dark"
+            >
+              {{ forumStore.threadDetail.categoryName }}
+            </span>
+            <button
+              v-if="
+                forumStore.threadDetail?.type === CONTENT_TYPES.REPLY &&
+                forumStore.threadDetail?.parentContentId
+              "
+              class="btn btn-sm btn-outline-primary parent-link-btn"
+              type="button"
+              @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
+            >
+              <i class="fas fa-link me-1"></i>
+              主文
+            </button>
+            <span
+              v-if="forumStore.threadDetail?.isPinned"
+              class="badge bg-danger"
+            >
+              置頂
+            </span>
+            <span
+              v-if="forumStore.threadDetail?.isHot"
+              class="badge bg-warning text-dark"
+            >
+              熱門
+            </span>
+          </div>
+
           <div
             class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
           >
             <h3
-              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0"
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
             >
               {{ forumStore.threadDetail.title }}
             </h3>
@@ -395,13 +640,24 @@ const openDetailedReply = () => {
                 v-if="forumStore.threadDetail?.id != null"
                 :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
                 :contentId="Number(forumStore.threadDetail.id)"
+                :authorUserId="forumStore.threadDetail.userId"
                 @interaction-success="handleTopicInteractionSuccess"
                 @interaction-error="handleTopicInteractionError"
+                @edit-content="handleTopicEditContent"
+                @delete-content="handleTopicDeleteContent"
               />
             </div>
           </div>
-          <p class="text-muted mb-2 small d-flex flex-wrap gap-2">
-            <span>by {{ forumStore.threadDetail.author }}</span>
+          <p
+            class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
+          >
+            <span>by</span>
+            <UserPreview
+              :user-id="forumStore.threadDetail.userId"
+              :username="forumStore.threadDetail.author"
+              :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
+              :size="26"
+            />
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
@@ -417,7 +673,7 @@ const openDetailedReply = () => {
             :min-height="120"
             text-color="#432f28"
             :allow-scripts="true"
-            :extra-css="'body { white-space: pre-wrap; } img { width: 30%; max-width: 30%; height: auto; object-fit: contain; }'"
+            :extra-css="`body { white-space: pre-wrap; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; height: auto; object-fit: contain; }`"
           />
           <!-- 改圖片大小在上面這裡 -->
 
@@ -447,44 +703,42 @@ const openDetailedReply = () => {
             <div
               class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle border-bottom pb-3"
             >
-              <div class="reply-mode-tabs">
+              <div class="reply-mode-actions">
+                <div class="reply-mode-tabs">
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'quick' }"
+                    @click="selectQuickReply"
+                  >
+                    留言
+                  </button>
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'detailed' }"
+                    @click="selectDetailedComment"
+                  >
+                    <i class="fas fa-pen me-1"></i>
+                    詳細留言
+                  </button>
+                </div>
                 <button
-                  class="nav-link"
-                  type="button"
-                  :class="{ active: showQuickReply }"
-                  @click="toggleQuickReply"
-                >
-                  <i
-                    class="fas me-1"
-                    :class="showQuickReply ? 'fa-times' : 'fa-pen'"
-                  ></i>
-                  {{ showQuickReply ? "收起簡易留言" : "簡易留言" }}
-                </button>
-                <button
-                  class="nav-link"
-                  type="button"
-                  @click="openDetailedComment"
-                >
-                  <i class="fas fa-feather-alt me-1"></i>
-                  詳細留言
-                </button>
-                <button
-                  class="nav-link"
+                  class="nav-link reply-standalone-btn"
                   type="button"
                   @click="openDetailedReply"
                 >
-                  <i class="fas fa-feather-alt me-1"></i>
-                  詳細回文
+                  <i class="fas fa-solid fa-retweet me-1"></i>
+                  回文
                 </button>
               </div>
             </div>
 
             <QuickReplyBox
               v-if="showQuickReply"
-              v-model="quickReplyContent"
-              :is-submitting="isSubmittingQuickReply"
+              :content-id="forumStore.threadDetail.id"
               @submit="submitQuickReply"
-              @cancel="toggleQuickReply"
+              @cancel="closeQuickReply"
               @textarea-input="autoResizeTextarea"
             />
 
@@ -555,6 +809,7 @@ const openDetailedReply = () => {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
+                :show-parent-link="false"
               />
             </div>
 
@@ -625,22 +880,20 @@ const openDetailedReply = () => {
           <table class="table table-hover mb-0">
             <thead class="table-light">
               <tr>
-                <th class="py-2 py-md-3" style="width: 50%">主題</th>
+                <th class="py-2 py-md-3" style="width: 60%">主題</th>
                 <th
                   class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 15%"
+                  style="width: 10%"
                 >
                   發佈時間
                 </th>
                 <th
                   class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 15%"
+                  style="width: 10%"
                 >
                   最後回應時間
                 </th>
-                <th class="py-2 py-md-3 text-center" style="width: 10%">
-                  回應
-                </th>
+                <th class="py-2 py-md-3 text-center" style="width: 3%">回應</th>
               </tr>
             </thead>
             <tbody>
@@ -652,10 +905,28 @@ const openDetailedReply = () => {
               >
                 <!-- 主題欄 -->
                 <td class="p-3 py-md-3">
-                  <div class="d-flex align-items-start gap-2">
-                    <div class="flex-grow-1">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
-                      <div class="d-flex flex-wrap gap-1 mb-1">
+                      <div class="d-flex flex-wrap gap-1">
+                        <span
+                          v-if="topic.categoryName"
+                          class="badge bg-secondary-light text-dark"
+                        >
+                          {{ topic.categoryName }}
+                        </span>
+                        <button
+                          v-if="
+                            topic.type === CONTENT_TYPES.REPLY &&
+                            topic.parentContentId
+                          "
+                          class="btn btn-sm btn-outline-primary parent-link-btn"
+                          type="button"
+                          @click.stop="goToThread(topic.parentContentId)"
+                        >
+                          <i class="fas fa-link me-1"></i>
+                          主文
+                        </button>
                         <span v-if="topic.isPinned" class="badge bg-danger">
                           置頂
                         </span>
@@ -684,51 +955,47 @@ const openDetailedReply = () => {
                           <InteractionButtons
                             :key="`topic-interactions-${topic.id}`"
                             :contentId="topic.id"
+                            :authorUserId="topic.userId"
                             @interaction-success="handleTopicInteractionSuccess"
                             @interaction-error="handleTopicInteractionError"
+                            @edit-content="handleTopicEditContent"
+                            @delete-content="handleTopicDeleteContent"
                           />
                         </div>
                       </div>
 
-                      <!-- 主題圖片縮圖 -->
                       <div
-                        v-if="topic.imageUrls && topic.imageUrls.length"
-                        class="d-flex flex-wrap gap-2 mt-2 mb-2 topic-image-list"
+                        class="topic-preview-body topic-preview-collapsed mb-2"
                       >
-                        <img
-                          v-for="(url, idx) in topic.imageUrls.slice(0, 3)"
-                          :key="url + idx"
-                          :src="url"
-                          alt="貼文圖片"
-                          class="topic-image-thumb"
-                          loading="lazy"
-                          style="
-                            max-width: 80px;
-                            max-height: 80px;
-                            object-fit: cover;
-                            border-radius: 4px;
-                          "
-                        />
                         <div
-                          v-if="topic.imageUrls.length > 3"
-                          class="d-flex align-items-center justify-content-center text-muted small"
-                          style="
-                            width: 80px;
-                            height: 80px;
-                            background-color: #f0f0f0;
-                            border-radius: 4px;
-                          "
+                          v-if="topic.imageUrls && topic.imageUrls.length"
+                          class="topic-preview-images-col"
                         >
-                          +{{ topic.imageUrls.length - 3 }} 張
+                          <div class="topic-preview-images-grid">
+                            <img
+                              v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
+                              :key="url + idx"
+                              :src="url"
+                              alt="貼文圖片"
+                              class="topic-preview-image-thumb"
+                              loading="lazy"
+                            />
+                          </div>
                         </div>
-                      </div>
-
-                      <!-- 主題作者資訊 -->
-                      <div class="small text-muted d-flex flex-wrap gap-2">
-                        <span class="text-nowrap"> 👤 {{ topic.author }} </span>
-                        <span class="d-md-none text-nowrap">
-                          🕒 {{ formatTimeAgo(topic.createdAt) }}
-                        </span>
+                        <div class="topic-preview-text-col">
+                          <HtmlIframe
+                            class="topic-preview-iframe"
+                            :html="topic.contentHtml || topic.content"
+                            :min-height="0"
+                            text-color="#145369"
+                            :allow-scripts="true"
+                            :extra-css="getTopicPreviewCss(topic)"
+                          />
+                        </div>
+                        <div
+                          class="topic-preview-click-layer"
+                          @click="goToThread(topic.id)"
+                        ></div>
                       </div>
 
                       <!-- 互動按鈕已移到標題右側 -->
@@ -743,7 +1010,13 @@ const openDetailedReply = () => {
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
                   </div>
-                  <div class="text-muted">{{ topic.author }}</div>
+                  <UserPreview
+                    class="text-muted"
+                    :user-id="topic.userId"
+                    :username="topic.author"
+                    :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
+                    :size="24"
+                  />
                 </td>
 
                 <!-- 最後回應時間欄 -->
@@ -754,8 +1027,16 @@ const openDetailedReply = () => {
                     {{ formatDate(topic.lastReplyTime) }}
                   </div>
                   <div v-else class="text-muted">尚無回應</div>
-                  <div v-if="topic.lastReplyUser" class="text-muted">
-                    {{ topic.lastReplyUser }}
+                  <div
+                    v-if="topic.lastReplyUser"
+                    class="text-muted d-inline-flex align-items-center gap-1"
+                  >
+                    <UserPreview
+                      :user-id="topic.lastReplyUserId"
+                      :username="topic.lastReplyUser"
+                      :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                      :size="24"
+                    />
                   </div>
                 </td>
 
@@ -895,6 +1176,55 @@ const openDetailedReply = () => {
   padding-bottom: 0;
 }
 
+.topic-preview-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.topic-preview-collapsed {
+  max-height: 65px;
+  overflow: hidden;
+  position: relative;
+}
+
+.topic-preview-images-col {
+  flex: 0 0 auto;
+}
+
+.topic-preview-images-grid {
+  display: grid;
+  grid-template-columns: 56px;
+  gap: 8px;
+}
+
+.topic-preview-image-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
+.topic-preview-text-col {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topic-preview-iframe {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-preview-click-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
 /* 按鈕樣式 */
 .btn-forum-secondary {
   background-color: transparent;
@@ -928,6 +1258,10 @@ const openDetailedReply = () => {
   margin-bottom: 0;
 }
 
+.table-responsive {
+  overflow-y: visible;
+}
+
 .table thead {
   font-weight: 600;
   font-size: 0.9rem;
@@ -937,6 +1271,34 @@ const openDetailedReply = () => {
 .badge.bg-secondary {
   background-color: #86b0bd !important;
   color: #fff;
+}
+
+.badge.bg-secondary-light {
+  background-color: #d0e8f2 !important;
+  color: #145369;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  line-height: 1;
+}
+
+.parent-link-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-color: #86b0bd;
+  color: #145369;
+  background: transparent;
+}
+
+.parent-link-btn:hover {
+  background-color: #fff0dd;
+  border-color: #145369;
+  color: #145369;
 }
 
 .badge.bg-info {
@@ -977,7 +1339,6 @@ const openDetailedReply = () => {
   display: inline-flex;
   align-items: center;
   position: relative;
-  z-index: 10;
 }
 
 .thread-detail-title {
@@ -985,6 +1346,56 @@ const openDetailedReply = () => {
   color: #0f3c4d;
   letter-spacing: 0.2px;
   font-size: 1.35rem;
+}
+
+/* 主文正在回覆的目標內容高亮效果 */
+.thread-detail-card.replying-target {
+  border: 2px solid #145369;
+  box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.08) 0%,
+    rgba(20, 83, 105, 0.03) 100%
+  );
+  position: relative;
+  animation: pulse-border 2s ease-in-out infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.thread-detail-card.replying-target:hover {
+  box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.12) 0%,
+    rgba(20, 83, 105, 0.06) 100%
+  );
+}
+
+.thread-detail-card.replying-target::before {
+  content: "✍️ 正在回覆此內容";
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: linear-gradient(135deg, #145369 0%, #0f3c4d 100%);
+  color: #fff0dd;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
+  z-index: 10;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  }
 }
 
 .quick-reply-toggle {
@@ -995,57 +1406,67 @@ const openDetailedReply = () => {
   min-width: 120px;
 }
 
-.reply-mode-tabs {
+.reply-mode-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 8px 8px 8px;
-  border-radius: 12px;
-  height: auto;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  overflow: visible;
-  margin: 0;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
-.reply-mode-tabs .nav-link {
-  border: 2px solid #86b0bd;
+.reply-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 6px;
   background: #fff;
+  border: 2px solid #d1d3d4;
+  border-radius: 999px;
+  height: 42px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  margin: 0;
+}
+
+.reply-mode-tabs .nav-link,
+.reply-standalone-btn {
+  border: none;
+  background: transparent;
   color: #145369;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  font-size: 1rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: auto;
-  line-height: 1.5;
-  transition: all 0.3s ease;
+  height: 32px;
+  line-height: 32px;
+  transition: all 0.2s ease;
   margin: 0;
-  min-width: 140px;
-  box-shadow: 0 2px 4px rgba(20, 83, 105, 0.1);
 }
 
-.reply-mode-tabs .nav-link i {
-  font-size: 1.1rem;
-  margin-right: 6px;
+.reply-standalone-btn {
+  border: 2px solid #d1d3d4;
+  background: #fff;
+  height: 42px;
+  padding: 0 1.1rem;
 }
 
-.reply-mode-tabs .nav-link:hover {
-  background: #fff0dd;
-  border-color: #145369;
-  color: #145369;
-  box-shadow: 0 4px 8px rgba(20, 83, 105, 0.2);
-  transform: translateY(-2px);
+.reply-mode-tabs .nav-link i,
+.reply-standalone-btn i {
+  font-size: 1.05rem;
+  margin-right: 8px;
+}
+
+.reply-mode-tabs .nav-link:hover,
+.reply-standalone-btn:hover {
+  background: #f8f9fa;
 }
 
 .reply-mode-tabs .nav-link.active {
   background: #145369;
-  color: #fff0dd;
-  border-color: #145369;
-  box-shadow: 0 4px 12px rgba(20, 83, 105, 0.3);
+  color: #fff;
 }
 
 .quick-reply-box {
@@ -1060,6 +1481,16 @@ const openDetailedReply = () => {
 
 .quick-reply-actions .btn {
   min-width: 100px;
+}
+
+.thread-author-link,
+.topic-author-link {
+  color: inherit;
+}
+
+.thread-author-link:hover,
+.topic-author-link:hover {
+  text-decoration: underline;
 }
 
 .thread-detail-image {

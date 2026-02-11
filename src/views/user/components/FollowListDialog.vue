@@ -97,6 +97,7 @@
 import { ref, watch, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useUserStore } from "@/stores/user/user.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 
 const props = defineProps({
   userId: { type: [Number, String], required: true },
@@ -109,13 +110,38 @@ const { followingList, followersList, isLoading } = storeToRefs(userStore);
 const { fetchFollowingList, fetchFollowersList, unfollowUser } = userStore;
 const currentTab = ref(props.initialTab);
 
+const authStore = useAuthStore();
+const isMyProfile = computed(
+  () => String(props.userId) === String(authStore.user?.id),
+);
+
+const fetchList = async () => {
+  // 無論是誰，都使用「有 ID 參數」的 API 來抓取，這樣最統一
+  if (currentTab.value === "following") {
+    // 傳入 props.userId
+    await userStore.fetchUserFollowingList(props.userId);
+  } else {
+    // 傳入 props.userId
+    await userStore.fetchUserFollowersList(props.userId);
+  }
+};
+
 const displayList = computed(() => {
   if (currentTab.value === "following") {
-    return followingList.value;
+    return userStore.profileFollowingList;
   } else {
-    return followersList.value;
+    return userStore.profileFollowersList;
   }
 });
+
+const handleUnfollow = async (user) => {
+  // 後端統一回傳 id，所以直接取 user.id
+  if (user.id) {
+    await userStore.unfollowUser(user.id);
+    // 取消成功後，重新撈一次清單更新畫面
+    await fetchList();
+  }
+};
 
 watch([isOpen, currentTab], async ([newOpen, newTab]) => {
   if (newOpen) {
@@ -123,24 +149,4 @@ watch([isOpen, currentTab], async ([newOpen, newTab]) => {
     await fetchList();
   }
 });
-
-const fetchList = async () => {
-  // 這裡假設 props.userId 是「自己」。
-  // 如果 Store 的 API 支援查別人的，可以把 props.userId 傳進去
-  if (currentTab.value === "following") {
-    await fetchFollowingList();
-  } else {
-    await fetchFollowersList();
-  }
-};
-
-const handleUnfollow = async (user) => {
-  //if (!confirm(`確定要取消關注 ${user.username || "這位用戶"} 嗎？`)) return;
-  // 根據您的 Store 寫法，這裡需要傳入 targetId
-  // 請確認 API 回傳的欄位名稱，通常是 user.id 或 user.followeeId
-  const targetId = user.id || user.followeeId;
-  if (targetId) {
-    await unfollowUser(targetId);
-  }
-};
 </script>

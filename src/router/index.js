@@ -3,15 +3,14 @@ import { createRouter, createWebHistory } from "vue-router";
 import FirstView from "@/views/FirstView.vue";
 // tim 以上
 // owen
-import Register from "@/views/user/register.vue";
-import Login from "@/views/user/login.vue";
+import AuthView from '@/views/user/AuthView.vue';
 import UserIndex from "@/views/user/userindex.vue";
-import UserSettings from "@/views/user/UserSettings.vue"
-import UserCollections from "@/views/user/UserCollections.vue"
-import UserPost from "@/views/user/UserPost.vue"
-import UserLike from "@/views/user/UserLike.vue"
-import UserSave from "@/views/user/UserSave.vue"
-import UserMission from "@/views/user/UserMission.vue"
+import UserSettings from "@/views/user/UserSettings.vue";
+import UserCollections from "@/views/user/UserCollections.vue";
+import UserPost from "@/views/user/UserPost.vue";
+import UserLike from "@/views/user/UserLike.vue";
+import UserSave from "@/views/user/UserSave.vue";
+import UserMission from "@/views/user/UserMission.vue";
 // owen
 // qiu以下
 import Task from "../views/point/Task.vue";
@@ -74,14 +73,19 @@ const router = createRouter({
       component: () => import("@/views/user/userindex.vue"),
     },
     {
+      path: '/auth',
+      name: 'Auth',
+      component: AuthView,
+    },
+    {
       path: "/register",
-      name: "Register",
-      component: Register,
+      redirect: to => {
+        return { path: '/auth', query: { tab: 'register' } }
+      }
     },
     {
       path: "/login",
-      name: "Login",
-      component: Login,
+      redirect: '/auth'
     },
     {
       path: "/usersettings",
@@ -189,6 +193,24 @@ const router = createRouter({
     },
     // yjy 以上
   ],
+  //owen 巢狀頁面不跳轉
+  scrollBehavior(to, from, savedPosition) {
+    // 1. 如果是按瀏覽器的「上一頁/下一頁」，保持原本位置
+    // if (savedPosition) {
+    //   return savedPosition;
+    // }
+
+    // 2. 定義哪些路由切換時「不要」捲動到頂部
+    const noScrollRoutes = ['UserMission', 'UserCollections', 'UserPost', 'UserLike', 'UserSave'];
+
+    // 如果 "去的頁面" 和 "來的頁面" 都在這個清單裡 (表示只是在切換 Tab)
+    if (noScrollRoutes.includes(to.name) && noScrollRoutes.includes(from.name)) {
+      return false; // 或者 return {}，代表保持目前的捲動位置
+    }
+
+    // 3. 其他情況 (切換到完全不同的頁面)，則捲動到頂部
+    return { top: 0 };
+  },
 });
 
 export default router;

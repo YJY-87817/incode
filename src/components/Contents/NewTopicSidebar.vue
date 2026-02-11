@@ -1,151 +1,149 @@
 <script setup>
-import { computed, nextTick } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, watch } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
-import apiClient from "@/api/request.js";
 import TiptapEditor from "@/components/Contents/TiptapEditor.vue";
+import { useForumPost } from "@/composables/useForumPost";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
-const router = useRouter();
-const route = useRoute();
+const { getModeTitle, publishPost, hasDraftContent } = useForumPost();
 
 // 獲取所有草稿
 const allDrafts = computed(() => forumStore.drafts || []);
 
-// 獲取模式標題
-const getModalTitle = (mode) => {
-  switch (mode) {
-    case "comment":
-      return "詳細留言";
-    case "reply":
-      return "詳細回文";
-    case "commentReply":
-      return "詳細回覆";
-    default:
-      return "詳細發布";
-  }
-};
-
 const submitLabel = "發布";
 
-// 滾動到回覆目標的函數
-const scrollToReplyTarget = async (draft) => {
-  const targetId = draft.replyingToContentId;
-  let threadId = draft.replyingToThreadId;
+const getDefaultEntrustMission = () => ({
+  title: "",
+  detail: "",
+  rewardPoints: "",
+  category: "",
+  deadline: "",
+});
 
-  if (!targetId) return;
+const getDraftEntrustMission = (draft) =>
+  draft?.entrustMission
+    ? { ...draft.entrustMission }
+    : getDefaultEntrustMission();
 
-  if (!threadId) {
-    threadId = await resolveThreadIdByContentId(targetId);
-    if (threadId) {
-      forumStore.updateDraft(draft.id, { replyingToThreadId: threadId });
-    }
-  }
+const getDraftExtraValues = (draft) => {
+  if (!draft?.showEntrustMission) return [];
+  const data = getDraftEntrustMission(draft);
+  return [
+    data.title,
+    data.detail,
+    data.rewardPoints,
+    data.category,
+    data.deadline,
+  ];
+};
 
-  if (!threadId) return;
-
-  forumStore.pendingScrollTargetId = targetId;
-
-  const currentThreadId = route.params?.id ?? null;
-  if (String(currentThreadId ?? "") !== String(threadId)) {
-    router.push({ name: "forum-thread", params: { id: threadId } });
-    return;
-  }
-
-  nextTick(() => {
-    const targetEl = document.getElementById(`content-${targetId}`);
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      forumStore.pendingScrollTargetId = null;
-    }
+const updateDraftEntrustMission = (draft, updates) => {
+  const current = getDraftEntrustMission(draft);
+  forumStore.updateDraft(draft.id, {
+    entrustMission: {
+      ...current,
+      ...updates,
+    },
   });
 };
 
-const replyingToContent = computed(() => forumStore.replyingToContentData);
+const canUseEntrustMission = (draft) =>
+  draft?.mode === "post" && !draft?.parentContentId;
 
-const fetchContentDetail = async (contentId) => {
-  const res = await apiClient.get(`/ContentApi/${contentId}`);
-  return res?.contentId ? res : (res?.data ?? res);
+const toggleEntrustMission = (draft) => {
+  if (!canUseEntrustMission(draft)) return;
+  const next = !draft?.showEntrustMission;
+  forumStore.updateDraft(draft.id, {
+    showEntrustMission: next,
+    entrustMission: next
+      ? getDraftEntrustMission(draft)
+      : getDefaultEntrustMission(),
+  });
 };
 
-const resolveThreadIdByContentId = async (contentId) => {
-  try {
-    const detail = await fetchContentDetail(contentId);
-    if (!detail) return null;
+const validateEntrustMission = async (draft) => {
+  if (!draft?.showEntrustMission) return true;
 
-    const type = detail.type ?? detail.contentType ?? detail.content_type;
-    const currentId = detail.contentId ?? detail.id ?? detail.content_id;
-    const parentId =
-      detail.parentContentId ?? detail.parent_content_id ?? detail.parentId;
+  const data = getDraftEntrustMission(draft);
+  const title = String(data.title || "").trim();
+  const detail = String(data.detail || "").trim();
+  const category = String(data.category || "").trim();
+  const rewardPoints = Number(data.rewardPoints);
 
-    if (type === CONTENT_TYPES.POST || !parentId) return currentId;
-    if (type === CONTENT_TYPES.REPLY) return parentId;
+  if (!title || !detail || !category || !Number.isFinite(rewardPoints)) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請完整填寫委託任務資訊",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
 
-    // COMMENT or COMMENT_REPLY: need to walk up
-    const parent = await fetchContentDetail(parentId);
-    if (!parent) return parentId;
+  if (rewardPoints <= 0) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "獎勵點數需大於 0",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return false;
+  }
 
-    const parentType = parent.type ?? parent.contentType ?? parent.content_type;
-    const parentParentId =
-      parent.parentContentId ?? parent.parent_content_id ?? parent.parentId;
+  return true;
+};
 
-    if (parentType === CONTENT_TYPES.REPLY) {
-      return parentParentId ?? parentId;
-    }
+const buildEntrustMissionPayload = (draft) => {
+  if (!draft?.showEntrustMission) return null;
+  const data = getDraftEntrustMission(draft);
+  const deadline = String(data.deadline || "").trim();
+  const rewardPoints = Number(data.rewardPoints);
 
-    if (parentType === CONTENT_TYPES.POST) {
-      return parentId;
-    }
+  return {
+    title: String(data.title || "").trim(),
+    detail: String(data.detail || "").trim(),
+    rewardPoints: Number.isFinite(rewardPoints) ? rewardPoints : 0,
+    category: String(data.category || "").trim(),
+    deadline: deadline || null,
+  };
+};
 
-    if (parentType === CONTENT_TYPES.COMMENT) {
-      if (!parentParentId) return parentId;
-      const grandParent = await fetchContentDetail(parentParentId);
-      if (!grandParent) return parentParentId;
+const buildReplyTitle = (baseTitle) => {
+  const base = String(baseTitle || "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
 
-      const gpType =
-        grandParent.type ?? grandParent.contentType ?? grandParent.content_type;
-      const gpParentId =
-        grandParent.parentContentId ??
-        grandParent.parent_content_id ??
-        grandParent.parentId;
+const isCommentLikeDraft = (draft) => {
+  const type = draft?.contentType;
+  return type === CONTENT_TYPES.COMMENT || type === CONTENT_TYPES.COMMENT_REPLY;
+};
 
-      if (gpType === CONTENT_TYPES.REPLY) {
-        return gpParentId ?? parentParentId;
-      }
+const getReplyBaseTitle = (draft) =>
+  draft?.replyingToContentData?.title ||
+  draft?.replyingToContentData?.contentText ||
+  "";
 
-      if (gpType === CONTENT_TYPES.POST) {
-        return parentParentId;
-      }
-    }
-
-    return parentId;
-  } catch (error) {
-    console.error("[NewTopicSidebar] resolveThreadIdByContentId 失敗", error);
-    return null;
+const syncDraftReplyTitle = (draft) => {
+  if (!draft || !isCommentLikeDraft(draft)) return;
+  const targetTitle = buildReplyTitle(getReplyBaseTitle(draft));
+  if (targetTitle && draft.title !== targetTitle) {
+    forumStore.updateDraft(draft.id, { title: targetTitle });
   }
 };
 
 // 處理草稿操作
 const handleCancelClick = (draft) => {
-  const hasTitle = draft.title && draft.title.trim().length > 0;
-  const hasContent = draft.body && draft.body.trim().length > 0;
-
-  if (hasTitle || hasContent) {
+  const titleToCheck = isCommentLikeDraft(draft) ? "" : draft.title;
+  if (hasDraftContent(titleToCheck, draft.body, getDraftExtraValues(draft))) {
     // 如果有內容，最小化
     forumStore.toggleDraftMinimize(draft.id, true);
   } else {
     // 如果沒有內容，直接刪除
     forumStore.removeDraft(draft.id);
   }
-};
-
-const expandDraft = (draft) => {
-  forumStore.toggleDraftMinimize(draft.id, false);
-};
-
-const closeDraft = (draft) => {
-  forumStore.removeDraft(draft.id);
 };
 
 const openLargeEditor = (draft) => {
@@ -157,6 +155,9 @@ const openLargeEditor = (draft) => {
   forumStore.newTopic.categorySearch = draft.categorySearch;
   forumStore.newTopic.mode = draft.mode;
   forumStore.newTopic.contentType = draft.contentType;
+  forumStore.newTopic.editingContentId = draft.editingContentId || null;
+  forumStore.newTopic.showEntrustMission = Boolean(draft.showEntrustMission);
+  forumStore.newTopic.entrustMission = getDraftEntrustMission(draft);
   forumStore.replyingToContentId = draft.replyingToContentId;
   forumStore.replyingToContentData = draft.replyingToContentData;
   forumStore.replyingToThreadId = draft.replyingToThreadId;
@@ -170,72 +171,35 @@ const openLargeEditor = (draft) => {
 };
 
 const submitDraft = async (draft) => {
-  if (!draft.title || !draft.body) {
-    await Swal.fire({
-      icon: "warning",
-      title: "提醒",
-      text: "請輸入標題與內容",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
+  // 使用 composable 的 publishPost 進行驗證和提交
+  const isEditMode = draft.mode === "edit" && draft.editingContentId;
+  if (draft.showEntrustMission && !(await validateEntrustMission(draft))) {
     return;
   }
 
-  const parentContentId = draft.parentContentId ?? null;
-  const categoryId = draft.categoryId ?? null;
+  const entrustMissionPayload = canUseEntrustMission(draft)
+    ? buildEntrustMissionPayload(draft)
+    : null;
 
-  if (!parentContentId && !categoryId) {
-    await Swal.fire({
-      icon: "warning",
-      title: "提醒",
-      text: "請選擇分類",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
+  const success = await publishPost(
+    {
+      title: draft.title,
+      body: draft.body,
+      categoryId: draft.categoryId,
+      parentContentId: draft.parentContentId,
+      contentType: draft.contentType,
+      editingContentId: draft.editingContentId,
+      entrustMission: entrustMissionPayload,
+    },
+    Boolean(isEditMode),
+  );
+
+  if (!success) {
     return;
   }
 
-  const resolvedContentType =
-    draft.contentType ??
-    (parentContentId ? CONTENT_TYPES.REPLY : CONTENT_TYPES.POST);
-
-  const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
-    categoryId,
-    parentContentId,
-    title: draft.title,
-    body: draft.body,
-    type: resolvedContentType,
-  };
-
-  try {
-    await apiClient.post("/ContentApi", dto);
-    await Swal.fire({
-      icon: "success",
-      title: "發表成功",
-      showConfirmButton: false,
-      timer: 1500,
-    });
-
-    forumStore.pagination.currentPage = 1;
-    await forumStore.fetchTopics();
-
-    if (parentContentId && forumStore.selectedThread) {
-      await forumStore.fetchThreadDetail(forumStore.selectedThread);
-    }
-
-    // 刪除這個草稿
-    forumStore.removeDraft(draft.id);
-  } catch (error) {
-    console.error("[NewTopicSidebar] submit - 發表失敗:", error);
-    await Swal.fire({
-      icon: "error",
-      title: "發表失敗",
-      text: "發表失敗，請稍後再試",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-    });
-  }
+  // 刪除這個草稿
+  forumStore.removeDraft(draft.id);
 };
 
 // 更新草稿內容的函數
@@ -246,42 +210,18 @@ const updateDraftTitle = (draft, value) => {
 const updateDraftBody = (draft, value) => {
   forumStore.updateDraft(draft.id, { body: value });
 };
+
+watch(
+  () => allDrafts.value,
+  (drafts) => {
+    (drafts || []).forEach((draft) => syncDraftReplyTitle(draft));
+  },
+  { immediate: true, deep: true },
+);
 </script>
 
 <template>
   <div class="new-topic-sidebar-stack">
-    <!-- 所有最小化的 banner 放在一個固定容器中 -->
-    <div v-if="allDrafts.some((d) => d.isMinimized)" class="banners-container">
-      <template v-for="draft in allDrafts" :key="`banner-${draft.id}`">
-        <div
-          v-if="draft.isMinimized"
-          class="new-topic-banner"
-          @click="expandDraft(draft)"
-        >
-          <div class="banner-content">
-            <div class="banner-jump" @click.stop="scrollToReplyTarget(draft)">
-              <i class="fa-solid fa-people-pulling"></i>
-            </div>
-            <div class="banner-left">
-              <div class="banner-title">
-                <span v-if="draft.title.trim()">{{ draft.title }}</span>
-                <span v-else class="text-muted">未命名的草稿</span>
-              </div>
-            </div>
-            <div class="banner-right">
-              <button
-                type="button"
-                class="btn btn-sm banner-close-btn"
-                @click.stop="closeDraft(draft)"
-              >
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </template>
-    </div>
-
     <!-- 所有展開的編輯器 -->
     <div class="editors-container">
       <template v-for="draft in allDrafts" :key="`editor-${draft.id}`">
@@ -292,7 +232,7 @@ const updateDraftBody = (draft, value) => {
           <div class="card-header bg-white">
             <div class="d-flex align-items-start justify-content-between gap-2">
               <div>
-                <h6 class="mb-1">{{ getModalTitle(draft.mode) }}</h6>
+                <h6 class="mb-1">{{ getModeTitle(draft.mode) }}</h6>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <button
@@ -313,7 +253,7 @@ const updateDraftBody = (draft, value) => {
             </div>
           </div>
           <div class="card-body pt-0 pb-0 sidebar-body">
-            <div class="mb-3">
+            <div v-if="!isCommentLikeDraft(draft)" class="mb-3">
               <label class="form-label">標題</label>
               <input
                 :value="draft.title"
@@ -329,6 +269,92 @@ const updateDraftBody = (draft, value) => {
                   @update:modelValue="updateDraftBody(draft, $event)"
                   placeholder="請輸入貼文內容..."
                 />
+              </div>
+            </div>
+            <div v-if="canUseEntrustMission(draft)" class="mb-3">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-entrust-toggle"
+                @click="toggleEntrustMission(draft)"
+              >
+                {{ draft.showEntrustMission ? "取消委託任務" : "發佈委託任務" }}
+              </button>
+            </div>
+            <div
+              v-if="draft.showEntrustMission"
+              class="entrust-mission-panel border rounded p-3 mb-3"
+            >
+              <h6 class="mb-3">委託任務資訊</h6>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">任務標題</label>
+                  <input
+                    :value="draft.entrustMission?.title || ''"
+                    class="form-control"
+                    placeholder="請輸入任務標題"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        title: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">任務分類</label>
+                  <input
+                    :value="draft.entrustMission?.category || ''"
+                    class="form-control"
+                    placeholder="請輸入任務分類"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        category: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">獎勵點數</label>
+                  <input
+                    :value="draft.entrustMission?.rewardPoints || ''"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="form-control"
+                    placeholder="請輸入獎勵點數"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        rewardPoints: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">截止日期</label>
+                  <input
+                    :value="draft.entrustMission?.deadline || ''"
+                    type="date"
+                    class="form-control"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        deadline: $event.target.value,
+                      })
+                    "
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">任務說明</label>
+                  <textarea
+                    :value="draft.entrustMission?.detail || ''"
+                    class="form-control"
+                    rows="4"
+                    placeholder="請輸入任務內容"
+                    @input="
+                      updateDraftEntrustMission(draft, {
+                        detail: $event.target.value,
+                      })
+                    "
+                  ></textarea>
+                </div>
               </div>
             </div>
             <div class="d-flex justify-content-end gap-2 sidebar-actions">
@@ -355,7 +381,7 @@ const updateDraftBody = (draft, value) => {
 </template>
 
 <style scoped>
-/* Banner 容器：固定在頂部 */
+/* 編輯器容器 */
 .new-topic-sidebar-stack {
   position: relative;
   display: flex;
@@ -363,18 +389,6 @@ const updateDraftBody = (draft, value) => {
   min-height: 0;
   height: 100%;
   overflow: visible;
-}
-
-.banners-container {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  z-index: 50;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding-top: 0.25rem;
 }
 
 .editors-container {
@@ -385,128 +399,14 @@ const updateDraftBody = (draft, value) => {
   flex-direction: column;
 }
 
-/* 最小化的 banner 樣式 */
-.new-topic-banner {
-  position: relative;
-  background: white;
-  border: 1px solid #d2d6da;
-  border-radius: 0.375rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.banner-content {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 0;
-  max-width: 100%;
-}
-
-.banner-left {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-}
-
-.banner-jump {
-  flex: 0 0 20%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem 0.5rem;
-  border-right: 1px solid #d2d6da;
-  font-weight: 600;
-  color: #145369;
-  user-select: none;
-  cursor: pointer;
-}
-
-.banner-right {
-  flex: 0 0 20%;
-  display: flex;
-  align-items: stretch;
-}
-
-.banner-title {
-  flex: 1;
-  min-width: 0;
-  font-weight: 500;
-  color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-}
-
-.banner-title .text-muted {
-  color: #6c757d;
-  font-style: italic;
-}
-
-.new-topic-banner {
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.new-topic-banner:hover {
-  background-color: #f0f5f8;
-  border-color: #145369;
-}
-
-.new-topic-banner .banner-jump:hover {
-  background-color: #145369;
-  color: #fff;
-}
-
-.new-topic-banner .btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  white-space: nowrap;
-}
-
-.new-topic-banner .banner-close-btn {
-  width: 100%;
-  height: 100%;
-  flex-shrink: 0;
-  padding: 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  border-radius: 0;
-  border-left: 1px solid #d2d6da;
-}
-
-.new-topic-banner .banner-close-btn:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
-}
-
 /* 完整編輯器樣式 */
 .new-topic-sidebar :deep(.tiptap-editor-wrapper) {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  max-height: 100%;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -522,13 +422,12 @@ const updateDraftBody = (draft, value) => {
 }
 
 .new-topic-sidebar {
-  position: sticky;
+  position: relative;
   height: auto;
-  max-height: calc(100vh - 120px);
-  z-index: 40;
+  max-height: none;
+  z-index: 60;
   display: flex;
   flex-direction: column;
-  top: 0;
   margin-bottom: 1rem;
   background: white;
   border: 1px solid #dee2e6;
@@ -539,26 +438,26 @@ const updateDraftBody = (draft, value) => {
 }
 
 .new-topic-sidebar .sidebar-body {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .new-topic-sidebar .editor-section {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .new-topic-sidebar .editor-wrapper {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  max-height: 100%;
+  max-height: none;
 }
 
 .new-topic-sidebar .btn-primary {
@@ -580,6 +479,30 @@ const updateDraftBody = (draft, value) => {
   background-color: #145369;
   border-color: #145369;
   color: white;
+}
+
+.new-topic-sidebar .btn-entrust-toggle {
+  border-color: #145369;
+  color: #145369;
+}
+
+.new-topic-sidebar .btn-entrust-toggle:hover {
+  background-color: #eaf2f4;
+  color: #0f4456;
+}
+
+.new-topic-sidebar .btn-entrust-toggle:focus,
+.new-topic-sidebar .btn-entrust-toggle:active,
+.new-topic-sidebar .btn-entrust-toggle.active {
+  background-color: #eaf2f4;
+  border-color: #145369;
+  color: #0f4456;
+  box-shadow: none;
+}
+
+.new-topic-sidebar .entrust-mission-panel {
+  background: #f6f8f9;
+  border-color: #d9e2e6;
 }
 
 .new-topic-sidebar .sidebar-actions {

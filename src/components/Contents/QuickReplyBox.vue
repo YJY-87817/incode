@@ -34,30 +34,39 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+import { useForumStore } from "@/stores/forumStore";
+
 const props = defineProps({
-  modelValue: {
-    type: String,
+  contentId: {
+    type: Number,
     required: true,
-  },
-  isSubmitting: {
-    type: Boolean,
-    default: false,
   },
 });
 
-const emit = defineEmits([
-  "update:modelValue",
-  "submit",
-  "cancel",
-  "textarea-input",
-]);
+const emit = defineEmits(["submit", "cancel", "textarea-input"]);
+
+const forumStore = useForumStore();
+
+// 初始化快速回覆狀態
+forumStore.initQuickReply(props.contentId);
+
+// 從 Pinia store 獲取數據
+const modelValue = computed({
+  get: () => forumStore.getQuickReplyContent(props.contentId),
+  set: (value) => forumStore.setQuickReplyContent(props.contentId, value),
+});
+
+const isSubmitting = computed(() =>
+  forumStore.getQuickReplySubmitting(props.contentId),
+);
 
 function handleTextareaEvent(event) {
   emit("textarea-input", event);
 }
 
 function handleInput(event) {
-  emit("update:modelValue", event.target.value);
+  modelValue.value = event.target.value;
   handleTextareaEvent(event);
 }
 </script>

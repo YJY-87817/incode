@@ -6,6 +6,7 @@
 -->
 
 <script setup>
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useForumStore } from "@/stores/forumStore";
 
@@ -13,9 +14,23 @@ const forumStore = useForumStore();
 const route = useRoute();
 const router = useRouter();
 
+// 使用帶實時統計的分類列表
+const categories = computed(() => forumStore.categoriesWithStats);
+
 const handleSelectCategory = (categoryId) => {
   const isDetailPage = Boolean(route.params?.id);
   forumStore.selectCategory(categoryId, { clearSearch: isDetailPage });
+  if (isDetailPage) {
+    router.push({ name: "forum" });
+  }
+};
+
+const handleClearCategory = () => {
+  forumStore.selectedCategory = null;
+  forumStore.newTopic.categoryId = null;
+  forumStore.pagination.currentPage = 1;
+  forumStore.fetchTopics();
+  const isDetailPage = Boolean(route.params?.id);
   if (isDetailPage) {
     router.push({ name: "forum" });
   }
@@ -29,8 +44,28 @@ const handleSelectCategory = (categoryId) => {
       <div
         class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
       >
-        <h5 class="mb-0 fs-6 fs-md-5">📁 討論分類</h5>
-        <small class="text-muted">點擊分類篩選主題</small>
+        <h5
+          class="mb-0 fs-6 fs-md-5"
+          :class="{ 'clearable-title': forumStore.selectedCategory !== null }"
+          @click="forumStore.selectedCategory !== null && handleClearCategory()"
+          role="button"
+          :tabindex="forumStore.selectedCategory !== null ? 0 : -1"
+          @keydown.enter="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
+          @keydown.space.prevent="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
+        >
+          📁 討論分類
+          <span
+            v-if="forumStore.selectedCategory !== null"
+            class="clear-indicator ms-2"
+            title="點擊清除分類"
+          >
+            ✕
+          </span>
+        </h5>
       </div>
     </div>
 
@@ -38,7 +73,7 @@ const handleSelectCategory = (categoryId) => {
     <div class="p-2 p-md-3">
       <!-- 載入中提示 -->
       <div
-        v-if="forumStore.isLoading && forumStore.categories.length === 0"
+        v-if="forumStore.isLoading && categories.length === 0"
         class="text-center py-3"
       >
         <div
@@ -49,57 +84,55 @@ const handleSelectCategory = (categoryId) => {
         </div>
       </div>
 
-      <!-- 分類列表 -->
-      <div
-        v-else
-        class="d-flex flex-wrap align-content-start p-0 category-container"
-      >
-        <!-- 分類卡片 -->
+      <!-- 分類列表容器與取消按鈕 -->
+      <div v-else class="d-flex gap-2 align-items-flex-start category-wrapper">
+        <!-- 分類列表 -->
         <div
-          v-for="category in forumStore.categories"
-          :key="category.id"
-          class="m-1"
+          class="d-flex flex-wrap align-content-start p-0 category-container flex-grow-1"
         >
-          <div
-            class="category-card p-2 border rounded cursor-pointer"
-            :class="{
-              'border-primary bg-light':
-                forumStore.selectedCategory === category.id,
-              'border-light': forumStore.selectedCategory !== category.id,
-            }"
-            @click="handleSelectCategory(category.id)"
-            :title="category.description || category.name"
-            role="button"
-            tabindex="0"
-            @keydown.enter="handleSelectCategory(category.id)"
-            @keydown.space.prevent="handleSelectCategory(category.id)"
-          >
-            <!-- 分類名稱 -->
-            <h6 class="mb-2 fw-bold text-truncate">{{ category.name }}</h6>
-
-            <!-- 分類統計標籤 -->
+          <!-- 分類卡片 -->
+          <div v-for="category in categories" :key="category.id" class="m-1">
             <div
-              class="category-tags small"
+              class="category-card p-2 border rounded cursor-pointer"
               :class="{
-                'text-primary': forumStore.selectedCategory === category.id,
+                'border-primary bg-light':
+                  forumStore.selectedCategory === category.id,
+                'border-light': forumStore.selectedCategory !== category.id,
               }"
+              @click="handleSelectCategory(category.id)"
+              :title="category.description || category.name"
+              role="button"
+              tabindex="0"
+              @keydown.enter="handleSelectCategory(category.id)"
+              @keydown.space.prevent="handleSelectCategory(category.id)"
             >
-              <span class="d-inline-block me-2"
-                >📝 {{ category.topicCount ?? 0 }}</span
+              <!-- 分類名稱 -->
+              <h6 class="mb-2 fw-bold text-truncate">{{ category.name }}</h6>
+
+              <!-- 分類統計標籤 -->
+              <div
+                class="category-tags small"
+                :class="{
+                  'text-primary': forumStore.selectedCategory === category.id,
+                }"
               >
-              <span class="d-inline-block"
-                >💬 {{ category.postCount ?? 0 }}</span
-              >
+                <span class="d-inline-block me-2"
+                  >📝 {{ category.topicCount ?? 0 }}</span
+                >
+                <span class="d-inline-block"
+                  >💬 {{ category.postCount ?? 0 }}</span
+                >
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 空狀態提示 -->
-        <div
-          v-if="!forumStore.isLoading && forumStore.categories.length === 0"
-          class="w-100 text-center text-muted py-3 small"
-        >
-          <p>目前沒有分類</p>
+          <!-- 空狀態提示 -->
+          <div
+            v-if="!forumStore.isLoading && categories.length === 0"
+            class="w-100 text-center text-muted py-3 small"
+          >
+            <p>目前沒有分類</p>
+          </div>
         </div>
       </div>
     </div>
@@ -113,12 +146,47 @@ const handleSelectCategory = (categoryId) => {
 }
 
 .card-header {
-  background-color: #86B0BD !important;
+  background-color: #86b0bd !important;
   border-bottom-color: #d1d3d4;
 }
 
 .card-header h5 {
   color: #fff;
+}
+
+/* 可點擊的標題樣式 */
+.card-header h5.clearable-title {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  user-select: none;
+}
+
+.card-header h5.clearable-title:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(2px);
+}
+
+.card-header h5.clearable-title:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.card-header h5.clearable-title:active {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateX(0);
+}
+
+/* 清除指示器 */
+.clear-indicator {
+  font-size: 0.8em;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.card-header h5.clearable-title:hover .clear-indicator {
+  opacity: 1;
 }
 
 /* 分類卡片樣式 */

@@ -16,12 +16,33 @@
             >
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <div class="post-meta">
+                  <span
+                    v-if="post.categoryName"
+                    class="badge bg-secondary-light text-dark"
+                  >
+                    {{ post.categoryName }}
+                  </span>
+                  <button
+                    v-if="shouldShowParentLink"
+                    class="btn btn-sm btn-outline-primary parent-link-btn"
+                    type="button"
+                    @click.stop="goToParentThread"
+                  >
+                    <i class="fas fa-link me-1"></i>
+                    主文
+                  </button>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
-                  <h6 class="card-title post-author mb-0">{{ post.author }}</h6>
+                  <h6 class="card-title post-author mb-0" @click.stop>
+                    <UserPreview
+                      :user-id="post.userId"
+                      :username="post.author"
+                      :avatar-url="getAvatarUrl(post.author)"
+                      :size="24"
+                    />
+                  </h6>
                   <small
-                    class="text-muted post-time"
-                    :class="{ clickable: post.type === 2 || post.type === 3 }"
-                    @click="goToPostDetail"
+                    class="text-muted post-time clickable"
+                    @click.stop="goToPostDetail"
                   >
                     {{ post.createdAt }}
                   </small>
@@ -31,8 +52,11 @@
                 <InteractionButtons
                   :key="`interactions-${post.id}`"
                   :contentId="post.id"
+                  :authorUserId="post.userId"
                   @interaction-success="handleInteractionSuccess"
                   @interaction-error="handleInteractionError"
+                  @edit-content="handleEditContent"
+                  @delete-content="handleDeleteContent"
                 />
               </div>
             </div>
@@ -112,10 +136,7 @@
     </div>
 
     <!-- 巢狀回覆 -->
-    <div
-      v-if="!hideNestedReplies && post.replies && post.replies.length > 0"
-      class="nested-replies-section ms-3 mt-2"
-    >
+    <div v-if="canHaveNestedReplies" class="nested-replies-section ms-3 mt-2">
       <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
         <button
           v-if="canReplyHere"
@@ -135,7 +156,6 @@
             :class="{ active: replyTab === 'quick' }"
             @click="selectQuickReply"
           >
-            <i class="fas fa-pen me-1"></i>
             {{ quickReplyLabel }}
           </button>
           <button
@@ -144,11 +164,12 @@
             :class="{ active: replyTab === 'detailed' }"
             @click="selectDetailedReply"
           >
-            <i class="fas fa-feather-alt me-1"></i>
+            <i class="fas fa-pen me-1"></i>
             {{ detailedReplyLabel }}
           </button>
         </div>
         <button
+          v-if="shouldShowNestedToggleButton"
           class="btn btn-sm btn-outline-secondary nested-toggle-btn"
           @click="toggleNestedReplies"
         >
@@ -158,18 +179,20 @@
           ></i>
           <span class="ms-1">
             {{ isNestedExpanded ? "收起" : "展開" }}{{ nestedLabel }} ({{
-              post.replies.length
+              nestedCountLabel
             }})
           </span>
         </button>
+        <span v-if="nestedRepliesLoading" class="text-muted small">
+          載入中...
+        </span>
       </div>
 
       <!-- 回覆輸入框：置於展開內容上方 -->
       <QuickReplyBox
         v-if="showReply && canReplyHere"
         v-show="showQuickReply"
-        v-model="replyContent"
-        :is-submitting="isSubmittingReply"
+        :content-id="props.post.id"
         @submit="submitReply"
         @cancel="cancelReply"
         @textarea-input="autoResizeTextarea"
@@ -187,13 +210,19 @@
       >
         <div class="nested-replies-content">
           <ThreadPost
-            v-for="reply in post.replies"
+            v-for="reply in nestedReplies"
             :key="reply.id"
             :post="reply"
             :is-reply="true"
             :category-id="categoryId"
             :preview-only="true"
           />
+          <div
+            v-if="nestedRepliesLoaded && nestedRepliesCount === 0"
+            class="text-muted small py-2"
+          >
+            尚無{{ nestedLabel }}
+          </div>
           <div
             v-if="nestedToggleEnabled"
             class="nested-click-layer"
@@ -204,10 +233,7 @@
     </div>
 
     <!-- 無巢狀回覆時的單獨按鈕 -->
-    <div
-      v-if="hideNestedReplies || !post.replies || post.replies.length === 0"
-      class="mt-2"
-    >
+    <div v-if="!canHaveNestedReplies" class="mt-2">
       <button
         v-if="canReplyHere"
         class="btn btn-sm btn-forum-secondary thread-reply-btn"
@@ -226,7 +252,6 @@
           :class="{ active: replyTab === 'quick' }"
           @click="selectQuickReply"
         >
-          <i class="fas fa-pen me-1"></i>
           {{ quickReplyLabel }}
         </button>
         <button
@@ -235,7 +260,7 @@
           :class="{ active: replyTab === 'detailed' }"
           @click="selectDetailedReply"
         >
-          <i class="fas fa-feather-alt me-1"></i>
+          <i class="fas fa-pen me-1"></i>
           {{ detailedReplyLabel }}
         </button>
       </div>
@@ -244,8 +269,7 @@
       <QuickReplyBox
         v-if="showReply && canReplyHere"
         v-show="showQuickReply"
-        v-model="replyContent"
-        :is-submitting="isSubmittingReply"
+        :content-id="props.post.id"
         @submit="submitReply"
         @cancel="cancelReply"
         @textarea-input="autoResizeTextarea"
@@ -259,16 +283,23 @@
 import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
-import apiClient from "@/api/request.js";
+import contentApi from "@/api/contentApi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
+import UserPreview from "@/views/user/components/UserPreview.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
 import { toAbsoluteUrl } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
 const router = useRouter();
+
+const getAvatarUrl = (name, explicitUrl = "") => {
+  if (explicitUrl) return explicitUrl;
+  const safeName = String(name || "User").trim() || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
+};
 
 const props = defineProps({
   post: {
@@ -291,11 +322,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showParentLink: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const showReply = ref(false);
-const replyContent = ref("");
-const isSubmittingReply = ref(false);
 const isPreviewExpanded = ref(false);
 const showQuickReply = ref(false);
 const replyTab = ref(null);
@@ -303,6 +336,7 @@ const previewWrapper = ref(null);
 const previewToggleEnabled = ref(false);
 const PREVIEW_COLLAPSED_MAX_HEIGHT = 180;
 const PREVIEW_MIN_HEIGHT = 60;
+const PREVIEW_TEXT_COLLAPSE_LENGTH = 300;
 const savedScrollPosition = ref(0);
 
 // 巢狀回覆展開/收起狀態
@@ -315,7 +349,7 @@ const NESTED_COLLAPSED_MAX_HEIGHT = 200;
 // 檢查是否為正在回覆的目標（檢查所有草稿）
 const isReplyingTarget = computed(() => {
   return forumStore.drafts.some(
-    (draft) => draft.replyingToContentId === props.post.id
+    (draft) => draft.replyingToContentId === props.post.id,
   );
 });
 
@@ -333,22 +367,25 @@ const typeLabel = computed(() => {
 });
 
 const replyButtonLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆",
 );
 
 const canReply = computed(
-  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY
+  () => props.post.type !== CONTENT_TYPES.COMMENT_REPLY,
 );
 
 // 巢狀子層(展開留言/回覆內)不顯示回覆按鈕
 const canReplyHere = computed(() => canReply.value && !props.isReply);
+const canHaveNestedReplies = computed(
+  () => !props.hideNestedReplies && canReply.value && !props.isReply,
+);
 
 const quickReplyLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "簡易留言" : "簡易回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "留言" : "回覆",
 );
 
 const detailedReplyLabel = computed(() =>
-  props.post.type === CONTENT_TYPES.REPLY ? "詳細留言" : "詳細回覆"
+  props.post.type === CONTENT_TYPES.REPLY ? "詳細留言" : "詳細回覆",
 );
 
 const nestedLabel = computed(() => {
@@ -361,6 +398,66 @@ const nestedLabel = computed(() => {
     default:
       return "回覆";
   }
+});
+
+const nestedRepliesState = computed(
+  () => forumStore.childRepliesByParentId[props.post.id] || null,
+);
+
+const nestedReplies = computed(() => {
+  if (nestedRepliesState.value?.items) return nestedRepliesState.value.items;
+  if (Array.isArray(props.post.replies)) return props.post.replies;
+  return [];
+});
+
+const nestedRepliesCount = computed(() => {
+  if (nestedRepliesState.value?.loaded) {
+    return nestedRepliesState.value.totalCount ?? nestedReplies.value.length;
+  }
+  return Array.isArray(props.post.replies) ? props.post.replies.length : 0;
+});
+
+const nestedRepliesLoading = computed(
+  () => nestedRepliesState.value?.isLoading ?? false,
+);
+
+const nestedRepliesLoaded = computed(
+  () => nestedRepliesState.value?.loaded ?? false,
+);
+
+const nestedCountLabel = computed(() => {
+  // 優先顯示預加載的數量
+  const preloadedData = forumStore.childRepliesCountByParentId[props.post.id];
+  if (
+    preloadedData &&
+    !preloadedData.isLoading &&
+    preloadedData.totalCount !== null
+  ) {
+    return String(preloadedData.totalCount);
+  }
+
+  if (nestedRepliesLoading.value) return "...";
+  if (nestedRepliesLoaded.value) return String(nestedRepliesCount.value);
+  if (nestedRepliesCount.value > 0) return String(nestedRepliesCount.value);
+  return "?";
+});
+
+const shouldShowNestedToggleButton = computed(() => {
+  // 優先檢查預加載的計數數據
+  const preloadedData = forumStore.childRepliesCountByParentId[props.post.id];
+  if (preloadedData) {
+    // 如果正在加載或已加載且有數據，顯示按鈕
+    if (preloadedData.isLoading) return true;
+    if (preloadedData.totalCount !== null && preloadedData.totalCount > 0) {
+      return true;
+    }
+  }
+
+  // 檢查實際加載的回覆數據或預先設定的 replies
+  if (nestedRepliesCount.value > 0) return true;
+
+  // 其他情況不顯示按鈕
+  return false;
 });
 
 const badgeClass = computed(() => {
@@ -376,10 +473,42 @@ const badgeClass = computed(() => {
   }
 });
 
+const parentContentId = computed(
+  () =>
+    props.post.parentContentId ??
+    props.post.parent_content_id ??
+    props.post.parentId ??
+    props.post.parent_id ??
+    null,
+);
+
+const shouldShowParentLink = computed(
+  () =>
+    props.showParentLink &&
+    props.post.type === CONTENT_TYPES.REPLY &&
+    parentContentId.value,
+);
+
+const escapeHtml = (value) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const safeContent = computed(() => {
   const rawHtml = props.post.contentHtml ?? props.post.content ?? "";
   const { sanitizedHtml } = normalizeRichContent(rawHtml, toAbsoluteUrl);
-  return sanitizedHtml;
+  const titleText = String(props.post.title ?? "").trim();
+
+  if (props.post.type !== CONTENT_TYPES.REPLY || !titleText) {
+    return sanitizedHtml;
+  }
+
+  const titleHtml = `<h6 class="reply-title">${escapeHtml(titleText)}</h6>`;
+  if (!sanitizedHtml) return titleHtml;
+  return `${titleHtml}<div class="reply-body">${sanitizedHtml}</div>`;
 });
 
 const hasInlineImages = computed(() => {
@@ -392,13 +521,18 @@ const contentSummary = computed(() => {
   return typeof base === "string" ? base : String(base ?? "");
 });
 
+const buildReplyTitle = (parentTitle) => {
+  const base = String(parentTitle ?? "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
 const previewImages = computed(() => {
   const images = props.post.imageUrls ?? [];
   return Array.isArray(images) ? images.slice(0, 3) : [];
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "body { white-space: pre-wrap; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } img:not([style*='width']) { width: 100%; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
   return `${baseIframeCss} img { display: none; }`;
@@ -431,6 +565,8 @@ const resolveReplyContentType = () => {
   }
 };
 
+const nestedChildType = computed(() => resolveReplyContentType().type);
+
 function togglePreview() {
   if (!previewToggleEnabled.value) return;
 
@@ -453,11 +589,11 @@ function togglePreview() {
 }
 
 const showCollapsedIframe = computed(
-  () => previewToggleEnabled.value && !isPreviewExpanded.value
+  () => previewToggleEnabled.value && !isPreviewExpanded.value,
 );
 
 const showExpandedIframe = computed(
-  () => !previewToggleEnabled.value || isPreviewExpanded.value
+  () => !previewToggleEnabled.value || isPreviewExpanded.value,
 );
 
 const measurePreviewHeight = () => {
@@ -484,7 +620,10 @@ const updatePreviewToggleState = async () => {
     const needsToggleByHeight = height > PREVIEW_COLLAPSED_MAX_HEIGHT + 1;
     const needsToggleByImages =
       previewImages.value.length > 0 || hasInlineImages.value;
-    const shouldEnable = needsToggleByHeight || needsToggleByImages;
+    const needsToggleByText =
+      contentSummary.value.length > PREVIEW_TEXT_COLLAPSE_LENGTH;
+    const shouldEnable =
+      needsToggleByHeight || needsToggleByImages || needsToggleByText;
     previewToggleEnabled.value = shouldEnable;
     if (!shouldEnable) {
       isPreviewExpanded.value = false;
@@ -494,19 +633,25 @@ const updatePreviewToggleState = async () => {
 
 onMounted(() => {
   updatePreviewToggleState();
+
+  // 預加載子回覆的數量（不加載詳細內容）
+  if (canHaveNestedReplies.value) {
+    forumStore.preloadChildRepliesCount(props.post.id, nestedChildType.value);
+  }
 });
 
 watch(
   [safeContent, previewImages, hasInlineImages, () => props.previewOnly],
   () => {
     updatePreviewToggleState();
-  }
+  },
 );
 
 // ========== 巢狀回覆展開/收起邏輯 ==========
 function toggleNestedReplies() {
   isNestedExpanded.value = !isNestedExpanded.value;
   if (isNestedExpanded.value) {
+    forumStore.ensureChildRepliesLoaded(props.post.id, nestedChildType.value);
     nextTick(() => {
       updateNestedToggleState();
     });
@@ -527,8 +672,8 @@ const measureNestedHeight = () => {
 const updateNestedToggleState = async () => {
   if (
     !isNestedExpanded.value ||
-    !props.post.replies ||
-    props.post.replies.length === 0
+    !nestedReplies.value ||
+    nestedReplies.value.length === 0
   ) {
     nestedToggleEnabled.value = false;
     isNestedFullyExpanded.value = false;
@@ -552,7 +697,16 @@ watch(
     if (isNestedExpanded.value) {
       updateNestedToggleState();
     }
-  }
+  },
+);
+
+watch(
+  () => nestedReplies.value.length,
+  () => {
+    if (isNestedExpanded.value) {
+      updateNestedToggleState();
+    }
+  },
 );
 
 function autoResizeTextarea(event) {
@@ -565,7 +719,7 @@ function autoResizeTextarea(event) {
 function toggleReply() {
   showReply.value = !showReply.value;
   if (!showReply.value) {
-    replyContent.value = "";
+    forumStore.cancelQuickReply(props.post.id);
     showQuickReply.value = false;
     replyTab.value = null;
     return;
@@ -588,7 +742,31 @@ function selectDetailedReply() {
   }
   replyTab.value = "detailed";
   showQuickReply.value = false;
-  openDetailedReplyModal();
+
+  // 檢查是否已經有針對這個帖文的詳細回覆草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === props.post.id,
+  );
+
+  if (existingDraft) {
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
+  } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 然後創建新的草稿
+    openDetailedReplyModal();
+  }
 }
 
 const getCategoryIdValue = (cat) =>
@@ -613,7 +791,7 @@ const openDetailedReplyModal = () => {
   const categories = forumStore.categories || [];
 
   const matchedCategory = categories.find(
-    (cat) => String(getCategoryIdValue(cat)) === String(categoryId)
+    (cat) => String(getCategoryIdValue(cat)) === String(categoryId),
   );
 
   const parentCategoryId = matchedCategory
@@ -622,7 +800,7 @@ const openDetailedReplyModal = () => {
 
   const parentCategory = parentCategoryId
     ? categories.find(
-        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId)
+        (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
       )
     : null;
 
@@ -633,10 +811,15 @@ const openDetailedReplyModal = () => {
       : "";
 
   const replySetting = resolveReplyContentType();
+  const replyTitle =
+    replySetting.type === CONTENT_TYPES.COMMENT ||
+    replySetting.type === CONTENT_TYPES.COMMENT_REPLY
+      ? buildReplyTitle(props.post.title || contentSummary.value)
+      : "";
 
   // 創建新的草稿
   forumStore.createDraft({
-    title: "",
+    title: replyTitle,
     body: "",
     categoryId: categoryId,
     parentContentId: props.post.id,
@@ -656,7 +839,9 @@ const openDetailedReplyModal = () => {
 };
 
 async function submitReply() {
-  if (!replyContent.value.trim()) {
+  const replyContent = forumStore.getQuickReplyContent(props.post.id);
+
+  if (!replyContent.trim()) {
     await Swal.fire({
       icon: "warning",
       title: "提醒",
@@ -667,20 +852,22 @@ async function submitReply() {
     return;
   }
 
-  if (isSubmittingReply.value) return;
-  isSubmittingReply.value = true;
+  const isSubmitting = forumStore.getQuickReplySubmitting(props.post.id);
+  if (isSubmitting) return;
+
+  forumStore.setQuickReplySubmitting(props.post.id, true);
 
   const dto = {
     userId: 1, // TODO: 改成實際使用者 ID
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
-    title: `Re: ${contentSummary.value.substring(0, 50)}...`, // 簡短標題
-    body: replyContent.value.trim(),
+    title: buildReplyTitle(props.post.title || contentSummary.value),
+    body: replyContent.trim(),
     type: resolveReplyContentType().type, // 根據被回覆內容決定類型
   };
 
   try {
-    await apiClient.post("/ContentApi", dto);
+    await contentApi.createContent(dto);
     await Swal.fire({
       icon: "success",
       title: "已送出！",
@@ -688,7 +875,7 @@ async function submitReply() {
       timer: 1500,
       showConfirmButton: false,
     });
-    replyContent.value = "";
+    forumStore.clearQuickReply(props.post.id);
     showReply.value = false;
 
     // 直接调用 forumStore 重新获取帖文详情
@@ -705,28 +892,37 @@ async function submitReply() {
       confirmButtonColor: "#145369",
     });
   } finally {
-    isSubmittingReply.value = false;
+    forumStore.setQuickReplySubmitting(props.post.id, false);
   }
 }
 
 function cancelReply() {
   showReply.value = false;
-  replyContent.value = "";
+  forumStore.cancelQuickReply(props.post.id);
   showQuickReply.value = false;
   replyTab.value = null;
 }
 
 /**
- * 點擊發文時間跳轉到該回文/留言的詳細頁面
+ * 點擊發文時間跳轉到該篇內容的詳細頁面
  */
-function goToPostDetail() {
-  // 只有回文(type=2)或留言(type=3)可以跳轉
-  if (
-    props.post.type === CONTENT_TYPES.REPLY ||
-    props.post.type === CONTENT_TYPES.COMMENT
-  ) {
-    router.push({ name: "forum-thread", params: { id: props.post.id } });
+function goToPostDetail(event) {
+  // 阻止事件冒泡，避免觸發其他點擊事件
+  if (event) {
+    event.stopPropagation();
   }
+
+  // 所有類型的 content 都可以點擊進入詳情頁
+  router.push({ name: "forum-thread", params: { id: props.post.id } });
+}
+
+function goToParentThread(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  if (!parentContentId.value) return;
+  router.push({ name: "forum-thread", params: { id: parentContentId.value } });
 }
 
 /**
@@ -737,7 +933,7 @@ function handleReplyingTargetClick() {
 
   // 找到正在回覆此內容的草稿
   const targetDraft = forumStore.drafts.find(
-    (draft) => draft.replyingToContentId === props.post.id
+    (draft) => draft.replyingToContentId === props.post.id,
   );
 
   if (targetDraft) {
@@ -749,8 +945,18 @@ function handleReplyingTargetClick() {
 /**
  * 處理互動成功
  */
-function handleInteractionSuccess(data) {
-  // 可以在此顯示 toast 或其他反饋
+async function handleInteractionSuccess(data) {
+  // 隱藏功能的特殊處理
+  if (data.categoryId === 2 && data.categoryName === "hide") {
+    // 重新載入主題列表以反映後端狀態
+    // fetchTopics 會更新分類統計
+    await forumStore.fetchTopics();
+
+    // 如果在詳情視圖，也重新載入線程詳情以更新回文列表
+    if (forumStore.threadDetail?.id) {
+      forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+    }
+  }
 }
 
 /**
@@ -765,6 +971,27 @@ async function handleInteractionError(data) {
     confirmButtonText: "確定",
     confirmButtonColor: "#145369",
   });
+}
+
+/**
+ * 處理編輯內容
+ */
+function handleEditContent(contentId) {
+  // 開啟編輯模式 - 使用 NewTopicModal 或 NewTopicSidebar 進行編輯
+  forumStore.openEditMode(contentId, props.post);
+}
+
+/**
+ * 處理刪除內容
+ */
+async function handleDeleteContent(contentId) {
+  // 刪除成功後重新載入數據
+  // fetchTopics 會更新分類統計
+  await forumStore.fetchTopics();
+
+  if (forumStore.threadDetail.id) {
+    forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+  }
 }
 </script>
 
@@ -805,7 +1032,7 @@ async function handleInteractionError(data) {
   font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
-  z-index: 10;
+  z-index: 7;
 }
 
 @keyframes pulse-border {
@@ -868,6 +1095,36 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
+  z-index: 4;
+}
+
+.parent-link-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-color: #86b0bd;
+  color: #145369;
+  background: transparent;
+}
+
+.parent-link-btn:hover {
+  background-color: #fff0dd;
+  border-color: #145369;
+  color: #145369;
+}
+
+.badge.bg-secondary-light {
+  background-color: #d0e8f2 !important;
+  color: #145369;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.5rem;
+  line-height: 1;
 }
 
 .post-time {
@@ -875,6 +1132,8 @@ async function handleInteractionError(data) {
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  position: relative;
+  z-index: 5;
 }
 
 .post-time.clickable {
@@ -1004,7 +1263,7 @@ async function handleInteractionError(data) {
 
 .interaction-container {
   position: relative;
-  z-index: 20;
+  z-index: 6;
 }
 
 /* 隱藏留言/回文區塊內的所有滾動條（保留可滾動） */
