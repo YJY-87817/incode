@@ -893,9 +893,7 @@ function handleThreadReplyingTargetClick() {
                 >
                   最後回應時間
                 </th>
-                <th class="py-2 py-md-3 text-center" style="width: 10%">
-                  回應
-                </th>
+                <th class="py-2 py-md-3 text-center" style="width: 3%">回應</th>
               </tr>
             </thead>
             <tbody>
