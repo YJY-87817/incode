@@ -1,4 +1,5 @@
-﻿using incode2.DTO;
+﻿using incode2.Constants;
+using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,7 @@ namespace incode2.Services.Point
                 if (progress.CurrentCount >= mission.TargetCount && progress.Status != "completed")
                 {
                     progress.Status = "completed";
-                    progress.CompletedAt = DateTime.UtcNow;
+                    progress.CompletedAt = DateTime.Now;
                     justCompleted = true;
                 }
 
@@ -83,7 +84,7 @@ namespace incode2.Services.Point
                                  .AsNoTracking()
                                  .ToListAsync();
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             return rawData.Select(x =>
             {
@@ -167,7 +168,7 @@ namespace incode2.Services.Point
             if (!mission.IsActive)
                 return new ResultDTO { Ok = false, Code = 400, Message = "任務已停用" };
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             string resetType = (mission.ResetType ?? "none").Trim().ToLowerInvariant();
 
             // 已領取過，且為一次性任務 → 不可再領
@@ -225,6 +226,7 @@ namespace incode2.Services.Point
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 取得任務進度
                 var progress = await _context.MissionProgress
                     .Include(p => p.Mission)
                     .FirstOrDefaultAsync(p => p.UserId == userId && p.MissionId == missionId);
@@ -232,25 +234,36 @@ namespace incode2.Services.Point
                 if (progress == null)
                     return new ResultDTO { Ok = false, Code = 404, Message = "任務進度不存在" };
 
+                // 是否可領取（狀態 / 次數 / 條件）
                 var canClaim = await CanClaimRewardAsync(userId, missionId);
                 if (!canClaim.Ok)
                     return canClaim;
 
-                progress.RewardedAt = DateTime.UtcNow;
+                // 標記任務為已領取
+                progress.RewardedAt = DateTime.Now;
                 progress.Status = "Rewarded";
 
-                var pointResult = await _pointLogService.AddPointsAsync(
+                // 發放點數（統一走 ChangePointsAsync）
+                var success = await _pointLogService.ChangePointsAsync(
                     userId,
                     progress.Mission.RewardPoints,
-                    missionId
+                    "mission",
+                    missionId,
+                    PointType.Mission
                 );
 
-                if (!pointResult.Ok)
+                if (!success)
                 {
                     await transaction.RollbackAsync();
-                    return pointResult;
+                    return new ResultDTO
+                    {
+                        Ok = false,
+                        Code = 400,
+                        Message = "點數發放失敗"
+                    };
                 }
 
+                // 一次性提交
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 

@@ -1,19 +1,12 @@
 ﻿using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
-using incode2.Dtos.Point;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Point;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace incode2.ApiControllers.Point
 {
@@ -23,6 +16,7 @@ namespace incode2.ApiControllers.Point
     {
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
+
 
         public PointLogApiController(incodedatabaseContext context, IPointLogService pointLogService)
         {
