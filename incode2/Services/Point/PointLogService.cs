@@ -24,41 +24,36 @@ namespace incode2.Services.Point
             _context = context;
         }
 
-        // 儲值成功 → 加點 + 寫 point_log（含 transaction）
+        // 儲值
         public async Task AddPointsFromRechargeAsync(PointRecharge recharge)
         {
             using var tx = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // 1️⃣ 計算目前餘額（以 log 為準）
-                var currentBalance = await _context.PointLog
-                    .Where(x => x.UserId == recharge.UserId
-                             && x.Status == "success")
-                    .SumAsync(x => (int?)x.ChangeAmount) ?? 0;
+                // 重新從資料庫抓取最新狀態，避免傳進來的 recharge 物件狀態過時
+                var dbOrder = await _context.PointRecharge
+                    .FirstOrDefaultAsync(o => o.PointRechargeId == recharge.PointRechargeId);
 
-                // 2️⃣ 新餘額
-                var newBalance = currentBalance + recharge.PointsGranted;
+                if (dbOrder == null)
+                    throw new Exception("訂單不存在");
 
-                // 3️⃣ 寫 point_log
-                var log = new PointLog
-                {
-                    UserId = recharge.UserId,
-                    SourceType = "recharge",
-                    SourceId = recharge.PointRechargeId,
-                    PointTypeDefinitionId = 1, // 🔥 儲值類型（依你定義）
-                    ChangeAmount = recharge.PointsGranted,
-                    BalanceAfter = newBalance,
-                    Status = "success",
-                    CreatedAt = DateTime.Now
-                };
+                if (dbOrder.Status == "success")
+                    return; // 防重送 OK
 
-                _context.PointLog.Add(log);
+                var success = await ChangePointsAsync(
+                    dbOrder.UserId,
+                    dbOrder.PointsGranted,
+                    "point_recharge",
+                    dbOrder.PointRechargeId,
+                    PointType.PointRecharge
+                );
 
-                // 4️⃣ 更新儲值訂單
-                recharge.Status = "success";
-                recharge.CreatedAt = DateTime.Now; // 如果你有這欄
-                _context.PointRecharge.Update(recharge);
+                if (!success)
+                    throw new Exception("加點失敗");
+
+                dbOrder.Status = "success";
+                dbOrder.CreatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -70,85 +65,39 @@ namespace incode2.Services.Point
             }
         }
 
-        // 加扣點
+        // 加扣點 //transaction另外包
         public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
         {
             //using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                int currentBalance = await GetCurrentBalanceAsync(userId);
+            //try
+            //{
+                var currentBalance = await GetCurrentBalanceAsync(userId);
+
                 if (changeAmount < 0 && currentBalance + changeAmount < 0)
                     return false;
-                int balanceAfter = currentBalance + changeAmount;
 
-                var log = new PointLog
+                _context.PointLog.Add(new PointLog
                 {
                     UserId = userId,
                     SourceType = sourceType,
                     SourceId = sourceId,
-                    PointTypeDefinitionId = (int)type, //
-                    ChangeAmount = changeAmount, // 正數
-                    BalanceAfter = balanceAfter,
+                    PointTypeDefinitionId = (int)type, 
+                    ChangeAmount = changeAmount,
+                    BalanceAfter = currentBalance + changeAmount,
                     Status = "success",
                     CreatedAt = DateTime.Now
-                };
+                });
 
-                _context.PointLog.Add(log);
-                await _context.SaveChangesAsync();
+                //await _context.SaveChangesAsync();
+                //await tx.CommitAsync();
                 return true;
-            }
-            catch
-            {
-                return false;
-            }
+            //}
+            //catch
+            //{
+                //await tx.RollbackAsync();
+                //return false;
+            //}
         }  
-
-
-        public async Task<ResultDTO> AddPointsAsync(int userId, int points, int missionId)
-        {
-            try
-            {
-                var user = await _context.User.FindAsync(userId);
-                if (user == null)
-                    return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
-
-                var lastLog = await _context.PointLog
-                    .Where(l => l.UserId == userId)
-                    .OrderByDescending(l => l.CreatedAt)
-                    .ThenByDescending(l => l.PointLogId)
-                    .Select(l => (int?)l.BalanceAfter)
-                    .FirstOrDefaultAsync();
-
-                var currentBalance = lastLog ?? 0;
-                var newBalance = currentBalance + points;
-
-                var log = new PointLog
-                {
-                    UserId = userId,
-                    ChangeAmount = points,
-                    BalanceAfter = newBalance,
-                    Status = "success",
-                    CreatedAt = DateTime.UtcNow,
-                    PointTypeDefinitionId = 1,
-                    SourceType = "mission",
-                    SourceId = missionId,
-                };
-
-                _context.PointLog.Add(log);
-                // 這裡不要 SaveChangesAsync()，讓外層統一存檔
-
-                return new ResultDTO { Ok = true, Code = 200, Message = "點數記錄成功" };
-            }
-            catch (Exception ex)
-            {
-                return new ResultDTO
-                {
-                    Ok = false,
-                    Code = 500,
-                    Message = $"點數記錄失敗：{ex.Message}"
-                };
-            }
-        }
 
         public async Task<IEnumerable<PointLogDTO>> GetUserLogsAsync(int userId)
         {
@@ -267,50 +216,6 @@ namespace incode2.Services.Point
                 : $"購買 {firstProduct}";
         }
 
-        //儲值成功 => 入帳（綠界 ReturnURL 用）
-        public async Task RechargeSuccessAsync(string orderNo)
-        {
-            using var tx = await _context.Database.BeginTransactionAsync();
-
-            var order = await _context.PointRecharge
-                .FirstOrDefaultAsync(o => o.OrderNo == orderNo);
-
-            if (order == null)
-                throw new Exception("訂單不存在");
-
-            if (order.Status == "success")
-                return; // 防重送（超重要）
-
-            // 取得最新餘額
-            var lastLog = await _context.PointLog
-                .Where(l => l.UserId == order.UserId)
-                .OrderByDescending(l => l.CreatedAt)
-                .ThenByDescending(l => l.PointLogId)
-                .Select(l => (int?)l.BalanceAfter)
-                .FirstOrDefaultAsync();
-
-            var newBalance = (lastLog ?? 0) + order.PointsGranted;
-
-            _context.PointLog.Add(new PointLog
-            {
-                UserId = order.UserId,
-                PointTypeDefinitionId = 4, // recharge
-                SourceType = "point_recharge",
-                SourceId = order.PointRechargeId,
-                ChangeAmount = order.PointsGranted,
-                BalanceAfter = newBalance,
-                Status = "success",
-                CreatedAt = DateTime.UtcNow
-            });
-
-            // 更新訂單狀態
-            order.Status = "success";
-            order.CreatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-
 
         public async Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount)
         {
@@ -348,24 +253,24 @@ namespace incode2.Services.Point
                 new PointLog
                 {
                     UserId = fromUserId,
-                    PointTypeDefinitionId = 6, // tip_out
+                    PointTypeDefinitionId = (int)PointType.Tip_out,
                     SourceType = "content",
                     SourceId = ContentId,
                     ChangeAmount = -amount,
                     BalanceAfter = fromNewBalance,
                     Status = "success",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 },
                 new PointLog
                 {
                     UserId = toUserId,
-                    PointTypeDefinitionId = 7, // tip_in
+                    PointTypeDefinitionId = (int)PointType.Tip_in,
                     SourceType = "content",
                     SourceId = ContentId,
                     ChangeAmount = amount,
                     BalanceAfter = toNewBalance,
                     Status = "success",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 }
             );
 

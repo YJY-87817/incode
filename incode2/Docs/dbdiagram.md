@@ -258,7 +258,7 @@ Table point_recharge {
   order_no varchar(100) [unique, not null, note: '內部訂單編號']
   cash_amount decimal(12,2) [not null, note: '支付台幣金額']
   points_granted int [not null, note: '給予點數']
-  payment_method nvarchar(50) [not null, check: `[payment_method] IN ('credit', 'applepay', 'webatm','atm','cvs','twqr')`]
+  payment_method nvarchar(50) [note: '第三方支付方式，綠界回呼時更新', check: `[payment_method] IN ('credit', 'applepay', 'webatm','atm','cvs','twqr','all')`]
   payment_trade_no varchar(100) [note: '第三方金流編號']
   status nvarchar(50) [check: `[status] IN ('pending', 'success', 'cancelled','failed','system')`, default: 'pending', note: '訂單狀態']
   created_at datetime [default: `CURRENT_TIMESTAMP`]

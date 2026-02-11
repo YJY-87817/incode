@@ -56,17 +56,17 @@ namespace incode2.Services.Point
             switch (mission.ResetType)
             {
                 case "daily":
-                    cycleStart = DateTime.UtcNow.Date;
+                    cycleStart = DateTime.Now.Date;
                     cycleEnd = cycleStart.AddDays(1);
                     break;
 
                 case "weekly":
-                    cycleStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+                    cycleStart = DateTime.Now.Date.AddDays(-(int)DateTime.Now.DayOfWeek);
                     cycleEnd = cycleStart.AddDays(7);
                     break;
 
                 case "yearly":
-                    cycleStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfYear);
+                    cycleStart = DateTime.Now.Date.AddDays(-(int)DateTime.Now.DayOfYear);
                     cycleEnd = cycleStart.AddDays(365);
                     break;
 
@@ -101,8 +101,8 @@ namespace incode2.Services.Point
                     MissionId = missionId,
                     CurrentCount = 1,          // 每日簽到直接 +1
                     Status = "completed",      // 簽到即完成
-                    AcceptedAt = DateTime.UtcNow,
-                    CompletedAt = DateTime.UtcNow,
+                    AcceptedAt = DateTime.Now,
+                    CompletedAt = DateTime.Now,
                     CycleStartAt = cycleStart,
                     CycleEndAt = cycleEnd
                 };
@@ -149,7 +149,7 @@ namespace incode2.Services.Point
                 IsFeatured = dto.IsFeatured ?? false,
                 LastResetAt = dto.LastResetAt,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             };
 
             _context.Mission.Add(mission);
