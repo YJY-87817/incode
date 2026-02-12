@@ -44,7 +44,7 @@
                     class="text-muted post-time clickable"
                     @click.stop="goToPostDetail"
                   >
-                    {{ post.createdAt }}
+                    {{ formatDate(post.createdAt) }}
                   </small>
                 </div>
               </div>
@@ -289,7 +289,7 @@ import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
-import { toAbsoluteUrl } from "@/utils/contentBody.js";
+import { toAbsoluteUrl, formatDate } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
