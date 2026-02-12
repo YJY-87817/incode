@@ -56,12 +56,12 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            會員委託任務
+                            總儲值金額
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.displaycounts[2]</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">$ @Model.displaycounts[2]</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fa-solid fa-exclamation fa-2x text-gray-300"></i>
+                        <i class="fa-regular fa-money-bill-1 fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@
 
         var userContentCount = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userContentCounts));
 
-        console.log(userContentCount);
+        // console.log(userContentCount);
 
         const reportChart = document.getElementById('reportChart');
 
