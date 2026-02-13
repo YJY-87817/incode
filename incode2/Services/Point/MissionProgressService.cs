@@ -1,4 +1,4 @@
-﻿using incode2.Constants;
+using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
@@ -249,7 +249,7 @@ namespace incode2.Services.Point
                     progress.Mission.RewardPoints,
                     "mission",
                     missionId,
-                    PointType.Mission
+                    PointType.IncomeMission
                 );
 
                 if (!success)
