@@ -1,4 +1,4 @@
-﻿using incode2.Constants;
+using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
@@ -242,7 +242,7 @@ namespace incode2.Services.Point
                     UserId = userId,
                     SourceType = "entrust_mission",
                     SourceId = entrustMission.EntrustMissionId,
-                    PointTypeDefinitionId = (int)PointType.EntrustMissionReserve,
+                    PointTypeDefinitionId = (int)PointType.ExpenseEntrustMissionPointReserve,
                     ChangeAmount = -dto.RewardPoints,
                     BalanceAfter = currentBalance - dto.RewardPoints,
                     Status = "system",

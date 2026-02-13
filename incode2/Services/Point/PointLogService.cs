@@ -1,4 +1,4 @@
-﻿using Google.GenAI.Types;
+using Google.GenAI.Types;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
@@ -46,7 +46,7 @@ namespace incode2.Services.Point
                     dbOrder.PointsGranted,
                     "point_recharge",
                     dbOrder.PointRechargeId,
-                    PointType.PointRecharge
+                    PointType.IncomePointRecharge
                 );
 
                 if (!success)
@@ -253,7 +253,7 @@ namespace incode2.Services.Point
                 new PointLog
                 {
                     UserId = fromUserId,
-                    PointTypeDefinitionId = (int)PointType.Tip_out,
+                    PointTypeDefinitionId = (int)PointType.ExpenseTip_out,
                     SourceType = "content",
                     SourceId = ContentId,
                     ChangeAmount = -amount,
@@ -264,7 +264,7 @@ namespace incode2.Services.Point
                 new PointLog
                 {
                     UserId = toUserId,
-                    PointTypeDefinitionId = (int)PointType.Tip_in,
+                    PointTypeDefinitionId = (int)PointType.IncomeTip_in,
                     SourceType = "content",
                     SourceId = ContentId,
                     ChangeAmount = amount,

@@ -205,7 +205,7 @@ namespace incode2.Services.PointShop
                 }
                 _context.Orders.Add(newOrder);
 
-                var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.Order);
+                var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.ExpenseOrders);
 
                 await _context.SaveChangesAsync();
 
@@ -325,7 +325,7 @@ namespace incode2.Services.PointShop
                 oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
 
-                var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.Order);
+                var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.IncomeOrdersRefund);
 
                 await _context.SaveChangesAsync();
                 return result

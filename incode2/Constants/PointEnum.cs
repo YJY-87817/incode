@@ -1,14 +1,15 @@
-﻿namespace incode2.Constants
+namespace incode2.Constants
 {
     public enum PointType
     {
-        Mission = 1, //平台任務獎勵
-        EntrustMission = 2, //委託任務獎勵
-        EntrustMissionReserve = 3, //委託預扣點數
-        PointRecharge = 4, //點數儲值
-        Order = 5, //商城消費
-        Tip_out = 6, //打賞支出
-        Tip_in = 7, //獲得打賞
-        System = 8 //系統調整
+        IncomeMission = 1, //平台任務獎勵
+        IncomeEntrustMission = 2, //委託任務獎勵
+        IncomePointRecharge = 3, //點數儲值
+        IncomeOrdersRefund = 4, //商品退款
+        ExpenseEntrustMissionPointReserve = 5, //委託預扣點數
+        ExpenseOrders = 6, //商品消費
+        SystemAdjustment = 7, //系統調整
+        ExpenseTip_out = 8, //打賞支出
+        IncomeTip_in = 9 //獲得打賞
     }
 }

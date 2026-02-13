@@ -1,4 +1,4 @@
-﻿using incode2.Constants;
+using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Extensions;
@@ -28,29 +28,28 @@ namespace incode2.ApiControllers.Point
         /// POST: /api/point/add-reward
         [HttpPost("add-reward")]
         [Authorize]
-        public async Task<IActionResult> AddReward([FromForm] int userId, [FromForm] int changeAmount, [FromForm] int sourceId)
+        public async Task<IActionResult> AddReward([FromForm] int changeAmount, [FromForm] int sourceId)
         {
-            // 直接從登入資訊拿 ID，不從參數拿，更安全
-            int currentLoginUserId = User.GetId();
+            int UserId = User.GetId();
 
-            // 檢查點數是否為 0，避免無謂的寫入
-            //if (changeAmount <= 0) return BadRequest("點數必須大於 0");
+            if (changeAmount <= 0)
+                return BadRequest("點數必須大於 0");
 
-            // 調用你的 Service
             var success = await _pointLogService.ChangePointsAsync(
-                userId = currentLoginUserId,
-                changeAmount,
-                "entrust_mission",
-                sourceId,
-                PointType.EntrustMission // 使用 Enum
+                userId: UserId,
+                changeAmount: changeAmount,
+                sourceType: "entrust_mission",
+                sourceId: sourceId,
+                type: PointType.IncomeEntrustMission // 使用 Enum
             );
 
             if (!success) return BadRequest("獎勵領取失敗");
+
             return Ok("獎勵已發放");
         }
 
         //GET: api/PointLogApi
-       [HttpGet]
+        [HttpGet]
         public async Task<IEnumerable<PointLogDTO>> GetPointLog()
         {
             return await _context.PointLog
@@ -77,94 +76,6 @@ namespace incode2.ApiControllers.Point
         {
             int UserId = User.GetId(); 
             return await _pointLogService.GetUserLogsAsync(UserId);
-        }
-
-        // PUT: api/PointLogApi/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<ResultDTO> PutPointLog(int id, PointLogDTO PlDTO)
-        {
-            if (id != PlDTO.PointLogId)
-            {
-                return new ResultDTO { Ok=false, Code=400};
-            }
-
-            PointLog Pl = await _context.PointLog.FindAsync(id);
-            if (Pl != null)
-            {
-                Pl.UserId = PlDTO.UserId;
-                Pl.SourceType = PlDTO.SourceType;
-                Pl.SourceId = PlDTO.SourceId;
-                Pl.PointTypeDefinitionId = PlDTO.PointTypeDefinitionId;
-                Pl.ChangeAmount = PlDTO.ChangeAmount;
-                Pl.Status = PlDTO.Status;
-                Pl.CreatedAt = PlDTO.CreatedAt;
-
-                _context.Entry(Pl).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException) //你要改的紀錄被別人先修改過了.所以你要修改就會顯示錯誤
-                {
-                    return new ResultDTO { Ok = false, Code = 500 }; //Server端的錯誤
-                }
-
-                return new ResultDTO { Ok = true, Code = 204 };
-            }
-            else
-            {
-                return new ResultDTO { Ok = false, Code = 404 };
-            }
-        }
-
-        // POST: api/PointLogApi
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ResultDTO> PostPointLog(PointLogDTO PlDTO)
-        {
-            //entity 
-            PointLog Pl = new PointLog
-            {
-                PointLogId=PlDTO.PointLogId, //id=0
-                UserId =PlDTO.UserId,
-                SourceType=PlDTO.SourceType,
-                SourceId=PlDTO.SourceId,
-                PointTypeDefinitionId=PlDTO.PointTypeDefinitionId,
-                ChangeAmount =PlDTO.ChangeAmount,
-                Status=PlDTO.Status,
-                CreatedAt =PlDTO.CreatedAt,
-            };
-            _context.PointLog.Add(Pl);
-            await _context.SaveChangesAsync(); //id+=? 你填的0會被覆蓋
-            //因為會顯示PlDTO.PointLogId = -1 所以要補回Pl.PointLogId(entity)
-            //PlDTO.PointLogId = Pl.PointLogId; //id+=? return PlDTO
-            return new ResultDTO
-            {
-                Ok=true,
-                Code=204 //NoContent
-            };
-        }
-
-        // DELETE: api/PointLogApi/5
-        [HttpDelete("{id}")]
-        public async Task<ResultDTO> DeletePointLog(int id)
-        {
-            var pointLog = await _context.PointLog.FindAsync(id);
-            if (pointLog == null)
-            {
-                return new ResultDTO { Ok = false, Code = 404 }; //id不存在顯示404
-            }
-            try
-            {
-                _context.PointLog.Remove(pointLog);
-                await _context.SaveChangesAsync();
-            }
-            catch(DbUpdateException ex){ 
-                return new ResultDTO { Ok = false, Code = 500 }; //id存在捕捉例外顯示500
-            }
-            return new ResultDTO { Ok=true, Code=204};
         }
     }
 }
