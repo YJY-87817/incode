@@ -1,10 +1,6 @@
 // 大腦與倉庫 (UsePointStore.js)
-// 這是你系統的靈魂。我們不把資料放在頁面裡，而是放在一個獨立的檔案 UsePointStore.js
-
 // State (倉庫)：就像銀行的保險箱，裡面存著「原始帳單紀錄」、「使用者現在查什麼關鍵字」。
-
 // Getters (計算器)：就像銀行的會計，它會自動幫你算：「保險箱裡正值的加起來是多少（累計獲得）」、「負值的加起來是多少（累計消耗）」。
-
 // Actions (辦事員)：負責去外面（API/資料庫）把資料搬回來放進保險箱。
 import { defineStore } from "pinia";
 // import axios from "axios";
@@ -76,6 +72,7 @@ export const usePointStore = defineStore("usePoint", {
             minute: "2-digit",
           }),
           item: pl.displayName || "系統調整",
+          subTitle: pl.displaySourceSubTitle || "",
           category: this.mapCategory(pl.sourceType),
           points: pl.changeAmount,
           balance: pl.balanceAfter,
@@ -124,17 +121,29 @@ export const usePointStore = defineStore("usePoint", {
     },
     // 輔助方法：統一後端標籤轉中文
     mapCategory(type) {
-      const map = {
-        mission: "平台任務",
-        entrust_mission: "委託任務",
-        entrust_mission_point_reserve: "委託任務", // 放在一起
-        point_recharge: "點數儲值",
-        deposit: "點數儲值",
-        order: "商城商品兌換",
-        system: "系統調整",
-        refund: "退款/修正",
-      };
-      return map[type] || "其他調整";
+      if (!type) return "其他調整";
+
+      const t = type.trim().toLowerCase();
+
+      if (t === "mission") return "平台任務";
+      if (t === "entrust_mission") return "委託任務";
+
+      // 加強判斷預扣相關的各種可能寫法
+      if (
+        t.includes("reserve") ||
+        t === "entrust_mission_point_reserve" ||
+        t === "entrustmissionpointreserve"
+      ) {
+        return "預扣";
+      }
+
+      if (t === "point_recharge" || t === "deposit") return "儲值";
+      if (t.includes("order") || t === "orders") return "商城";
+      if (t.includes("tip")) return "打賞";
+      if (t.includes("refund")) return "退款/修正";
+      if (t === "system") return "系統調整";
+
+      return "其他調整";
     },
 
     // 可選：清除搜尋與篩選狀態

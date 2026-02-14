@@ -1,34 +1,30 @@
-<!-- 過濾器與遙控器 (PointFilter.vue)
-這是表格上方那一橫排「搜尋框」和「下拉選單」。
-
-搜尋框：當你在這裡打字，它會直接告訴大腦：「嘿！使用者現在想找『簽到』。」
-
-刷新按鈕：按下它，就會叫大腦裡的辦事員 (Action) 重新去抓一次最新的資料。 -->
 <script setup>
 import { usePointStore } from "@/stores/point/UsePointStore.js";
 const store = usePointStore();
+
+const mainColor = "#145369";
 </script>
 
 <template>
   <div
-    class="card-header bg-white border border-bottom-0 border-primary px-4 py-3"
+    class="card-header bg-white border border-bottom-0 px-4 py-3"
+    :style="{ borderColor: mainColor + ' !important' }"
   >
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h5 class="mb-0 fw-semibold">
-        <i class="ni ni-credit-card me-2 text-primary"></i>點數收支明細
+      <h5 class="mb-0 fw-semibold" :style="{ color: mainColor }">
+        <i class="ni ni-credit-card me-2"></i>點數收支明細
       </h5>
       <button
-        class="btn btn-outline-primary btn-sm rounded-pill px-3"
+        class="btn btn-sm rounded-pill px-3 custom-btn"
         @click="store.fetchLogs"
         :disabled="store.isLoading"
       >
-        <span v-if="!store.isLoading"
-          ><i class="ni ni-refresh-69 me-1"></i>刷新</span
-        >
-        <span v-else
-          ><span class="spinner-border spinner-border-sm me-1"></span
-          >更新中</span
-        >
+        <span v-if="!store.isLoading">
+          <i class="ni ni-refresh-69 me-1"></i>刷新
+        </span>
+        <span v-else>
+          <span class="spinner-border spinner-border-sm me-1"></span>更新中
+        </span>
       </button>
     </div>
 
@@ -37,7 +33,7 @@ const store = usePointStore();
         <span
           class="input-group-text bg-white border-end-0 rounded-start-pill d-flex align-items-center"
         >
-          <i class="bi bi-search"></i>
+          <i class="bi bi-search" :style="{ color: mainColor }"></i>
         </span>
         <input
           type="text"
@@ -54,10 +50,41 @@ const store = usePointStore();
         <option value="全部類型">全部類型</option>
         <option value="平台任務">平台任務</option>
         <option value="委託任務">委託任務</option>
-        <option value="商城商品兌換">商城商品兌換</option>
-        <option value="點數儲值">點數儲值</option>
+        <option value="預扣">預扣</option>
+        <option value="商城">商城</option>
+        <option value="打賞">打賞</option>
+        <option value="儲值">儲值</option>
         <option value="系統調整">系統調整</option>
       </select>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 自定義按鈕樣式，對應 #86B0BD */
+.custom-btn {
+  color: #145369;
+  border-color: #145369;
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.custom-btn:hover {
+  background-color: #145369;
+  color: white;
+  border-color: #145369;
+}
+
+.custom-btn:disabled {
+  opacity: 0.65;
+  color: #145369;
+  border-color: #145369;
+}
+
+/* 讓輸入框聚焦時也帶點主色調（選配） */
+.form-control:focus,
+.form-select:focus {
+  border-color: #145369;
+  box-shadow: 0 0 0 0.25rem rgba(134, 176, 189, 0.25);
+}
+</style>
