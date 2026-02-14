@@ -165,11 +165,6 @@ const hasSelectedBestAnswer = computed(() => {
   return Boolean(props.bestAnswerContentId);
 });
 
-const isThisBestAnswer = computed(() => {
-  if (!props.bestAnswerContentId) return false;
-  return Number(props.bestAnswerContentId) === Number(props.contentId);
-});
-
 const canShowBestAnswerButton = computed(() => {
   return (
     props.enableBestAnswer &&
@@ -319,11 +314,6 @@ onMounted(() => {
     class="interaction-buttons d-inline-flex align-items-center gap-2"
     :class="{ 'more-menu-open': showMoreMenu }"
   >
-    <span v-if="isThisBestAnswer" class="best-answer-badge">
-      <i class="fas fa-award me-1"></i>
-      最佳解答
-    </span>
-
     <button
       v-if="canShowBestAnswerButton"
       class="btn btn-sm btn-interaction-button btn-best-answer"
@@ -492,18 +482,6 @@ onMounted(() => {
   background-color: #86b0bd;
   border-color: #86b0bd;
   color: #fff;
-}
-
-.best-answer-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.75rem;
-  line-height: 1;
-  height: 28px;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.375rem;
-  background-color: #145369;
-  color: #fff0dd;
 }
 
 /* 更多選單容器 */

@@ -32,6 +32,12 @@
                     主文
                   </button>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+                  <span
+                    v-if="isBestAnswerPost"
+                    class="badge bg-warning text-dark"
+                  >
+                    最佳解
+                  </span>
                   <h6 class="card-title post-author mb-0" @click.stop>
                     <UserPreview
                       :user-id="post.userId"
@@ -505,6 +511,11 @@ const badgeClass = computed(() => {
     default:
       return "bg-light text-dark";
   }
+});
+
+const isBestAnswerPost = computed(() => {
+  if (!props.bestAnswerContentId || !props.post?.id) return false;
+  return Number(props.bestAnswerContentId) === Number(props.post.id);
 });
 
 const parentContentId = computed(
