@@ -195,7 +195,7 @@ namespace incode2.Services.Point
 
             try
             {
-                // 1️⃣ 獲取最新餘額並鎖定該行 (防止併發超扣)
+                // 獲取最新餘額並鎖定該行 (防止併發超扣)
                 // 注意：這裡使用 SQL Raw 來確保 UPDLOCK 生效
                 var lastLog = await _context.PointLog
                     .FromSqlRaw("SELECT TOP 1 * FROM point_log WITH (UPDLOCK) WHERE user_id = {0} ORDER BY created_at DESC", userId)
@@ -206,7 +206,7 @@ namespace incode2.Services.Point
                 if (currentBalance < dto.RewardPoints)
                     return new ResultDTO { Ok = false, Code = 400, Message = "點數不足" };
 
-                // 1️⃣ 建立委託任務
+                // 建立委託任務
                 var entrustMission = new EntrustMission
                 {
                     UserId = userId,
@@ -226,7 +226,7 @@ namespace incode2.Services.Point
                 _context.EntrustMission.Add(entrustMission);
                 await _context.SaveChangesAsync();
 
-                // 2️⃣ 預扣點數
+                // 預扣點數
                 var reserve = new EntrustMissionPointReserve
                 {
                     UserId = userId,
@@ -236,7 +236,7 @@ namespace incode2.Services.Point
                     CreatedAt = now
                 };
 
-                // 3️⃣ 點數異動紀錄
+                // 點數異動紀錄
                 var log = new PointLog
                 {
                     UserId = userId,
