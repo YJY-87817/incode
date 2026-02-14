@@ -20,6 +20,26 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  enableBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  entrustMissionId: {
+    type: Number,
+    default: null,
+  },
+  missionOwnerUserId: {
+    type: Number,
+    default: null,
+  },
+  bestAnswerContentId: {
+    type: Number,
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const authStore = useAuthStore();
@@ -52,6 +72,7 @@ const emit = defineEmits([
   "interaction-error",
   "edit-content",
   "delete-content",
+  "best-answer-selected",
 ]);
 
 /**
@@ -133,6 +154,94 @@ const showMoreMenu = computed(() => {
   return forumStore.isMoreMenuOpen(props.contentId);
 });
 
+const currentUserId = computed(() => authStore.user?.id ?? null);
+
+const isMissionOwner = computed(() => {
+  if (!currentUserId.value || !props.missionOwnerUserId) return false;
+  return Number(currentUserId.value) === Number(props.missionOwnerUserId);
+});
+
+const hasSelectedBestAnswer = computed(() => {
+  return Boolean(props.bestAnswerContentId);
+});
+
+const isThisBestAnswer = computed(() => {
+  if (!props.bestAnswerContentId) return false;
+  return Number(props.bestAnswerContentId) === Number(props.contentId);
+});
+
+const canShowBestAnswerButton = computed(() => {
+  return (
+    props.enableBestAnswer &&
+    Boolean(props.entrustMissionId) &&
+    Boolean(props.contentId) &&
+    isMissionOwner.value &&
+    !hasSelectedBestAnswer.value
+  );
+});
+
+const bestAnswerLoading = ref(false);
+
+const getBestAnswerErrorMessage = (error) => {
+  const status = error?.response?.status;
+  const backendMessage = error?.response?.data?.message;
+
+  if (backendMessage) return backendMessage;
+
+  switch (status) {
+    case 400:
+      return "該回覆不屬於此委託任務";
+    case 401:
+      return "請先登入後再操作";
+    case 403:
+      return "只有原發文者可以選定最佳解答";
+    case 404:
+      return "找不到任務或回覆，請重新整理後再試";
+    case 409:
+      return "此任務已設定過最佳解答";
+    default:
+      return "設定最佳解答失敗，請稍後再試";
+  }
+};
+
+const handleBestAnswer = async () => {
+  if (!canShowBestAnswerButton.value || bestAnswerLoading.value) return;
+
+  bestAnswerLoading.value = true;
+  try {
+    const response = await contentInteractionApi.bestAnswer({
+      entrustMissionId: props.entrustMissionId,
+      contentId: props.contentId,
+    });
+
+    emit("best-answer-selected", {
+      contentId: props.contentId,
+      entrustMissionId: props.entrustMissionId,
+      rewardedUserId:
+        response?.data?.rewardedUserId ?? response?.rewardedUserId ?? null,
+      rewardPoints:
+        response?.data?.rewardPoints ??
+        response?.rewardPoints ??
+        props.rewardPoints ??
+        0,
+      bestAnswerContentId:
+        response?.data?.bestAnswerContentId ??
+        response?.bestAnswerContentId ??
+        props.contentId,
+      message: response?.message || "最佳解答已選定",
+    });
+  } catch (error) {
+    emit("interaction-error", {
+      contentId: props.contentId,
+      categoryId: null,
+      categoryName: "best-answer",
+      error: getBestAnswerErrorMessage(error),
+    });
+  } finally {
+    bestAnswerLoading.value = false;
+  }
+};
+
 /**
  * 切換更多選單
  */
@@ -210,6 +319,23 @@ onMounted(() => {
     class="interaction-buttons d-inline-flex align-items-center gap-2"
     :class="{ 'more-menu-open': showMoreMenu }"
   >
+    <span v-if="isThisBestAnswer" class="best-answer-badge">
+      <i class="fas fa-award me-1"></i>
+      最佳解答
+    </span>
+
+    <button
+      v-if="canShowBestAnswerButton"
+      class="btn btn-sm btn-interaction-button btn-best-answer"
+      @click="handleBestAnswer"
+      :disabled="bestAnswerLoading"
+      title="最佳解答"
+      type="button"
+    >
+      <i :class="['fas fa-award', { 'fa-spin': bestAnswerLoading }]"></i>
+      <span class="ms-1">最佳解</span>
+    </button>
+
     <button
       v-for="cat in categories"
       :key="cat.id"
@@ -354,6 +480,30 @@ onMounted(() => {
 
 .fa-spin {
   animation: spin 1s linear infinite;
+}
+
+.btn-best-answer {
+  background-color: #145369;
+  border: 1px solid #145369;
+  color: #fff0dd;
+}
+
+.btn-best-answer:hover:not(:disabled) {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
+}
+
+.best-answer-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  line-height: 1;
+  height: 28px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.375rem;
+  background-color: #145369;
+  color: #fff0dd;
 }
 
 /* 更多選單容器 */

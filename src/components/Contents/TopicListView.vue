@@ -81,6 +81,56 @@ const threadHasInlineImages = computed(() => {
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
 const replyTab = ref(null);
+const optimisticBestAnswerContentId = ref(null);
+
+const activeEntrustMissionId = computed(() => {
+  return forumStore.threadDetail?.entrustMissionId ?? null;
+});
+
+const activeMissionOwnerUserId = computed(() => {
+  return (
+    forumStore.threadDetail?.entrustMissionUserId ??
+    forumStore.threadDetail?.userId ??
+    null
+  );
+});
+
+const activeRewardPoints = computed(() => {
+  return Number(forumStore.threadDetail?.rewardPoints || 0);
+});
+
+const activeBestAnswerContentId = computed(() => {
+  if (optimisticBestAnswerContentId.value) {
+    return optimisticBestAnswerContentId.value;
+  }
+  return forumStore.threadDetail?.bestAnswerContentId ?? null;
+});
+
+const canEnableBestAnswer = computed(() => {
+  return Boolean(activeEntrustMissionId.value);
+});
+
+const handleBestAnswerSelected = async (payload) => {
+  const selectedContentId =
+    payload?.bestAnswerContentId ?? payload?.contentId ?? null;
+  if (!selectedContentId) return;
+
+  optimisticBestAnswerContentId.value = Number(selectedContentId);
+
+  forumStore.threadDetail = {
+    ...forumStore.threadDetail,
+    bestAnswerContentId: Number(selectedContentId),
+    bestAnswerSelected: true,
+  };
+
+  await Swal.fire({
+    icon: "success",
+    title: "最佳解答已選定",
+    text: `已發放 ${Number(payload?.rewardPoints || activeRewardPoints.value || 0)} 點給回覆作者`,
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
+};
 
 /**
  * 處理主題互動成功
@@ -537,6 +587,14 @@ function handleThreadReplyingTargetClick() {
     forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
   }
 }
+
+watch(
+  () => forumStore.threadDetail?.id,
+  () => {
+    optimisticBestAnswerContentId.value = null;
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -754,6 +812,12 @@ function handleThreadReplyingTargetClick() {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
               />
               <nav v-if="threadCommentsTotalPages > 1" class="mt-3">
                 <ul
@@ -810,6 +874,12 @@ function handleThreadReplyingTargetClick() {
                 :hide-nested-replies="false"
                 :preview-only="true"
                 :show-parent-link="false"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
               />
             </div>
 

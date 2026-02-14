@@ -53,8 +53,14 @@
                   :key="`interactions-${post.id}`"
                   :contentId="post.id"
                   :authorUserId="post.userId"
+                  :enable-best-answer="enableBestAnswer"
+                  :entrust-mission-id="entrustMissionId"
+                  :mission-owner-user-id="missionOwnerUserId"
+                  :best-answer-content-id="bestAnswerContentId"
+                  :reward-points="rewardPoints"
                   @interaction-success="handleInteractionSuccess"
                   @interaction-error="handleInteractionError"
+                  @best-answer-selected="handleBestAnswerSelected"
                   @edit-content="handleEditContent"
                   @delete-content="handleDeleteContent"
                 />
@@ -216,6 +222,12 @@
             :is-reply="true"
             :category-id="categoryId"
             :preview-only="true"
+            :enable-best-answer="enableBestAnswer"
+            :entrust-mission-id="entrustMissionId"
+            :mission-owner-user-id="missionOwnerUserId"
+            :best-answer-content-id="bestAnswerContentId"
+            :reward-points="rewardPoints"
+            @best-answer-selected="handleBestAnswerSelected"
           />
           <div
             v-if="nestedRepliesLoaded && nestedRepliesCount === 0"
@@ -326,7 +338,29 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  enableBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  entrustMissionId: {
+    type: Number,
+    default: null,
+  },
+  missionOwnerUserId: {
+    type: Number,
+    default: null,
+  },
+  bestAnswerContentId: {
+    type: Number,
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
 });
+
+const emit = defineEmits(["best-answer-selected"]);
 
 const showReply = ref(false);
 const isPreviewExpanded = ref(false);
@@ -971,6 +1005,10 @@ async function handleInteractionError(data) {
     confirmButtonText: "確定",
     confirmButtonColor: "#145369",
   });
+}
+
+function handleBestAnswerSelected(payload) {
+  emit("best-answer-selected", payload);
 }
 
 /**
