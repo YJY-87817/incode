@@ -173,5 +173,39 @@ namespace incode2.ApiControllers.Content
       var stats = await _contentInteractionService.GetInteractionStats(contentId);
       return Ok(stats);
     }
+
+    // 指定最佳解答
+    // POST https://localhost:7190/api/contentinteractionapi/best-answer
+    [HttpPost("best-answer")]
+    [Authorize]
+    public async Task<IActionResult> SelectBestAnswer([FromBody] SelectBestAnswerDto dto)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      var userId = User.GetId();
+      if (userId <= 0)
+        return Unauthorized(new { message = "無法取得使用者ID" });
+
+      if (dto.EntrustMissionId <= 0 || dto.ContentId <= 0)
+        return BadRequest(new { message = "EntrustMissionId 和 ContentId 必須大於 0" });
+
+      var result = await _contentInteractionService.SelectBestAnswerAsync(dto.EntrustMissionId, dto.ContentId, userId);
+
+      if (!result.Ok)
+      {
+        return result.Code switch
+        {
+          400 => BadRequest(result),
+          401 => Unauthorized(result),
+          403 => StatusCode(403, result),
+          404 => NotFound(result),
+          409 => Conflict(result),
+          _ => StatusCode(500, result)
+        };
+      }
+
+      return Ok(result);
+    }
   }
 }
