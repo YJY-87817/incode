@@ -72,6 +72,19 @@ const contentInteractionApi = {
     return this.postInteraction({ interactionCategoryId: 2, contentId });
   },
 
+  bestAnswer({ entrustMissionId, contentId }) {
+    return apiClient.post(
+      "/contentinteractionapi/best-answer",
+      {
+        entrustMissionId,
+        contentId,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+  },
+
   // Content CRUD and child pagination are handled by contentApi.
 };
 

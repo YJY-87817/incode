@@ -22,6 +22,8 @@ const topicPageCache = new Map();
 const topicPagePending = new Map();
 const contentBodyCache = new Map();
 const contentBodyPending = new Map();
+const entrustMissionByContentCache = new Map();
+const entrustMissionByContentPending = new Map();
 
 const buildTopicsCacheKey = ({
   categoryId,
@@ -224,6 +226,116 @@ const normalizeCategory = (raw, fallbackName = "") => {
   };
 };
 
+const normalizeEntrustMissionMeta = (detail = {}) => {
+  const mission =
+    detail?.entrustMission ??
+    detail?.entrust_mission ??
+    detail?.task ??
+    detail?.mission ??
+    null;
+
+  const entrustMissionId =
+    detail?.entrustMissionId ??
+    detail?.entrust_mission_id ??
+    mission?.entrustMissionId ??
+    mission?.entrust_mission_id ??
+    mission?.id ??
+    null;
+
+  const rewardPoints =
+    detail?.rewardPoints ??
+    detail?.reward_points ??
+    mission?.rewardPoints ??
+    mission?.reward_points ??
+    0;
+
+  const missionOwnerUserId =
+    mission?.userId ??
+    mission?.user_id ??
+    detail?.entrustMissionUserId ??
+    detail?.entrust_mission_user_id ??
+    detail?.userId ??
+    detail?.user_id ??
+    null;
+
+  const bestAnswerContentId =
+    detail?.bestAnswerContentId ??
+    detail?.best_answer_content_id ??
+    mission?.bestAnswerContentId ??
+    mission?.best_answer_content_id ??
+    null;
+
+  return {
+    entrustMissionId: entrustMissionId ? Number(entrustMissionId) : null,
+    rewardPoints: Number(rewardPoints || 0),
+    entrustMissionUserId: missionOwnerUserId
+      ? Number(missionOwnerUserId)
+      : null,
+    bestAnswerContentId: bestAnswerContentId
+      ? Number(bestAnswerContentId)
+      : null,
+  };
+};
+
+const normalizeEntrustMissionRecord = (item = {}) => ({
+  entrustMissionId:
+    item?.entrustMissionId ?? item?.entrust_mission_id ?? item?.id ?? null,
+  entrustMissionUserId:
+    item?.userId ??
+    item?.user_id ??
+    item?.ownerUserId ??
+    item?.owner_user_id ??
+    null,
+  rewardPoints: item?.rewardPoints ?? item?.reward_points ?? 0,
+  bestAnswerContentId:
+    item?.bestAnswerContentId ?? item?.best_answer_content_id ?? null,
+});
+
+const fetchEntrustMissionMetaByContentId = async (contentId) => {
+  const targetId = Number(contentId);
+  if (!Number.isFinite(targetId)) return null;
+
+  if (entrustMissionByContentCache.has(targetId)) {
+    return entrustMissionByContentCache.get(targetId);
+  }
+
+  if (entrustMissionByContentPending.has(targetId)) {
+    return entrustMissionByContentPending.get(targetId);
+  }
+
+  const request = (async () => {
+    try {
+      const response = await apiClient.get("/EntrustMissionApi");
+      const records = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      records.forEach((record) => {
+        const linkedContentId = Number(
+          record?.contentId ?? record?.content_id ?? null,
+        );
+        if (!Number.isFinite(linkedContentId)) return;
+        entrustMissionByContentCache.set(
+          linkedContentId,
+          normalizeEntrustMissionRecord(record),
+        );
+      });
+
+      return entrustMissionByContentCache.get(targetId) ?? null;
+    } catch (error) {
+      console.error("載入委託任務資訊失敗:", error);
+      return null;
+    } finally {
+      entrustMissionByContentPending.delete(targetId);
+    }
+  })();
+
+  entrustMissionByContentPending.set(targetId, request);
+  return request;
+};
+
 export const useForumStore = defineStore("forum", {
   state: () => ({
     // ========== 全局狀態 ==========
@@ -265,6 +377,11 @@ export const useForumStore = defineStore("forum", {
       type: null,
       isPinned: false,
       isHot: false,
+      entrustMissionId: null,
+      entrustMissionUserId: null,
+      rewardPoints: 0,
+      bestAnswerContentId: null,
+      bestAnswerSelected: false,
     },
     threadPosts: [],
     threadComments: [],
@@ -1027,6 +1144,28 @@ export const useForumStore = defineStore("forum", {
 
           // 提取後端提供的回覆統計資訊
           const stats = extractReplyStats(detail);
+          const detailEntrustMeta = normalizeEntrustMissionMeta(detail);
+          const fallbackEntrustMeta = await fetchEntrustMissionMetaByContentId(
+            detail.contentId ?? threadId,
+          );
+          const entrustMissionMeta = {
+            entrustMissionId:
+              detailEntrustMeta.entrustMissionId ??
+              fallbackEntrustMeta?.entrustMissionId ??
+              null,
+            entrustMissionUserId:
+              detailEntrustMeta.entrustMissionUserId ??
+              fallbackEntrustMeta?.entrustMissionUserId ??
+              null,
+            rewardPoints:
+              detailEntrustMeta.rewardPoints > 0
+                ? detailEntrustMeta.rewardPoints
+                : Number(fallbackEntrustMeta?.rewardPoints || 0),
+            bestAnswerContentId:
+              detailEntrustMeta.bestAnswerContentId ??
+              fallbackEntrustMeta?.bestAnswerContentId ??
+              null,
+          };
 
           // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
           let isPinned = detail.isPinned ?? false;
@@ -1070,6 +1209,11 @@ export const useForumStore = defineStore("forum", {
             lastReplyTime: stats.lastReplyTime ?? null,
             lastReplyUser: stats.lastReplyUser ?? null,
             lastReplyUserId: stats.lastReplyUserId ?? null,
+            entrustMissionId: entrustMissionMeta.entrustMissionId,
+            entrustMissionUserId: entrustMissionMeta.entrustMissionUserId,
+            rewardPoints: entrustMissionMeta.rewardPoints,
+            bestAnswerContentId: entrustMissionMeta.bestAnswerContentId,
+            bestAnswerSelected: Boolean(entrustMissionMeta.bestAnswerContentId),
           };
 
           // 更新快取的統計資訊
@@ -1119,6 +1263,11 @@ export const useForumStore = defineStore("forum", {
         lastReplyTime: null,
         lastReplyUser: null,
         lastReplyUserId: null,
+        entrustMissionId: null,
+        entrustMissionUserId: null,
+        rewardPoints: 0,
+        bestAnswerContentId: null,
+        bestAnswerSelected: false,
       };
       this.threadPosts = [];
       this.threadComments = [];
@@ -1325,6 +1474,8 @@ export const useForumStore = defineStore("forum", {
       clearTopicPageCache();
       contentBodyCache.clear();
       contentBodyPending.clear();
+      entrustMissionByContentCache.clear();
+      entrustMissionByContentPending.clear();
     },
 
     // ========== 搜尋功能 ==========
