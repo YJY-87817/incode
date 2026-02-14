@@ -60,8 +60,6 @@ const emit = defineEmits([
 const categories = ref([
   { id: 1, name: "like", label: "讚", icon: "fas fa-thumbs-up" },
   { id: 3, name: "bookmark", label: "收藏", icon: "fas fa-bookmark" },
-  { id: 2, name: "hide", label: "隱藏", icon: "fas fa-eye-slash" },
-  { id: 4, name: "block", label: "檢舉", icon: "fas fa-ban" },
 ]);
 
 // 從 Pinia store 獲取互動狀態
@@ -226,8 +224,8 @@ onMounted(() => {
       <span class="ms-1">{{ cat.label }}</span>
     </button>
 
-    <!-- 更多選單 (僅當為自己的內容時顯示) -->
-    <div v-if="isOwnContent" class="more-menu-container position-relative">
+    <!-- 更多選單 -->
+    <div class="more-menu-container position-relative">
       <button
         class="btn btn-sm btn-interaction-button btn-interaction"
         @click.stop="toggleMoreMenu"
@@ -240,11 +238,37 @@ onMounted(() => {
 
       <!-- 下拉選單 -->
       <div v-if="showMoreMenu" class="more-menu-dropdown" @click.stop>
-        <button class="more-menu-item" @click="handleEdit" type="button">
+        <button
+          class="more-menu-item"
+          @click="handleInteraction(2, 'hide')"
+          :disabled="isLoading[2]"
+          type="button"
+        >
+          <i
+            :class="['fas fa-eye-slash me-2', { 'fa-spin': isLoading[2] }]"
+          ></i>
+          隱藏
+        </button>
+        <button
+          class="more-menu-item"
+          @click="handleInteraction(4, 'block')"
+          :disabled="isLoading[4]"
+          type="button"
+        >
+          <i :class="['fas fa-ban me-2', { 'fa-spin': isLoading[4] }]"></i>
+          檢舉
+        </button>
+        <button
+          v-if="isOwnContent"
+          class="more-menu-item"
+          @click="handleEdit"
+          type="button"
+        >
           <i class="fas fa-edit me-2"></i>
           編輯
         </button>
         <button
+          v-if="isOwnContent"
           class="more-menu-item more-menu-item-danger"
           @click="handleDelete"
           type="button"
