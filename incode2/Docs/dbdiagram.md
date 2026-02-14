@@ -14,7 +14,6 @@ table content {
   note {"發文、回文、留言、回覆都在此表， 想支援(1)主文刪除後，子內容持續顯示、(2)從留言提升成發文(因為下面討論熱烈)"}
 }
 
-
 // 內容分類
 table content_category {
   content_category_id int [pk, increment, note:""]
@@ -25,18 +24,18 @@ table content_category {
   note {"先選好再發文，類似麵包屑，電影>動畫片、影城>屏東縣。可以讓使用者自己新增"}
 }
 
-
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)有人回覆、(6)官方公告"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)最佳解、(6)打賞"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
+  // 本次新增description
+  description nvarchar(500) [note: "互動備註：檢舉原因、打賞點數等。若為一般按讚則為NULL"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
-  note {"類似按讚表的擴增"}
+  note {"使用者與內容的互動，類似按讚表的擴增"}
 }
-
 
 // 互動、通知分類(2個共用)
 table interaction_category {
@@ -49,7 +48,6 @@ table interaction_category {
   note {"互動分類:like、block、bookmark、隱藏自己的內容; 通知分類:有人留言、按讚"}
 }
 
-
 // 內容歷史紀錄(編輯版控)
 table content_history {
   content_history_id int [pk, increment]
@@ -61,7 +59,6 @@ table content_history {
   updated_at datetime [default:`current_timestamp`, note: "修改此歷史修改的時間(管理員用)"]
   note {"編輯歷史，只存舊資料"}
 }
-
 
 // 通知(有人回覆/互動)
 table content_notification {
@@ -77,7 +74,6 @@ table content_notification {
   note {"通知(有人回覆/互動)"}
 }
 
-
 // 圖片管理
 table user_image {
   user_image_id int [pk, increment]
@@ -89,7 +85,6 @@ table user_image {
   updated_at datetime [default:`current_timestamp`, note: "修改時間(管理員用)"]
   note {"圖片管理"}
 }
-
 
 // user_owen
 // 使用者主表
@@ -106,8 +101,8 @@ table user{
   is_active bit [default: 1]
   role_id integer [ref: > role.role_id]
   employeeid integer
-   ResetToken nvarchar(500)  
-ResetTokenExpiry datetime2(7)
+  ResetToken nvarchar(500)  
+  ResetTokenExpiry datetime2(7)
 }
 
 
@@ -138,34 +133,33 @@ table user_loginlog{
 
 // 目前狀態
 table user_status{
-   user_id integer [primary key,ref: >user.user_id]
-   experience integer [default: 0]
-   rank integer [default: 1]
-   points integer [default: 0, note: '積分或點數']
- }
-
-
- //背包
- table user_inventory {
-   inventory_id integer [primary key, increment]
-   user_id integer [ref: > user.user_id]
-   item_id integer [note: '對應到另外的 item 表']
-   quantity integer [default: 0]  
+  user_id integer [primary key,ref: >user.user_id]
+  experience integer [default: 0]
+  rank integer [default: 1]
+  points integer [default: 0, note: '積分或點數']
 }
 
 
- //通知
- table user_notification{
-   user_notification_id integer [primary key, increment]
-   user_id integer [ref: >user.user_id]
-   title nvarchar(50)
-   content nvarchar(200)
-   target_url nvarchar(500)
-   is_read bit [default: 0]
-   type varchar(20) [note: 'system, reply, like']
-   created_at datetime [default: `CURRENT_TIMESTAMP`]
-   }
+//背包
+table user_inventory {
+  inventory_id integer [primary key, increment]
+  user_id integer [ref: > user.user_id]
+  item_id integer [note: '對應到另外的 item 表']
+  quantity integer [default: 0]  
+}
 
+
+//通知
+table user_notification{
+  user_notification_id integer [primary key, increment]
+  user_id integer [ref: >user.user_id]
+  title nvarchar(50)
+  content nvarchar(200)
+  target_url nvarchar(500)
+  is_read bit [default: 0]
+  type varchar(20) [note: 'system, reply, like']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+}
 
 //Point_Mission_Wallet_qiu
 //功能:點數/任務/金流
@@ -182,7 +176,6 @@ Table point_log {
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-
 // 點數類型定義
 Table point_type_definition {
   point_type_definition_id int [pk, increment, note: '點數類型主鍵']
@@ -194,9 +187,7 @@ Table point_type_definition {
   updated_at datetime
 }
 
-
 //========= 平台任務 ===========
-
 
 Table mission {
   mission_id int [pk, increment, note: '平台任務主鍵']
@@ -218,7 +209,6 @@ Table mission {
   updated_at datetime
 }
 
-
 Table mission_progress {
   mission_progress_id int [pk, increment, note: '用戶任務進度主鍵']
   user_id int [not null, ref: > user.user_id, note: '用戶 ID']
@@ -232,9 +222,7 @@ Table mission_progress {
   cycle_end_at datetime [note: '循環結束時間']
 }
 
-
 //========= 委託任務 ===========
-
 
 Table entrust_mission {
   entrust_mission_id int [pk, increment, note: '委託任務主鍵']
@@ -252,7 +240,6 @@ Table entrust_mission {
   updated_at datetime [note: '最後更新時間，可用 trigger 自動更新']
 }
 
-
 Table entrust_mission_progress {
   entrust_mission_progress_id int [pk, increment, note: '委託任務進度主鍵']
   user_id int [not null, ref: > user.user_id, note: '接任務者 ID']
@@ -262,7 +249,6 @@ Table entrust_mission_progress {
   completed_at datetime
   rewarded_at datetime
 }
-
 
 Table entrust_mission_point_reserve {
   entrust_mission_point_reserve_id int [pk, increment, note: '委託點數預扣主鍵']
@@ -274,10 +260,7 @@ Table entrust_mission_point_reserve {
   released_at datetime
 }
 
-
 //========= 金流儲值 ===========
-
-
 Table point_recharge {
   point_recharge_id int [pk, increment, note: '儲值成功紀錄主鍵']
   user_id int [not null, ref: > user.user_id, note: '用戶 ID']
@@ -292,8 +275,7 @@ Table point_recharge {
     (user_id, created_at)
   }}
 
-
-  Table point_tip {
+Table point_tip {
   point_tip_id int [pk, increment]
   from_user_id int [not null, ref: > user.user_id]
   to_user_id int [not null, ref: > user.user_id]
@@ -301,7 +283,6 @@ Table point_recharge {
   amount int [not null]
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
-
 
 // ================系統通知表 (單表架構)====================
 Table notifications {
@@ -321,7 +302,6 @@ Table notifications {
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-
 // PointShop_yjy
 // 商品資料管理
 table product {
@@ -340,7 +320,6 @@ table product {
   note {'商品預計只下架、不刪除資料'}
 }
 
-
 // 訂單
 table orders {
   order_id INT [pk, increment, note: '訂單ID (主鍵)']
@@ -353,7 +332,6 @@ table orders {
   note {'order為資料庫保留字，怕會出問題所以加s，訂單只取消不刪除'}
  }
 
-
 // 訂單Detail
 table orderdetail {
   orderdetail_id INT [pk, increment, note: 'ID (主鍵)']
@@ -363,7 +341,6 @@ table orderdetail {
   unit_point_at_purchase INT [not null, note: '購買時單價']
   requires_shipping BIT [not null, note: '是否需寄送商品 (1=需要, 0=不需)']
 }
-
 
 // 寄送Detail
 table shipped_detail{
@@ -379,7 +356,6 @@ table shipped_detail{
   is_completed BIT [not null, default: 0, note: '是否完成']
 }
 
-
 // 價格紀錄
 table pointchange{
   pointchange_id INT [pk, increment, note: 'ID (主鍵)']
@@ -389,7 +365,6 @@ table pointchange{
   note {'先建立出來備用'}
 }
 
-
 // 商品多圖
 table productimage{
   productimage_id INT [pk, increment, note: 'ID (主鍵)']
@@ -397,7 +372,6 @@ table productimage{
   image_name NVARCHAR(50) [note: '圖片檔案名稱']
   note {'先建立出來備用'}
 }
-
 
 // 寄送資料紀錄
 table shipaddress{
@@ -408,7 +382,6 @@ table shipaddress{
   recipient_phone NVARCHAR(50) [not null, note: '收件人電話']
   note {'先建立出來備用'}
 }
-
 
 // chatroom_lin
 // 對話工作階段
@@ -421,9 +394,6 @@ Table chat_session {
   ishumanmode bit [not null, default: 0] // 0: AI模式, 1: 真人模式
   note { "聊天室列表與狀態紀錄" }
 }
-
-
-
 
 // 對話訊息內容
 Table chat_message {
