@@ -17,7 +17,7 @@ namespace incode2.Services.Contents
       _pointLogService = pointLogService;
     }
 
-    // ¨ú±o¯S©w¤º®eªº©Ò¦³¤¬°Ê
+    // å–å¾—ç‰¹å®šå…§å®¹çš„æ‰€æœ‰äº’å‹•
 
     public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
     {
@@ -36,7 +36,7 @@ namespace incode2.Services.Contents
         .ToListAsync();
     }
 
-    // ¨ú±o¨Ï¥ÎªÌ¹ï¯S©w¤º®eªº¤¬°ÊÃş«¬
+    // å–å¾—ä½¿ç”¨è€…å°ç‰¹å®šå…§å®¹çš„äº’å‹•é¡å‹
 
     public async Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId)
     {
@@ -56,26 +56,26 @@ namespace incode2.Services.Contents
     }
 
 
-    // ·s¼W©Î²¾°£¤¬°Ê¡]Toggle¡^
-    // ¦pªG¨Ï¥ÎªÌ¤w¸g¦³¸Ó¤¬°Ê -> §R°£¡]¨ú®ø¡^
-    // ¦pªG¨Ï¥ÎªÌ¨S¦³¸Ó¤¬°Ê -> ·s¼W
+    // æ–°å¢æˆ–ç§»é™¤äº’å‹•ï¼ˆToggleï¼‰
+    // å¦‚æœä½¿ç”¨è€…å·²ç¶“æœ‰è©²äº’å‹• -> åˆªé™¤ï¼ˆå–æ¶ˆï¼‰
+    // å¦‚æœä½¿ç”¨è€…æ²’æœ‰è©²äº’å‹• -> æ–°å¢
 
     public async Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto)
     {
-      // ÀË¬dcontent¬O§_¦s¦b
+      // æª¢æŸ¥contentæ˜¯å¦å­˜åœ¨
       var contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId);
       if (!contentExists)
       {
-        throw new Exception($"¤º®e ID {dto.ContentId} ¤£¦s¦b");
+        throw new Exception($"å…§å®¹ ID {dto.ContentId} ä¸å­˜åœ¨");
       }
 
-      // ÀË¬d¤¬°Ê¤ÀÃş¬O§_¦s¦b
+      // æª¢æŸ¥äº’å‹•åˆ†é¡æ˜¯å¦å­˜åœ¨
       var categoryExists = await _context.InteractionCategory
         .AnyAsync(ic => ic.InteractionCategoryId == dto.InteractionCategoryId);
       if (!categoryExists)
-        throw new Exception($"¤¬°ÊÃş§O ID {dto.InteractionCategoryId} ¤£¦s¦b");
+        throw new Exception($"äº’å‹•é¡åˆ¥ ID {dto.InteractionCategoryId} ä¸å­˜åœ¨");
 
-      // ¬d§ä²{¦³¤¬°Ê¡]¦P¤@¨Ï¥ÎªÌ¹ï¦P¤@¤º®e¦P¤@¤ÀÃş¡^
+      // æŸ¥æ‰¾ç¾æœ‰äº’å‹•ï¼ˆåŒä¸€ä½¿ç”¨è€…å°åŒä¸€å…§å®¹åŒä¸€åˆ†é¡ï¼‰
       var existingInteraction = await _context.ContentInteraction
         .FirstOrDefaultAsync(ci => ci.ContentId == dto.ContentId
           && ci.UserId == dto.UserId
@@ -115,7 +115,7 @@ namespace incode2.Services.Contents
     }
 
 
-    // ²¾°£¤¬°Ê
+    // ç§»é™¤äº’å‹•
 
     public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
@@ -132,7 +132,7 @@ namespace incode2.Services.Contents
     }
 
 
-    // ¨ú±o¤¬°Ê¤ÀÃş¦Cªí
+    // å–å¾—äº’å‹•åˆ†é¡åˆ—è¡¨
 
     public async Task<List<InteractionCategory>> GetInteractionCategory()
     {
@@ -140,7 +140,7 @@ namespace incode2.Services.Contents
     }
 
 
-    // ²Î­p¤º®eªº¤¬°Ê¼Æ¡]«ö¤ÀÃş¡^
+    // çµ±è¨ˆå…§å®¹çš„äº’å‹•æ•¸ï¼ˆæŒ‰åˆ†é¡ï¼‰
 
     public async Task<object> GetInteractionStats(int contentId)
     {
@@ -167,7 +167,7 @@ namespace incode2.Services.Contents
     {
       if (entrustMissionId <= 0 || contentId <= 0)
       {
-        return new ResultDTO { Ok = false, Code = 400, Message = "EntrustMissionId ©Î ContentId ¥²¶·¤j©ó 0" };
+        return new ResultDTO { Ok = false, Code = 400, Message = "EntrustMissionId æˆ– ContentId å¿…é ˆå¤§æ–¼ 0" };
       }
 
       using var transaction = await _context.Database.BeginTransactionAsync();
@@ -179,12 +179,12 @@ namespace incode2.Services.Contents
 
         if (mission == null)
         {
-          return new ResultDTO { Ok = false, Code = 404, Message = "©e°U¥ô°È¤£¦s¦b" };
+          return new ResultDTO { Ok = false, Code = 404, Message = "å§”è¨—ä»»å‹™ä¸å­˜åœ¨" };
         }
 
         if (mission.UserId != selectorUserId)
         {
-          return new ResultDTO { Ok = false, Code = 403, Message = "¥u¦³©e°U¥ô°Èµo°_ªÌ¥i¥H¿ï¾Ü³Ì¨Î¸Ñµª" };
+          return new ResultDTO { Ok = false, Code = 403, Message = "åªæœ‰å§”è¨—ä»»å‹™ç™¼èµ·è€…å¯ä»¥é¸æ“‡æœ€ä½³è§£ç­”" };
         }
 
         var targetContent = await _context.Content
@@ -192,19 +192,19 @@ namespace incode2.Services.Contents
 
         if (targetContent == null)
         {
-          return new ResultDTO { Ok = false, Code = 404, Message = "¦^ÂĞ¤º®e¤£¦s¦b" };
+          return new ResultDTO { Ok = false, Code = 404, Message = "å›è¦†å…§å®¹ä¸å­˜åœ¨" };
         }
 
         var rootContentId = await GetRootContentIdAsync(contentId);
         if (rootContentId == 0 || rootContentId != mission.ContentId)
         {
-          return new ResultDTO { Ok = false, Code = 400, Message = "«ü©w¤º®e¤£Äİ©ó¦¹©e°U¥ô°Èªº¶K¤å" };
+          return new ResultDTO { Ok = false, Code = 400, Message = "æŒ‡å®šå…§å®¹ä¸å±¬æ–¼æ­¤å§”è¨—ä»»å‹™çš„è²¼æ–‡" };
         }
 
         var bestCategoryId = await GetBestAnswerCategoryIdAsync();
         if (bestCategoryId == 0)
         {
-          return new ResultDTO { Ok = false, Code = 500, Message = "©|¥¼³]©w³Ì¨Î¸Ñµª¤¬°Ê¤ÀÃş" };
+          return new ResultDTO { Ok = false, Code = 500, Message = "å°šæœªè¨­å®šæœ€ä½³è§£ç­”äº’å‹•åˆ†é¡" };
         }
 
         var bestDescription = $"entrust_mission:{entrustMissionId}";
@@ -214,7 +214,7 @@ namespace incode2.Services.Contents
 
         if (existingBest)
         {
-          return new ResultDTO { Ok = false, Code = 409, Message = "³Ì¨Î¸Ñµª¤w¸g³]©w¹L" };
+          return new ResultDTO { Ok = false, Code = 409, Message = "æœ€ä½³è§£ç­”å·²ç¶“è¨­å®šé" };
         }
 
         var awardSuccess = await _pointLogService.ChangePointsAsync(
@@ -222,11 +222,11 @@ namespace incode2.Services.Contents
           mission.RewardPoints,
           "entrust_mission",
           mission.EntrustMissionId,
-          PointType.EntrustMission);
+          PointType.IncomeEntrustMission);
 
         if (!awardSuccess)
         {
-          return new ResultDTO { Ok = false, Code = 400, Message = "ÂI¼Æµo©ñ¥¢±Ñ" };
+          return new ResultDTO { Ok = false, Code = 400, Message = "é»æ•¸ç™¼æ”¾å¤±æ•—" };
         }
 
         _context.ContentInteraction.Add(new ContentInteraction
@@ -245,7 +245,7 @@ namespace incode2.Services.Contents
         {
           Ok = true,
           Code = 200,
-          Message = "³Ì¨Î¸Ñµª¤w¿ï©w",
+          Message = "æœ€ä½³è§£ç­”å·²é¸å®š",
           Data = new
           {
             EntrustMissionId = entrustMissionId,
@@ -290,7 +290,7 @@ namespace incode2.Services.Contents
 
     private async Task<int> GetBestAnswerCategoryIdAsync()
     {
-      var candidateNames = new[] { "best_answer", "best", "accepted", "³Ì¨Î¸Ñµª", "³Ì¨Î¸Ñ" };
+      var candidateNames = new[] { "best_answer", "best", "accepted", "æœ€ä½³è§£ç­”", "æœ€ä½³è§£" };
 
       return await _context.InteractionCategory
         .AsNoTracking()
