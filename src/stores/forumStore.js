@@ -24,6 +24,65 @@ const contentBodyCache = new Map();
 const contentBodyPending = new Map();
 const entrustMissionByContentCache = new Map();
 const entrustMissionByContentPending = new Map();
+const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
+
+const readBestAnswerCache = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(BEST_ANSWER_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeBestAnswerCache = (payload) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BEST_ANSWER_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore write failure
+  }
+};
+
+const toBestAnswerCacheKey = ({ entrustMissionId, threadId }) => {
+  const missionNumericId = Number(entrustMissionId);
+  if (Number.isFinite(missionNumericId) && missionNumericId > 0) {
+    return `m:${missionNumericId}`;
+  }
+
+  const threadNumericId = Number(threadId);
+  if (Number.isFinite(threadNumericId) && threadNumericId > 0) {
+    return `t:${threadNumericId}`;
+  }
+
+  return null;
+};
+
+const getCachedBestAnswerContentId = ({ entrustMissionId, threadId }) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  if (!key) return null;
+  const cache = readBestAnswerCache();
+  const value = Number(cache[key]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+const setCachedBestAnswerContentId = ({
+  entrustMissionId,
+  threadId,
+  bestAnswerContentId,
+}) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  const numericContentId = Number(bestAnswerContentId);
+  if (!key || !Number.isFinite(numericContentId) || numericContentId <= 0) {
+    return;
+  }
+  const cache = readBestAnswerCache();
+  cache[key] = numericContentId;
+  writeBestAnswerCache(cache);
+};
 
 const buildTopicsCacheKey = ({
   categoryId,
@@ -1167,6 +1226,23 @@ export const useForumStore = defineStore("forum", {
               null,
           };
 
+          const threadContentId = detail.contentId ?? threadId;
+          const cachedBestAnswerContentId = getCachedBestAnswerContentId({
+            entrustMissionId: entrustMissionMeta.entrustMissionId,
+            threadId: threadContentId,
+          });
+
+          const resolvedBestAnswerContentId =
+            await contentInteractionApi.getBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadContentId,
+              fallbackBestAnswerContentId:
+                entrustMissionMeta.bestAnswerContentId ??
+                cachedBestAnswerContentId,
+            });
+          const finalBestAnswerContentId =
+            resolvedBestAnswerContentId ?? cachedBestAnswerContentId;
+
           // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
           let isPinned = detail.isPinned ?? false;
           let isHot = (stats.replyCount ?? 0) > 10;
@@ -1212,9 +1288,17 @@ export const useForumStore = defineStore("forum", {
             entrustMissionId: entrustMissionMeta.entrustMissionId,
             entrustMissionUserId: entrustMissionMeta.entrustMissionUserId,
             rewardPoints: entrustMissionMeta.rewardPoints,
-            bestAnswerContentId: entrustMissionMeta.bestAnswerContentId,
-            bestAnswerSelected: Boolean(entrustMissionMeta.bestAnswerContentId),
+            bestAnswerContentId: finalBestAnswerContentId,
+            bestAnswerSelected: Boolean(finalBestAnswerContentId),
           };
+
+          if (finalBestAnswerContentId) {
+            setCachedBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadId: threadContentId,
+              bestAnswerContentId: finalBestAnswerContentId,
+            });
+          }
 
           // 更新快取的統計資訊
           if (detail.contentId && stats.replyCount !== null) {
@@ -1289,6 +1373,18 @@ export const useForumStore = defineStore("forum", {
       };
       this.childRepliesByParentId = {};
       this.childRepliesCountByParentId = {};
+    },
+
+    cacheBestAnswerSelection({
+      entrustMissionId = null,
+      threadId = null,
+      bestAnswerContentId = null,
+    } = {}) {
+      setCachedBestAnswerContentId({
+        entrustMissionId,
+        threadId,
+        bestAnswerContentId,
+      });
     },
 
     changeThreadPage(page) {
