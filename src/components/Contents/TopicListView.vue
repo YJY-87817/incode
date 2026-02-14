@@ -123,6 +123,13 @@ const handleBestAnswerSelected = async (payload) => {
     bestAnswerSelected: true,
   };
 
+  forumStore.cacheBestAnswerSelection({
+    entrustMissionId:
+      payload?.entrustMissionId ?? forumStore.threadDetail?.entrustMissionId,
+    threadId: forumStore.threadDetail?.id,
+    bestAnswerContentId: Number(selectedContentId),
+  });
+
   await Swal.fire({
     icon: "success",
     title: "最佳解答已選定",
