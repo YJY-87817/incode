@@ -37,5 +37,7 @@ namespace incode2.Services.Contents
     /// 統計內容的互動數（按分類）
     /// </summary>
     Task<object> GetInteractionStats(int contentId);
+
+    Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId);
   }
 }

@@ -29,12 +29,14 @@ table content_category {
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)有人回覆、(6)官方公告"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)最佳解、(6)打賞"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
+  // 本次新增description
+  description nvarchar(500) [note: "互動備註：檢舉原因、打賞點數等。若為一般按讚則為NULL"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
-  note {"類似按讚表的擴增"}
+  note {"使用者與內容的互動，類似按讚表的擴增"}
 }
 
 
@@ -106,8 +108,8 @@ table user{
   is_active bit [default: 1]
   role_id integer [ref: > role.role_id]
   employeeid integer
-   ResetToken nvarchar(500)  
-ResetTokenExpiry datetime2(7)
+  ResetToken nvarchar(500)  
+  ResetTokenExpiry datetime2(7)
 }
 
 
@@ -138,33 +140,33 @@ table user_loginlog{
 
 // 目前狀態
 table user_status{
-   user_id integer [primary key,ref: >user.user_id]
-   experience integer [default: 0]
-   rank integer [default: 1]
-   points integer [default: 0, note: '積分或點數']
- }
-
-
- //背包
- table user_inventory {
-   inventory_id integer [primary key, increment]
-   user_id integer [ref: > user.user_id]
-   item_id integer [note: '對應到另外的 item 表']
-   quantity integer [default: 0]  
+  user_id integer [primary key,ref: >user.user_id]
+  experience integer [default: 0]
+  rank integer [default: 1]
+  points integer [default: 0, note: '積分或點數']
 }
 
 
- //通知
- table user_notification{
-   user_notification_id integer [primary key, increment]
-   user_id integer [ref: >user.user_id]
-   title nvarchar(50)
-   content nvarchar(200)
-   target_url nvarchar(500)
-   is_read bit [default: 0]
-   type varchar(20) [note: 'system, reply, like']
-   created_at datetime [default: `CURRENT_TIMESTAMP`]
-   }
+//背包
+table user_inventory {
+  inventory_id integer [primary key, increment]
+  user_id integer [ref: > user.user_id]
+  item_id integer [note: '對應到另外的 item 表']
+  quantity integer [default: 0]  
+}
+
+
+//通知
+table user_notification{
+  user_notification_id integer [primary key, increment]
+  user_id integer [ref: >user.user_id]
+  title nvarchar(50)
+  content nvarchar(200)
+  target_url nvarchar(500)
+  is_read bit [default: 0]
+  type varchar(20) [note: 'system, reply, like']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+}
 
 
 //Point_Mission_Wallet_qiu
@@ -325,7 +327,6 @@ Table notifications {
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
 
-
 // PointShop_yjy
 // 商品資料管理
 table product {
@@ -425,9 +426,6 @@ Table chat_session {
   ishumanmode bit [not null, default: 0] // 0: AI模式, 1: 真人模式
   note { "聊天室列表與狀態紀錄" }
 }
-
-
-
 
 // 對話訊息內容
 Table chat_message {
