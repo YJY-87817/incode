@@ -15,6 +15,10 @@ public partial class PointLog
 
     public int? SourceId { get; set; }
 
+    public string DisplaySource { get; set; }
+
+    public string DisplaySourceSubTitle { get; set; }
+
     public int PointTypeDefinitionId { get; set; }
 
     public int ChangeAmount { get; set; }

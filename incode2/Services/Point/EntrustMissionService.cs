@@ -240,13 +240,15 @@ namespace incode2.Services.Point
                 var log = new PointLog
                 {
                     UserId = userId,
-                    SourceType = "entrust_mission",
+                    SourceType = "entrust_mission_point_reserve",   // ← 正確的類型！
                     SourceId = entrustMission.EntrustMissionId,
                     PointTypeDefinitionId = (int)PointType.ExpenseEntrustMissionPointReserve,
                     ChangeAmount = -dto.RewardPoints,
                     BalanceAfter = currentBalance - dto.RewardPoints,
-                    Status = "system",
-                    CreatedAt = now
+                    Status = "success",   // 建議改成 "success"，因為這是正常的預扣，不是 system 調整
+                    CreatedAt = now,
+                    DisplaySource = $"[預扣] {dto.Title ?? "委託任務"}",
+                    DisplaySourceSubTitle = $"委託 #{entrustMission.EntrustMissionId}"
                 };
                 _context.EntrustMissionPointReserve.Add(reserve);
                 _context.PointLog.Add(log);
