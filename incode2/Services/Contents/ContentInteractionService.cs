@@ -197,7 +197,18 @@ namespace incode2.Services.Contents
           return new ResultDTO { Ok = false, Code = 404, Message = "回覆內容不存在" };
         }
 
-        var rootContentId = await GetRootContentIdAsync(contentId);
+        // 禁止委託人自己領取自己的委託獎勵
+        if (targetContent.UserId == selectorUserId)
+        {
+           return new ResultDTO
+           {
+             Ok = false,
+             Code = 403,
+             Message = "不能選擇自己發表的回覆作為最佳解答"
+           };
+        }
+
+                var rootContentId = await GetRootContentIdAsync(contentId);
         if (rootContentId == 0 || rootContentId != mission.ContentId)
         {
           return new ResultDTO { Ok = false, Code = 400, Message = "指定內容不屬於此委託任務的貼文" };
