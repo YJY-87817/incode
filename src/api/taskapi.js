@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://localhost:7190/api", // 替換為你的後端 Port
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 10000,
 });
 
 export const taskApi = {
