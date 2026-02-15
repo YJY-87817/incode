@@ -10,16 +10,18 @@ namespace incode2.Services.Contents
   {
     private readonly incodedatabaseContext _context;
     private readonly IPointLogService _pointLogService;
+    private readonly IPointReserveService _pointReserveService;
 
-    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService)
-    {
-      _context = context;
-      _pointLogService = pointLogService;
-    }
+    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService)
+        {
+            _context = context;
+            _pointLogService = pointLogService;
+            _pointReserveService = pointReserveService;
+        }
 
-    // 取得特定內容的所有互動
+        // 取得特定內容的所有互動
 
-    public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
+        public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
     {
       return await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId)
@@ -217,16 +219,30 @@ namespace incode2.Services.Contents
           return new ResultDTO { Ok = false, Code = 409, Message = "最佳解答已經設定過" };
         }
 
+        //qiu 扣除發布委託user的預扣點數
+        var consumeSuccess = await _pointReserveService.ConsumeAsync(
+          mission.UserId,
+          mission.EntrustMissionId);
+
+        if (!consumeSuccess)
+          {
+            await transaction.RollbackAsync();
+            return new ResultDTO { Ok = false, Code = 400, Message = "預扣狀態錯誤或不存在" };
+        }
+
+        //qiu 發放點數給最佳解答使用者
         var awardSuccess = await _pointLogService.ChangePointsAsync(
           targetContent.UserId,
           mission.RewardPoints,
           "entrust_mission",
           mission.EntrustMissionId,
-          PointType.IncomeEntrustMission);
+          PointType.IncomeEntrustMission
+          );
 
         if (!awardSuccess)
         {
-          return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
+           await transaction.RollbackAsync();
+           return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
         }
 
         _context.ContentInteraction.Add(new ContentInteraction

@@ -30,22 +30,33 @@ namespace incode2.ApiControllers.Point
         [Authorize]
         public async Task<IActionResult> AddReward([FromForm] int changeAmount, [FromForm] int sourceId)
         {
-            int UserId = User.GetId();
+            int userId = User.GetId();
 
             if (changeAmount <= 0)
                 return BadRequest("點數必須大於 0");
 
+            // 1. 呼叫 Service 準備資料 (此時尚未進資料庫)
             var success = await _pointLogService.ChangePointsAsync(
-                userId: UserId,
+                userId: userId,
                 changeAmount: changeAmount,
                 sourceType: "entrust_mission",
                 sourceId: sourceId,
-                type: PointType.IncomeEntrustMission // 使用 Enum
+                type: PointType.IncomeEntrustMission
             );
 
             if (!success) return BadRequest("獎勵領取失敗");
 
-            return Ok("獎勵已發放");
+            // 2. 【關鍵修正】執行實體保存，將 Log 寫入資料庫
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok("獎勵已發放");
+            }
+            catch (DbUpdateException ex)
+            {
+                // 這裡可以記錄錯誤日誌
+                return StatusCode(500, "資料庫寫入失敗");
+            }
         }
 
         //GET: api/PointLogApi
@@ -74,8 +85,8 @@ namespace incode2.ApiControllers.Point
         [Authorize]
         public async Task<IEnumerable<PointLogDTO>> GetPointLogByUser()
         {
-            int UserId = User.GetId(); 
-            return await _pointLogService.GetUserLogsAsync(UserId);
+            int userId = User.GetId();
+            return await _pointLogService.GetUserLogsAsync(userId);
         }
     }
 }
