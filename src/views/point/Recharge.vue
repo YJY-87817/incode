@@ -15,15 +15,15 @@ const selectedPlan = ref(2); // 預設選中熱門方案
 // const selectedPayment = ref("credit-card"); // 預設支付方式
 const customAmount = ref(null);
 const isLoading = ref(false);
-const exchangeRate = 1;
+const exchangeRate = 10;
 
 // 5. 計算屬性
 const finalDetails = computed(() => {
   if (selectedPlan.value === "custom") {
     const amt = customAmount.value || 0;
     return {
-      points: amt,
-      price: amt * exchangeRate,
+      points: Math.floor(amt * exchangeRate), // 金額轉點數
+      price: amt,
       bonus: 0,
     };
   }
@@ -34,7 +34,7 @@ const finalDetails = computed(() => {
 const isSubmitDisabled = computed(() => {
   if (
     selectedPlan.value === "custom" &&
-    (!customAmount.value || customAmount.value < 100)
+    (!customAmount.value || customAmount.value < 10)
   )
     return true;
   return false;
@@ -61,7 +61,7 @@ const handleCheckout = async () => {
 
     // 2. 呼叫後端生成訂單資料
     const res = await axios.post(
-      "https://localhost:7190/api/PointRechargeApi/recharge",
+      `${import.meta.env.VITE_API_BASE_URL}/PointRechargeApi/recharge`,
       payload,
       { withCredentials: true },
     );
@@ -170,7 +170,7 @@ onMounted(async () => {
                   <div class="row align-items-center">
                     <div class="col-md-6">
                       <h6 class="font-weight-bold text-sm text-secondary mb-3">
-                        自定義儲值額度 (最低 100)
+                        自定義儲值額度 (最低新台幣 10 元)
                       </h6>
                       <div
                         class="input-group input-group-outline"
@@ -187,16 +187,16 @@ onMounted(async () => {
                         />
                       </div>
                       <small
-                        v-if="customAmount && customAmount < 100"
+                        v-if="customAmount && customAmount < 10"
                         class="text-danger mt-1 d-block text-xs"
                       >
-                        金額不可低於 100
+                        金額不可低於 10
                       </small>
                     </div>
                     <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
                       <p class="text-sm mb-0 text-secondary">預計獲得點數</p>
                       <h2 class="font-weight-bolder text-primary mb-0">
-                        {{ (customAmount || 0).toLocaleString() }} Pts
+                        {{ finalDetails.points.toLocaleString() }} Pts
                       </h2>
                     </div>
                   </div>
