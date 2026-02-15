@@ -1,4 +1,4 @@
-﻿using incode2.Models;
+using incode2.Models;
 using incode2.Services.Point;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Mvc;

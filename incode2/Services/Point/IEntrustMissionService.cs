@@ -1,4 +1,4 @@
-﻿using incode2.DTO;
+using incode2.DTO;
 using incode2.Dtos;
 
 namespace incode2.Services.Point
@@ -9,7 +9,6 @@ namespace incode2.Services.Point
         Task<ResultDTO> ClaimEntrustMissionAsync(int entrustMissionId , int userId);//接取任務
         Task<EntrustMissionDTO> GetEntrustMissionByIdAsync(int id);
         Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto);
-        Task<ResultDTO> UpdateEntrustMissionAsync(int id, EntrustMissionDTO dto);
-        Task<ResultDTO> DeleteEntrustMissionAsync(int id);
+        Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId);
     }
 }
