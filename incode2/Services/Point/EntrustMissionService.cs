@@ -8,14 +8,20 @@ namespace incode2.Services.Point
 {
   public class EntrustMissionService : IEntrustMissionService
   {
-    private readonly incodedatabaseContext _context;
-    private readonly IPointLogService _pointLogService;
-        public EntrustMissionService(incodedatabaseContext context,IPointLogService pointLogService) 
+        private readonly incodedatabaseContext _context;
+        private readonly IPointLogService _pointLogService;
+        private readonly IPointReserveService _pointReserveService;
+
+        public EntrustMissionService(incodedatabaseContext context,
+            IPointLogService pointLogService,
+            IPointReserveService pointReserveService) 
         { 
             _context = context; 
             _pointLogService = pointLogService;
+            _pointReserveService = pointReserveService;
         }
 
+        //拿全部委託任務資料
     public async Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync()
     {
       return await _context.EntrustMission
@@ -43,6 +49,7 @@ namespace incode2.Services.Point
           .ToListAsync();
     }
 
+        //接取委託任務
     public async Task<ResultDTO> ClaimEntrustMissionAsync(int entrustMissionId, int userId)
     {
       using var transaction = await _context.Database.BeginTransactionAsync();
@@ -159,11 +166,12 @@ namespace incode2.Services.Point
           })
           .FirstOrDefaultAsync();
     }
-
+        // 發布委託
         public async Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto)
         {
             int userId = dto.UserId;
             DateTime now = DateTime.Now;
+
             // ========= 基本業務驗證 =========
             if (dto.RewardPoints <= 0)
                 return new ResultDTO { Ok = false, Code = 400, Message = "賞金必須大於 0" };
@@ -195,17 +203,6 @@ namespace incode2.Services.Point
 
             try
             {
-                // 獲取最新餘額並鎖定該行 (防止併發超扣)
-                // 注意：這裡使用 SQL Raw 來確保 UPDLOCK 生效
-                var lastLog = await _context.PointLog
-                    .FromSqlRaw("SELECT TOP 1 * FROM point_log WITH (UPDLOCK) WHERE user_id = {0} ORDER BY created_at DESC", userId)
-                    .FirstOrDefaultAsync();
-
-                int currentBalance = lastLog?.BalanceAfter ?? 0;
-
-                if (currentBalance < dto.RewardPoints)
-                    return new ResultDTO { Ok = false, Code = 400, Message = "點數不足" };
-
                 // 建立委託任務
                 var entrustMission = new EntrustMission
                 {
@@ -224,35 +221,23 @@ namespace incode2.Services.Point
                 };
 
                 _context.EntrustMission.Add(entrustMission);
+                // 先 Save 只為了拿 ID
                 await _context.SaveChangesAsync();
 
-                // 預扣點數
-                var reserve = new EntrustMissionPointReserve
-                {
-                    UserId = userId,
-                    EntrustMissionId = entrustMission.EntrustMissionId,
-                    ReservedPoints = dto.RewardPoints,
-                    Status = "reserved",
-                    CreatedAt = now
-                };
+                // 預扣點數 (第三步)
+                var reserveSuccess = await _pointReserveService.ReserveAsync(
+                    userId,
+                    dto.RewardPoints,
+                    entrustMission.EntrustMissionId
+                );
 
-                // 點數異動紀錄
-                var log = new PointLog
+                if (!reserveSuccess)
                 {
-                    UserId = userId,
-                    SourceType = "entrust_mission_point_reserve",   // ← 正確的類型！
-                    SourceId = entrustMission.EntrustMissionId,
-                    PointTypeDefinitionId = (int)PointType.ExpenseEntrustMissionPointReserve,
-                    ChangeAmount = -dto.RewardPoints,
-                    BalanceAfter = currentBalance - dto.RewardPoints,
-                    Status = "success",   // 建議改成 "success"，因為這是正常的預扣，不是 system 調整
-                    CreatedAt = now,
-                    DisplaySource = $"[預扣] {dto.Title ?? "委託任務"}",
-                    DisplaySourceSubTitle = $"委託 #{entrustMission.EntrustMissionId}"
-                };
-                _context.EntrustMissionPointReserve.Add(reserve);
-                _context.PointLog.Add(log);
+                    await tx.RollbackAsync();
+                    return new ResultDTO { Ok = false, Code = 400, Message = "點數不足或預扣失敗" };
+                }
 
+                //再 Save 預扣 + 點數 log
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
 
@@ -267,52 +252,68 @@ namespace incode2.Services.Point
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                // 取得真正的錯誤原因
                 var realMessage = ex.InnerException?.Message ?? ex.Message;
                 return new ResultDTO
                 {
                     Ok = false,
                     Code = 500,
-                    Message = $"除錯訊息: {realMessage}" // 這會告訴你是 SQL 語法錯、欄位太長、還是外鍵報錯
+                    Message = $"除錯訊息: {realMessage}"
                 };
             }
         }
 
-
-        public async Task<ResultDTO> UpdateEntrustMissionAsync(int id, EntrustMissionDTO dto)
+        //取消委託任務時退還預扣點數
+        public async Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
         {
-      var em = await _context.EntrustMission.FindAsync(id);
-      if (em == null)
-        return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var mission = await _context.EntrustMission
+                    .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
 
-      // 只允許修改特定欄位
-      em.Detail = dto.Detail ?? em.Detail;
-      em.RewardPoints = dto.RewardPoints;
-      em.Category = dto.Category ?? em.Category;
-      em.Deadline = dto.Deadline ?? em.Deadline;
-      em.IsUrgent = dto.IsUrgent;
-      // em.Status = dto.Status ?? em.Status;  ← 建議不要讓前端隨意改狀態，可移除或嚴格限制
-      em.UpdatedAt = DateTime.Now;
+                if (mission == null)
+                    return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
 
-      await _context.SaveChangesAsync();
-      return new ResultDTO { Ok = true, Code = 204, Message = "更新成功" };
+                if (mission.UserId != userId)
+                    return new ResultDTO { Ok = false, Code = 403, Message = "只有任務發起者可以取消任務" };
+
+                // 1️⃣ 更新任務狀態
+                mission.Status = "cancelled";
+                mission.UpdatedAt = DateTime.Now;
+
+                // 2️⃣ 退還預扣點數
+                var releaseSuccess = await _pointReserveService.ReleaseAsync(
+                    mission.UserId,
+                    entrustMissionId
+                );
+
+                if (!releaseSuccess)
+                {
+                    await transaction.RollbackAsync();
+                    return new ResultDTO { Ok = false, Code = 400, Message = "退還預扣點數失敗" };
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ResultDTO
+                {
+                    Ok = true,
+                    Code = 200,
+                    Message = "委託任務已取消，預扣點數已退回"
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ResultDTO
+                {
+                    Ok = false,
+                    Code = 500,
+                    Message = ex.Message
+                };
+            }
         }
 
-    public async Task<ResultDTO> DeleteEntrustMissionAsync(int id)
-    {
-      var em = await _context.EntrustMission.FindAsync(id);
-      if (em == null)
-      {
-        return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
-      }
-
-      // 建議改成軟刪除（更安全）
-      em.IsActive = false;
-      em.UpdatedAt = DateTime.Now;
-
-      //_context.EntrustMission.Remove(em);  // 如果堅持硬刪除
-      await _context.SaveChangesAsync();
-      return new ResultDTO { Ok = true, Code = 204, Message = "委託任務已下架" };
     }
-  }
 }
