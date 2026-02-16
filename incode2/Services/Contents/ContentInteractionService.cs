@@ -10,16 +10,18 @@ namespace incode2.Services.Contents
   {
     private readonly incodedatabaseContext _context;
     private readonly IPointLogService _pointLogService;
+    private readonly IPointReserveService _pointReserveService;
 
-    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService)
-    {
-      _context = context;
-      _pointLogService = pointLogService;
-    }
+    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService)
+        {
+            _context = context;
+            _pointLogService = pointLogService;
+            _pointReserveService = pointReserveService;
+        }
 
-    // 取得特定內容的所有互動
+        // 取得特定內容的所有互動
 
-    public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
+        public async Task<List<ContentInteractionDto>> GetContentInteractions(int contentId)
     {
       return await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId)
@@ -195,7 +197,18 @@ namespace incode2.Services.Contents
           return new ResultDTO { Ok = false, Code = 404, Message = "回覆內容不存在" };
         }
 
-        var rootContentId = await GetRootContentIdAsync(contentId);
+        // 禁止委託人自己領取自己的委託獎勵
+        if (targetContent.UserId == selectorUserId)
+        {
+           return new ResultDTO
+           {
+             Ok = false,
+             Code = 403,
+             Message = "不能選擇自己發表的回覆作為最佳解答"
+           };
+        }
+
+                var rootContentId = await GetRootContentIdAsync(contentId);
         if (rootContentId == 0 || rootContentId != mission.ContentId)
         {
           return new ResultDTO { Ok = false, Code = 400, Message = "指定內容不屬於此委託任務的貼文" };
@@ -217,17 +230,36 @@ namespace incode2.Services.Contents
           return new ResultDTO { Ok = false, Code = 409, Message = "最佳解答已經設定過" };
         }
 
+        //qiu 扣除發布委託user的預扣點數
+        var consumeSuccess = await _pointReserveService.ConsumeAsync(
+          mission.UserId,
+          mission.EntrustMissionId);
+
+        if (!consumeSuccess)
+          {
+            await transaction.RollbackAsync();
+            return new ResultDTO { Ok = false, Code = 400, Message = "預扣狀態錯誤或不存在" };
+        }
+
+        //qiu 發放點數給最佳解答使用者
         var awardSuccess = await _pointLogService.ChangePointsAsync(
           targetContent.UserId,
           mission.RewardPoints,
           "entrust_mission",
           mission.EntrustMissionId,
-          PointType.IncomeEntrustMission);
+          PointType.IncomeEntrustMission
+          );
 
         if (!awardSuccess)
         {
-          return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
+           await transaction.RollbackAsync();
+           return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
         }
+
+        //新增：更新任務狀態為關閉
+        mission.Status = "completed"; 
+        mission.IsActive = false;  // 如果關閉後就不想在列表看到，可以設為 false
+        mission.UpdatedAt = DateTime.Now;
 
         _context.ContentInteraction.Add(new ContentInteraction
         {
