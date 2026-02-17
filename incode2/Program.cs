@@ -5,6 +5,7 @@ using incode2.Services.user;
 using incode2.Services.Notification;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using incode2.Services.Chat;
 using incode2.Services.Users;
@@ -70,10 +71,32 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // owen以下
 const string MemberScheme = "MemberAuth";
 const string AdminScheme = "AdminAuth";
+
+// 使用 PolicyScheme 作為預設，根據 cookie 存在情況選擇要用哪個 scheme Authenticate
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = MemberScheme;
-    options.DefaultChallengeScheme = MemberScheme;
+    // 將 DefaultScheme 指向我們的「智慧轉發」方案
+    options.DefaultScheme = "SmartScheme";
+    options.DefaultChallengeScheme = "SmartScheme";
+})
+// Policy scheme 會檢查 request cookie，若有 Incode.Admin 則使用 AdminAuth，否則使用 MemberAuth
+.AddPolicyScheme("SmartScheme", "Smart auth scheme", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        // 先檢查是否有管理員 cookie
+        if (!string.IsNullOrEmpty(context.Request.Cookies["Incode.Admin"]))
+        {
+            return AdminScheme;
+        }
+        // 再檢查前台會員 cookie
+        if (!string.IsNullOrEmpty(context.Request.Cookies["Incode.Member"]))
+        {
+            return MemberScheme;
+        }
+        // 預設回傳 MemberScheme（未登入時也使用此 scheme 作為挑戰）
+        return MemberScheme;
+    };
 })
     .AddCookie(MemberScheme, options =>
     {
@@ -81,8 +104,7 @@ builder.Services.AddAuthentication(options =>
         options.LoginPath = "/Auth/Login";     // 前台登入路徑 (如果是純 API 可設為 null 或回傳 401)
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromDays(7);        
-        options.Cookie.Path = "/";// 關鍵：這張 Cookie 只在根目錄有效 (通常全站)
-        // 安全性設定
+        options.Cookie.Path = "/";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None; // 配合跨域/第三方登入
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
@@ -117,14 +139,11 @@ builder.Services.AddAuthentication(options =>
 .AddCookie(AdminScheme, options =>
 {
     options.Cookie.Name = "Incode.Admin";  // 給予不同的 Cookie 名稱
-    options.LoginPath = "/Admin/Account/Login"; // 後台專用的登入頁面
-    options.AccessDeniedPath = "/Admin/Account/AccessDenied";
+    options.LoginPath = "/Account/Login"; // 後台專用的登入頁面
+    options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 後台通常時效較短，較安全
 
-    // 關鍵安全性設定：這張 Cookie 只在 /Admin 路徑下才會被瀏覽器送出！
-    // 這樣前台 Vue 怎麼樣都拿不到這張 Cookie
     options.Cookie.Path = "/";
-
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
