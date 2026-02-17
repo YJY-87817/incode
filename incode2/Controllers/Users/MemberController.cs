@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.Controllers.Users
-{   
+{
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class MemberController : Controller
     {
         private readonly IAuthService _authService;

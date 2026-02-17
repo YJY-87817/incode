@@ -9,7 +9,6 @@ using System.Security.Claims;
 
 namespace incode2.Controllers.Users
 {
-    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class AccountController : Controller
     {
         private readonly IAuthService _authService;
@@ -22,6 +21,7 @@ namespace incode2.Controllers.Users
 
         // GET: /Account/Register (顯示畫面)
         [HttpGet]
+        [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
         public IActionResult Register()
         {
             if (User.Identity!.IsAuthenticated)
@@ -33,6 +33,7 @@ namespace incode2.Controllers.Users
 
         // POST: /Account/Register (接收表單)
         [HttpPost]
+        [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
         [ValidateAntiForgeryToken] // 防止 CSRF 攻擊
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
@@ -60,6 +61,7 @@ namespace incode2.Controllers.Users
 
         //GET: /Account/Login
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             // 如果已經登入，直接踢回首頁
@@ -72,6 +74,7 @@ namespace incode2.Controllers.Users
 
         // POST: /Account/Login
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
