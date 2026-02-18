@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace incode2.ViewModels
 {
-    public class MemberEditViewModel : MemberBaseViewModel
+    public class MemberEditViewModel : MemberIndexViewModel
     {
         [Display(Name = "重設密碼")]
         [MinLength(6, ErrorMessage = "密碼最少6碼")]

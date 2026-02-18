@@ -29,6 +29,7 @@
                             <th>電話</th>
                             <th>生日</th>
                             <th>註冊時間</th>
+                            <th>身分</th>
                             <th style="width:80px">狀態</th>
                             <th style="width:150px">操作</th>
                         </tr>
@@ -64,6 +65,16 @@
                                     @item.CreatedAt?.ToString("yyyy-MM-dd HH:mm")
                                 </td>
 
+                                <td class="text-center">
+                                    @if (item.RoleName == "管理員")
+                                    {
+                                        <span class="badge bg-warning text-dark">管理員</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">一般會員</span>
+                                    }
+                                </td>
                                 <!-- 狀態 Badge -->
                                 <td class="text-center" data-order="@(item.IsActive ? "1" : "0")">
                                     @if (item.IsActive)
