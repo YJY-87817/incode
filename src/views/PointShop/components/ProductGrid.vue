@@ -54,7 +54,6 @@ const changePage = (page) => {
 
 <template>
   <div>
-    <div v-if="loading" class="col-12 text-center py-5">找尋中...</div>
     <div v-if="loading" class="col-12 text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">找尋中...</span>
@@ -64,6 +63,30 @@ const changePage = (page) => {
 
     <template v-else-if="filteredProducts.length > 0">
       <div class="row g-3">
+        <div class="col-12 card ">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <label for="sortSelect" class="form-label me-2">選擇排序：</label>
+              <select
+                id="sortSelect"
+                class="form-select d-inline-block w-auto"
+              >
+                <option value="">預設排序</option>
+                <option value="pointAsc">點數由低到高</option>
+                <option value="pointDesc">點數由高到低</option>
+                <option value="nameAsc">名稱 A-Z</option>
+                <option value="nameDesc">名稱 Z-A</option>
+              </select>
+            </div>
+
+            <button
+              class="btn btn-custom-primary"
+              @click="$emit('reset-filters')"
+            >
+              清除篩選條件
+            </button>
+          </div>
+        </div>
         <div
           v-for="item in paginatedProducts"
           :key="item.productId"
