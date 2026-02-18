@@ -1,5 +1,7 @@
 ﻿using incode2.Dtos.Users;
+using incode2.Enums;
 using incode2.Models;
+using incode2.Partials;
 using incode2.Services.Users;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -34,7 +36,8 @@ namespace incode2.Controllers.Users
                 Birthday = u.Birthday,
                 Address = u.Address,
                 CreatedAt = u.CreatedAt,
-                IsActive = u.IsActive ?? true
+                IsActive = u.IsActive ?? true,
+                RoleName = u.RoleId == (int)RoleType.Admin ? "管理員" : "一般會員"
             }).ToList();
 
             return View(vms);
@@ -82,7 +85,7 @@ namespace incode2.Controllers.Users
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
-                IsActive = user.IsActive ?? true, 
+                IsActive = user.IsActive ?? true,
 
                 // 轉換 Log
                 RecentLoginLogs = logs.Select(l => new LoginLogDto

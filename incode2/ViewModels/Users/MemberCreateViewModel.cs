@@ -2,7 +2,7 @@
 
 namespace incode2.ViewModels
 {
-    public class MemberCreateViewModel : MemberBaseViewModel
+    public class MemberCreateViewModel : MemberIndexViewModel
     {
         [Display(Name = "密碼")]
         [Required(ErrorMessage = "請設定密碼")]
@@ -12,5 +12,7 @@ namespace incode2.ViewModels
         [Display(Name = "確認密碼")]
         [Compare("Password", ErrorMessage = "兩次密碼輸入不一致")]
         public string ConfirmPassword { get; set; }
+
+        public int RoleId { get; set; }
     }
 }

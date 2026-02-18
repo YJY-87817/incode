@@ -12,6 +12,7 @@ namespace incode2.ViewModels
         public DateOnly? Birthday { get; set; }
         public string? Address { get; set; }
         public DateTime? CreatedAt { get; set; }
-        public bool IsActive { get; set; } // 狀態 (啟用/停權)
+        public bool IsActive { get; set; }
+        public string? RoleName { get; set; }
     }
 }
