@@ -18,29 +18,35 @@ namespace incode2.Controllers.Users
             _authService = authService;
             _userService = userService;
         }
+        // GET: /Member/Index
         public async Task<IActionResult> Index()
         {
             // 假設 UserService 有 GetAllUsersAsync
             var users = await _userService.GetAllUsersAsync();
 
             // 簡單轉成 VM 顯示
-            var vms = users.Select(u => new MemberBaseViewModel
+            var vms = users.Select(u => new MemberIndexViewModel
             {
                 UserId = u.UserId,
                 Username = u.Username,
-                Email = u.Email
+                Email = u.Email,
+                Phone = u.Phone,
+                Birthday = u.Birthday,
+                Address = u.Address,
+                CreatedAt = u.CreatedAt,
+                IsActive = u.IsActive ?? true
             }).ToList();
 
             return View(vms);
         }
 
-        // 2. 新增頁面 (GET)
+        // GET: /Member/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // 
+        // POST: /Member/Create
         [HttpPost]
         [ValidateAntiForgeryToken] 
         public async Task<IActionResult> Create(MemberCreateViewModel vm)
@@ -62,7 +68,7 @@ namespace incode2.Controllers.Users
             }
         }
 
-        // 4. 修改頁面 (GET) - 撈取資料與 Logs
+        // GET: /Member/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
@@ -91,7 +97,7 @@ namespace incode2.Controllers.Users
             return View(vm);
         }
 
-        // 5. 修改動作 (POST) - 處理停權與修改資料
+        // POST: /Member/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(MemberEditViewModel vm)
