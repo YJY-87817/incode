@@ -15,10 +15,12 @@ import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const authStore = useAuthStore();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -601,6 +603,65 @@ watch(
     optimisticBestAnswerContentId.value = null;
   },
   { immediate: true },
+);
+
+watch(
+  () => forumStore.topics.map((topic) => Number(topic?.id)).join(","),
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    await forumStore.initializeUserInteractionStates(topicContentIds);
+  },
+  { immediate: true },
+);
+
+const collectThreadInteractionContentIds = () => {
+  const ids = [
+    Number(forumStore.threadDetail?.id),
+    ...paginatedThreadPosts.value.map((item) => Number(item?.id)),
+    ...paginatedThreadComments.value.map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return Array.from(new Set(ids));
+};
+
+watch(
+  () => [
+    forumStore.selectedThread,
+    Number(forumStore.threadDetail?.id || 0),
+    paginatedThreadPosts.value.map((item) => Number(item?.id || 0)).join(","),
+    paginatedThreadComments.value
+      .map((item) => Number(item?.id || 0))
+      .join(","),
+  ],
+  async ([selectedThread]) => {
+    if (!selectedThread) return;
+    const threadContentIds = collectThreadInteractionContentIds();
+    await forumStore.initializeUserInteractionStates(threadContentIds);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [authStore.isAuthenticated, authStore.user?.id],
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    const threadContentIds = collectThreadInteractionContentIds();
+
+    await Promise.all([
+      forumStore.initializeUserInteractionStates(topicContentIds, {
+        force: true,
+      }),
+      forumStore.initializeUserInteractionStates(threadContentIds, {
+        force: true,
+      }),
+    ]);
+  },
 );
 </script>
 
