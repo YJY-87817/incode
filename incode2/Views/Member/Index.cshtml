@@ -6,10 +6,12 @@
 
 <div class="container-fluid py-4">
     <div class="card shadow-sm">
-        <div class="card-header d-flex align-items-center">
-            <h4 class="mb-0 font-weight-bold text-primary">會員資料管理</h4>
+        <div class="card-header d-flex align-items-center bg-white pt-3 pb-3">
+            <h4 class="mb-0 font-weight-bold text-primary">
+                <i class="fas fa-users me-2"></i>會員資料管理
+            </h4>
             <div class="ms-auto">
-                <a asp-action="Create" class="btn btn-primary btn-icon-split">
+                <a asp-action="Create" class="btn btn-primary btn-icon-split shadow-sm">
                     <span class="icon text-white-50">
                         <i class="fas fa-user-plus"></i>
                     </span>
@@ -20,62 +22,45 @@
 
         <div class="card-body">
             <div class="table-responsive">
-                <table id="memberTable" class="table table-bordered table-striped table-hover align-middle" style="visibility: hidden; width:100%">
+                <table id="memberTable" class="table table-bordered table-hover align-middle" style="visibility: hidden; width:100%">
                     <thead class="table-light">
                         <tr class="text-center text-nowrap">
                             <th style="width:60px">ID</th>
-                            <th>Email (帳號)</th>
+                            <th>帳號 (Email)</th>
                             <th>姓名</th>
-                            <th>電話</th>
-                            <th>生日</th>
                             <th>註冊時間</th>
                             <th>身分</th>
                             <th style="width:80px">狀態</th>
-                            <th style="width:150px">操作</th>
+                            <th style="width:100px">異常狀態</th>
+                            <th style="width:180px">操作</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model)
                         {
                             <tr>
-                                <td class="text-center">@item.UserId</td>
-
-                                <td>
-                                    <div class="d-flex flex-column">
-                                        <span class="fw-bold">@item.Email</span>
-                                        @if (!string.IsNullOrEmpty(item.Address))
-                                        {
-                                            <small class="text-muted text-truncate" style="max-width: 150px;">@item.Address</small>
-                                        }
-                                    </div>
-                                </td>
-
+                                <td class="text-center text-muted">@item.UserId</td>
+                                <td class="fw-bold text-dark">@item.Email</td>
                                 <td class="text-center">@item.Username</td>
 
-                                <td class="text-center">
-                                    @(string.IsNullOrEmpty(item.Phone) ? "-" : item.Phone)
+                                <!-- 註冊時間 -->
+                                <td class="text-center text-muted" data-order="@item.CreatedAt?.ToString("yyyyMMddHHmmss")">
+                                    @item.CreatedAt?.ToString("yyyy-MM-dd")
                                 </td>
 
-                                <td class="text-center">
-                                    @(item.Birthday.HasValue? item.Birthday.Value.ToString("yyyy-MM-dd") : "-")
-                                </td>
-
-                                <!-- 註冊時間 (含排序資料) -->
-                                <td class="text-center" data-order="@item.CreatedAt?.ToString("yyyyMMddHHmmss")">
-                                    @item.CreatedAt?.ToString("yyyy-MM-dd HH:mm")
-                                </td>
-
+                                <!-- 身分 -->
                                 <td class="text-center">
                                     @if (item.RoleName == "管理員")
                                     {
-                                        <span class="badge bg-warning text-dark">管理員</span>
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-user-shield"></i> 管理員</span>
                                     }
                                     else
                                     {
                                         <span class="badge bg-secondary">一般會員</span>
                                     }
                                 </td>
-                                <!-- 狀態 Badge -->
+
+                                <!-- 帳號狀態 -->
                                 <td class="text-center" data-order="@(item.IsActive ? "1" : "0")">
                                     @if (item.IsActive)
                                     {
@@ -87,12 +72,41 @@
                                     }
                                 </td>
 
+                                <!-- ★★★ 資安偵測 (異常 IP) ★★★ -->
+                                <td class="text-center" data-order="@(item.HasSuspiciousLogin ? "1" : "0")">
+                                    @if (item.HasSuspiciousLogin)
+                                    {
+                                        <span class="badge bg-danger shadow-sm px-2 py-1" title="近期有非慣用IP登入紀錄">
+                                            <i class="fas fa-exclamation-triangle"></i> IP異常
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-success border px-2 py-1">
+                                            <i class="fas fa-shield-alt"></i> 安全
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- 操作 -->
                                 <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Edit" asp-route-id="@item.UserId" class="btn btn-sm btn-info text-white" title="編輯">
-                                            <i class="fas fa-edit"></i> 修改
+                                    <div class="btn-group shadow-sm" role="group">
+                                        <!-- 詳細資料按鈕 (觸發 Modal)，把資料藏在 data-* 屬性裡 -->
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-detail"
+                                                data-id="@item.UserId"
+                                                data-name="@item.Username"
+                                                data-email="@item.Email"
+                                                data-phone="@item.Phone"
+                                                data-birthday="@(item.Birthday?.ToString("yyyy-MM-dd"))"
+                                                data-address="@item.Address"
+                                                data-created="@item.CreatedAt?.ToString("yyyy-MM-dd HH:mm")"
+                                                data-bs-toggle="modal" data-bs-target="#detailModal">
+                                            <i class="fas fa-search"></i> 詳細
+                                        </button>
+
+                                        <a asp-action="Edit" asp-route-id="@item.UserId" class="btn btn-sm btn-info text-white" title="編輯與紀錄">
+                                            <i class="fas fa-edit"></i> 編輯
                                         </a>
-                                        <!-- 這裡可以根據需求加上詳細資料按鈕 -->
                                     </div>
                                 </td>
                             </tr>
@@ -101,9 +115,57 @@
                 </table>
             </div>
         </div>
-
-        <div class="card-footer text-muted small">
+        <div class="card-footer text-muted small bg-white">
             資料更新時間：@DateTime.Now.ToString("yyyy-MM-dd HH:mm") | 共 @Model.Count() 位會員
+        </div>
+    </div>
+</div>
+
+<!-- ★★★ 會員詳細資料彈出視窗 (Modal) ★★★ -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="detailModalLabel"><i class="fas fa-id-card me-2"></i>會員詳細資料</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <table class="table table-borderless table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <th style="width: 100px;" class="text-muted">會員 ID：</th>
+                            <td id="modal-id" class="fw-bold"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">帳號：</th>
+                            <td id="modal-email"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">姓名：</th>
+                            <td id="modal-name"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><hr class="my-1"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted"><i class="fas fa-phone me-1"></i> 電話：</th>
+                            <td id="modal-phone"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted"><i class="fas fa-birthday-cake me-1"></i> 生日：</th>
+                            <td id="modal-birthday"></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted"><i class="fas fa-map-marker-alt me-1"></i> 地址：</th>
+                            <td id="modal-address"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer bg-light">
+                <span class="text-muted small me-auto">註冊於：<span id="modal-created"></span></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
         </div>
     </div>
 </div>
@@ -112,6 +174,7 @@
 {
     <script>
         $(function () {
+            // 1. 初始化 DataTable
             $('#memberTable').DataTable({
                 order: [[0, 'desc']],
                 pageLength: 10,
@@ -120,11 +183,24 @@
                     url: '//cdn.datatables.net/plug-ins/2.3.6/i18n/zh-HANT.json'
                 },
                 columnDefs: [
-                    { targets: [7], orderable: false }
+                    { targets: [6, 7], orderable: false } // 資安狀態與操作按鈕不排序
                 ],
                 initComplete: function() {
                     $('#memberTable').css('visibility', 'visible');
                 }
+            });
+
+            // 2. 處理點擊「詳細」按鈕時，將資料填入 Modal
+            $('.btn-detail').on('click', function () {
+                var btn = $(this);
+                // 取出按鈕上綁定的資料
+                $('#modal-id').text(btn.data('id'));
+                $('#modal-email').text(btn.data('email'));
+                $('#modal-name').text(btn.data('name') || '-');
+                $('#modal-phone').text(btn.data('phone') || '未提供');
+                $('#modal-birthday').text(btn.data('birthday') || '未提供');
+                $('#modal-address').text(btn.data('address') || '未提供');
+                $('#modal-created').text(btn.data('created'));
             });
         });
     </script>

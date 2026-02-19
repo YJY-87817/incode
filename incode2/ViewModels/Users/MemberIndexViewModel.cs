@@ -14,5 +14,6 @@ namespace incode2.ViewModels
         public DateTime? CreatedAt { get; set; }
         public bool IsActive { get; set; }
         public string? RoleName { get; set; }
+        public bool HasSuspiciousLogin { get; set; }
     }
 }

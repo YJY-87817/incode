@@ -22,23 +22,39 @@ namespace incode2.Controllers.Users
         }
         // GET: /Member/Index
         public async Task<IActionResult> Index()
-        {
-            // 假設 UserService 有 GetAllUsersAsync
+        {            
             var users = await _userService.GetAllUsersAsync();
+            var vms = new List<MemberIndexViewModel>();
 
-            // 簡單轉成 VM 顯示
-            var vms = users.Select(u => new MemberIndexViewModel
+            // 針對每個使用者，檢查是否有異常登入
+            foreach (var u in users)
             {
-                UserId = u.UserId,
-                Username = u.Username,
-                Email = u.Email,
-                Phone = u.Phone,
-                Birthday = u.Birthday,
-                Address = u.Address,
-                CreatedAt = u.CreatedAt,
-                IsActive = u.IsActive ?? true,
-                RoleName = u.RoleId == (int)RoleType.Admin ? "管理員" : "一般會員"
-            }).ToList();
+                // 撈取前 10 筆 Log
+                var logs = await _userService.GetLoginLogsByUserIdAsync(u.UserId, 10);
+
+                // 判斷主要 IP
+                var mainIp = logs.GroupBy(l => l.IpAddress)
+                                 .OrderByDescending(g => g.Count())
+                                 .Select(g => g.Key)
+                                 .FirstOrDefault();
+
+                // 如果有任何一筆 Log 的 IP 不是主要 IP，就標記為有異常
+                bool hasSuspicious = logs.Any(l => !string.IsNullOrEmpty(mainIp) && l.IpAddress != mainIp);
+
+                vms.Add(new MemberIndexViewModel
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    Birthday = u.Birthday,
+                    Address = u.Address,
+                    CreatedAt = u.CreatedAt,
+                    IsActive = u.IsActive ?? true,
+                    RoleName = u.RoleId == (int)RoleType.Admin ? "管理員" : "一般會員",
+                    HasSuspiciousLogin = hasSuspicious 
+                });
+            }
 
             return View(vms);
         }
@@ -79,6 +95,11 @@ namespace incode2.Controllers.Users
 
             // 撈取前 10 筆 Log
             var logs = await _userService.GetLoginLogsByUserIdAsync(id, 10);
+            // 找出這 10 筆紀錄中，出現最多次的 IP 作為「主要/常用 IP」
+            var mainIp = logs.GroupBy(l => l.IpAddress)
+                     .OrderByDescending(g => g.Count())
+                     .Select(g => g.Key)
+                     .FirstOrDefault();
 
             var vm = new MemberEditViewModel
             {
@@ -92,8 +113,8 @@ namespace incode2.Controllers.Users
                 {
                     LoginTime = l.LoginTime,
                     IpAddress = l.IpAddress,
-                    // 簡易判斷異常 (例如: IP 不同或是 Service 算好的欄位)
-                    IsSuspicious = false // 這裡需依你的邏輯判斷
+                    // 判斷：如果這次的 IP 不是最常用的 IP，就標記為異常 (true)
+                    IsSuspicious = !string.IsNullOrEmpty(mainIp) && l.IpAddress != mainIp
                 }).ToList()
             };
 
