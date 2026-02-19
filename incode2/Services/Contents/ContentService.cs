@@ -1,4 +1,4 @@
-﻿using incode2.Dtos;
+using incode2.Dtos;
 using incode2.Models;
 using incode2.Partials;
 using Microsoft.EntityFrameworkCore;
@@ -173,7 +173,7 @@ namespace incode2.Services.Contents
       };
     }
 
-    public async Task<ContentDto?> GetContent(int id)
+    public async Task<ContentDto?> GetContent(int id, int? userId)
     {
       var content = await _context.Content
       .Include(c => c.User)
@@ -229,6 +229,10 @@ namespace incode2.Services.Contents
         lastReplyUser = lastReplyUserData;
       }
 
+      var interactionLookup = await GetUserInteractionLookupAsync(new[] { id }, userId);
+      interactionLookup.TryGetValue(id, out var categories);
+      var myInteractions = BuildMyInteractions(categories);
+
       return new ContentDto
       {
         ContentId = content.ContentId,
@@ -245,11 +249,12 @@ namespace incode2.Services.Contents
         ReplyCount = replyCount,
         LastReplyTime = lastReplyTime,
         LastReplyUser = lastReplyUser,
-        LastReplyUserId = lastReplyUserId
+        LastReplyUserId = lastReplyUserId,
+        MyInteractions = myInteractions
       };
     }
 
-    public async Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize)
+    public async Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize, int? userId)
     {
       var typeFilter = ParseTypes(types);
       if (types != null && typeFilter.Count == 0)
@@ -298,6 +303,13 @@ namespace incode2.Services.Contents
           Ishidden = c.IsActive == 2
         })
         .ToListAsync();
+
+      var interactionLookup = await GetUserInteractionLookupAsync(items.Select(item => item.ContentId).ToList(), userId);
+      foreach (var item in items)
+      {
+        interactionLookup.TryGetValue(item.ContentId, out var categories);
+        item.MyInteractions = BuildMyInteractions(categories);
+      }
 
       return new PagedResultDto<ContentDto>
       {
@@ -645,6 +657,54 @@ namespace incode2.Services.Contents
         .Distinct()
         .Take(maxImages)
         .ToList();
+    }
+
+    private async Task<Dictionary<int, HashSet<int>>> GetUserInteractionLookupAsync(IEnumerable<int> contentIds, int? userId)
+    {
+      if (!userId.HasValue || userId.Value <= 0)
+      {
+        return new Dictionary<int, HashSet<int>>();
+      }
+
+      var contentIdList = contentIds?.Distinct().ToList() ?? new List<int>();
+      if (contentIdList.Count == 0)
+      {
+        return new Dictionary<int, HashSet<int>>();
+      }
+
+      var interactions = await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.UserId == userId.Value && contentIdList.Contains(ci.ContentId))
+        .Select(ci => new { ci.ContentId, ci.CategoryId })
+        .ToListAsync();
+
+      return interactions
+        .GroupBy(ci => ci.ContentId)
+        .ToDictionary(g => g.Key, g => g.Select(ci => ci.CategoryId).ToHashSet());
+    }
+
+    private static MyInteractionsDto BuildMyInteractions(IReadOnlyCollection<int> categories)
+    {
+      var categorySet = categories ?? new List<int>();
+      var interactions = new MyInteractionsDto
+      {
+        Like = categorySet.Contains(1),
+        Hide = categorySet.Contains(2),
+        Bookmark = categorySet.Contains(3),
+        Report = categorySet.Contains(4),
+        Categories = categorySet.OrderBy(value => value).ToList()
+      };
+
+      foreach (var categoryId in categorySet)
+      {
+        var key = categoryId.ToString();
+        if (interactions.Map.ContainsKey(key))
+        {
+          interactions.Map[key] = true;
+        }
+      }
+
+      return interactions;
     }
   }
 }

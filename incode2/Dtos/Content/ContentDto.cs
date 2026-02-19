@@ -1,4 +1,4 @@
-﻿namespace incode2.Dtos
+namespace incode2.Dtos
 {
   /// <summary>
   /// 內容 Response DTO（用於回傳資料給客戶端）
@@ -22,5 +22,6 @@
     public DateTime? LastReplyTime { get; set; }
     public string LastReplyUser { get; set; }
     public int? LastReplyUserId { get; set; }
+    public MyInteractionsDto MyInteractions { get; set; } = new();
   }
 }

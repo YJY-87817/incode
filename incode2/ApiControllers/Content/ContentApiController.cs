@@ -1,4 +1,4 @@
-﻿using incode2.Dtos;
+using incode2.Dtos;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Contents;
@@ -41,7 +41,8 @@ namespace incode2.ApiControllers.Content
     [HttpGet("{id}")]
     public async Task<IActionResult> GetContent(int id)
     {
-      var content = await _contentService.GetContent(id);
+      var userId = User.GetId();
+      var content = await _contentService.GetContent(id, userId > 0 ? userId : null);
       if (content == null) return NotFound(new { message = "找不到此內容" });
       return Ok(content);
     }
@@ -137,7 +138,8 @@ namespace incode2.ApiControllers.Content
     [HttpGet("{id}/children")]
     public async Task<IActionResult> GetChildrenByContentId(int id, [FromQuery] string? types, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-      var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize);
+      var userId = User.GetId();
+      var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize, userId > 0 ? userId : null);
       return Ok(result);
     }
 
@@ -284,7 +286,7 @@ namespace incode2.ApiControllers.Content
         return BadRequest(new { message = "點數必須大於 0" });
       }
 
-      var content = await _contentService.GetContent(id);
+      var content = await _contentService.GetContent(id, fromUserId);
       if (content == null)
       {
         return NotFound(new { message = "找不到此內容" });
