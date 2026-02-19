@@ -535,6 +535,7 @@ export const useForumStore = defineStore("forum", {
     interactionStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
     interactionLoadingStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
     interactionStateInitialized: {}, // { contentId: true/false }
+    interactionInitBatchSize: 5,
 
     // ========== 快速回覆相關 ==========
     quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
@@ -1753,7 +1754,7 @@ export const useForumStore = defineStore("forum", {
 
     async initializeUserInteractionStates(
       contentIds,
-      { force = false, batchSize = 5 } = {},
+      { force = false, batchSize = null } = {},
     ) {
       const normalizedIds = Array.from(
         new Set(
@@ -1790,7 +1791,14 @@ export const useForumStore = defineStore("forum", {
 
       if (!targetIds.length) return;
 
-      const resolvedBatchSize = Math.max(1, Number(batchSize) || 1);
+      const defaultBatchSize = Math.max(
+        1,
+        Number(this.interactionInitBatchSize) || 1,
+      );
+      const resolvedBatchSize = Math.max(
+        1,
+        Number(batchSize ?? defaultBatchSize) || defaultBatchSize,
+      );
 
       for (
         let index = 0;
@@ -1802,6 +1810,13 @@ export const useForumStore = defineStore("forum", {
           chunk.map((id) => this.initializeUserInteractionState(id, { force })),
         );
       }
+    },
+
+    setInteractionInitBatchSize(size) {
+      const nextSize = Number(size);
+      if (!Number.isFinite(nextSize)) return;
+
+      this.interactionInitBatchSize = Math.min(20, Math.max(1, nextSize));
     },
 
     /**
