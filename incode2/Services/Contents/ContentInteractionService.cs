@@ -148,7 +148,6 @@ namespace incode2.Services.Contents
     {
       var stats = await _context.ContentInteraction
         .Where(ci => ci.ContentId == contentId)
-        .Include(ci => ci.Category)
         .GroupBy(ci => ci.Category.Name)
         .Select(g => new
         {
