@@ -48,12 +48,35 @@ const forumStore = useForumStore();
 // 初始化當前內容的互動狀態
 watch(
   () => props.contentId,
-  (newId) => {
+  async (newId) => {
     if (newId) {
       forumStore.setCurrentInteractionContent(newId, props.authorUserId);
+      await forumStore.initializeUserInteractionState(newId);
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => [authStore.isAuthenticated, authStore.user?.id],
+  async ([isAuthenticated]) => {
+    if (!props.contentId) return;
+
+    if (!isAuthenticated) {
+      forumStore.interactionStates[props.contentId] = {
+        1: false,
+        2: false,
+        3: false,
+        4: false,
+      };
+      forumStore.interactionStateInitialized[props.contentId] = false;
+      return;
+    }
+
+    await forumStore.initializeUserInteractionState(props.contentId, {
+      force: true,
+    });
+  },
 );
 
 // 檢查是否為當前使用者的內容
@@ -64,8 +87,6 @@ const isOwnContent = computed(() => {
     authStore.user.id === props.authorUserId
   );
 });
-
-onMounted(() => {});
 
 const emit = defineEmits([
   "interaction-success",

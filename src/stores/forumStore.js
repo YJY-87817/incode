@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import apiClient from "@/api/request.js";
 import contentApi from "@/api/contentApi.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 import {
   fetchBodyHtml,
   parseBodyContent,
@@ -24,6 +25,7 @@ const contentBodyCache = new Map();
 const contentBodyPending = new Map();
 const entrustMissionByContentCache = new Map();
 const entrustMissionByContentPending = new Map();
+const interactionInitPending = new Map();
 const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
 
 const readBestAnswerCache = () => {
@@ -395,6 +397,28 @@ const fetchEntrustMissionMetaByContentId = async (contentId) => {
   return request;
 };
 
+const toInteractionCategoryId = (record) => {
+  const categoryId = Number(
+    record?.interactionCategoryId ??
+      record?.interaction_category_id ??
+      record?.categoryId ??
+      record?.category_id ??
+      null,
+  );
+  return Number.isFinite(categoryId) ? categoryId : null;
+};
+
+const extractUserInteractions = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.Interactions)) return payload.Interactions;
+  if (Array.isArray(payload?.interactions)) return payload.interactions;
+  if (Array.isArray(payload?.data?.Interactions))
+    return payload.data.Interactions;
+  if (Array.isArray(payload?.data?.interactions))
+    return payload.data.interactions;
+  return [];
+};
+
 export const useForumStore = defineStore("forum", {
   state: () => ({
     // ========== 全局狀態 ==========
@@ -510,6 +534,7 @@ export const useForumStore = defineStore("forum", {
     currentInteractionAuthorUserId: null,
     interactionStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
     interactionLoadingStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
+    interactionStateInitialized: {}, // { contentId: true/false }
 
     // ========== 快速回覆相關 ==========
     quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
@@ -1647,6 +1672,75 @@ export const useForumStore = defineStore("forum", {
           4: false,
         };
       }
+    },
+
+    async initializeUserInteractionState(contentId, { force = false } = {}) {
+      const targetContentId = Number(contentId);
+      if (!Number.isFinite(targetContentId) || targetContentId <= 0) return;
+
+      this.setCurrentInteractionContent(targetContentId, null);
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        this.interactionStates[targetContentId] = {
+          1: false,
+          2: false,
+          3: false,
+          4: false,
+        };
+        this.interactionStateInitialized[targetContentId] = false;
+        return;
+      }
+
+      if (!force && this.interactionStateInitialized[targetContentId]) {
+        return;
+      }
+
+      if (interactionInitPending.has(targetContentId)) {
+        await interactionInitPending.get(targetContentId);
+        return;
+      }
+
+      const request = (async () => {
+        try {
+          const response =
+            await contentInteractionApi.getUserInteraction(targetContentId);
+          const interactions = extractUserInteractions(response);
+          const activeCategories = new Set(
+            interactions.map(toInteractionCategoryId).filter(Boolean),
+          );
+
+          this.interactionStates[targetContentId] = {
+            1: activeCategories.has(1),
+            2: activeCategories.has(2),
+            3: activeCategories.has(3),
+            4: activeCategories.has(4),
+          };
+          this.interactionStateInitialized[targetContentId] = true;
+        } catch (error) {
+          if (error?.response?.status === 401) {
+            this.interactionStates[targetContentId] = {
+              1: false,
+              2: false,
+              3: false,
+              4: false,
+            };
+            this.interactionStateInitialized[targetContentId] = false;
+            return;
+          }
+
+          console.error("初始化使用者互動狀態失敗:", error);
+        } finally {
+          interactionInitPending.delete(targetContentId);
+        }
+      })();
+
+      interactionInitPending.set(targetContentId, request);
+      await request;
     },
 
     /**
