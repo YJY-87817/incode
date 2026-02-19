@@ -45,13 +45,41 @@ const props = defineProps({
 const authStore = useAuthStore();
 const forumStore = useForumStore();
 
+const isCurrentListTopic = computed(() => {
+  if (forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  return (forumStore.topics || []).some(
+    (item) => Number(item?.id) === targetId,
+  );
+});
+
+const isCurrentThreadContent = computed(() => {
+  if (!forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  if (!Number.isFinite(targetId) || targetId <= 0) return false;
+
+  const relatedIds = [
+    Number(forumStore.threadDetail?.id),
+    ...(forumStore.threadPosts || []).map((item) => Number(item?.id)),
+    ...(forumStore.threadComments || []).map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return relatedIds.includes(targetId);
+});
+
+const isBatchManagedContent = computed(() => {
+  return isCurrentListTopic.value || isCurrentThreadContent.value;
+});
+
 // 初始化當前內容的互動狀態
 watch(
   () => props.contentId,
   async (newId) => {
     if (newId) {
       forumStore.setCurrentInteractionContent(newId, props.authorUserId);
-      await forumStore.initializeUserInteractionState(newId);
+      if (!isBatchManagedContent.value) {
+        await forumStore.initializeUserInteractionState(newId);
+      }
     }
   },
   { immediate: true },
@@ -61,6 +89,10 @@ watch(
   () => [authStore.isAuthenticated, authStore.user?.id],
   async ([isAuthenticated]) => {
     if (!props.contentId) return;
+
+    if (isBatchManagedContent.value) {
+      return;
+    }
 
     if (!isAuthenticated) {
       forumStore.interactionStates[props.contentId] = {

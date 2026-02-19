@@ -1160,6 +1160,14 @@ export const useForumStore = defineStore("forum", {
         this.pagination = result.pagination;
         this.topics = result.topics;
 
+        const topicContentIds = result.topics
+          .map((topic) => Number(topic?.id))
+          .filter((id) => Number.isFinite(id) && id > 0);
+
+        this.initializeUserInteractionStates(topicContentIds).catch((error) => {
+          console.error("批次初始化互動狀態失敗:", error);
+        });
+
         const shouldFetchFallbackStats =
           this.replyStatsFallbackEnabled &&
           !result.serverReplyStatsProvided &&
@@ -1741,6 +1749,59 @@ export const useForumStore = defineStore("forum", {
 
       interactionInitPending.set(targetContentId, request);
       await request;
+    },
+
+    async initializeUserInteractionStates(
+      contentIds,
+      { force = false, batchSize = 5 } = {},
+    ) {
+      const normalizedIds = Array.from(
+        new Set(
+          (Array.isArray(contentIds) ? contentIds : [])
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id) && id > 0),
+        ),
+      );
+
+      if (!normalizedIds.length) return;
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        normalizedIds.forEach((id) => {
+          this.setCurrentInteractionContent(id, null);
+          this.interactionStates[id] = {
+            1: false,
+            2: false,
+            3: false,
+            4: false,
+          };
+          this.interactionStateInitialized[id] = false;
+        });
+        return;
+      }
+
+      const targetIds = force
+        ? normalizedIds
+        : normalizedIds.filter((id) => !this.interactionStateInitialized[id]);
+
+      if (!targetIds.length) return;
+
+      const resolvedBatchSize = Math.max(1, Number(batchSize) || 1);
+
+      for (
+        let index = 0;
+        index < targetIds.length;
+        index += resolvedBatchSize
+      ) {
+        const chunk = targetIds.slice(index, index + resolvedBatchSize);
+        await Promise.all(
+          chunk.map((id) => this.initializeUserInteractionState(id, { force })),
+        );
+      }
     },
 
     /**
