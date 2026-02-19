@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using incode2.Dtos;
 using incode2.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -41,12 +41,8 @@ namespace incode2.ApiControllers.Content
 
     // 取得特定使用者對指定內容的所有互動
     // GET https://localhost:7190/api/contentinteractionapi/user/{contentId}?userId={userId}
-    // Path Parameters:
-    //   - contentId (int): 內容ID
-    // Query Parameters:
-    //   - userId (int): 使用者ID
+    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/3?userId=1
     // Response: { contentId, userId, interactions: [], count } 或 { message, interactions: [] }
-    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/1?userId=10
     [HttpGet("user/{contentId}")]
     public async Task<IActionResult> GetUserInteraction(int contentId, [FromQuery] int userId)
     {
@@ -160,11 +156,8 @@ namespace incode2.ApiControllers.Content
 
     // 統計指定內容的互動數量（按互動分類）
     // GET https://localhost:7190/api/contentinteractionapi/stats/{contentId}
-    // Path Parameters:
-    //   - contentId (int): 內容ID
-    // Response: 返回各互動分類的統計數據
-    // 需要: contentId 必須大於 0
     // 範例: GET https://localhost:7190/api/contentinteractionapi/stats/1
+    // Response: 返回各互動分類的統計數據
     [HttpGet("stats/{contentId}")]
     public async Task<IActionResult> GetInteractionStats(int contentId)
     {
