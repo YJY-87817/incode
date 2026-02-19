@@ -206,6 +206,10 @@ const contentInteractionApi = {
     return apiClient.get("/ContentInteractionApi", { params });
   },
 
+  getUserInteraction(contentId) {
+    return apiClient.get(`/ContentInteractionApi/user/${contentId}`);
+  },
+
   async getBestAnswerContentId({
     entrustMissionId = null,
     threadContentId = null,
