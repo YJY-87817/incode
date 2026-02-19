@@ -38,8 +38,7 @@ namespace incode2.Services.Contents
         .ToListAsync();
     }
 
-    // 取得使用者對特定內容的互動類型
-
+    // 取得當前使用者對特定內容的互動類型
     public async Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId)
     {
       return await _context.ContentInteraction
