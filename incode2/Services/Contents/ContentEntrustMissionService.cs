@@ -35,14 +35,14 @@ namespace incode2.Services.Contents
       };
 
       var content = await _contentService.CreateContent(contentDto);
-      var contentResult = await _contentService.GetContent(content.ContentId);
+      var contentResult = await _contentService.GetContent(content.ContentId, userId);
       if (contentResult == null)
       {
         return new ResultDTO<CreateContentWithEntrustMissionResultDto>
         {
           Ok = false,
           Code = 500,
-          Message = "µLªk¨ú±o¤º®e¸ê®Æ"
+          Message = "ç„¡æ³•å–å¾—å…§å®¹è³‡æ–™"
         };
       }
 
@@ -85,7 +85,7 @@ namespace incode2.Services.Contents
       {
         Ok = true,
         Code = 201,
-        Message = "µo§G¦¨¥\",
+        Message = "ç™¼ä½ˆæˆåŠŸ",
         Data = new CreateContentWithEntrustMissionResultDto
         {
           Content = contentResult,
@@ -104,7 +104,7 @@ namespace incode2.Services.Contents
       }
 
       builder.AppendLine("<hr />");
-      builder.AppendLine($"<p>©e°U¥ô°È¡G{entrustMission.Title}</p>");
+      builder.AppendLine($"<p>å§”è¨—ä»»å‹™ï¼š{entrustMission.Title}</p>");
       builder.AppendLine($"<p>{entrustMission.Detail}</p>");
 
       return builder.ToString();
