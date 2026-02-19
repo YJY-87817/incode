@@ -39,14 +39,21 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    // 取得特定使用者對指定內容的所有互動
-    // GET https://localhost:7190/api/contentinteractionapi/user/{contentId}?userId={userId}
-    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/3?userId=1
-    // Response: { contentId, userId, interactions: [], count } 或 { message, interactions: [] }
+    // 取得當前user對指定內容的所有互動(需登入)
+    // GET https://localhost:7190/api/contentinteractionapi/user/{contentId}
+    // 需要登入，使用者ID自動從Claims取得
+    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/3
     [HttpGet("user/{contentId}")]
-    public async Task<IActionResult> GetUserInteraction(int contentId, [FromQuery] int userId)
+    [Authorize]
+    public async Task<IActionResult> GetUserInteraction(int contentId)
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      if (contentId <= 0)
+        return BadRequest(new { message = "ContentId 必須大於 0" });
+
+      // 從Claims 中取得當前使用者 ID
+      var userId = User.GetId();
+      if (userId == 0)
+        return Unauthorized(new { message = "無法取得使用者ID" });
 
       var interactions = await _contentInteractionService.GetUserInteraction(contentId, userId);
       if (interactions == null || interactions.Count == 0)
