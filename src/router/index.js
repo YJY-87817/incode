@@ -110,16 +110,13 @@ const routes = [
     name: "UserIndex",
     component: UserIndex,
     meta: { requiresAuth: true },
+    redirect: { name: "UserPost" },
     children: [
-      {
-        path: "usermission",
-        name: "UserMission",
-        component: UserMission,
-      },
       {
         path: "usercollections",
         name: "UserCollections",
         component: UserCollections,
+        redirect: { name: "UserPost" },
         children: [
           {
             path: "userpost",
@@ -138,6 +135,11 @@ const routes = [
           },
         ],
       },
+      {
+        path: "usermission",
+        name: "UserMission",
+        component: UserMission,
+      }
     ],
   },
   // owen
