@@ -27,9 +27,8 @@ namespace incode2.Services.Chat
             _webHostEnvironment = webHostEnvironment;
         }
 
-        // ==========================================
-        // 1. 純文字對話功能
-        // ==========================================
+
+        // 純文字對話功能
         public async Task<string> GetGeminiReplyAsync(string fullPrompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
@@ -46,9 +45,8 @@ namespace incode2.Services.Chat
             return await SendToGemini(url, payload);
         }
 
-        // ==========================================
+
         // 2. 純圖片分析 (舊功能)
-        // ==========================================
         public async Task<string> AnalyzeImageAsync(IFormFile imageFile, string prompt)
         {
             if (imageFile == null || imageFile.Length == 0) return "錯誤：接收到的圖片為空";
@@ -63,13 +61,13 @@ namespace incode2.Services.Chat
             return await GetGeminiImageReplyAsync(base64Image, imageFile.ContentType, prompt);
         }
 
-       
+
         // Function Calling
         public async Task<string> AnalyzeImageWithToolAsync(IFormFile imageFile, string prompt)
         {
             if (imageFile == null || imageFile.Length == 0) return "錯誤：圖片為空";
 
-            // 1. 轉 Base64
+            // 轉 Base64
             string base64Image;
             using (var ms = new MemoryStream())
             {
@@ -78,33 +76,31 @@ namespace incode2.Services.Chat
             }
             string mimeType = imageFile.ContentType;
 
-            // 2. 組裝 Payload (同時包含 圖片 和 文字 Prompt)
             string geminiApiKey = _configuration["GeminiApiKey"];
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
 
+            // 2. 組裝含有 Function Calling 的 Payload
             var payload = new
             {
                 contents = new[]
+            {
+                new
                 {
-                    new
+                    parts = new object[]
                     {
-                        parts = new object[]
-                        {
-                            new { text = prompt }, // 這裡放包含 "CALL_FUNCTION" 規則的 Prompt
-                            new { inline_data = new { mime_type = mimeType, data = base64Image } } // 這裡放圖片
-                        }
+                        new { text = prompt }, // 這裡會接收 Controller 傳來的 CALL_FUNCTION 規則
+                        new { inline_data = new { mime_type = mimeType, data = base64Image } }
                     }
-                },
-                generationConfig = new { temperature = 0.5, maxOutputTokens = 1000 }
-            };
+                }
+            },
+                        generationConfig = new { temperature = 0.0, maxOutputTokens = 1000 }
+                    };
 
-            return await SendToGemini(url, payload);
-        }
+                    return await SendToGemini(url, payload);
+                }
 
 
-        // ==========================================
-        // 4. 核心：影像生成內容 (Gemini Vision 底層方法)
-        // ==========================================
+        // 核心：影像生成內容 (Gemini Vision 底層方法)
         public async Task<string> GetGeminiImageReplyAsync(string base64Image, string mimeType, string prompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
@@ -128,9 +124,7 @@ namespace incode2.Services.Chat
             return await SendToGemini(url, payload);
         }
 
-        // ==========================================
-        // 5. AI 生圖功能 (ModelsLab)
-        // ==========================================
+        // AI 生圖功能 (ModelsLab)
         public async Task<string> GenerateImageAsync(string prompt)
         {
             string endpointUrl = "https://modelslab.com/api/v7/images/text-to-image";
@@ -192,10 +186,25 @@ namespace incode2.Services.Chat
                         if (candidate.TryGetProperty("content", out var content) &&
                             content.TryGetProperty("parts", out var parts) && parts.GetArrayLength() > 0)
                         {
-                            return parts[0].GetProperty("text").GetString();
+                            var part = parts[0];
+
+                            // 🔥 1. 檢查是否為 Function Call (工具呼叫)
+                            if (part.TryGetProperty("functionCall", out var functionCall))
+                            {
+                                // 取得 AI 填寫的 JSON 參數字串
+                                string argsJson = functionCall.GetProperty("args").GetRawText();
+                                // 這裡回傳的會是乾淨的 JSON 字串，例如: {"ticketType":"電影優惠票","isPointsIndicated":false,"pointsValue":0}
+                                return argsJson;
+                            }
+
+                            // 🔥 2. 如果不是 Function Call，才退回抓取純文字 (兼容你其他的對話功能)
+                            if (part.TryGetProperty("text", out var textContent))
+                            {
+                                return textContent.GetString();
+                            }
                         }
                     }
-                    return "AI 思考中，但沒有回傳文字內容。";
+                    return "AI 思考中，但沒有回傳有效內容。";
                 }
                 else
                 {
