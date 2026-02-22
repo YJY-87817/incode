@@ -77,7 +77,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="card shadow-sm border-0 mb-5 rounded sticky-top"
+    class="card shadow-sm border-0 mb-3 rounded sticky-top"
     style="top: 80px"
   >
     <div
