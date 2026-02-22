@@ -1,8 +1,9 @@
-﻿namespace incode2.Dtos  // 或 incode2.DTO，統一放在同一個 namespace
+namespace incode2.Dtos 
 {
     public class UserMissionViewDTO
     {
         // 來自 Mission 的基本資訊
+        public int MissionProgressId { get; set; }
         public int MissionId { get; set; }
         public string MissionName { get; set; }
         public string MissionDetail { get; set; }
