@@ -44,6 +44,21 @@ namespace incode2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderViewModel NewOrder)
         {
+            // 檢查用戶當前點數餘額
+            var currentBalance = await _pointlogService.GetCurrentBalanceAsync(NewOrder.UserId);
+            
+            // 檢查點數是否足夠
+            if (currentBalance < NewOrder.TotalPoint)
+            {
+                // 點數不足，返回錯誤訊息
+                TempData["ErrorMessage"] = $"點數不足！您目前擁有 {currentBalance} 點，但需要 {NewOrder.TotalPoint} 點。";
+                
+                // 重新載入商品資料以便返回 View
+                var products = _context.Product.OrderBy(p => p.Name).ToList();
+                ViewBag.Products = products;
+                return View(NewOrder);
+            }
+
             //if (ModelState.IsValid)
             //{
             var orders = new Orders();
@@ -75,10 +90,18 @@ namespace incode2.Controllers
                 }
             }
             // 扣除會員點數（寫入點數紀錄）
-            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", NewOrder.OrderId, PointType.Order);
+            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", orders.OrderId, PointType.Order);
+            
+            // 檢查點數扣除是否成功
+            if (!result)
+            {
+                TempData["ErrorMessage"] = "點數扣除失敗，訂單建立失敗！";
+                return RedirectToAction(nameof(Index));
+            }
 
             await _context.SaveChangesAsync();
-
+            
+            TempData["SuccessMessage"] = "訂單建立成功！";
             return RedirectToAction(nameof(Index));
             //}
             //else 
@@ -164,9 +187,15 @@ namespace incode2.Controllers
                             product.Stock += detail.Quantity;
                         }
                     }
+                    
+                    // 退還點數：將原始訂單的總點數全額退還
+                    var cancelOriginalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
+                    await _pointlogService.ChangePointsAsync(orders.UserId, cancelOriginalTotalPoint, "order", orders.OrderId, PointType.Order);
                 }
                 _context.Orders.Update(orders);
                 await _context.SaveChangesAsync();
+                
+                TempData["SuccessMessage"] = "訂單已取消，點數已退還！";
                 return RedirectToAction(nameof(Index));
             }
             else
@@ -306,22 +335,60 @@ namespace incode2.Controllers
                 _context.Orderdetail.RemoveRange(toDelete);
             }
             // ===============================================
-            // 扣除會員點數（寫入點數紀錄）
             // 處理點數變更：計算差額並進行多退少補
             // 因為 orders 物件的 TotalPoint 已經被更新為新值，
             // 這裡利用 EF Core 的 Entry().OriginalValue 取得修改前的原始點數
             var originalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
-            var ordcha = originalTotalPoint - orders.TotalPoint; // 差異 = 舊消費 - 新消費
+            var pointDifference = originalTotalPoint - orders.TotalPoint; // 差異 = 舊消費 - 新消費
 
             // 只有當點數金額有變動時才呼叫 Service
-            if (ordcha != 0)
+            if (pointDifference != 0)
             {
-                // diff > 0 : 原本買比較多，現在買比較少 -> 退還點數 (增加)
-                // diff < 0 : 原本買比較少，現在買比較多 -> 補扣點數 (減少)
-                await _pointlogService.ChangePointsAsync(orders.UserId, ordcha, "order", orders.OrderId, PointType.Order);
+                // pointDifference > 0 : 原本買比較多，現在買比較少 -> 退還點數 (增加)
+                // pointDifference < 0 : 原本買比較少，現在買比較多 -> 補扣點數 (減少)
+                
+                // 如果需要補扣點數（pointDifference < 0），先檢查用戶點數是否足夠
+                if (pointDifference < 0)
+                {
+                    var currentBalance = await _pointlogService.GetCurrentBalanceAsync(orders.UserId);
+                    var requiredPoints = Math.Abs(pointDifference);
+                    
+                    if (currentBalance < requiredPoints)
+                    {
+                        TempData["ErrorMessage"] = $"點數不足！需要補扣 {requiredPoints} 點，但用戶目前僅有 {currentBalance} 點。";
+                        
+                        // 重新載入資料以便返回 View
+                        var orderdetail = new OrderViewModel
+                        {
+                            OrderId = orders.OrderId,
+                            UserId = orders.UserId,
+                            TotalPoint = orders.TotalPoint,
+                            Status = orders.Status,
+                            Remark = orders.Remark,
+                            orderdetails = EditOrder.orderdetails
+                        };
+                        
+                        var products = _context.Product.OrderBy(p => p.Name).ToList();
+                        ViewBag.Products = products;
+                        return View(orderdetail);
+                    }
+                }
+                
+                // 執行點數變更
+                // diff < 0 : 補扣點數 (使用 Order 類型)
+                var pointType = pointDifference > 0 ? PointType.Order : PointType.Order;
+                var result = await _pointlogService.ChangePointsAsync(orders.UserId, pointDifference, "order", orders.OrderId, pointType);
+                
+                if (!result)
+                {
+                    TempData["ErrorMessage"] = "點數變更失敗，訂單修改失敗！";
+                    return RedirectToAction(nameof(Index));
+                }
             }
+            
             await _context.SaveChangesAsync();
 
+            TempData["SuccessMessage"] = "訂單修改成功！";
             return RedirectToAction(nameof(Index));
         }
 
