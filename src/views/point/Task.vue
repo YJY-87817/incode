@@ -1,140 +1,139 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue"; // 引入 computed
 import { useTaskStore } from "@/stores/point/UseTaskStore";
+import { useRouter } from "vue-router";
 
-// 引入所有子元件
+// 引入元件
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
-
-import TaskTabs from "@/components/task/TaskTab.vue";
-import TaskSearchFilterBar from "@/components/task/TaskSearchFilterBar.vue";
-import TaskStatsCards from "@/components/task/TaskStatsCard.vue";
+import TaskSidebar from "@/components/task/TaskSidebar.vue"; // 確保這是合併後的側邊欄
 import MissionList from "@/components/task/MissionList.vue";
 import EntrustMissionTable from "@/components/task/EntrustMissionTable.vue";
 import TaskDetailDrawer from "@/components/task/TaskDetailDrawer.vue";
 
-// Pinia Store
+const router = useRouter();
 const store = useTaskStore();
 
-// 抽屜狀態
+// 狀態控制
 const isDrawerOpen = ref(false);
 const selectedTask = ref(null);
+const isClaiming = ref(false);
 
-const isClaiming = ref(false); // 用來控制「處理中」狀態
+// 安全讀取長度的計算屬性 (防止 undefined.length 報錯)
+const missionCount = computed(() => store.missions?.length || 0);
+const entrustCount = computed(() => store.entrustMissions?.length || 0);
 
-// 開啟詳情抽屜
 const openDetail = (task) => {
   selectedTask.value = task;
   isDrawerOpen.value = true;
 };
 
-// 領取/接取任務
 const handleClaim = async (payload) => {
-  if (!payload?.type || (!payload?.mission && !payload?.commission)) {
-    console.warn("無效的 claim payload", payload);
-    return;
-  }
-
+  if (!payload?.type) return;
   const task = payload.mission || payload.commission;
-  if (!task?.id) {
-    alert("無法識別任務 ID");
-    return;
-  }
+  if (!task?.id) return;
 
-  // 樂觀更新：先標記為已領取
+  isClaiming.value = true;
   const originalClaimed = task.claimed;
   task.claimed = true;
 
-  // 如果你想在抽屜內顯示 loading，可 emit 一個事件給抽屜
-  // 或直接在父層控制
-  isClaiming.value = true;
-
   try {
     await store.claimTask(payload.type, task.id);
-
-    // 成功：顯示成功提示（建議改用 toast）
-    // alert(`已成功${payload.type === "platform" ? "領取" : "接取"}：${task.title}`);
-
-    // 更好的做法：使用 toast（假設你有安裝 vue-toastification）
-    // toast.success(`已成功${payload.type === "platform" ? "領取" : "接取"}：${task.title}`);
-
-    // 成功後才重新載入（確保最新資料）
-    await store.fetchTasks();
-
-    // 關閉抽屜
-    isDrawerOpen.value = false;
+    if (payload.type === "entrust" && task.contentId) {
+      router.push(`/forum/${task.contentId}`);
+    }
   } catch (err) {
-    // 失敗：回滾樂觀更新
     task.claimed = originalClaimed;
-
-    // 顯示錯誤
-    const errorMsg =
-      err.response?.data?.message || err.message || "操作失敗，請稍後再試";
-    alert(errorMsg); // 或 toast.error(errorMsg)
-
-    // 可選擇不關閉抽屜，讓使用者看到錯誤後再試
-    // isDrawerOpen.value = false;  ← 註解掉這行
+    alert(err.message || "接取失敗");
   } finally {
     isClaiming.value = false;
   }
 };
 
-// 頁面載入時自動取資料
 onMounted(() => {
-  if (store.missions.length === 0 && store.entrustMissions.length === 0) {
+  // 使用可選鏈防禦，確保 store.missions 存在
+  if (
+    (store.missions?.length || 0) === 0 &&
+    (store.entrustMissions?.length || 0) === 0
+  ) {
     store.fetchTasks();
   }
 });
 </script>
 
 <template>
-<DefaultNavbar light />
+  <DefaultNavbar light />
 
   <div class="bg-gray-100 min-vh-100 pb-5">
-    <div class="container mt-2">
+    <div class="container-fluid mt-4 px-lg-5">
       <div class="row">
-        <div class="filter-container col-lg-11 mx-auto">
-          <!-- Tab 導航 -->
-          <TaskTabs :active-tab="store.activeTab" @change="store.setActiveTab">
-            <!-- 搜尋、過濾、類別、清除篩選 -->
-            <template #bottom-content>
-              <TaskSearchFilterBar />
-            </template>
-          </TaskTabs>
+        <aside
+          class="col-lg-3 mb-4 sticky-lg-top"
+          style="top: 20px; height: fit-content"
+        >
+          <TaskSidebar />
+        </aside>
 
-          <!-- 統計卡片 -->
-          <TaskStatsCards />
-
-          <!-- 錯誤顯示 -->
-          <div v-if="store.error" class="alert alert-danger text-center my-5">
-            {{ store.error }}
+        <main class="col-lg-9">
+          <div
+            v-if="store.error"
+            class="alert alert-danger shadow-sm rounded-4 text-center p-5"
+          >
+            <i class="fas fa-exclamation-triangle fs-2 mb-3 d-block"></i>
+            <h5 class="text-white">{{ store.error }}</h5>
             <button
               @click="store.fetchTasks"
-              class="btn btn-outline-danger btn-sm mt-2"
+              class="btn btn-white btn-sm mt-3 px-4 rounded-pill"
             >
-              重試
+              重試一次
             </button>
           </div>
 
-          <!-- 任務內容 -->
-          <div v-else class="row">
-            <!-- 平台任務卡片列表 -->
-            <div v-if="store.activeTab === 'mission'">
-              <MissionList @open-detail="openDetail" @claim="handleClaim" />
+          <div v-else class="content-wrapper">
+            <div
+              class="d-flex justify-content-between align-items-center mb-4 px-2"
+            >
+              <h4 class="fw-bold text-dark mb-0">
+                <i
+                  :class="
+                    store.activeTab === 'mission'
+                      ? 'fas fa-rocket'
+                      : 'fas fa-users'
+                  "
+                  class="me-2 text-primary"
+                ></i>
+                {{ store.activeTab === "mission" ? "平台挑戰" : "影友委託" }}
+                <span
+                  class="badge bg-white text-primary ms-2 fw-normal fs-6 shadow-sm border"
+                >
+                  {{
+                    store.activeTab === "mission"
+                      ? store.filteredMissions?.length || 0
+                      : store.filteredEntrusts?.length || 0
+                  }}
+                  筆結果
+                </span>
+              </h4>
             </div>
 
-            <!-- 委託任務表格 -->
-            <EntrustMissionTable
-              v-else
-              @open-detail="openDetail"
-              @claim="handleClaim"
-            />
+            <transition name="fade-slide" mode="out-in">
+              <div :key="store.activeTab">
+                <div v-if="store.activeTab === 'mission'">
+                  <MissionList @open-detail="openDetail" @claim="handleClaim" />
+                </div>
+                <div v-else>
+                  <EntrustMissionTable
+                    @open-detail="openDetail"
+                    @claim="handleClaim"
+                  />
+                </div>
+              </div>
+            </transition>
           </div>
-        </div>
+        </main>
       </div>
     </div>
 
-    <!-- 任務詳情側邊欄 -->
     <TaskDetailDrawer
       v-model:open="isDrawerOpen"
       :task="selectedTask"
@@ -142,7 +141,6 @@ onMounted(() => {
       :is-claiming="isClaiming"
       @claim="handleClaim"
     />
-
     <div
       v-if="isDrawerOpen"
       @click.self="isDrawerOpen = false"
@@ -154,40 +152,25 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.transition-all {
-  transition: all 0.25s ease-in-out;
+/* 側邊欄與內容的切換動畫 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
 }
-.cursor-pointer {
-  cursor: pointer;
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
 }
-.mission-card {
-  transition: all 0.3s;
-  border-top: 4px solid transparent;
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
 }
-.mission-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1) !important;
-  border-top-color: #11cdef;
+
+.content-wrapper {
+  min-height: 70vh;
 }
-.commission-row {
-  transition: background-color 0.2s;
-}
-.commission-row:hover {
-  background-color: rgba(17, 205, 239, 0.04);
-}
-.detail-drawer {
-  position: fixed;
-  top: 0;
-  right: -450px;
-  width: 450px;
-  height: 100vh;
-  z-index: 1100;
-  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow-y: auto;
-}
-.detail-drawer.open {
-  right: 0;
-}
+
+/* 抽屜背景 */
 .drawer-backdrop {
   position: fixed;
   top: 0;
@@ -195,20 +178,16 @@ onMounted(() => {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   z-index: 1090;
 }
-.scrollbar-hidden::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hidden {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-@media (max-width: 576px) {
-  .detail-drawer {
-    width: 100%;
-    right: -100%;
+
+/* 針對電腦版側欄的滾動優化 */
+@media (min-width: 992px) {
+  .sticky-lg-top {
+    position: sticky;
+    top: 80px; /* 避開可能的 Navbar 高度 */
+    z-index: 100;
   }
 }
 </style>

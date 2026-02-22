@@ -1,4 +1,4 @@
-<script setup>
+<!-- <script setup>
 import { useTaskStore } from "@/stores/point/UseTaskStore";
 
 const store = useTaskStore();
@@ -31,4 +31,4 @@ const store = useTaskStore();
       </div>
     </div>
   </div>
-</template>
+</template> -->
