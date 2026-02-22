@@ -206,6 +206,7 @@ const buildThreadItem = async (item, fallbackType) => {
     parentContentId: item.parentContentId ?? item.parent_content_id ?? null,
     categoryId: item.categoryId ?? item.category_id ?? null,
     title: item.title ?? "",
+    likeCount: extractLikeCount(item),
   };
 };
 
@@ -228,6 +229,12 @@ const extractReplyStats = (item) => {
     lastReplyUser,
     lastReplyUserId,
   };
+};
+
+const extractLikeCount = (item) => {
+  const value = Number(item?.likeCount ?? item?.like_count ?? 0);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, value);
 };
 
 const extractPreviewPayload = (item) => {
@@ -460,6 +467,7 @@ export const useForumStore = defineStore("forum", {
       type: null,
       isPinned: false,
       isHot: false,
+      likeCount: 0,
       entrustMissionId: null,
       entrustMissionUserId: null,
       rewardPoints: 0,
@@ -1123,6 +1131,7 @@ export const useForumStore = defineStore("forum", {
                   null,
                 createdAt: item.createdAt,
                 type: item.type,
+                likeCount: extractLikeCount(item),
                 replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
                 lastReplyTime:
                   stats.lastReplyTime ?? fallbackStats.lastReplyTime ?? null,
@@ -1314,6 +1323,7 @@ export const useForumStore = defineStore("forum", {
             type: detail.type,
             isPinned: isPinned,
             isHot: isHot,
+            likeCount: extractLikeCount(detail),
             // 添加回覆統計資訊
             replyCount: stats.replyCount ?? 0,
             lastReplyTime: stats.lastReplyTime ?? null,
@@ -1377,6 +1387,7 @@ export const useForumStore = defineStore("forum", {
         type: null,
         isPinned: false,
         isHot: false,
+        likeCount: 0,
         replyCount: 0,
         lastReplyTime: null,
         lastReplyUser: null,
@@ -1819,6 +1830,75 @@ export const useForumStore = defineStore("forum", {
       this.interactionInitBatchSize = Math.min(20, Math.max(1, nextSize));
     },
 
+    getContentLikeCount(contentId) {
+      const targetId = Number(contentId);
+      if (!Number.isFinite(targetId) || targetId <= 0) return 0;
+
+      const findCount = (items = []) => {
+        const matched = items.find((item) => Number(item?.id) === targetId);
+        if (!matched) return null;
+        const count = Number(matched?.likeCount);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+      };
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        const detailCount = Number(this.threadDetail?.likeCount ?? 0);
+        if (Number.isFinite(detailCount)) return Math.max(0, detailCount);
+      }
+
+      const topicCount = findCount(this.topics);
+      if (topicCount !== null) return topicCount;
+
+      const postCount = findCount(this.threadPosts);
+      if (postCount !== null) return postCount;
+
+      const commentCount = findCount(this.threadComments);
+      if (commentCount !== null) return commentCount;
+
+      const childReplyCollections = Object.values(this.childRepliesByParentId);
+      for (const payload of childReplyCollections) {
+        const childCount = findCount(payload?.items || []);
+        if (childCount !== null) return childCount;
+      }
+
+      return 0;
+    },
+
+    setContentLikeCount(contentId, likeCount) {
+      const targetId = Number(contentId);
+      const nextCount = Number(likeCount);
+      if (!Number.isFinite(targetId) || targetId <= 0) return;
+      if (!Number.isFinite(nextCount)) return;
+
+      const normalizedCount = Math.max(0, nextCount);
+      const updateCollection = (items = []) =>
+        items.map((item) =>
+          Number(item?.id) === targetId
+            ? { ...item, likeCount: normalizedCount }
+            : item,
+        );
+
+      this.topics = updateCollection(this.topics);
+      this.threadPosts = updateCollection(this.threadPosts);
+      this.threadComments = updateCollection(this.threadComments);
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        this.threadDetail = {
+          ...this.threadDetail,
+          likeCount: normalizedCount,
+        };
+      }
+
+      Object.entries(this.childRepliesByParentId || {}).forEach(
+        ([parentId, payload]) => {
+          this.childRepliesByParentId[parentId] = {
+            ...payload,
+            items: updateCollection(payload?.items || []),
+          };
+        },
+      );
+    },
+
     /**
      * 執行互動
      * @param {number} contentId - 內容 ID
@@ -1841,6 +1921,10 @@ export const useForumStore = defineStore("forum", {
 
         if (response.isRemoved) {
           this.interactionStates[contentId][categoryId] = false;
+          if (categoryId === 1) {
+            const currentLikeCount = this.getContentLikeCount(contentId);
+            this.setContentLikeCount(contentId, currentLikeCount - 1);
+          }
           // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
           if (categoryId === 2) {
             clearTopicPageCache();
@@ -1848,6 +1932,10 @@ export const useForumStore = defineStore("forum", {
           return { success: true, isRemoved: true, message: "互動已移除" };
         } else {
           this.interactionStates[contentId][categoryId] = true;
+          if (categoryId === 1) {
+            const currentLikeCount = this.getContentLikeCount(contentId);
+            this.setContentLikeCount(contentId, currentLikeCount + 1);
+          }
           const categoryNames = {
             1: "讚",
             2: "隱藏",
