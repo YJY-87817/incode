@@ -17,7 +17,9 @@ public partial class EntrustMissionProgress
 
     public DateTime? AcceptedAt { get; set; }
 
-    public DateTime? CompletedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
 
     public DateTime? RewardedAt { get; set; }
 

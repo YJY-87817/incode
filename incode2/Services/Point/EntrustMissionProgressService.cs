@@ -1,4 +1,4 @@
-﻿using incode2.DTO;
+using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +10,14 @@ namespace incode2.Services.Point
         private readonly incodedatabaseContext _context;
         public EntrustMissionProgressService(incodedatabaseContext context) => _context = context;
 
+        public enum MissionProgressStatus
+        {
+            Accepted = 1,
+            Submitted = 2,
+            Approved = 3,
+            Rewarded = 4
+        }
+
         public async Task<IEnumerable<EntrustMissionProgressDTO>> GetAllProgressAsync()
         {
             return await _context.EntrustMissionProgress.Select(emg => new EntrustMissionProgressDTO
@@ -19,7 +27,8 @@ namespace incode2.Services.Point
                 EntrustMissionId = emg.EntrustMissionId,
                 Status = emg.Status,
                 AcceptedAt = emg.AcceptedAt,
-                CompletedAt = emg.CompletedAt,
+                SubmittedAt = emg.SubmittedAt,
+                ApprovedAt = emg.ApprovedAt,
                 RewardedAt = emg.RewardedAt
             }).ToListAsync();
         }
@@ -52,7 +61,6 @@ namespace incode2.Services.Point
             if (emg == null) return new ResultDTO { Ok = false, Code = 404 };
 
             emg.Status = dto.Status;
-            emg.CompletedAt = dto.CompletedAt;
             emg.RewardedAt = dto.RewardedAt;
 
             await _context.SaveChangesAsync();

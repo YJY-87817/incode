@@ -9,6 +9,10 @@ namespace incode2.Services.Point
         Task<ResultDTO> ClaimEntrustMissionAsync(int entrustMissionId , int userId);//接取任務
         Task<EntrustMissionDTO> GetEntrustMissionByIdAsync(int id);
         Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto);
+        Task<ResultDTO> SubmitEntrustMissionAsync(int missionId, int userId);
+
+        Task<ResultDTO> RejectEntrustMissionAsync(int progressId, int ownerId);
+
         Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId);
     }
 }

@@ -258,7 +258,7 @@ namespace incode2.Services.Contents
 
         //新增：更新任務狀態為關閉
         mission.Status = "completed"; 
-        mission.IsActive = false;  // 如果關閉後就不想在列表看到，可以設為 false
+        mission.IsActive = true;  // 想在列表看到，可以設為 true
         mission.UpdatedAt = DateTime.Now;
 
         _context.ContentInteraction.Add(new ContentInteraction
