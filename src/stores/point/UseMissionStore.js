@@ -1,78 +1,88 @@
 import { defineStore } from "pinia";
-import { useRouter } from "vue-router";
 import axios from "@/api/point/axios";
+import router from "@/router"; // 直接匯入 router 實例
 
-axios.defaults.withCredentials = true; // 讓 Cookie 自動帶上
+axios.defaults.withCredentials = true;
 
 export const useMissionStore = defineStore("mission", {
   state: () => ({
-    myMissions: [],
+    myMissions: [], // 這裡後端會回傳混合了平台與委託任務的 List
     loading: false,
     error: null,
   }),
 
   getters: {
-    hasClaimable: (state) => state.myMissions.some((m) => m.canClaimReward),
+    // 檢查是否有任何任務可以領獎 (包含平台 completed 或 委託 approved)
+    hasClaimable: (state) =>
+      state.myMissions.some(
+        (m) => m.status === "completed" || m.status === "approved",
+      ),
   },
 
   actions: {
     async fetchMyMissions() {
-      const router = useRouter();
       this.loading = true;
       this.error = null;
 
       try {
-        const res = await axios.get("/api/MissionProgressApi/my-missions");
-        this.myMissions = res.data || [];
+        // 使用 Promise.all 同時發送兩個請求，提高效率
+        const [platformRes, entrustRes] = await Promise.all([
+          axios.get("/api/MissionProgressApi/my-missions"),
+          axios.get("/api/EntrustMissionProgressApi/user/my-tasks"), // 呼叫你提供的 C# API
+        ]);
+
+        // 這裡將兩份資料合併
+        // 建議加上標記以便前端邏輯判斷，雖然你的 DTO 欄位已有區分
+        this.myMissions = [
+          ...(platformRes.data || []),
+          ...(entrustRes.data || []),
+        ];
+
+        console.log("合併後的任務清單:", this.myMissions);
       } catch (err) {
         console.error("載入我的任務失敗", err);
-
-        if (err.response?.status === 401) {
-          this.error = "登入已過期，請重新登入";
-          router.push("/login");
-        } else {
-          this.error = err.response?.data?.message || "載入失敗，請稍後再試";
-        }
+        this.handleError(err);
       } finally {
         this.loading = false;
       }
     },
 
-    // 領獎並回傳更新後的 mission
-    async claimReward(missionId) {
+    /**
+     * 領獎邏輯
+     * @param {number} progressId - 進度表的主鍵 ID
+     * @param {boolean} isEntrust - 是否為委託任務
+     */
+    async claimReward(progressId, isEntrust = false) {
       try {
-        await axios.post("/api/MissionProgressApi/claim-reward", { missionId });
+        // 根據類型決定打哪支 API，或是在同一支 API 用參數區分
+        const url = isEntrust
+          ? "/api/EntrustMissionApi/claim-reward"
+          : "/api/MissionProgressApi/claim-reward";
 
-        // 與其手動計算 idx，不如直接重新獲取最新狀態
+        await axios.post(url, { progressId });
+
+        // 領取成功後，重新整理列表以確保數據同步
         await this.fetchMyMissions();
 
-        // 如果需要回傳給組件做其他處理
-        return this.myMissions.find((m) => m.missionId === missionId);
+        // 回傳更新後的那一筆資料
+        return this.myMissions.find((m) =>
+          isEntrust
+            ? m.entrustMissionProgressId === progressId
+            : m.missionProgressId === progressId,
+        );
       } catch (err) {
-        if (err.response?.status === 401) router.push("/login");
+        this.handleError(err);
         throw new Error(err.response?.data?.message || "領取獎勵失敗");
       }
     },
 
-    async updateProgress(missionId, increment = 1) {
-      try {
-        const res = await axios.post(
-          `/api/MissionProgressApi/${missionId}/increment`,
-          { increment },
-        );
-
-        // 找到 Store 裡對應的那筆任務
-        const idx = this.myMissions.findIndex((m) => m.missionId === missionId);
-        if (idx !== -1) {
-          // 使用 API 回傳的最新數據更新（如截圖中的 data.currentCount）
-          this.myMissions[idx].currentCount = res.data.data.currentCount;
-          this.myMissions[idx].status = res.data.data.status;
-
-          // 💡 關鍵：確保響應式觸發
-          this.myMissions = [...this.myMissions];
-        }
-      } catch (err) {
-        console.error("更新進度失敗", err);
+    // 統一處理錯誤
+    handleError(err) {
+      if (err.response?.status === 401) {
+        this.error = "登入已過期，請重新登入";
+        router.push("/login");
+      } else {
+        this.error = err.response?.data?.message || "操作失敗，請稍後再試";
       }
     },
   },
