@@ -16,24 +16,20 @@ const selectedMission = ref(null);
 // 過濾任務
 const filteredMissions = computed(() => {
   return missionStore.myMissions.filter((m) => {
-    const isEntrust =
-      m.entrustMissionId !== undefined && m.entrustMissionId !== null;
+    const isEntrust = !!m.entrustMissionId;
 
     if (activeTab.value === "ongoing") {
-      // 平台：ongoing | 委託：ongoing, submitted, rejected
       return (
         m.status === "ongoing" ||
-        (isEntrust && ["submitted", "rejected"].includes(m.status))
+        (isEntrust && ["ongoing", "submitted", "rejected"].includes(m.status))
       );
     }
 
     if (activeTab.value === "pending") {
-      // 平台：completed | 委託：approved
       return m.status === "completed" || (isEntrust && m.status === "approved");
     }
 
     if (activeTab.value === "completed") {
-      // 兩者皆為 rewarded
       return m.status === "rewarded";
     }
 
@@ -47,7 +43,7 @@ const viewDetail = (mission) => {
   isDetailOpen.value = true;
 };
 
-// 計算進度條寬度
+// 計算進度條寬度（增加安全檢查）
 const calculateWidth = (mission) => {
   if (mission.entrustMissionId) {
     const statusMap = {
@@ -60,7 +56,7 @@ const calculateWidth = (mission) => {
     return statusMap[mission.status] || 0;
   }
 
-  if (!mission.targetCount) return 0;
+  if (!mission.targetCount || mission.targetCount <= 0) return 0;
   return Math.min(
     100,
     Math.floor((mission.currentCount / mission.targetCount) * 100),
@@ -70,13 +66,27 @@ const calculateWidth = (mission) => {
 // 領取獎勵
 const claimReward = async (mission) => {
   const missionName = mission.missionName || mission.title || "此任務";
+
+  // 先檢查是否有進度 ID
+  const progressId =
+    mission.missionProgressId || mission.entrustMissionProgressId;
+  if (!progressId) {
+    Swal.fire({
+      icon: "error",
+      title: "無法領取",
+      text: "系統無法取得此任務的進度資訊，請重新載入頁面或聯絡客服",
+      confirmButtonColor: "#145369",
+    });
+    return;
+  }
+
   const result = await Swal.fire({
     title: "確定領取獎勵？",
     text: `確定領取「${missionName}」的獎勵？`,
     icon: "question",
     showCancelButton: true,
-    confirmButtonColor: "#145369", // 使用你的按鈕色
-    cancelButtonColor: "#86B0BD", // 使用你的主色調
+    confirmButtonColor: "#145369",
+    cancelButtonColor: "#86B0BD",
     confirmButtonText: "確定領取",
     cancelButtonText: "取消",
     reverseButtons: true,
@@ -86,17 +96,12 @@ const claimReward = async (mission) => {
     },
   });
 
-  // 如果使用者點擊取消，就中斷執行
   if (!result.isConfirmed) return;
 
   try {
-    const progressId =
-      mission.entrustMissionProgressId || mission.missionProgressId;
     const isEntrust = !!mission.entrustMissionId;
-
     await missionStore.claimReward(progressId, isEntrust);
 
-    // 成功提示
     await Swal.fire({
       icon: "success",
       title: "領取成功",
@@ -118,7 +123,8 @@ const claimReward = async (mission) => {
 };
 
 // 格式化日期
-const formatDate = (date) => (date ? new Date(date).toLocaleString() : "---");
+const formatDate = (date) =>
+  date ? new Date(date).toLocaleString("zh-TW") : "---";
 
 onMounted(() => {
   missionStore.fetchMyMissions();
@@ -194,7 +200,7 @@ onMounted(() => {
             <div
               v-for="mission in filteredMissions"
               :key="
-                mission.entrustMissionProgressId || mission.missionProgressId
+                mission.missionProgressId || mission.entrustMissionProgressId
               "
               class="card border-0 shadow-sm mb-3 task-card"
               :class="{ 'entrust-border': mission.entrustMissionId }"
@@ -233,8 +239,8 @@ onMounted(() => {
                             }}</span>
                           </template>
                           <template v-else>
-                            進度：{{ mission.currentCount }} /
-                            {{ mission.targetCount }}
+                            進度：{{ mission.currentCount || 0 }} /
+                            {{ mission.targetCount || 0 }}
                           </template>
                         </span>
                         <span class="text-xxs"
@@ -247,7 +253,7 @@ onMounted(() => {
                   <div class="col-md-4 text-end">
                     <div class="mb-2">
                       <span class="text-sm font-weight-bolder text-dark">
-                        +{{ mission.rewardPoints }} Pts
+                        +{{ mission.rewardPoints || 0 }} Pts
                       </span>
                     </div>
                     <button
