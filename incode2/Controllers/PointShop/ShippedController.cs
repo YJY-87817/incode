@@ -38,7 +38,7 @@ namespace incode2.Controllers
             ShippedDetail.IsCompleted = false;
             _context.Add(ShippedDetail);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index", "Order");
         }
 
         // GET: Shipped/Edit/5
@@ -62,7 +62,7 @@ namespace incode2.Controllers
             if (ShippedDetailId != ShippedDetail.ShippedDetailId) return NotFound();
             _context.Update(ShippedDetail);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index", "Order");
         }
 
         // GET: Products/Delete/5
@@ -97,7 +97,7 @@ namespace incode2.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index", "Order");
         }
     }
 }
