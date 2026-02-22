@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
 import { useRouter } from "vue-router";
+import Swal from "sweetalert2";
 
 const store = useTaskStore();
 const router = useRouter();
@@ -12,9 +13,28 @@ const isClaiming = ref(false);
 const list = computed(() => store.filteredList);
 
 const handleClaim = async ({ type, commission }) => {
-  // 檢查 ID，相容後端不同的命名慣例 (id 或 entrustMissionId)
+  // 檢查 ID，相容後端不同的命名慣例
   const taskId = commission.id || commission.entrustMissionId;
   if (!taskId || isClaiming.value) return;
+
+  // 1. 確認視窗
+  const confirmResult = await Swal.fire({
+    title: "確定接取？",
+    text: `您即將接取委託：「${commission.title || "未命名委託"}」`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#145369",
+    cancelButtonColor: "#86B0BD",
+    confirmButtonText: "確定接取",
+    cancelButtonText: "取消",
+    reverseButtons: true,
+    customClass: {
+      confirmButton: "text-white",
+      cancelButton: "text-white",
+    },
+  });
+
+  if (!confirmResult.isConfirmed) return;
 
   isClaiming.value = true;
   const originalStatus = commission.claimed;
@@ -26,14 +46,40 @@ const handleClaim = async ({ type, commission }) => {
     // 前端樂觀更新
     commission.claimed = true;
 
-    // 委託任務接取後跳轉討論區 (確保有 contentId)
-    if (type === "entrust" && commission.contentId) {
-      router.push(`/forum/${commission.contentId}`);
+    // 2. 成功提示並引導跳轉
+    const nextStep = await Swal.fire({
+      title: "接取成功！",
+      text: "任務已加入您的執行清單。",
+      icon: "success",
+      showCancelButton: true,
+      confirmButtonColor: "#145369",
+      cancelButtonColor: "#86B0BD",
+      confirmButtonText: "前往我的任務",
+      cancelButtonText: "留在本頁",
+      reverseButtons: true,
+      customClass: {
+        confirmButton: "text-white",
+        cancelButton: "text-white",
+      },
+    });
+
+    // 點擊「前往我的任務」跳轉至 /mytask
+    if (nextStep.isConfirmed) {
+      router.push("/mytask");
+    } else if (type === "entrust" && commission.contentId) {
+      // 如果留在本頁且是委託，按原邏輯視需求決定是否跳討論區
+      // 若想完全手動控制，此處可保留空白
     }
   } catch (err) {
     // 失敗時回滾狀態
     commission.claimed = originalStatus;
-    alert(err.message || "接取失敗，請稍後再試");
+    Swal.fire({
+      icon: "error",
+      title: "接取失敗",
+      text: err.message || "接取失敗，請稍後再試",
+      confirmButtonColor: "#145369",
+      customClass: { confirmButton: "text-white" },
+    });
   } finally {
     isClaiming.value = false;
   }
@@ -163,12 +209,13 @@ const handleClaim = async ({ type, commission }) => {
                 >
                   {{ isClaiming ? "處理中..." : "接取" }}
                 </button>
-                <button
+
+                <span
                   v-else
-                  class="btn btn-sm btn-success shadow-none px-3 mb-0"
+                  class="text-success text-xs font-weight-bolder px-3"
                 >
-                  已接取
-                </button>
+                  <i class="fas fa-check-circle me-1"></i>已接取
+                </span>
               </td>
             </tr>
           </tbody>
@@ -179,7 +226,12 @@ const handleClaim = async ({ type, commission }) => {
 </template>
 
 <style scoped>
-/* 自定義主色調變數 */
+/* 確保 Swal 按鈕文字為白色 */
+:global(.swal2-confirm),
+:global(.swal2-cancel) {
+  color: #ffffff !important;
+}
+
 .custom-text-main {
   color: #145369 !important;
 }
@@ -187,7 +239,6 @@ const handleClaim = async ({ type, commission }) => {
   background-color: #86b0bd !important;
 }
 
-/* 按鈕樣式: #145369 */
 .custom-btn-primary {
   background-color: #fff !important;
   color: #145369 !important;
@@ -197,27 +248,18 @@ const handleClaim = async ({ type, commission }) => {
 .custom-btn-primary:hover {
   background-color: #145369 !important;
   color: #fff !important;
-  border: 1px solid #145369 !important;
-  transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* 表頭樣式 */
 .custom-thead {
   background-color: #f8f9fa;
   color: #145369;
 }
 
-.commission-row {
-  transition: background-color 0.2s ease;
-}
 .commission-row:hover {
-  background-color: rgba(134, 176, 189, 0.1); /* 使用主色的淡化版 */
+  background-color: rgba(134, 176, 189, 0.1);
 }
 
-.cursor-pointer {
-  cursor: pointer;
-}
 .avatar-sm {
   width: 36px;
   height: 36px;
