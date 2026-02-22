@@ -255,6 +255,53 @@ namespace incode2.Services.Point
             }
         }
 
+        //完成「提交成果」
+        public async Task<ResultDTO> SubmitEntrustMissionAsync(int missionId, int userId)
+        {
+            var progress = await _context.EntrustMissionProgress
+                .FirstOrDefaultAsync(p =>
+                    p.EntrustMissionId == missionId &&
+                    p.UserId == userId);
+
+            if (progress == null)
+                return new ResultDTO { Ok = false, Code = 404, Message = "未接取此任務" };
+
+            if (progress.Status != "ongoing")
+                return new ResultDTO { Ok = false, Code = 400, Message = "目前狀態無法提交" };
+
+            progress.Status = "submitted";
+            progress.SubmittedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return new ResultDTO
+            {
+                Ok = true,
+                Code = 200,
+                Message = "任務已提交，等待發布者審核"
+            };
+        }
+
+        //Rejected
+        public async Task<ResultDTO> RejectEntrustMissionAsync(int progressId, int ownerId)
+        {
+            var progress = await _context.EntrustMissionProgress
+                .Include(p => p.EntrustMission)
+                .FirstOrDefaultAsync(p => p.EntrustMissionProgressId == progressId);
+
+            if (progress == null)
+                return new ResultDTO { Ok = false, Code = 404 };
+
+            if (progress.EntrustMission.UserId != ownerId)
+                return new ResultDTO { Ok = false, Code = 403 };
+
+            progress.Status = "rejected";
+
+            await _context.SaveChangesAsync();
+
+            return new ResultDTO { Ok = true, Code = 200 };
+        }
+
         //取消委託任務時退還預扣點數
         public async Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
         {

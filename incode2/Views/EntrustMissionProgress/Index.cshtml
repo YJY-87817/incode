@@ -1,4 +1,4 @@
-﻿@model IEnumerable<incode2.Models.EntrustMissionProgress>
+@model IEnumerable<incode2.Models.EntrustMissionProgress>
 
 @{
     ViewData["Title"] = "Index";
@@ -19,7 +19,10 @@
                 @Html.DisplayNameFor(model => model.AcceptedAt)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.CompletedAt)
+                @Html.DisplayNameFor(model => model.SubmittedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ApprovedAt)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.RewardedAt)
@@ -43,7 +46,10 @@
                 @Html.DisplayFor(modelItem => item.AcceptedAt)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.CompletedAt)
+                    @Html.DisplayFor(modelItem => item.SubmittedAt)
+            </td>
+            <td>
+                    @Html.DisplayFor(modelItem => item.ApprovedAt)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.RewardedAt)
