@@ -334,7 +334,7 @@ export const useTaskStore = defineStore("task", {
       try {
         const isPlatform = type === "platform";
         const endpoint = isPlatform
-          ? `/api/MissionApi/${taskId}/missionClaim`
+          ? `/api/MissionApi/${taskId}/claim`
           : `/api/EntrustMissionApi/${taskId}/entrustMissionClaim`;
 
         const response = await service.post(endpoint);
@@ -374,7 +374,9 @@ export const useTaskStore = defineStore("task", {
           `領取 ${type} 請求失敗：`,
           err.response?.data || err.message,
         );
-        const msg = err.response?.data?.message || "領取失敗，請稍後再試";
+        const msg = err.response?.data?.message
+          ? `${err.response.data.message} (錯誤碼: ${err.response.data.code || err.response.status})`
+          : "領取失敗，請稍後再試";
         throw new Error(msg);
       }
     }, //之後任務完成邏輯
