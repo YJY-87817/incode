@@ -98,7 +98,7 @@ namespace incode2.Services.Point
         {
           UserId = userId,
           EntrustMissionId = entrustMissionId,
-          Status = "ongoing",
+          Status = EntrustMissionProgressStatus.Ongoing,
           AcceptedAt = DateTime.Now
         };
 
@@ -269,7 +269,7 @@ namespace incode2.Services.Point
             if (progress.Status != "ongoing")
                 return new ResultDTO { Ok = false, Code = 400, Message = "目前狀態無法提交" };
 
-            progress.Status = "submitted";
+            progress.Status = EntrustMissionProgressStatus.Submitted;
             progress.SubmittedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();

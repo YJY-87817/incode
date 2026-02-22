@@ -102,52 +102,6 @@ namespace incode2.ApiControllers.Point
             return EmDTO;
         }
 
-        // PUT: api/EntrustMissionApi/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<ResultDTO> PutEntrustMission(int id, EntrustMissionDTO EmDTO)
-        {
-            if (id != EmDTO.EntrustMissionId)
-            {
-                return new ResultDTO { Ok = false, Code = 400 };
-            }
-
-            EntrustMission Em = await _context.EntrustMission.FindAsync(id);
-            if (Em != null)
-            {
-                Em.UserId = EmDTO.UserId;
-                Em.ContentId = EmDTO.ContentId;
-                Em.Title = EmDTO.Title;
-                Em.Detail = EmDTO.Detail;
-                Em.RewardPoints = EmDTO.RewardPoints;
-                Em.Category = EmDTO.Category;
-                Em.Deadline = EmDTO.Deadline;
-                Em.Status = EmDTO.Status;
-                Em.IsUrgent = EmDTO.IsUrgent;
-                Em.IsActive = EmDTO.IsActive;
-                // 只有當前端真的有傳新時間才更新，否則保留資料庫原始時間
-                Em.CreatedAt = EmDTO.CreatedAt ?? Em.CreatedAt;
-
-                _context.Entry(Em).State = EntityState.Modified;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    return new ResultDTO { Ok = false, Code = 500 }; //Server端的錯誤
-                }
-
-                return new ResultDTO { Ok = true, Code = 204 };
-            }
-            else
-            {
-                return new ResultDTO { Ok = false, Code = 404 };
-            }
-
-        }
-
         //tim修改內容
         // POST: api/EntrustMissionApi
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
