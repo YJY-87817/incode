@@ -33,7 +33,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import materialKit from "./material-kit";
 import axios from "axios";
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = "https://localhost:7190/api";
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 
 // Axios 攔截器(避免Pinia 和 Cookie 的「資訊不對稱」
 axios.interceptors.response.use(
