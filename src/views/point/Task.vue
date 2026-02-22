@@ -6,10 +6,11 @@ import { useRouter } from "vue-router";
 // 引入元件
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
-import TaskSidebar from "@/components/task/TaskSidebar.vue"; // 確保這是合併後的側邊欄
-import MissionList from "@/components/task/MissionList.vue";
-import EntrustMissionTable from "@/components/task/EntrustMissionTable.vue";
-import TaskDetailDrawer from "@/components/task/TaskDetailDrawer.vue";
+import TaskSidebar from "@/components/Task/TaskSidebar.vue";
+import MissionList from "@/components/Task/MissionList.vue";
+import EntrustMissionTable from "@/components/Task/EntrustMissionTable.vue";
+import TaskDetailDrawer from "@/components/Task/TaskDetailDrawer.vue";
+import Swal from "sweetalert2";
 
 const router = useRouter();
 const store = useTaskStore();
@@ -44,7 +45,11 @@ const handleClaim = async (payload) => {
     }
   } catch (err) {
     task.claimed = originalClaimed;
-    alert(err.message || "接取失敗");
+    Swal.fire({
+      icon: "error",
+      title: "接取失敗",
+      text: err.message || "接取失敗，請稍後再試",
+    });
   } finally {
     isClaiming.value = false;
   }

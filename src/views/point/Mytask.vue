@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { useMissionStore } from "@/stores/point/UseMissionStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
+import Swal from "sweetalert2";
 
 // Store
 const missionStore = useMissionStore();
@@ -69,7 +70,24 @@ const calculateWidth = (mission) => {
 // 領取獎勵
 const claimReward = async (mission) => {
   const missionName = mission.missionName || mission.title || "此任務";
-  if (!confirm(`確定領取「${missionName}」的獎勵？`)) return;
+  const result = await Swal.fire({
+    title: "確定領取獎勵？",
+    text: `確定領取「${missionName}」的獎勵？`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#145369", // 使用你的按鈕色
+    cancelButtonColor: "#86B0BD", // 使用你的主色調
+    confirmButtonText: "確定領取",
+    cancelButtonText: "取消",
+    reverseButtons: true,
+    customClass: {
+      confirmButton: "text-white",
+      cancelButton: "text-white",
+    },
+  });
+
+  // 如果使用者點擊取消，就中斷執行
+  if (!result.isConfirmed) return;
 
   try {
     const progressId =
@@ -78,10 +96,24 @@ const claimReward = async (mission) => {
 
     await missionStore.claimReward(progressId, isEntrust);
 
-    alert("獎勵領取成功！點數已發放。");
+    // 成功提示
+    await Swal.fire({
+      icon: "success",
+      title: "領取成功",
+      text: "獎勵已發放至您的帳戶。",
+      confirmButtonColor: "#145369",
+      customClass: { confirmButton: "text-white" },
+    });
+
     if (selectedMission.value) isDetailOpen.value = false;
   } catch (err) {
-    alert(err.message || "領取失敗");
+    Swal.fire({
+      icon: "error",
+      title: "領取失敗",
+      text: err.message || "領取失敗，請稍後再試",
+      confirmButtonColor: "#145369",
+      customClass: { confirmButton: "text-white" },
+    });
   }
 };
 

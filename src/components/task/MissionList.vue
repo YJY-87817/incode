@@ -1,14 +1,63 @@
 <script setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
+import Swal from "sweetalert2";
 
 const store = useTaskStore();
+const router = useRouter();
 const emit = defineEmits(["open-detail", "claim"]);
 
 const list = computed(() => store.filteredList);
 
-function handleClaim(mission) {
-  emit("claim", { type: "platform", mission });
+// 領取任務邏輯
+async function handleClaim(mission) {
+  // 1. 確認視窗
+  const result = await Swal.fire({
+    title: "確定領取？",
+    text: `您即將開始任務：「${mission.title}」`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: "#145369", // 深藍綠色
+    cancelButtonColor: "#86b0bd", // 淺藍灰色
+    confirmButtonText: "確定領取",
+    cancelButtonText: "取消",
+    reverseButtons: true,
+  });
+
+  if (result.isConfirmed) {
+    try {
+      // 觸發父組件的領取邏輯
+      emit("claim", { type: "platform", mission });
+
+      // 2. 領取成功後的導引彈窗
+      const nextStep = await Swal.fire({
+        title: "領取成功！",
+        text: `任務「${mission.title}」已加入您的執行清單。`,
+        icon: "success",
+        showCancelButton: true,
+        confirmButtonColor: "#145369",
+        cancelButtonColor: "#86b0bd",
+        confirmButtonText: "前往我的任務",
+        cancelButtonText: "留在本頁",
+        reverseButtons: true,
+        footer:
+          '<span style="font-size: 0.8rem; color: #6c757d;">提示：您可以在「我的任務」中查看進度</span>',
+      });
+
+      // 3. 跳轉邏輯
+      if (nextStep.isConfirmed) {
+        router.push("/mytask");
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "領取失敗",
+        text: "暫時無法領取該任務，請稍後再試。",
+        icon: "error",
+        confirmButtonColor: "#145369",
+      });
+    }
+  }
 }
 </script>
 
@@ -96,7 +145,11 @@ function handleClaim(mission) {
 </template>
 
 <style scoped>
-/* 移除 .badge-custom 相關的所有 CSS */
+/* 確保 Swal 按鈕文字為白色 */
+:global(.swal2-confirm),
+:global(.swal2-cancel) {
+  color: #ffffff !important;
+}
 
 .mission-card {
   border-radius: 20px; /* 稍微加大圓角，呼應你的圖片感 */
