@@ -252,29 +252,36 @@ namespace incode2.Services.Point
                 if (fromBalance < amount)
                     throw new Exception("點數不足");
 
-                // 取得內容標題
                 var contentTitle = await _context.Content
                     .Where(c => c.ContentId == contentId)
                     .Select(c => c.Title ?? "無標題內容")
                     .FirstOrDefaultAsync() ?? "內容";
 
-                // 取得暱稱（這裡用 Email 代替，未來可改 Nickname）
-                var fromNicknameTask = _context.User
+                var fromNickname = await _context.User
                     .Where(u => u.UserId == fromUserId)
                     .Select(u => u.Email ?? $"用戶{u.UserId}")
                     .FirstOrDefaultAsync();
 
-                var toNicknameTask = _context.User
+                var toNickname = await _context.User
                     .Where(u => u.UserId == toUserId)
                     .Select(u => u.Email ?? $"用戶{u.UserId}")
                     .FirstOrDefaultAsync();
 
-                await Task.WhenAll(fromNicknameTask, toNicknameTask);
+                // ================================
+                // ⭐ 新增 point_tip 真實紀錄
+                // ================================
+                var tipRecord = new PointTip
+                {
+                    FromUserId = fromUserId,
+                    ToUserId = toUserId,
+                    ContentId = contentId,
+                    Amount = amount,
+                    CreatedAt = DateTime.Now
+                };
 
-                var fromNickname = await fromNicknameTask;
-                var toNickname = await toNicknameTask;
+                _context.PointTip.Add(tipRecord);
 
-                // 扣款（付出者）
+                // 扣款
                 bool deductSuccess = await ChangePointsAsync(
                     userId: fromUserId,
                     changeAmount: -amount,
@@ -286,9 +293,9 @@ namespace incode2.Services.Point
                 );
 
                 if (!deductSuccess)
-                    throw new Exception("扣款失敗（餘額異常）");
+                    throw new Exception("扣款失敗");
 
-                // 加款（接收者）
+                // 加款
                 bool addSuccess = await ChangePointsAsync(
                     userId: toUserId,
                     changeAmount: amount,
@@ -300,7 +307,7 @@ namespace incode2.Services.Point
                 );
 
                 if (!addSuccess)
-                    throw new Exception("加款失敗（系統異常）");
+                    throw new Exception("加款失敗");
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
