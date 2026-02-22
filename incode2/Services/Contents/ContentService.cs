@@ -87,6 +87,7 @@ namespace incode2.Services.Contents
 
       var contentIds = pageItems.Select(c => c.ContentId).ToList();
       var replyStats = new List<(int ContentId, int ReplyCount, DateTime? LastReplyTime, string LastReplyUser, int? LastReplyUserId)>();
+      var likeCounts = new Dictionary<int, int>();
       if (contentIds.Count > 0)
       {
         var replyStatsRaw = await _context.Content
@@ -134,12 +135,20 @@ namespace incode2.Services.Contents
             lastReplyUser,
             x.LastReply != null ? (int?)x.LastReply.UserId : null);
         }).ToList();
+
+        likeCounts = await _context.ContentInteraction
+          .AsNoTracking()
+          .Where(ci => ci.CategoryId == 1 && contentIds.Contains(ci.ContentId))
+          .GroupBy(ci => ci.ContentId)
+          .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
+          .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
       }
 
       var replyLookup = replyStats.ToDictionary(x => x.ContentId, x => x);
       var items = pageItems.Select(c =>
       {
         replyLookup.TryGetValue(c.ContentId, out var stats);
+        likeCounts.TryGetValue(c.ContentId, out var likeCount);
         return new ContentListItemDto
         {
           ContentId = c.ContentId,
@@ -153,6 +162,7 @@ namespace incode2.Services.Contents
           Type = c.Type,
           CreatedAt = c.CreatedAt,
           ReplyCount = stats.ContentId == 0 ? 0 : stats.ReplyCount,
+          LikeCount = likeCount,
           LastReplyTime = stats.ContentId == 0 ? null : stats.LastReplyTime,
           LastReplyUser = stats.ContentId == 0 ? null : stats.LastReplyUser,
           LastReplyUserId = stats.ContentId == 0 ? null : stats.LastReplyUserId,
@@ -232,6 +242,10 @@ namespace incode2.Services.Contents
       var interactionLookup = await GetUserInteractionLookupAsync(new[] { id }, userId);
       interactionLookup.TryGetValue(id, out var categories);
       var myInteractions = BuildMyInteractions(categories);
+      var likeCount = await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.ContentId == id && ci.CategoryId == 1)
+        .CountAsync();
 
       return new ContentDto
       {
@@ -247,6 +261,7 @@ namespace incode2.Services.Contents
         UserId = content.UserId,
         CategoryId = content.CategoryId,
         ReplyCount = replyCount,
+        LikeCount = likeCount,
         LastReplyTime = lastReplyTime,
         LastReplyUser = lastReplyUser,
         LastReplyUserId = lastReplyUserId,
