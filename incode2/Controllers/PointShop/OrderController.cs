@@ -177,7 +177,7 @@ namespace incode2.Controllers
             _context.Orders.Update(orders);
             // 這裡可以先不SaveChanges，等明細處理完一次Save
 
-            // ===== 同步 OrderDetail（比較並執行 CRUD） =====
+            // ===== 同步 OrderDetail（比較並執行 CRUD）=====
             // 取得 DB 的原始明細（tracked entities）
             var existingDetails = await _context.Orderdetail
                 .Where(od => od.OrderId == OrderId)
@@ -323,6 +323,33 @@ namespace incode2.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Order/GetShippedData - 提供寄送資料的 API
+        [HttpGet]
+        public JsonResult GetShippedData()
+        {
+            var shippedData = _context.ShippedDetail
+                .Include(e => e.Order)
+                .Select(item => new
+                {
+                    shippedDetailId = item.ShippedDetailId,
+                    orderId = item.OrderId,
+                    orderStatus = item.Order.Status,
+                    recipientName = item.RecipientName,
+                    recipientAddress = item.RecipientAddress,
+                    recipientPhone = item.RecipientPhone,
+                    shippedDate = item.ShippedDate.HasValue ? item.ShippedDate.Value.ToString("yyyy-MM-dd HH:mm:ss") : "",
+                    shippedDateFormatted = item.ShippedDate.HasValue ? item.ShippedDate.Value.ToString("yyyy-MM-dd HH:mm") : "",
+                    arrivalDate = item.ArrivalDate.HasValue ? item.ArrivalDate.Value.ToString("yyyy-MM-dd HH:mm:ss") : "",
+                    arrivalDateFormatted = item.ArrivalDate.HasValue ? item.ArrivalDate.Value.ToString("yyyy-MM-dd HH:mm") : "",
+                    isFailed = item.IsFailed,
+                    remark = item.Remark,
+                    isCompleted = item.IsCompleted
+                })
+                .ToList();
+
+            return Json(shippedData);
         }
     }
 }
