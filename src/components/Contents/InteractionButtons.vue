@@ -136,6 +136,17 @@ const categories = ref([
   { id: 3, name: "bookmark", label: "收藏", icon: "fas fa-bookmark" },
 ]);
 
+const likeCount = computed(() => {
+  return forumStore.getContentLikeCount(props.contentId);
+});
+
+const getCategoryLabel = (category) => {
+  if (category?.id === 1) {
+    return `${category.label} ${likeCount.value}`;
+  }
+  return category?.label ?? "";
+};
+
 // 從 Pinia store 獲取互動狀態
 const interactionStates = computed(() => {
   return (
@@ -390,7 +401,7 @@ onMounted(() => {
       type="button"
     >
       <i :class="[cat.icon, { 'fa-spin': isLoading[cat.id] }]"></i>
-      <span class="ms-1">{{ cat.label }}</span>
+      <span class="ms-1">{{ getCategoryLabel(cat) }}</span>
     </button>
 
     <!-- 更多選單 -->
