@@ -269,39 +269,50 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    // 打賞貼文
-    // POST https://localhost:7190/api/ContentApi/{id}/tip
-    [HttpPost("{id}/tip")]
-    [Authorize]
-    public async Task<IActionResult> TipContent(int id, [FromBody] TipContentDto dto)
-    {
-      var fromUserId = User.GetId();
-      if (fromUserId <= 0)
-      {
-        return Unauthorized(new { message = "請先登入" });
-      }
+        // 打賞貼文
+        // POST https://localhost:7190/api/ContentApi/{id}/tip
+        [HttpPost("{id}/tip")]
+        [Authorize]
+        public async Task<IActionResult> TipContent(int id, [FromBody] TipContentDto dto)
+        {
+            var fromUserId = User.GetId();
+            if (fromUserId <= 0)
+                return Unauthorized(new { message = "請先登入" });
 
-      if (dto == null || dto.Amount <= 0)
-      {
-        return BadRequest(new { message = "點數必須大於 0" });
-      }
+            if (dto == null || dto.Amount <= 0)
+                return BadRequest(new { message = "打賞點數必須大於 0" });
 
-      var content = await _contentService.GetContent(id, fromUserId);
-      if (content == null)
-      {
-        return NotFound(new { message = "找不到此內容" });
-      }
+            var content = await _contentService.GetContent(id);
+            if (content == null)
+                return NotFound(new { message = "找不到此內容" });
 
-      try
-      {
-        await _pointLogService.TipAsync(fromUserId, content.UserId, id, dto.Amount);
-      }
-      catch (Exception ex)
-      {
-        return BadRequest(new { message = ex.Message });
-      }
+            if (content.UserId == fromUserId)
+                return BadRequest(new { message = "不能打賞自己" });
 
-      return Ok(new { message = "打賞成功" });
+            try
+            {
+                await _pointLogService.TipAsync(
+                    fromUserId,
+                    content.UserId,
+                    id,
+                    dto.Amount
+                );
+
+                return Ok(new
+                {
+                    message = "打賞成功",
+                    amount = dto.Amount,
+                    toUserId = content.UserId,
+                    contentId = id
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
     }
-  }
 }
