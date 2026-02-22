@@ -19,6 +19,7 @@ namespace incode2.Dtos
     public DateTime? UpdatedAt { get; set; }
     public bool? Ishidden { get; set; }
     public int ReplyCount { get; set; }
+  public int LikeCount { get; set; }
     public DateTime? LastReplyTime { get; set; }
     public string LastReplyUser { get; set; }
     public int? LastReplyUserId { get; set; }
