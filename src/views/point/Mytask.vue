@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useMissionStore } from "@/stores/point/UseMissionStore";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import FooterCentered from "@/examples/footers/FooterCentered.vue";
@@ -8,27 +8,34 @@ import FooterCentered from "@/examples/footers/FooterCentered.vue";
 const missionStore = useMissionStore();
 
 // 頁面狀態
-const activeTab = ref("ongoing"); // ongoing / pending / completed
+const activeTab = ref("ongoing");
 const isDetailOpen = ref(false);
 const selectedMission = ref(null);
 
-// 統計區（示範用）
-const stats = ref({
-  totalEarned: 2840,
-  pendingReview: 450,
-  rank: "資深放映師",
-  avatar:
-    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
-});
-
-// 過濾任務（根據 activeTab）
+// 過濾任務
 const filteredMissions = computed(() => {
-  return missionStore.myMissions.filter((mission) => {
-    if (activeTab.value === "ongoing") return mission.status === "ongoing";
-    if (activeTab.value === "pending")
-      return mission.status === "pending" || mission.status === "completed";
-    if (activeTab.value === "completed")
-      return mission.status === "rewarded" || mission.status === "completed";
+  return missionStore.myMissions.filter((m) => {
+    const isEntrust =
+      m.entrustMissionId !== undefined && m.entrustMissionId !== null;
+
+    if (activeTab.value === "ongoing") {
+      // 平台：ongoing | 委託：ongoing, submitted, rejected
+      return (
+        m.status === "ongoing" ||
+        (isEntrust && ["submitted", "rejected"].includes(m.status))
+      );
+    }
+
+    if (activeTab.value === "pending") {
+      // 平台：completed | 委託：approved
+      return m.status === "completed" || (isEntrust && m.status === "approved");
+    }
+
+    if (activeTab.value === "completed") {
+      // 兩者皆為 rewarded
+      return m.status === "rewarded";
+    }
+
     return true;
   });
 });
@@ -39,34 +46,48 @@ const viewDetail = (mission) => {
   isDetailOpen.value = true;
 };
 
-/// 改用函數處理，接收 mission 作為參數
-const calculateWidth = (current, target) => {
-  if (!target) return 0;
-  const percentage = Math.floor((current / target) * 100);
-  return Math.min(100, percentage);
+// 計算進度條寬度
+const calculateWidth = (mission) => {
+  if (mission.entrustMissionId) {
+    const statusMap = {
+      ongoing: 15,
+      submitted: 50,
+      rejected: 30,
+      approved: 100,
+      rewarded: 100,
+    };
+    return statusMap[mission.status] || 0;
+  }
+
+  if (!mission.targetCount) return 0;
+  return Math.min(
+    100,
+    Math.floor((mission.currentCount / mission.targetCount) * 100),
+  );
 };
 
 // 領取獎勵
 const claimReward = async (mission) => {
-  if (!confirm(`確定領取「${mission.missionName}」的獎勵？`)) return;
+  const missionName = mission.missionName || mission.title || "此任務";
+  if (!confirm(`確定領取「${missionName}」的獎勵？`)) return;
 
   try {
-    const updatedMission = await missionStore.claimReward(mission.missionId);
+    const progressId =
+      mission.entrustMissionProgressId || mission.missionProgressId;
+    const isEntrust = !!mission.entrustMissionId;
 
-    if (
-      updatedMission &&
-      selectedMission.value?.missionId === mission.missionId
-    ) {
-      selectedMission.value = { ...updatedMission };
-    }
+    await missionStore.claimReward(progressId, isEntrust);
 
-    alert("獎勵領取成功！");
+    alert("獎勵領取成功！點數已發放。");
+    if (selectedMission.value) isDetailOpen.value = false;
   } catch (err) {
-    alert(err.message || "領取失敗，請稍後再試");
+    alert(err.message || "領取失敗");
   }
 };
 
-// 初始載入任務
+// 格式化日期
+const formatDate = (date) => (date ? new Date(date).toLocaleString() : "---");
+
 onMounted(() => {
   missionStore.fetchMyMissions();
 });
@@ -75,223 +96,152 @@ onMounted(() => {
 <template>
   <DefaultNavbar light />
 
-  <div class="bg-gray-100 min-vh-100 pb-5">
-    <!-- 主要內容 -->
+  <div class="bg-gray-100 min-vh-100 pb-5 custom-theme">
     <div class="container mt-5">
       <div class="row">
-        <!-- 側邊欄 -->
         <div class="col-lg-3">
           <div class="card border-0 shadow-lg mb-4 sticky-sidebar">
             <div class="card-body p-3">
-              <h6 class="font-weight-bolder mb-3 ps-2 text-dark">我的進度</h6>
+              <h6 class="font-weight-bolder mb-3 ps-2 text-dark">任務管理</h6>
               <div class="nav flex-column">
                 <button
                   @click="activeTab = 'ongoing'"
                   :class="[
                     'nav-link text-start mb-2 border-0 w-100 transition-all',
                     activeTab === 'ongoing'
-                      ? 'bg-gradient-info text-white shadow'
-                      : 'text-dark',
+                      ? 'active-tab text-white shadow'
+                      : 'text-dark bg-transparent',
                   ]"
                 >
-                  <i class="fas fa-play-circle me-2"></i> 正在執行
-                  <span
-                    class="badge badge-sm bg-light text-dark ms-auto float-end"
-                  >
-                    {{
-                      missionStore.myMissions.filter(
-                        (m) => m.status === "ongoing",
-                      ).length
-                    }}
-                  </span>
+                  <i class="fas fa-tasks me-2"></i> 執行中
                 </button>
-
                 <button
                   @click="activeTab = 'pending'"
                   :class="[
                     'nav-link text-start mb-2 border-0 w-100 transition-all',
                     activeTab === 'pending'
-                      ? 'bg-gradient-info text-white shadow'
-                      : 'text-dark',
+                      ? 'active-tab text-white shadow'
+                      : 'text-dark bg-transparent',
                   ]"
                 >
-                  <i class="fas fa-history me-2"></i> 待審核 / 已達標
-                  <span
-                    class="badge badge-sm bg-light text-dark ms-auto float-end"
-                  >
-                    {{
-                      missionStore.myMissions.filter(
-                        (m) =>
-                          m.status === "completed" || m.status === "pending",
-                      ).length
-                    }}
-                  </span>
+                  <i class="fas fa-gift me-2"></i> 待領取
                 </button>
-
                 <button
                   @click="activeTab = 'completed'"
                   :class="[
                     'nav-link text-start mb-2 border-0 w-100 transition-all',
                     activeTab === 'completed'
-                      ? 'bg-gradient-info text-white shadow'
-                      : 'text-dark',
+                      ? 'active-tab text-white shadow'
+                      : 'text-dark bg-transparent',
                   ]"
                 >
-                  <i class="fas fa-check-circle me-2"></i> 已完結紀錄
-                  <span
-                    class="badge badge-sm bg-light text-dark ms-auto float-end"
-                  >
-                    {{
-                      missionStore.myMissions.filter(
-                        (m) => m.status === "rewarded",
-                      ).length
-                    }}
-                  </span>
+                  <i class="fas fa-history me-2"></i> 已完結
                 </button>
               </div>
-
-              <hr class="horizontal dark my-3" />
-
-              <router-link
-                to="/task"
-                class="btn btn-outline-info w-100 btn-sm mb-0"
-              >
-                返回任務大廳
-              </router-link>
             </div>
           </div>
         </div>
 
-        <!-- 任務列表 -->
         <div class="col-lg-9">
-          <div v-if="missionStore.loading" class="loading text-center py-7">
-            <div class="spinner"></div>
-            <p>載入中...</p>
-          </div>
-
-          <div v-else-if="missionStore.error" class="error text-center py-7">
-            <p class="text-danger">{{ missionStore.error }}</p>
-            <button
-              @click="missionStore.fetchMyMissions"
-              class="btn btn-primary mt-3"
-            >
-              重新載入
-            </button>
+          <div v-if="missionStore.loading" class="text-center py-7">
+            <div class="spinner-border theme-text-main"></div>
+            <p class="mt-2 text-secondary">載入中...</p>
           </div>
 
           <div
             v-else-if="filteredMissions.length === 0"
             class="card border-0 shadow-sm text-center py-7"
           >
-            <div class="card-body">
-              <i class="fas fa-tasks text-secondary opacity-3 fa-3x mb-3"></i>
-              <h6 class="text-secondary">
-                目前沒有{{
-                  activeTab === "ongoing"
-                    ? "執行中的"
-                    : activeTab === "pending"
-                      ? "待審核 / 已達標"
-                      : "已完結"
-                }}任務
-              </h6>
-              <router-link to="/task" class="btn btn-sm bg-gradient-dark mt-3">
-                去接新任務
-              </router-link>
-            </div>
+            <i
+              class="fas fa-clipboard-list text-secondary opacity-3 fa-3x mb-3"
+            ></i>
+            <h6 class="text-secondary">目前沒有相關任務</h6>
           </div>
 
           <div v-else class="mission-list">
             <div
               v-for="mission in filteredMissions"
-              :key="mission.missionId"
-              class="card border-0 shadow-sm mb-3 task-card overflow-hidden"
-              :class="{
-                completed: mission.status === 'completed',
-                rewarded: mission.status === 'rewarded',
-              }"
+              :key="
+                mission.entrustMissionProgressId || mission.missionProgressId
+              "
+              class="card border-0 shadow-sm mb-3 task-card"
+              :class="{ 'entrust-border': mission.entrustMissionId }"
             >
               <div class="card-body p-3">
                 <div class="row align-items-center">
                   <div class="col-md-8">
                     <div class="d-flex align-items-center mb-1">
-                      <span
-                        class="badge badge-xxs me-2"
-                        :class="
-                          mission.category === '週常'
-                            ? 'bg-gradient-primary'
-                            : 'bg-gradient-dark'
-                        "
-                      >
-                        {{ mission.category || "任務" }}
+                      <span class="badge badge-xxs me-2 badge-entrust">
+                        {{
+                          mission.entrustMissionId
+                            ? "個人委託"
+                            : mission.category || "系統任務"
+                        }}
                       </span>
                       <h6 class="mb-0 text-sm font-weight-bolder">
-                        {{ mission.missionName }}
+                        {{ mission.missionName || mission.title }}
                       </h6>
                     </div>
-                    <p class="text-xs text-secondary mb-3">
-                      {{ mission.missionDetail }}
+                    <p class="text-xs text-black mb-3 text-truncate">
+                      {{ mission.missionDetail || mission.detail }}
                     </p>
 
-                    <div class="progress">
-                      <div class="progress-bar">
+                    <div class="progress-wrapper">
+                      <div class="progress mb-1" style="height: 6px">
                         <div
-                          class="progress-fill"
-                          :style="{
-                            width:
-                              calculateWidth(
-                                mission.currentCount,
-                                mission.targetCount,
-                              ) + '%',
-                          }"
+                          class="progress-bar theme-bg-main"
+                          :style="{ width: calculateWidth(mission) + '%' }"
                         ></div>
                       </div>
-                      <span class="progress-text">
-                        {{ mission.currentCount }} / {{ mission.targetCount }}
-                      </span>
+                      <div class="d-flex justify-content-between">
+                        <span class="text-xxs">
+                          <template v-if="mission.entrustMissionId">
+                            狀態：<span class="font-weight-bold">{{
+                              mission.status.toUpperCase()
+                            }}</span>
+                          </template>
+                          <template v-else>
+                            進度：{{ mission.currentCount }} /
+                            {{ mission.targetCount }}
+                          </template>
+                        </span>
+                        <span class="text-xxs"
+                          >{{ calculateWidth(mission) }}%</span
+                        >
+                      </div>
                     </div>
                   </div>
 
                   <div class="col-md-4 text-end">
-                    <div class="mb-3">
+                    <div class="mb-2">
                       <span class="text-sm font-weight-bolder text-dark">
                         +{{ mission.rewardPoints }} Pts
                       </span>
-                      <small class="text-xs text-secondary ms-1">
-                        +{{ mission.rewardExp }} Exp
-                      </small>
                     </div>
-
                     <button
                       @click="viewDetail(mission)"
-                      class="btn btn-xs btn-outline-info mb-0 me-2"
+                      class="btn btn-xs btn-outline-theme mb-0 me-2"
                     >
                       歷程
                     </button>
 
                     <button
-                      v-if="mission.canClaimReward"
+                      v-if="
+                        mission.status === 'completed' ||
+                        mission.status === 'approved'
+                      "
                       @click="claimReward(mission)"
-                      class="btn btn-xs bg-gradient-info mb-0"
-                      :disabled="missionStore.loading"
+                      class="btn btn-xs btn-theme mb-0"
                     >
                       領取獎勵
                     </button>
 
-                    <button
-                      v-else-if="mission.status === 'completed'"
-                      class="btn btn-xs btn-white mb-0"
-                      disabled
-                    >
-                      已達標
-                    </button>
-
-                    <button
+                    <span
                       v-else-if="mission.status === 'rewarded'"
-                      class="btn btn-xs btn-outline-success mb-0"
-                      disabled
+                      class="text-success text-xs font-weight-bold"
                     >
-                      已領取
-                    </button>
+                      <i class="fas fa-check-circle me-1"></i>已領取
+                    </span>
                   </div>
                 </div>
               </div>
@@ -301,78 +251,90 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 右側抽屜（任務日誌） -->
     <div
       :class="['detail-drawer bg-white shadow-xl', isDetailOpen ? 'open' : '']"
     >
       <div v-if="selectedMission" class="p-4">
         <div class="d-flex justify-content-between align-items-center mb-5">
-          <h5 class="font-weight-bolder mb-0">
-            任務日誌 - {{ selectedMission.missionName }}
-          </h5>
+          <h5 class="font-weight-bolder mb-0">任務日誌</h5>
           <i
             @click="isDetailOpen = false"
             class="fas fa-times cursor-pointer text-secondary"
           ></i>
         </div>
 
-        <!-- 日誌（示範用） -->
         <div class="timeline timeline-one-side">
           <div class="timeline-block mb-3">
-            <span class="timeline-step bg-info text-white">
-              <i class="fas fa-check text-xxs"></i>
+            <span class="timeline-step theme-bg-main text-white">
+              <i class="fas fa-play text-xxs"></i>
             </span>
             <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">
-                任務已領取
-              </h6>
+              <h6 class="text-dark text-sm font-weight-bold mb-0">任務開始</h6>
               <p class="text-secondary text-xs mt-1">
-                {{ selectedMission.acceptedAt }}
+                {{ formatDate(selectedMission.acceptedAt) }}
               </p>
             </div>
           </div>
 
-          <div class="timeline-block mb-3">
+          <div v-if="selectedMission.submittedAt" class="timeline-block mb-3">
+            <span class="timeline-step bg-dark text-white">
+              <i class="fas fa-upload text-xxs"></i>
+            </span>
+            <div class="timeline-content">
+              <h6 class="text-dark text-sm font-weight-bold mb-0">提交作品</h6>
+              <p class="text-secondary text-xs mt-1">
+                {{ formatDate(selectedMission.submittedAt) }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            v-if="selectedMission.completedAt || selectedMission.approvedAt"
+            class="timeline-block mb-3"
+          >
             <span class="timeline-step bg-success text-white">
               <i class="fas fa-check text-xxs"></i>
             </span>
             <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">進度達標</h6>
+              <h6 class="text-dark text-sm font-weight-bold mb-0">任務達標</h6>
               <p class="text-secondary text-xs mt-1">
-                {{ selectedMission.completedAt }}
+                {{
+                  formatDate(
+                    selectedMission.completedAt || selectedMission.approvedAt,
+                  )
+                }}
               </p>
             </div>
           </div>
 
           <div v-if="selectedMission.rewardedAt" class="timeline-block mb-3">
             <span class="timeline-step bg-warning text-white">
-              <i class="fas fa-gift text-xxs"></i>
+              <i class="fas fa-coins text-xxs"></i>
             </span>
             <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">
-                獎勵領取成功
-              </h6>
+              <h6 class="text-dark text-sm font-weight-bold mb-0">獎勵撥款</h6>
               <p class="text-secondary text-xs mt-1">
-                {{ selectedMission.rewardedAt }}
+                {{ formatDate(selectedMission.rewardedAt) }}
               </p>
             </div>
           </div>
         </div>
 
-        <!-- 協助區 -->
-        <div class="mt-6 border-top pt-4">
-          <h6 class="text-sm font-weight-bold">需要協助？</h6>
-          <p class="text-xs text-secondary">
-            若對任務進度有疑問，請聯繫管理員或提交爭議。
-          </p>
-          <button class="btn btn-link text-info px-0 font-weight-bold">
-            聯繫管理員
+        <div class="mt-5 pt-4 border-top">
+          <button
+            v-if="
+              selectedMission.status === 'completed' ||
+              selectedMission.status === 'approved'
+            "
+            @click="claimReward(selectedMission)"
+            class="btn btn-theme w-100"
+          >
+            立即領取獎勵
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 抽屜背景遮罩 -->
     <div
       v-if="isDetailOpen"
       @click="isDetailOpen = false"
@@ -384,39 +346,68 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 佈局修正 */
-.pt-10 {
-  padding-top: 10rem !important;
-}
-.pb-9 {
-  padding-bottom: 9rem !important;
-}
-.mt-n6 {
-  margin-top: -6rem !important;
-}
-.z-index-3 {
-  z-index: 1030 !important;
+/* 自定義配色系統 */
+.custom-theme {
+  --main-color: #86b0bd; /* 主色調 */
+  --btn-color: #145369; /* 按鈕與標籤色 */
 }
 
-/* 側邊欄吸附 */
-.sticky-sidebar {
-  position: sticky;
-  top: 100px;
-  z-index: 1000;
+/* 顏色類別輔助 */
+.theme-bg-main {
+  background-color: var(--main-color) !important;
+}
+.theme-text-main {
+  color: var(--main-color) !important;
 }
 
-/* 卡片動畫 */
+/* 委託任務標籤自定義 */
+.badge-entrust {
+  background-color: var(--btn-color) !important;
+  color: white !important;
+}
+
+/* 按鈕主樣式 */
+.btn-theme {
+  background-color: var(--btn-color) !important;
+  color: white !important;
+  transition: all 0.2s ease;
+}
+.btn-theme:hover {
+  background-color: #0d3d4d !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-theme {
+  border: 1px solid var(--btn-color) !important;
+  color: var(--btn-color) !important;
+  background-color: transparent;
+}
+.btn-outline-theme:hover {
+  background-color: var(--btn-color) !important;
+  color: white !important;
+}
+
+/* 側邊欄 Active 樣式 */
+.active-tab {
+  background-color: var(--main-color) !important;
+}
+
+/* 任務卡片樣式 */
 .task-card {
   transition: all 0.25s;
-  border-left: 0 solid #11cdef;
+  cursor: pointer;
+  border-radius: 12px;
 }
 .task-card:hover {
   transform: translateX(5px);
-  border-left: 5px solid #11cdef;
   box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
+.entrust-border {
+  border-left: 5px solid var(--btn-color) !important;
+}
 
-/* 詳情抽屜 */
+/* 詳情抽屜樣式 */
 .detail-drawer {
   position: fixed;
   top: 0;
@@ -424,7 +415,7 @@ onMounted(() => {
   width: 400px;
   height: 100vh;
   z-index: 1100;
-  transition: right 0.4s ease;
+  transition: right 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   overflow-y: auto;
 }
 .detail-drawer.open {
@@ -439,5 +430,14 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(2px);
   z-index: 1090;
+}
+
+.sticky-sidebar {
+  position: sticky;
+  top: 100px;
+  z-index: 1000;
+}
+.transition-all {
+  transition: all 0.3s ease;
 }
 </style>
