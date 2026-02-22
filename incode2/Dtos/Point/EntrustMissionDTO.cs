@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace incode2.DTO
 {
@@ -39,6 +39,10 @@ namespace incode2.DTO
         public DateTime? CreatedAt { get; set; }           // 移除預設值，由後端設定
 
         public DateTime? UpdatedAt { get; set; }
+
+        public string Username { get; set; }
+
+        public string ImageUrl { get; set; }
 
     }
 }
