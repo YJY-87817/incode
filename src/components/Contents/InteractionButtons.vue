@@ -142,7 +142,9 @@ const likeCount = computed(() => {
 
 const getCategoryLabel = (category) => {
   if (category?.id === 1) {
-    return `${category.label} ${likeCount.value}`;
+    return likeCount.value > 0
+      ? `${category.label} ${likeCount.value}`
+      : category.label;
   }
   return category?.label ?? "";
 };
