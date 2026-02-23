@@ -1,4 +1,4 @@
-﻿@model incode2.Models.EntrustMissionProgress
+@model incode2.Models.EntrustMissionProgress
 
 @{
     ViewData["Title"] = "Create";
@@ -21,9 +21,14 @@
                 <select asp-for="EntrustMissionId" class ="form-control" asp-items="ViewBag.EntrustMissionId"></select>
             </div>
             <div class="form-group">
-                <label asp-for="CompletedAt" class="control-label"></label>
-                <input asp-for="CompletedAt" class="form-control" />
-                <span asp-validation-for="CompletedAt" class="text-danger"></span>
+                <label asp-for="SubmittedAt" class="control-label"></label>
+                <input asp-for="SubmittedAt" class="form-control" />
+                <span asp-validation-for="SubmittedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ApprovedAt" class="control-label"></label>
+                <input asp-for="ApprovedAt" class="form-control" />
+                <span asp-validation-for="ApprovedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="RewardedAt" class="control-label"></label>

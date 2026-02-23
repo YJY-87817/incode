@@ -1,4 +1,4 @@
-﻿using incode2.DTO;
+using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
 using Microsoft.EntityFrameworkCore;
@@ -19,53 +19,38 @@ namespace incode2.Services.Point
                 EntrustMissionId = emg.EntrustMissionId,
                 Status = emg.Status,
                 AcceptedAt = emg.AcceptedAt,
-                CompletedAt = emg.CompletedAt,
+                SubmittedAt = emg.SubmittedAt,
+                ApprovedAt = emg.ApprovedAt,
                 RewardedAt = emg.RewardedAt
             }).ToListAsync();
         }
 
-        public async Task<EntrustMissionProgressDTO> GetProgressByIdAsync(int id)
+        // 取得目前登入者的所有委託任務進度（含任務標題、賞金等資訊）
+        public async Task<IEnumerable<EntrustMissionProgressDTO>> GetMyProgressAsync(int userId)
         {
             return await _context.EntrustMissionProgress
-                .Where(emg => emg.EntrustMissionProgressId == id)
-                .Select(emg => new EntrustMissionProgressDTO { /* 同上映射 */ })
-                .FirstOrDefaultAsync();
-        }
+                .AsNoTracking()
+                .Where(p => p.UserId == userId)
+                .OrderByDescending(p => p.AcceptedAt)
+                .Select(p => new EntrustMissionProgressDTO
+                {
+                    EntrustMissionProgressId = p.EntrustMissionProgressId,
+                    UserId = p.UserId,
+                    EntrustMissionId = p.EntrustMissionId,
+                    Status = p.Status,
+                    AcceptedAt = p.AcceptedAt,
+                    SubmittedAt = p.SubmittedAt,
+                    ApprovedAt = p.ApprovedAt,
+                    RewardedAt = p.RewardedAt,
 
-        public async Task<ResultDTO> CreateProgressAsync(EntrustMissionProgressDTO dto)
-        {
-            var emg = new EntrustMissionProgress
-            {
-                UserId = dto.UserId,
-                EntrustMissionId = dto.EntrustMissionId,
-                Status = dto.Status,
-                AcceptedAt = dto.AcceptedAt ?? DateTime.Now
-            };
-            _context.EntrustMissionProgress.Add(emg);
-            await _context.SaveChangesAsync();
-            return new ResultDTO { Ok = true, Code = 201 };
-        }
-
-        public async Task<ResultDTO> UpdateProgressAsync(int id, EntrustMissionProgressDTO dto)
-        {
-            var emg = await _context.EntrustMissionProgress.FindAsync(id);
-            if (emg == null) return new ResultDTO { Ok = false, Code = 404 };
-
-            emg.Status = dto.Status;
-            emg.CompletedAt = dto.CompletedAt;
-            emg.RewardedAt = dto.RewardedAt;
-
-            await _context.SaveChangesAsync();
-            return new ResultDTO { Ok = true, Code = 204 };
-        }
-
-        public async Task<ResultDTO> DeleteProgressAsync(int id)
-        {
-            var emg = await _context.EntrustMissionProgress.FindAsync(id);
-            if (emg == null) return new ResultDTO { Ok = false, Code = 404 };
-            _context.EntrustMissionProgress.Remove(emg);
-            await _context.SaveChangesAsync();
-            return new ResultDTO { Ok = true, Code = 204 };
+                    // 關聯任務資訊
+                    Title = p.EntrustMission.Title,
+                    Detail = p.EntrustMission.Detail,
+                    Category = p.EntrustMission.Category,
+                    RewardPoints = p.EntrustMission.RewardPoints,
+                    // 如果需要更多欄位，例如發起者、截止時間等，可繼續補充
+                })
+                .ToListAsync();
         }
     }
 }
