@@ -52,9 +52,8 @@
                     <span>會員</span>
                 </a>
                 <div id="collapseUser" class="collapse" aria-labelledby="headingUser" data-bs-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" asp-area="" asp-controller="user" asp-action="Index">會員管理</a>
-                        <a class="collapse-item" asp-area="" asp-controller="member" asp-action="Index">異常情況管理</a>
+                    <div class="bg-white py-2 collapse-inner rounded">                        
+                        <a class="collapse-item" asp-area="" asp-controller="member" asp-action="Index">會員管理</a>
                     </div>
                 </div>
             </li>
@@ -201,7 +200,7 @@
                     <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">取消</button>
 
                     @* 修改這裡:改成 Form 表單提交 *@
-                    <form asp-controller="AdminAccount" asp-action="Logout" method="post">
+                    <form asp-controller="Account" asp-action="Logout" method="post">
                         <button type="submit" class="btn btn-primary">登出</button>
                     </form>
 

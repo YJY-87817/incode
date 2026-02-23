@@ -2,69 +2,110 @@
 @model LoginViewModel
 
 @{
-    ViewBag.Title = "會員登入";
+    ViewData["Title"] = "後台管理員登入";
+    // 登入頁通常不需要側邊欄，所以設為 null 讓它獨立顯示
+    // 如果您的 _Layout 有包含側邊欄，這裡務必設為 null
+    Layout = null;
 }
 
-<div class="row justify-content-center mt-5">
-    <div class="col-xl-10 col-lg-12 col-md-9">
-        <div class="card o-hidden border-0 shadow-lg my-5">
-            <div class="card-body p-0">
-                <div class="row">
-                    <div class="col-lg-6 d-none d-lg-block bg-login-image"
-                         style="background: url('https://source.unsplash.com/K4mSJ7kc0As/600x800'); background-position: center; background-size: cover;">
-                    </div>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Incode</title>
 
-                    <div class="col-lg-6">
-                        <div class="p-5">
-                            <div class="text-center">
-                                <h1 class="h4 text-gray-900 mb-4">歡迎回來！</h1>
+    <!-- 引入與後台一致的 CSS -->
+    <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-primary">
+
+    <div class="container">
+
+        <!-- Outer Row -->
+        <div class="row justify-content-center">
+
+            <div class="col-xl-10 col-lg-12 col-md-9">
+
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <!-- Nested Row within Card Body -->
+                        <div class="row">
+                            <!-- 左側圖片區：建議換成您網站的 Logo 或後台意象圖 -->
+                            <div class="col-lg-6 d-none d-lg-block bg-login-image"
+                                 style="background-image: url('https://source.unsplash.com/K4mSJ7kc0As/600x800');">
                             </div>
 
-                            <form class="user" asp-controller="Account" asp-action="Login" method="post">
+                            <div class="col-lg-6">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <h1 class="h4 text-gray-900 mb-4">Incode 後台管理系統</h1>
+                                    </div>
 
-                                @* 顯示錯誤訊息 (例如帳號密碼錯誤) *@
-                                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                                    <!-- 重點：指向正確的 AccountController -->
+                                    <form class="user" asp-controller="Account" asp-action="Login" method="post">
 
-                                <div class="form-group">
-                                    <input asp-for="Email" class="form-control form-control-user"
-                                           placeholder="請輸入 Email...">
-                                    <span asp-validation-for="Email" class="text-danger ml-2"></span>
-                                </div>
+                                        @* 顯示錯誤訊息 *@
+                                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small text-center"></div>
 
-                                <div class="form-group">
-                                    <input asp-for="Password" class="form-control form-control-user"
-                                           placeholder="密碼">
-                                    <span asp-validation-for="Password" class="text-danger ml-2"></span>
-                                </div>
+                                        <div class="form-group">
+                                            <input asp-for="Email" class="form-control form-control-user"
+                                                   aria-describedby="emailHelp"
+                                                   placeholder="請輸入管理員帳號...">
+                                            <span asp-validation-for="Email" class="text-danger ml-2 small"></span>
+                                        </div>
 
-                                <div class="form-group">
-                                    <div class="custom-control custom-checkbox small">
-                                        @* 這裡預留 Checkbox，雖然 ViewModel 還沒加 RememberMe，但先做畫面沒關係 *@
-                                        <input type="checkbox" class="custom-control-input" id="customCheck">
-                                        <label class="custom-control-label" for="customCheck">記住我</label>
+                                        <div class="form-group">
+                                            <input asp-for="Password" type="password" class="form-control form-control-user"
+                                                   placeholder="密碼">
+                                            <span asp-validation-for="Password" class="text-danger ml-2 small"></span>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="custom-control custom-checkbox small">
+                                                <input type="checkbox" class="custom-control-input" id="customCheck">
+                                                <label class="custom-control-label" for="customCheck">記住登入狀態</label>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary btn-user btn-block">
+                                            登入
+                                        </button>
+
+                                    </form>
+
+                                    <hr>
+
+                                    @* 後台通常不開放註冊和忘記密碼，以免外人嘗試，所以這裡移除連結 *@
+                                    @* <div class="text-center">
+                                        <a class="small" href="forgot-password.html">忘記密碼?</a>
+                                    </div> *@
+
+                                    <div class="text-center">
+                                        <span class="small text-gray-500">此區域僅限管理員進入</span>
                                     </div>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary btn-user btn-block">
-                                    登入
-                                </button>
-
-                            </form>
-
-                            <hr>
-                            <div class="text-center">
-                                <a class="small" asp-action="Register">還沒有帳號？立即註冊！</a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core plugin JavaScript-->
+    <script src="~/lib/jquery-easing/jquery.easing.min.js"></script>
+    <!-- Custom scripts for all pages-->
+    <script src="~/js/sb-admin-2.min.js"></script>
+
+</body>
+</html>

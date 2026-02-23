@@ -32,7 +32,13 @@
                             <input asp-for="Password" type="password" class="form-control" />
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
-
+                        <div class="form-group">
+                            <label>設定權限</label>
+                            <select asp-for="RoleId" class="form-control">
+                                <option value="1">一般會員 (Member)</option>
+                                <option value="2">管理員 (Admin)</option>
+                            </select>
+                        </div>
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">建立會員</button>
                             <a asp-action="Index" class="btn btn-secondary">返回列表</a>

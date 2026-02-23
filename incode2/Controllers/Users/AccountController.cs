@@ -1,134 +1,95 @@
-﻿using incode2.Enums;
+﻿using System.Security.Claims;
+using incode2.Enums;
 using incode2.Services.Users;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
-namespace incode2.Controllers.Users
+namespace incode2.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class AccountController : Controller
     {
         private readonly IAuthService _authService;
 
-        // 注入 AuthService
         public AccountController(IAuthService authService)
         {
             _authService = authService;
         }
 
-        // GET: /Account/Register (顯示畫面)
+        // GET: /Account/Login
         [HttpGet]
-        public IActionResult Register()
+        [AllowAnonymous] // 允許未登入者訪問
+        public IActionResult Login()
         {
-            if (User.Identity!.IsAuthenticated)
+            // 如果已經登入且是管理員，直接踢回首頁，不要讓他在登入頁鬼打牆
+            if (User.Identity!.IsAuthenticated && User.Identities.Any(i => i.AuthenticationType == "AdminAuth"))
             {
                 return RedirectToAction("Index", "Home");
             }
             return View();
         }
 
-        // POST: /Account/Register (接收表單)
-        [HttpPost]
-        [ValidateAntiForgeryToken] // 防止 CSRF 攻擊
-        public async Task<IActionResult> Register(RegisterViewModel model)
-        {
-            // 1. 檢查資料格式 (前端驗證過了，後端要再驗一次)
-            if (!ModelState.IsValid)
-            {
-                return View(model); // 有錯就回傳原畫面，讓使用者修正
-            }
-
-            // 2. 呼叫 Service 進行註冊 (使用您剛剛定義的 ServiceResult)
-            var result = await _authService.RegisterAsync(model.Email, model.Password, model.Username);
-
-            if (result != "Success")
-            {
-                // 如果失敗 (例如 Email 重複)，將錯誤訊息加到 ModelState
-                // string.Empty 代表這是全域錯誤，會顯示在 asp-validation-summary
-                ModelState.AddModelError(string.Empty, result);
-                return View(model);
-            }
-
-            // 3. 註冊成功，導向登入頁面 (或是直接幫他登入)
-            TempData["SuccessMessage"] = "註冊成功！請使用新帳號登入。";
-            return RedirectToAction("Login");
-        }
-
-        //GET: /Account/Login
-        [HttpGet]
-        public IActionResult Login()
-        {
-            // 如果已經登入，直接踢回首頁
-            if (User.Identity!.IsAuthenticated)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-            return View(); // 這會去找 Views/Account/Login.cshtml
-        }
-
         // POST: /Account/Login
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
 
             // 1. 驗證帳密
             var result = await _authService.ValidateUserAsync(model.Email, model.Password);
 
-            if (!result.IsSuccess)
+            // 2. 基礎驗證失敗 (帳密錯或無此人)
+            if (!result.IsSuccess || result.Member == null)
             {
-                ModelState.AddModelError(string.Empty, result.Message);
+                ModelState.AddModelError(string.Empty, "帳號或密碼錯誤");
                 return View(model);
             }
 
-            var user = result.Member;
-            string roleName = (user.RoleId == (int)RoleType.Admin) ? "Admin" : "Member";
+            // 3. 安全性檢查：雖然帳密對，但身分必須是 Admin
+            if (result.Member.RoleId != (int)RoleType.Admin)
+            {
+                ModelState.AddModelError(string.Empty, "權限不足，您不是管理員");
+                return View(model);
+            }
 
+            // 4. 建立 Claims (身分證內容)
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username ?? user.Email),
-                new Claim(ClaimTypes.Role, roleName)
+                // 顯示用的名字
+                new Claim(ClaimTypes.Name, result.Member.Username ?? result.Member.Email),
+                
+                // 角色權限
+                new Claim(ClaimTypes.Role, "Admin"),
+                new Claim(ClaimTypes.NameIdentifier, result.Member.UserId.ToString()),
+                new Claim("UserId", result.Member.UserId.ToString()),
             };
 
-            var claimsIdentity = new ClaimsIdentity(claims, "MemberAuth");
-
+            var claimsIdentity = new ClaimsIdentity(claims, "AdminAuth");
             var authProperties = new AuthenticationProperties
             {
-                // 可以根據需求設定是否記住登入
+                // 根據使用者是否勾選「記住我」(這裡先預設為 true，或者您可以從 model.RememberMe 傳入)
                 IsPersistent = true,
-                ExpiresUtc = DateTime.UtcNow.AddMinutes(30)
             };
 
-            // 3. 登入 (寫入 Cookie)
+            // 5. 簽發 "AdminAuth" Cookie
             await HttpContext.SignInAsync(
-                "MemberAuth",
+                "AdminAuth",
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
-            // 4. 登入成功，導向首頁
             return RedirectToAction("Index", "Home");
         }
 
-        // 登出 (POST)
-        // 對應 _LoginPartial 中的表單 submit
+        // POST: /Account/Logout
         [HttpPost]
-        [ValidateAntiForgeryToken] // MVC 表單建議加上這行防護
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync("MemberAuth");
-
-            // 登出後導向首頁
-            return RedirectToAction("Index", "Home");
+            // 只清除後台 Cookie
+            await HttpContext.SignOutAsync("AdminAuth");
+            return RedirectToAction("Login");
         }
     }
 }
-

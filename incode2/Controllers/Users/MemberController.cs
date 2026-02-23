@@ -1,12 +1,15 @@
 ﻿using incode2.Dtos.Users;
+using incode2.Enums;
 using incode2.Models;
+using incode2.Partials;
 using incode2.Services.Users;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.Controllers.Users
-{   
+{
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class MemberController : Controller
     {
         private readonly IAuthService _authService;
@@ -17,29 +20,52 @@ namespace incode2.Controllers.Users
             _authService = authService;
             _userService = userService;
         }
+        // GET: /Member/Index
         public async Task<IActionResult> Index()
-        {
-            // 假設 UserService 有 GetAllUsersAsync
+        {            
             var users = await _userService.GetAllUsersAsync();
+            var vms = new List<MemberIndexViewModel>();
 
-            // 簡單轉成 VM 顯示
-            var vms = users.Select(u => new MemberBaseViewModel
+            // 針對每個使用者，檢查是否有異常登入
+            foreach (var u in users)
             {
-                UserId = u.UserId,
-                Username = u.Username,
-                Email = u.Email
-            }).ToList();
+                // 撈取前 10 筆 Log
+                var logs = await _userService.GetLoginLogsByUserIdAsync(u.UserId, 10);
+
+                // 判斷主要 IP
+                var mainIp = logs.GroupBy(l => l.IpAddress)
+                                 .OrderByDescending(g => g.Count())
+                                 .Select(g => g.Key)
+                                 .FirstOrDefault();
+
+                // 如果有任何一筆 Log 的 IP 不是主要 IP，就標記為有異常
+                bool hasSuspicious = logs.Any(l => !string.IsNullOrEmpty(mainIp) && l.IpAddress != mainIp);
+
+                vms.Add(new MemberIndexViewModel
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    Birthday = u.Birthday,
+                    Address = u.Address,
+                    CreatedAt = u.CreatedAt,
+                    IsActive = u.IsActive ?? true,
+                    RoleName = u.RoleId == (int)RoleType.Admin ? "管理員" : "一般會員",
+                    HasSuspiciousLogin = hasSuspicious 
+                });
+            }
 
             return View(vms);
         }
 
-        // 2. 新增頁面 (GET)
+        // GET: /Member/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // 
+        // POST: /Member/Create
         [HttpPost]
         [ValidateAntiForgeryToken] 
         public async Task<IActionResult> Create(MemberCreateViewModel vm)
@@ -61,7 +87,7 @@ namespace incode2.Controllers.Users
             }
         }
 
-        // 4. 修改頁面 (GET) - 撈取資料與 Logs
+        // GET: /Member/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
@@ -69,28 +95,33 @@ namespace incode2.Controllers.Users
 
             // 撈取前 10 筆 Log
             var logs = await _userService.GetLoginLogsByUserIdAsync(id, 10);
+            // 找出這 10 筆紀錄中，出現最多次的 IP 作為「主要/常用 IP」
+            var mainIp = logs.GroupBy(l => l.IpAddress)
+                     .OrderByDescending(g => g.Count())
+                     .Select(g => g.Key)
+                     .FirstOrDefault();
 
             var vm = new MemberEditViewModel
             {
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
-                IsActive = user.IsActive ?? true, 
+                IsActive = user.IsActive ?? true,
 
                 // 轉換 Log
                 RecentLoginLogs = logs.Select(l => new LoginLogDto
                 {
                     LoginTime = l.LoginTime,
                     IpAddress = l.IpAddress,
-                    // 簡易判斷異常 (例如: IP 不同或是 Service 算好的欄位)
-                    IsSuspicious = false // 這裡需依你的邏輯判斷
+                    // 判斷：如果這次的 IP 不是最常用的 IP，就標記為異常 (true)
+                    IsSuspicious = !string.IsNullOrEmpty(mainIp) && l.IpAddress != mainIp
                 }).ToList()
             };
 
             return View(vm);
         }
 
-        // 5. 修改動作 (POST) - 處理停權與修改資料
+        // POST: /Member/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(MemberEditViewModel vm)

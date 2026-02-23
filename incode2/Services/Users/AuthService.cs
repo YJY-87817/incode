@@ -17,7 +17,7 @@ namespace incode2.Services.Users
             _userService = userService;
             _emailService = emailService;
         }
-        public async Task<string> RegisterAsync(string email, string password, string? preferredUsername)
+        public async Task<string> RegisterAsync(string email, string password, string? preferredUsername, string? imageUrl = null)
         {           
             if (await _userService.IsEmailExistAsync(email))
             {
@@ -45,6 +45,7 @@ namespace incode2.Services.Users
             {
                 Email = email,
                 Username = finalUsername,
+                ImageUrl = imageUrl,
                 Password = passwordHash,
                 CreatedAt = DateTime.Now,
                 RoleId = 2 // 預設 Member
