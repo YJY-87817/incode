@@ -458,27 +458,8 @@ namespace incode2.Services.Contents
 
     public async Task<List<ContentDto>> GetCommentsByContentId(int contentId)
     {
-      return await _context.Content
-      .Include(c => c.User)
-      .Include(c => c.Category)
-      .Where(c => c.ParentContentId == contentId && c.IsActive == 1)
-      .OrderByDescending(c => c.CreatedAt)
-      .Select(c => new ContentDto
-      {
-        ContentId = c.ContentId,
-        ParentContentId = c.ParentContentId,
-        UserId = c.UserId,
-        Username = c.User.Username,
-        CategoryId = c.CategoryId,
-        CategoryName = c.Category != null ? c.Category.CategoryName : null,
-        Title = c.Title,
-        Body = c.Body,
-        Type = c.Type,
-        CreatedAt = (DateTime)c.CreatedAt,
-        UpdatedAt = (DateTime)c.UpdatedAt,
-        Ishidden = c.IsActive == 2 ? true : false
-      })
-      .ToListAsync();
+      var result = await GetChildrenByContentId(contentId, null, 1, int.MaxValue, null);
+      return result.Items;
     }
 
     public async Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize)
