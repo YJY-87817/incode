@@ -1,6 +1,25 @@
 <script setup>
 import { useTaskStore } from "@/stores/point/UseTaskStore";
+import { ref } from "vue";
 const store = useTaskStore();
+//刷新
+const rotation = ref(0);
+
+const refreshTasks = async () => {
+  if (store.isLoading) return; // 防止重複點擊
+
+  store.isLoading = true;
+  // 每次點擊增加 360 度
+  rotation.value += 360;
+
+  const minWait = new Promise((resolve) => setTimeout(resolve, 500));
+
+  try {
+    await Promise.all([store.fetchTasks(), minWait]);
+  } finally {
+    store.isLoading = false;
+  }
+};
 </script>
 
 <template>
@@ -26,12 +45,22 @@ const store = useTaskStore();
     style="max-width: 300px; background: #fff"
   >
     <div
-      class="p-4 border-bottom border-light"
+      class="p-4 border-bottom border-light d-flex justify-content-between align-items-center"
       style="background-color: #86b0bd; color: #145369"
     >
-      <h5 class="mb-1 fw-bold">任務大廳</h5>
-    </div>
+      <h5 class="mb-0 fw-bold">任務大廳</h5>
 
+      <button
+        class="refresh-btn"
+        @click="refreshTasks"
+        :disabled="store.isLoading"
+      >
+        <i
+          class="fas fa-rotate-right refresh-icon"
+          :style="{ transform: `rotate(${rotation}deg)` }"
+        ></i>
+      </button>
+    </div>
     <div class="card-body p-4 custom-scrollbar">
       <div class="section-label">選擇分類</div>
       <div class="nav flex-column mb-4">
@@ -241,5 +270,11 @@ const store = useTaskStore();
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #eee;
   border-radius: 10px;
+}
+
+.refresh-icon {
+  display: inline-block;
+  /* 平滑旋轉，0.7s 時間適中，回彈效果感更好 */
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 </style>
