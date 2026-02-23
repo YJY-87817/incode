@@ -163,6 +163,54 @@ namespace incode2.Services.Contents
       };
     }
 
+    public async Task<Dictionary<int, HashSet<int>>> GetUserInteractionLookupAsync(IEnumerable<int> contentIds, int? userId)
+    {
+      if (!userId.HasValue || userId.Value <= 0)
+      {
+        return new Dictionary<int, HashSet<int>>();
+      }
+
+      var contentIdList = contentIds?.Distinct().ToList() ?? new List<int>();
+      if (contentIdList.Count == 0)
+      {
+        return new Dictionary<int, HashSet<int>>();
+      }
+
+      var interactions = await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.UserId == userId.Value && contentIdList.Contains(ci.ContentId))
+        .Select(ci => new { ci.ContentId, ci.CategoryId })
+        .ToListAsync();
+
+      return interactions
+        .GroupBy(ci => ci.ContentId)
+        .ToDictionary(g => g.Key, g => g.Select(ci => ci.CategoryId).ToHashSet());
+    }
+
+    public async Task<Dictionary<int, int>> GetLikeCountsAsync(IEnumerable<int> contentIds)
+    {
+      var contentIdList = contentIds?.Distinct().ToList() ?? new List<int>();
+      if (contentIdList.Count == 0)
+      {
+        return new Dictionary<int, int>();
+      }
+
+      return await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.CategoryId == 1 && contentIdList.Contains(ci.ContentId))
+        .GroupBy(ci => ci.ContentId)
+        .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
+        .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
+    }
+
+    public async Task<int> GetLikeCountAsync(int contentId)
+    {
+      return await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.ContentId == contentId && ci.CategoryId == 1)
+        .CountAsync();
+    }
+
     public async Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId)
     {
       if (entrustMissionId <= 0 || contentId <= 0)
