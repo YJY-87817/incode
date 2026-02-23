@@ -1,3 +1,4 @@
+using Google.GenAI.Types;
 using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
@@ -24,10 +25,11 @@ namespace incode2.Services.Point
         //拿全部委託任務資料
     public async Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync()
     {
-      return await _context.EntrustMission
-          .Where(em => em.IsActive && (em.Status == "open" || em.Status == "in_progress"))
-          .Include(em => em.User)
-          .Include(em => em.Content)
+            var now = DateTime.Now;
+            return await _context.EntrustMission
+          .Where(em => em.IsActive
+          && (em.Status == "open" || em.Status == "in_progress")
+          && (!em.Deadline.HasValue || em.Deadline.Value >= now)) // 過濾過期
           .Select(em => new EntrustMissionDTO
           {
             EntrustMissionId = em.EntrustMissionId,
@@ -43,6 +45,8 @@ namespace incode2.Services.Point
             IsActive = em.IsActive,
             CreatedAt = em.CreatedAt,
             UpdatedAt = em.UpdatedAt,
+            Username = em.User.Username,
+            ImageUrl = em.User.ImageUrl
           })
           .OrderByDescending(em => em.IsUrgent)      // 急件優先
           .ThenByDescending(em => em.CreatedAt)      // 新發布優先
@@ -80,20 +84,6 @@ namespace incode2.Services.Point
           return new ResultDTO { Ok = false, Code = 400, Message = "任務已過截止時間" };
         }
 
-        // 【新增】檢查使用者是否已有進行中的委託任務
-        bool hasOngoing = await _context.EntrustMissionProgress
-            .AnyAsync(p => p.UserId == userId && p.Status == "ongoing");
-
-        if (hasOngoing)
-        {
-          return new ResultDTO
-          {
-            Ok = false,
-            Code = 403,
-            Message = "您目前有進行中的委託任務，請先完成或放棄後才能接取新任務"
-          };
-        }
-
         // 防同一人重複接取「這個」任務（保留原判斷）
         bool alreadyClaimedThis = await _context.EntrustMissionProgress
             .AnyAsync(p => p.EntrustMissionId == entrustMissionId && p.UserId == userId);
@@ -108,7 +98,7 @@ namespace incode2.Services.Point
         {
           UserId = userId,
           EntrustMissionId = entrustMissionId,
-          Status = "ongoing",
+          Status = EntrustMissionProgressStatus.Ongoing,
           AcceptedAt = DateTime.Now
         };
 
@@ -121,6 +111,8 @@ namespace incode2.Services.Point
         await _context.SaveChangesAsync();
         await transaction.CommitAsync();
 
+        string discussionUrl = $"https://localhost:5173/forum/{mission.ContentId}";
+
         return new ResultDTO
         {
           Ok = true,
@@ -130,7 +122,8 @@ namespace incode2.Services.Point
           {
             EntrustMissionId = entrustMissionId,
             Status = mission.Status,
-            AcceptedAt = progress.AcceptedAt
+            AcceptedAt = progress.AcceptedAt,
+            DiscussionUrl = discussionUrl
           }
         };
       }
@@ -260,6 +253,53 @@ namespace incode2.Services.Point
                     Message = $"除錯訊息: {realMessage}"
                 };
             }
+        }
+
+        //完成「提交成果」
+        public async Task<ResultDTO> SubmitEntrustMissionAsync(int missionId, int userId)
+        {
+            var progress = await _context.EntrustMissionProgress
+                .FirstOrDefaultAsync(p =>
+                    p.EntrustMissionId == missionId &&
+                    p.UserId == userId);
+
+            if (progress == null)
+                return new ResultDTO { Ok = false, Code = 404, Message = "未接取此任務" };
+
+            if (progress.Status != "ongoing")
+                return new ResultDTO { Ok = false, Code = 400, Message = "目前狀態無法提交" };
+
+            progress.Status = EntrustMissionProgressStatus.Submitted;
+            progress.SubmittedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return new ResultDTO
+            {
+                Ok = true,
+                Code = 200,
+                Message = "任務已提交，等待發布者審核"
+            };
+        }
+
+        //Rejected
+        public async Task<ResultDTO> RejectEntrustMissionAsync(int progressId, int ownerId)
+        {
+            var progress = await _context.EntrustMissionProgress
+                .Include(p => p.EntrustMission)
+                .FirstOrDefaultAsync(p => p.EntrustMissionProgressId == progressId);
+
+            if (progress == null)
+                return new ResultDTO { Ok = false, Code = 404 };
+
+            if (progress.EntrustMission.UserId != ownerId)
+                return new ResultDTO { Ok = false, Code = 403 };
+
+            progress.Status = "rejected";
+
+            await _context.SaveChangesAsync();
+
+            return new ResultDTO { Ok = true, Code = 200 };
         }
 
         //取消委託任務時退還預扣點數
