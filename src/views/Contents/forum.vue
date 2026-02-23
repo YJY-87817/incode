@@ -163,7 +163,7 @@
   <div class="container mt-5 mb-5">
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
-      <div class="order-2 order-lg-1 forum-main" :class="shouldShowSidebar ? 'col-lg-9' : 'col-lg-12'">
+      <div class="order-1 order-lg-1 forum-main" :class="shouldShowSidebar ? 'col-lg-9' : 'col-lg-12'">
         <!-- 分類欄 -->
         <CategoryFilter />
         <!-- 新主題改為使用彈出視窗 -->
@@ -172,7 +172,7 @@
       </div>
 
       <!-- 側邊欄 -->
-      <div v-if="shouldShowSidebar" class="col-lg-3 forum-sidebar"
+      <div v-if="shouldShowSidebar" class="order-2 order-lg-2 col-lg-3 forum-sidebar"
         :class="{ 'forum-sidebar--no-editor': !hasExpandedDraft }">
         <div class="forum-sidebar-top">
           <NewTopicSidebar />
