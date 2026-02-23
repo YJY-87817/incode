@@ -4,6 +4,8 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
 import CartSwal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
 // 直接接收路由參數作為 props
 const props = defineProps({
     id: String,
@@ -61,7 +63,7 @@ onMounted(() => {
                 <div class="col-12 col-md-6">
                     <div class="d-flex align-items-center justify-content-center border border-translucent rounded-3 mb-3 bg-light"
                         style="aspect-ratio: 1/1;">
-                        <img :src="`https://localhost:7190/img/product/${product.imageName}`" :alt="product.name"
+                        <img :src="`${baseUrl}/img/product/${product.imageName}`" :alt="product.name"
                             class="img-fluid product-image" />
                     </div>
                 </div>

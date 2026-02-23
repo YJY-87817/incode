@@ -20,6 +20,8 @@ const details = ref([]);
 const loading = ref(true);
 const shippedId = ref(0);
 const shippedDetailRef = ref(null);
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
 
 onMounted(async () => {
   try {
@@ -271,7 +273,7 @@ const shippedchange = (shippedid) => {
                     <td>
                       <div class="d-flex align-items-center">
                         <img
-                          :src="`https://localhost:7190/img/product/${detail.imageName}`"
+                          :src="`${baseUrl}/img/product/${detail.imageName}`"
                           class="border rounded me-3"
                           style="width: 50px; height: 50px; object-fit: cover"
                           :alt="detail.productName"
