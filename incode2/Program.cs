@@ -35,7 +35,9 @@ builder.Services.AddCors(options =>
         "http://localhost:8080",
         "http://localhost:3000",
         "http://localhost:7190",
-        "http://localhost:3001"
+        "http://localhost:3001",
+        "https://hexabasic-yair-causally.ngrok-free.dev",
+        "https://groomishly-undeft-ettie.ngrok-free.dev"
       )
       .AllowAnyMethod()
       .AllowAnyHeader()
@@ -72,68 +74,68 @@ const string MemberScheme = "MemberAuth";
 const string AdminScheme = "AdminAuth";
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = MemberScheme;
-    options.DefaultChallengeScheme = MemberScheme;
+  options.DefaultScheme = MemberScheme;
+  options.DefaultChallengeScheme = MemberScheme;
 })
     .AddCookie(MemberScheme, options =>
     {
-        options.Cookie.Name = "Incode.Member"; // 給予不同的 Cookie 名稱
-        options.LoginPath = "/Auth/Login";     // 前台登入路徑 (如果是純 API 可設為 null 或回傳 401)
-        options.AccessDeniedPath = "/Auth/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);        
-        options.Cookie.Path = "/";// 關鍵：這張 Cookie 只在根目錄有效 (通常全站)
-        // 安全性設定
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.None; // 配合跨域/第三方登入
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.SlidingExpiration = true;
+      options.Cookie.Name = "Incode.Member"; // 給予不同的 Cookie 名稱
+      options.LoginPath = "/Auth/Login";     // 前台登入路徑 (如果是純 API 可設為 null 或回傳 401)
+      options.AccessDeniedPath = "/Auth/AccessDenied";
+      options.ExpireTimeSpan = TimeSpan.FromDays(7);
+      options.Cookie.Path = "/";// 關鍵：這張 Cookie 只在根目錄有效 (通常全站)
+                                // 安全性設定
+      options.Cookie.HttpOnly = true;
+      options.Cookie.SameSite = SameSiteMode.None; // 配合跨域/第三方登入
+      options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+      options.SlidingExpiration = true;
 
-        options.Events.OnRedirectToLogin = context =>
+      options.Events.OnRedirectToLogin = context =>
+      {
+        // 如果是 API 請求，回傳 401 狀態碼，不要跳轉 HTML 頁面
+        if (context.Request.Path.StartsWithSegments("/api"))
         {
-            // 如果是 API 請求，回傳 401 狀態碼，不要跳轉 HTML 頁面
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                return Task.CompletedTask;
-            }
-            // 如果是普通網頁請求，走預設跳轉
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+          context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+          return Task.CompletedTask;
+        }
+        // 如果是普通網頁請求，走預設跳轉
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
 
-        options.Events.OnRedirectToAccessDenied = context =>
+      options.Events.OnRedirectToAccessDenied = context =>
+      {
+        if (context.Request.Path.StartsWithSegments("/api"))
         {
-            if (context.Request.Path.StartsWithSegments("/api"))
-            {
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                return Task.CompletedTask;
-            }
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+          context.Response.StatusCode = StatusCodes.Status403Forbidden;
+          return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+      };
     })
-   
+
 // 2. 後台管理員的 Cookie 設定
 .AddCookie(AdminScheme, options =>
 {
-    options.Cookie.Name = "Incode.Admin";  // 給予不同的 Cookie 名稱
-    options.LoginPath = "/Admin/Account/Login"; // 後台專用的登入頁面
-    options.AccessDeniedPath = "/Admin/Account/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 後台通常時效較短，較安全
+  options.Cookie.Name = "Incode.Admin";  // 給予不同的 Cookie 名稱
+  options.LoginPath = "/Admin/Account/Login"; // 後台專用的登入頁面
+  options.AccessDeniedPath = "/Admin/Account/AccessDenied";
+  options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 後台通常時效較短，較安全
 
-    // 關鍵安全性設定：這張 Cookie 只在 /Admin 路徑下才會被瀏覽器送出！
-    // 這樣前台 Vue 怎麼樣都拿不到這張 Cookie
-    options.Cookie.Path = "/";
+  // 關鍵安全性設定：這張 Cookie 只在 /Admin 路徑下才會被瀏覽器送出！
+  // 這樣前台 Vue 怎麼樣都拿不到這張 Cookie
+  options.Cookie.Path = "/";
 
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+  options.Cookie.HttpOnly = true;
+  options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+  options.Cookie.SameSite = SameSiteMode.Strict;
 })
     .AddGoogle(googleOptions =>
     {
-        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];       
-        googleOptions.SaveTokens = true; // 讓 Google 登入後，將 Token 暫存，方便我們在 Controller 取出 Email
+      googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+      googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+      googleOptions.SaveTokens = true; // 讓 Google 登入後，將 Token 暫存，方便我們在 Controller 取出 Email
     });
 builder.Services.AddAuthorization();
 // owen以上
@@ -163,6 +165,7 @@ builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
 builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
 builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
+builder.Services.AddScoped<IPointReserveService, PointReserveService>();
 builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();

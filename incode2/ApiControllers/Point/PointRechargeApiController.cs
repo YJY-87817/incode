@@ -1,4 +1,4 @@
-﻿using incode2.DTO;
+using incode2.DTO;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Point;
@@ -60,8 +60,24 @@ namespace incode2.ApiControllers.Point
 
         //AI 付款完成回呼 API（ECPay ReturnURL）
         [HttpPost("ecpay/return")]
-        public async Task<IActionResult> EcpayReturn([FromForm] IFormCollection form)
+        public async Task<IActionResult> EcpayReturn()
         {
+            var form = Request.Form;
+
+            // 1. 驗證 CheckMacValue
+            bool isValid = _ecpay.ValidateCheckMacValue(form);
+
+            if (!isValid)
+            {
+                // 記錄失敗原因（方便 debug）
+                Console.WriteLine("CheckMacValue 驗證失敗");
+                Console.WriteLine("收到的 MAC: " + form["CheckMacValue"]);
+                // 為了不讓綠界一直重試，通常仍回 1|OK
+                return Content("1|OK");
+            }
+
+            Console.WriteLine("CheckMacValue 驗證通過");
+
             var rtnCode = form["RtnCode"].ToString();
             var orderNo = form["MerchantTradeNo"].ToString();
             var tradeNo = form["TradeNo"].ToString();
@@ -71,47 +87,68 @@ namespace incode2.ApiControllers.Point
                 .FirstOrDefaultAsync(x => x.OrderNo == orderNo);
 
             if (recharge == null)
-                return Content("0|ORDER_NOT_FOUND");
-
-            // 防重複加點
-            if (recharge.Status == "success" || recharge.Status == "failed")
-                return Content("1|OK");
-
-            // CheckMacValue 驗證
-            var receivedMac = form["CheckMacValue"].ToString();
-            var data = form.Keys
-                           .Where(k => k != "CheckMacValue")
-                           .ToDictionary(k => k, k => form[k].ToString());
-            var calculatedMac = _ecpay.GenerateCheckMacValue(data);
-            if (receivedMac != calculatedMac)
-                return Content("0|CHECKMAC_FAIL");
-
-            // 根據 RtnCode 更新訂單
-            switch (rtnCode)
             {
-                case "1":
-                    recharge.PaymentTradeNo = tradeNo;
+                Console.WriteLine($"找不到訂單: {orderNo}");
+                return Content("1|OK");  // 綠界建議一律回 1|OK
+            }
 
-                    try
-                    {
-                        await _pointLogService.AddPointsFromRechargeAsync(recharge);
-                    }
-                    catch
-                    {
-                        recharge.Status = "failed";
-                    }
-                    break;
+            // 防重複處理
+            if (recharge.Status == "success")
+            {
+                // 額外檢查：是否真的有對應 point_log？
+                var hasLog = await _context.PointLog
+                    .AnyAsync(l => l.SourceType == "point_recharge" && l.SourceId == recharge.PointRechargeId);
 
-                case "2": // 付款失敗
-                default:
+                if (hasLog)
+                {
+                    Console.WriteLine($"訂單已處理過且有 log: {orderNo}");
+                    return Content("1|OK");
+                }
+                else
+                {
+                    Console.WriteLine($"訂單顯示 success 但無 log，強制重新加點: {orderNo}");
+                    // 強制重新加點
+                    recharge.Status = "pending";  // 暫時還原
+                }
+            }
+
+            if (recharge.Status == "failed")
+            {
+                Console.WriteLine($"訂單已 failed，不處理: {orderNo}");
+                return Content("1|OK");
+            }
+
+            // 根據 RtnCode 處理
+            if (rtnCode == "1")
+            {
+                recharge.PaymentTradeNo = tradeNo;
+                recharge.Status = "success";
+
+                try
+                {
+                    Console.WriteLine($"準備呼叫加點 - RechargeId: {recharge.PointRechargeId}");
+                    await _pointLogService.AddPointsFromRechargeAsync(recharge);
+                    return Content("1|OK");
+                }
+                catch (Exception ex)
+                {
                     recharge.Status = "failed";
-                    break;
+                    await _context.SaveChangesAsync(); // 還是存失敗狀態
+                    Console.WriteLine($"加點失敗: {ex.Message}\n{ex.StackTrace}");
+                    return Content("1|OK");
+                }
+            }
+            else
+            {
+                recharge.Status = "failed";
+                Console.WriteLine($"付款失敗，RtnCode = {rtnCode}");
             }
 
             // 更新訂單
             _context.PointRecharge.Update(recharge);
             await _context.SaveChangesAsync();
 
+            // 記錄完整通知內容（開發時很有用）
             Console.WriteLine("===== 綠界回呼完成 =====");
             foreach (var key in form.Keys)
             {
@@ -120,7 +157,6 @@ namespace incode2.ApiControllers.Point
 
             return Content("1|OK");
         }
-
 
         // GET: api/PointRechargeApi
         [HttpGet]

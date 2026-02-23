@@ -1,4 +1,4 @@
-﻿using incode2.Models;
+using incode2.Models;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,15 +10,14 @@ namespace incode2.Services.Point
         private readonly string HashKey;
         private readonly string HashIV;
         private readonly string ReturnUrl;
-
         private readonly IConfiguration _config;
 
         public EcpayService(IConfiguration config)
         {
-            MerchantID = config["ECPay:MerchantID"];
-            HashKey = config["ECPay:HashKey"];
-            HashIV = config["ECPay:HashIV"];
-            ReturnUrl = config["ECPay:ReturnUrl"];
+            MerchantID = config["ECPay:MerchantID"] ?? throw new InvalidOperationException("ECPay:MerchantID 未設定");
+            HashKey = config["ECPay:HashKey"] ?? throw new InvalidOperationException("ECPay:HashKey 未設定");
+            HashIV = config["ECPay:HashIV"] ?? throw new InvalidOperationException("ECPay:HashIV 未設定");
+            ReturnUrl = config["ECPay:ReturnUrl"] ?? throw new InvalidOperationException("ECPay:ReturnUrl 未設定");
         }
 
         public Dictionary<string, string> CreatePayment(
@@ -57,6 +56,57 @@ namespace incode2.Services.Point
             var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(encoded));
             return BitConverter.ToString(hash).Replace("-", "").ToUpper();
         }
-    }
 
+        // 在 EcpayService.cs 裡面新增這個方法
+        public bool ValidateCheckMacValue(IFormCollection form)
+        {
+            // 取得收到的 CheckMacValue
+            string receivedCheckMacValue = form["CheckMacValue"].ToString() ?? "";
+
+            if (string.IsNullOrEmpty(receivedCheckMacValue))
+            {
+                return false;
+            }
+
+            // 收集所有參數（排除 CheckMacValue 本身）
+            var parameters = new Dictionary<string, string?>();
+
+            foreach (var key in form.Keys)
+            {
+                if (key != "CheckMacValue")
+                {
+                    parameters[key] = form[key].ToString();
+                }
+            }
+
+            // 按鍵名字典序排序（忽略大小寫）
+            var orderedParams = parameters
+                .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(x => $"{x.Key}={x.Value ?? ""}");
+
+            // 串接 HashKey & 參數 & HashIV
+            var rawString = $"HashKey={HashKey}&{string.Join("&", orderedParams)}&HashIV={HashIV}";
+
+            // URL Encode + 綠界指定的特殊替換
+            var encoded = System.Web.HttpUtility.UrlEncode(rawString)
+                .ToLower()
+                .Replace("%21", "!")
+                .Replace("%2a", "*")
+                .Replace("%28", "(")
+                .Replace("%29", ")")
+                .Replace("%20", "+");
+
+            // SHA256 雜湊
+            using var sha256 = SHA256.Create();
+            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(encoded));
+
+            // 轉成大寫十六進位
+            var computedCheckMacValue = BitConverter.ToString(hashBytes)
+                .Replace("-", "")
+                .ToUpper();
+
+            // 比對（忽略大小寫）
+            return string.Equals(computedCheckMacValue, receivedCheckMacValue, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }

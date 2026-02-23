@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using incode2.Dtos;
 using incode2.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -39,18 +39,21 @@ namespace incode2.ApiControllers.Content
       });
     }
 
-    // 取得特定使用者對指定內容的所有互動
-    // GET https://localhost:7190/api/contentinteractionapi/user/{contentId}?userId={userId}
-    // Path Parameters:
-    //   - contentId (int): 內容ID
-    // Query Parameters:
-    //   - userId (int): 使用者ID
-    // Response: { contentId, userId, interactions: [], count } 或 { message, interactions: [] }
-    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/1?userId=10
+    // 取得當前user對指定內容的所有互動(需登入)
+    // GET https://localhost:7190/api/contentinteractionapi/user/{contentId}
+    // 需要登入，使用者ID自動從Claims取得
+    // 範例: GET https://localhost:7190/api/contentinteractionapi/user/3
     [HttpGet("user/{contentId}")]
-    public async Task<IActionResult> GetUserInteraction(int contentId, [FromQuery] int userId)
+    [Authorize]
+    public async Task<IActionResult> GetUserInteraction(int contentId)
     {
-      if (userId <= 0) return BadRequest(new { message = "UserId 必須大於 0" });
+      if (contentId <= 0)
+        return BadRequest(new { message = "ContentId 必須大於 0" });
+
+      // 從Claims 中取得當前使用者 ID
+      var userId = User.GetId();
+      if (userId == 0)
+        return Unauthorized(new { message = "無法取得使用者ID" });
 
       var interactions = await _contentInteractionService.GetUserInteraction(contentId, userId);
       if (interactions == null || interactions.Count == 0)
@@ -160,11 +163,8 @@ namespace incode2.ApiControllers.Content
 
     // 統計指定內容的互動數量（按互動分類）
     // GET https://localhost:7190/api/contentinteractionapi/stats/{contentId}
-    // Path Parameters:
-    //   - contentId (int): 內容ID
-    // Response: 返回各互動分類的統計數據
-    // 需要: contentId 必須大於 0
     // 範例: GET https://localhost:7190/api/contentinteractionapi/stats/1
+    // Response: 返回各互動分類的統計數據
     [HttpGet("stats/{contentId}")]
     public async Task<IActionResult> GetInteractionStats(int contentId)
     {
@@ -172,6 +172,40 @@ namespace incode2.ApiControllers.Content
 
       var stats = await _contentInteractionService.GetInteractionStats(contentId);
       return Ok(stats);
+    }
+
+    // 指定最佳解答
+    // POST https://localhost:7190/api/contentinteractionapi/best-answer
+    [HttpPost("best-answer")]
+    [Authorize]
+    public async Task<IActionResult> SelectBestAnswer([FromBody] SelectBestAnswerDto dto)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      var userId = User.GetId();
+      if (userId <= 0)
+        return Unauthorized(new { message = "無法取得使用者ID" });
+
+      if (dto.EntrustMissionId <= 0 || dto.ContentId <= 0)
+        return BadRequest(new { message = "EntrustMissionId 和 ContentId 必須大於 0" });
+
+      var result = await _contentInteractionService.SelectBestAnswerAsync(dto.EntrustMissionId, dto.ContentId, userId);
+
+      if (!result.Ok)
+      {
+        return result.Code switch
+        {
+          400 => BadRequest(result),
+          401 => Unauthorized(result),
+          403 => StatusCode(403, result),
+          404 => NotFound(result),
+          409 => Conflict(result),
+          _ => StatusCode(500, result)
+        };
+      }
+
+      return Ok(result);
     }
   }
 }
