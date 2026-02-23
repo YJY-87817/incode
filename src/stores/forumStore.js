@@ -202,6 +202,35 @@ const buildThreadItem = async (item, fallbackType) => {
     bodyHtml,
     toAbsoluteUrl,
   );
+  const resolvedLikeCount = extractLikeCount(item);
+
+  if (
+    import.meta.env.DEV &&
+    (fallbackType === CONTENT_TYPES.COMMENT ||
+      fallbackType === CONTENT_TYPES.COMMENT_REPLY)
+  ) {
+    const interactionList =
+      item?.interactions ??
+      item?.Interactions ??
+      item?.contentInteractions ??
+      item?.content_interactions ??
+      null;
+    console.info("[Forum][LikeCount] child item payload", {
+      id: item.contentId ?? item.content_id ?? item.id,
+      type: item.type ?? fallbackType,
+      likeCount: item?.likeCount,
+      like_count: item?.like_count,
+      likesCount: item?.likesCount,
+      likes: item?.likes,
+      totalLikes: item?.totalLikes,
+      interactionLikeCount: item?.interactionLikeCount,
+      interactionsLength: Array.isArray(interactionList)
+        ? interactionList.length
+        : null,
+      resolvedLikeCount,
+    });
+  }
+
   return {
     id: item.contentId ?? item.content_id ?? item.id,
     userId: item.userId ?? item.user_id ?? null,
@@ -215,7 +244,7 @@ const buildThreadItem = async (item, fallbackType) => {
     parentContentId: item.parentContentId ?? item.parent_content_id ?? null,
     categoryId: item.categoryId ?? item.category_id ?? null,
     title: item.title ?? "",
-    likeCount: extractLikeCount(item),
+    likeCount: resolvedLikeCount,
   };
 };
 
@@ -240,10 +269,51 @@ const extractReplyStats = (item) => {
   };
 };
 
+const extractLikeCountFromInteractions = (item) => {
+  const interactions =
+    item?.interactions ??
+    item?.Interactions ??
+    item?.contentInteractions ??
+    item?.content_interactions ??
+    null;
+
+  if (!Array.isArray(interactions)) return null;
+
+  const likeCount = interactions.filter((interaction) => {
+    const categoryId = Number(
+      interaction?.interactionCategoryId ??
+        interaction?.interaction_category_id ??
+        interaction?.categoryId ??
+        interaction?.category_id,
+    );
+    return categoryId === 1;
+  }).length;
+
+  return Math.max(0, likeCount);
+};
+
 const extractLikeCount = (item) => {
-  const value = Number(item?.likeCount ?? item?.like_count ?? 0);
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, value);
+  const candidate =
+    item?.likeCount ??
+    item?.like_count ??
+    item?.likesCount ??
+    item?.likes_count ??
+    item?.likes ??
+    item?.totalLikes ??
+    item?.total_likes ??
+    item?.thumbsUpCount ??
+    item?.thumbs_up_count ??
+    item?.interactionLikeCount ??
+    item?.interaction_like_count ??
+    null;
+
+  const value = Number(candidate);
+  if (Number.isFinite(value)) return Math.max(0, value);
+
+  const fromInteractions = extractLikeCountFromInteractions(item);
+  if (Number.isFinite(fromInteractions)) return Math.max(0, fromInteractions);
+
+  return 0;
 };
 
 const extractPreviewPayload = (item) => {
@@ -883,12 +953,36 @@ export const useForumStore = defineStore("forum", {
       };
 
       try {
+        if (
+          import.meta.env.DEV &&
+          (expectedType === CONTENT_TYPES.COMMENT ||
+            expectedType === CONTENT_TYPES.COMMENT_REPLY)
+        ) {
+          console.info("[Forum][LikeCount] fetch child replies", {
+            parentId,
+            expectedType,
+            page: 1,
+            pageSize,
+          });
+        }
         const res = await contentApi.getChildren(parentId, {
           types: expectedType ? String(expectedType) : undefined,
           page: 1,
           pageSize,
         });
         const items = Array.isArray(res?.items) ? res.items : [];
+        if (
+          import.meta.env.DEV &&
+          (expectedType === CONTENT_TYPES.COMMENT ||
+            expectedType === CONTENT_TYPES.COMMENT_REPLY)
+        ) {
+          console.info("[Forum][LikeCount] child replies response", {
+            parentId,
+            expectedType,
+            itemsLength: items.length,
+            totalCount: res?.totalCount ?? null,
+          });
+        }
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, expectedType)),
         );
@@ -1965,6 +2059,9 @@ export const useForumStore = defineStore("forum", {
 
       if (this.interactionLoadingStates[contentId][categoryId]) return;
 
+      const previousState = Boolean(
+        this.interactionStates[contentId][categoryId],
+      );
       this.interactionLoadingStates[contentId][categoryId] = true;
 
       try {
@@ -1973,39 +2070,49 @@ export const useForumStore = defineStore("forum", {
           contentId: contentId,
         });
 
-        if (response.isRemoved) {
-          this.interactionStates[contentId][categoryId] = false;
-          if (categoryId === 1) {
-            const currentLikeCount = this.getContentLikeCount(contentId);
-            this.setContentLikeCount(contentId, currentLikeCount - 1);
-          }
-          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
-          if (categoryId === 2) {
-            clearTopicPageCache();
-          }
-          return { success: true, isRemoved: true, message: "互動已移除" };
-        } else {
-          this.interactionStates[contentId][categoryId] = true;
-          if (categoryId === 1) {
-            const currentLikeCount = this.getContentLikeCount(contentId);
-            this.setContentLikeCount(contentId, currentLikeCount + 1);
-          }
-          const categoryNames = {
-            1: "讚",
-            2: "隱藏",
-            3: "收藏",
-            4: "檢舉",
-          };
-          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
-          if (categoryId === 2) {
-            clearTopicPageCache();
-          }
-          return {
-            success: true,
-            isRemoved: false,
-            message: `已${categoryNames[categoryId]}`,
-          };
+        const explicitRemoved =
+          response?.isRemoved ??
+          response?.is_removed ??
+          response?.removed ??
+          response?.isDeleted ??
+          response?.is_deleted;
+
+        const isRemoved =
+          typeof explicitRemoved === "boolean"
+            ? explicitRemoved
+            : previousState;
+
+        this.interactionStates[contentId][categoryId] = !isRemoved;
+
+        if (categoryId === 1) {
+          const currentLikeCount = this.getContentLikeCount(contentId);
+          const nextLikeCount = isRemoved
+            ? currentLikeCount - 1
+            : currentLikeCount + 1;
+          this.setContentLikeCount(contentId, nextLikeCount);
         }
+
+        // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
+        if (categoryId === 2) {
+          clearTopicPageCache();
+        }
+
+        if (isRemoved) {
+          return { success: true, isRemoved: true, message: "互動已移除" };
+        }
+
+        const categoryNames = {
+          1: "讚",
+          2: "隱藏",
+          3: "收藏",
+          4: "檢舉",
+        };
+
+        return {
+          success: true,
+          isRemoved: false,
+          message: `已${categoryNames[categoryId]}`,
+        };
       } catch (error) {
         console.error("互動操作失敗:", error);
         return { success: false, error: error.message };

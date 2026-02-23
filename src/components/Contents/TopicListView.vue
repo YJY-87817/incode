@@ -624,7 +624,19 @@ const collectThreadInteractionContentIds = () => {
     ...paginatedThreadComments.value.map((item) => Number(item?.id)),
   ].filter((id) => Number.isFinite(id) && id > 0);
 
-  return Array.from(new Set(ids));
+  // 收集所有巢狀回覆（留言和回覆）的 ID
+  const nestedRepliesIds = [];
+  Object.values(forumStore.childRepliesByParentId || {}).forEach((payload) => {
+    const items = payload?.items || [];
+    items.forEach((item) => {
+      const itemId = Number(item?.id);
+      if (Number.isFinite(itemId) && itemId > 0) {
+        nestedRepliesIds.push(itemId);
+      }
+    });
+  });
+
+  return Array.from(new Set([...ids, ...nestedRepliesIds]));
 };
 
 watch(
@@ -635,6 +647,15 @@ watch(
     paginatedThreadComments.value
       .map((item) => Number(item?.id || 0))
       .join(","),
+    // 監聽巢狀回覆的變化
+    JSON.stringify(
+      Object.entries(forumStore.childRepliesByParentId || {}).map(
+        ([parentId, payload]) => [
+          parentId,
+          (payload?.items || []).map((item) => Number(item?.id || 0)),
+        ],
+      ),
+    ),
   ],
   async ([selectedThread]) => {
     if (!selectedThread) return;
