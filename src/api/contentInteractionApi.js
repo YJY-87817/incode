@@ -10,9 +10,15 @@ const toNumberOrNull = (value) => {
 const ensureArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.interactions)) return payload.interactions;
+  if (Array.isArray(payload?.Interactions)) return payload.Interactions;
   if (Array.isArray(payload?.items)) return payload.items;
   if (Array.isArray(payload?.list)) return payload.list;
   if (payload && Array.isArray(payload?.result)) return payload.result;
+  if (Array.isArray(payload?.data?.interactions))
+    return payload.data.interactions;
+  if (Array.isArray(payload?.data?.Interactions))
+    return payload.data.Interactions;
   return [];
 };
 
@@ -117,6 +123,32 @@ const extractBestAnswerContentId = (payload) => {
   return null;
 };
 
+const hasExplicitBestAnswerField = (payload) => {
+  if (!payload || typeof payload !== "object") return false;
+
+  if (
+    Object.prototype.hasOwnProperty.call(payload, "bestAnswerContentId") ||
+    Object.prototype.hasOwnProperty.call(payload, "best_answer_content_id")
+  ) {
+    return true;
+  }
+
+  const nestedCandidates = [
+    payload?.data,
+    payload?.result,
+    payload?.item,
+    payload?.record,
+  ];
+
+  return nestedCandidates.some(
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      (Object.prototype.hasOwnProperty.call(entry, "bestAnswerContentId") ||
+        Object.prototype.hasOwnProperty.call(entry, "best_answer_content_id")),
+  );
+};
+
 /**
  * Content Interaction API module
  *
@@ -210,7 +242,7 @@ const contentInteractionApi = {
     return apiClient.get(`/ContentInteractionApi/user/${contentId}`);
   },
 
-  async getBestAnswerContentId({
+  async getBestAnswerResolution({
     entrustMissionId = null,
     threadContentId = null,
     fallbackBestAnswerContentId = null,
@@ -242,7 +274,10 @@ const contentInteractionApi = {
           params: candidate.params || undefined,
         });
         const resolvedId = extractBestAnswerContentId(payload);
-        if (resolvedId) return resolvedId;
+        if (hasExplicitBestAnswerField(payload)) {
+          return { contentId: resolvedId, isExplicit: true };
+        }
+        if (resolvedId) return { contentId: resolvedId, isExplicit: false };
       } catch {
         // ignore and try next endpoint candidate
       }
@@ -266,16 +301,20 @@ const contentInteractionApi = {
       bestAnswerCategoryId = null;
     }
 
+    if (!bestAnswerCategoryId) {
+      return { contentId: parsedFallback, isExplicit: false };
+    }
+
     const interactionQueryCandidates = [];
-    if (bestAnswerCategoryId) {
+    if (entrustMissionId) {
       interactionQueryCandidates.push({
         interactionCategoryId: bestAnswerCategoryId,
+        entrustMissionId,
       });
     }
-    if (entrustMissionId) {
-      interactionQueryCandidates.push({ entrustMissionId });
-    }
-    interactionQueryCandidates.push({});
+    interactionQueryCandidates.push({
+      interactionCategoryId: bestAnswerCategoryId,
+    });
 
     const interactionRecords = [];
     for (const params of interactionQueryCandidates) {
@@ -288,7 +327,7 @@ const contentInteractionApi = {
     }
 
     if (!interactionRecords.length) {
-      return parsedFallback;
+      return { contentId: parsedFallback, isExplicit: false };
     }
 
     const findMatch = (predicate) =>
@@ -305,19 +344,12 @@ const contentInteractionApi = {
       return isBestAnswerRecord(record, bestAnswerCategoryId);
     });
     if (matchedByMissionAndCategory) {
-      return (
-        extractContentIdFromRecord(matchedByMissionAndCategory) ||
-        parsedFallback
-      );
-    }
-
-    const matchedByMission = findMatch((record) => {
-      if (!entrustMissionId) return false;
-      const missionId = extractMissionIdFromRecord(record);
-      return missionId === Number(entrustMissionId);
-    });
-    if (matchedByMission) {
-      return extractContentIdFromRecord(matchedByMission) || parsedFallback;
+      return {
+        contentId:
+          extractContentIdFromRecord(matchedByMissionAndCategory) ||
+          parsedFallback,
+        isExplicit: false,
+      };
     }
 
     const matchedByCategoryAndThread = findMatch((record, contentId) => {
@@ -332,9 +364,17 @@ const contentInteractionApi = {
       );
     });
 
-    return (
-      extractContentIdFromRecord(matchedByCategoryAndThread) || parsedFallback
-    );
+    return {
+      contentId:
+        extractContentIdFromRecord(matchedByCategoryAndThread) ||
+        parsedFallback,
+      isExplicit: false,
+    };
+  },
+
+  async getBestAnswerContentId(options = {}) {
+    const result = await this.getBestAnswerResolution(options);
+    return result?.contentId ?? null;
   },
 
   // Content CRUD and child pagination are handled by contentApi.

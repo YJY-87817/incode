@@ -222,9 +222,29 @@ const showMoreMenu = computed(() => {
 
 const currentUserId = computed(() => authStore.user?.id ?? null);
 
+const isLoggedIn = computed(() => {
+  if (authStore.isAuthenticated) return true;
+  return Boolean(currentUserId.value);
+});
+
 const isMissionOwner = computed(() => {
-  if (!currentUserId.value || !props.missionOwnerUserId) return false;
+  if (!currentUserId.value) return false;
+  if (!props.missionOwnerUserId) return false;
   return Number(currentUserId.value) === Number(props.missionOwnerUserId);
+});
+
+const isInThreadDetailPage = computed(() => {
+  if (!forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  if (!Number.isFinite(targetId) || targetId <= 0) return false;
+
+  const detailRelatedIds = [
+    Number(forumStore.threadDetail?.id),
+    ...(forumStore.threadPosts || []).map((item) => Number(item?.id)),
+    ...(forumStore.threadComments || []).map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return detailRelatedIds.includes(targetId);
 });
 
 const hasSelectedBestAnswer = computed(() => {
@@ -233,6 +253,8 @@ const hasSelectedBestAnswer = computed(() => {
 
 const canShowBestAnswerButton = computed(() => {
   return (
+    isLoggedIn.value &&
+    isInThreadDetailPage.value &&
     props.enableBestAnswer &&
     Boolean(props.entrustMissionId) &&
     Boolean(props.contentId) &&

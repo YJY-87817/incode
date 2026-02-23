@@ -86,6 +86,15 @@ const setCachedBestAnswerContentId = ({
   writeBestAnswerCache(cache);
 };
 
+const clearCachedBestAnswerContentId = ({ entrustMissionId, threadId }) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  if (!key) return;
+  const cache = readBestAnswerCache();
+  if (!(key in cache)) return;
+  delete cache[key];
+  writeBestAnswerCache(cache);
+};
+
 const buildTopicsCacheKey = ({
   categoryId,
   keyword,
@@ -305,8 +314,16 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
   const entrustMissionId =
     detail?.entrustMissionId ??
     detail?.entrust_mission_id ??
+    detail?.missionId ??
+    detail?.mission_id ??
+    detail?.taskId ??
+    detail?.task_id ??
     mission?.entrustMissionId ??
     mission?.entrust_mission_id ??
+    mission?.missionId ??
+    mission?.mission_id ??
+    mission?.taskId ??
+    mission?.task_id ??
     mission?.id ??
     null;
 
@@ -320,8 +337,18 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
   const missionOwnerUserId =
     mission?.userId ??
     mission?.user_id ??
+    mission?.ownerUserId ??
+    mission?.owner_user_id ??
+    mission?.publisherUserId ??
+    mission?.publisher_user_id ??
+    mission?.creatorUserId ??
+    mission?.creator_user_id ??
     detail?.entrustMissionUserId ??
     detail?.entrust_mission_user_id ??
+    detail?.ownerUserId ??
+    detail?.owner_user_id ??
+    detail?.publisherUserId ??
+    detail?.publisher_user_id ??
     detail?.userId ??
     detail?.user_id ??
     null;
@@ -347,12 +374,23 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
 
 const normalizeEntrustMissionRecord = (item = {}) => ({
   entrustMissionId:
-    item?.entrustMissionId ?? item?.entrust_mission_id ?? item?.id ?? null,
+    item?.entrustMissionId ??
+    item?.entrust_mission_id ??
+    item?.missionId ??
+    item?.mission_id ??
+    item?.taskId ??
+    item?.task_id ??
+    item?.id ??
+    null,
   entrustMissionUserId:
     item?.userId ??
     item?.user_id ??
     item?.ownerUserId ??
     item?.owner_user_id ??
+    item?.publisherUserId ??
+    item?.publisher_user_id ??
+    item?.creatorUserId ??
+    item?.creator_user_id ??
     null,
   rewardPoints: item?.rewardPoints ?? item?.reward_points ?? 0,
   bestAnswerContentId:
@@ -381,14 +419,21 @@ const fetchEntrustMissionMetaByContentId = async (contentId) => {
           : [];
 
       records.forEach((record) => {
-        const linkedContentId = Number(
-          record?.contentId ?? record?.content_id ?? null,
-        );
-        if (!Number.isFinite(linkedContentId)) return;
-        entrustMissionByContentCache.set(
-          linkedContentId,
-          normalizeEntrustMissionRecord(record),
-        );
+        const normalizedRecord = normalizeEntrustMissionRecord(record);
+        const linkedIds = [
+          record?.contentId,
+          record?.content_id,
+          record?.postContentId,
+          record?.post_content_id,
+          record?.parentContentId,
+          record?.parent_content_id,
+        ]
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value));
+
+        linkedIds.forEach((linkedContentId) => {
+          entrustMissionByContentCache.set(linkedContentId, normalizedRecord);
+        });
       });
 
       return entrustMissionByContentCache.get(targetId) ?? null;
@@ -1275,16 +1320,20 @@ export const useForumStore = defineStore("forum", {
             threadId: threadContentId,
           });
 
-          const resolvedBestAnswerContentId =
-            await contentInteractionApi.getBestAnswerContentId({
+          const resolvedBestAnswer =
+            await contentInteractionApi.getBestAnswerResolution({
               entrustMissionId: entrustMissionMeta.entrustMissionId,
               threadContentId,
               fallbackBestAnswerContentId:
                 entrustMissionMeta.bestAnswerContentId ??
                 cachedBestAnswerContentId,
             });
-          const finalBestAnswerContentId =
-            resolvedBestAnswerContentId ?? cachedBestAnswerContentId;
+
+          const resolvedBestAnswerContentId =
+            resolvedBestAnswer?.contentId ?? null;
+          const finalBestAnswerContentId = resolvedBestAnswer?.isExplicit
+            ? resolvedBestAnswerContentId
+            : (resolvedBestAnswerContentId ?? cachedBestAnswerContentId);
 
           // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
           let isPinned = detail.isPinned ?? false;
@@ -1341,6 +1390,11 @@ export const useForumStore = defineStore("forum", {
               entrustMissionId: entrustMissionMeta.entrustMissionId,
               threadId: threadContentId,
               bestAnswerContentId: finalBestAnswerContentId,
+            });
+          } else if (resolvedBestAnswer?.isExplicit) {
+            clearCachedBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadId: threadContentId,
             });
           }
 
