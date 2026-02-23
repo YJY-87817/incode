@@ -170,6 +170,7 @@ namespace incode2.Services.Contents
         return new ResultDTO { Ok = false, Code = 400, Message = "EntrustMissionId 或 ContentId 必須大於 0" };
       }
 
+      // 最佳解答流程包含任務狀態與點數更新，使用交易確保一致性
       using var transaction = await _context.Database.BeginTransactionAsync();
 
       try

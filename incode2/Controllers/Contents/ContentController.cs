@@ -20,6 +20,7 @@ namespace incode2.Controllers.Contents
     public IActionResult Index()
     {
       // 查詢所有貼文（包含作者和分類）
+      // 將資料庫結果轉成 ViewModel 供 Razor 檢視使用
       var contentList = _context.Content
       .Include(c => c.Category)          // 關聯查詢：分類
       //.Where(c => c.ParentContentId == null)  // 只要主貼文（不要回覆）
@@ -37,6 +38,7 @@ namespace incode2.Controllers.Contents
       .ToList();
       Console.WriteLine("主貼文總數：" + contentList.Count);
 
+      // 回傳給 Views/Content/Index.cshtml 顯示
       return View(contentList);
     }
 
@@ -78,6 +80,7 @@ namespace incode2.Controllers.Contents
         Replies = replies
       };
 
+      // 回傳給 Views/Content/Details.cshtml 顯示
       return View(viewModel);
     }
   }

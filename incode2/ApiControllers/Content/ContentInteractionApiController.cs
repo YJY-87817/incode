@@ -30,6 +30,7 @@ namespace incode2.ApiControllers.Content
     [HttpGet("content/{contentId}")]
     public async Task<IActionResult> GetContentInteractions(int contentId)
     {
+      // 互動資料由 ContentInteractionService 統一查詢
       var interactions = await _contentInteractionService.GetContentInteractions(contentId);
       return Ok(new
       {
@@ -55,6 +56,7 @@ namespace incode2.ApiControllers.Content
       if (userId == 0)
         return Unauthorized(new { message = "無法取得使用者ID" });
 
+      // 交由 ContentInteractionService 查使用者互動
       var interactions = await _contentInteractionService.GetUserInteraction(contentId, userId);
       if (interactions == null || interactions.Count == 0)
         return Ok(new { message = "此使用者尚未對該內容進行互動", interactions = Array.Empty<object>() });
@@ -102,6 +104,7 @@ namespace incode2.ApiControllers.Content
         // 設定 userId，確保使用者只能互動自己的操作
         dto.UserId = userId;
 
+        // 寫入/移除互動交由 ContentInteractionService 處理
         var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
 
         // 回傳新增互動或是移除互動
@@ -190,6 +193,7 @@ namespace incode2.ApiControllers.Content
       if (dto.EntrustMissionId <= 0 || dto.ContentId <= 0)
         return BadRequest(new { message = "EntrustMissionId 和 ContentId 必須大於 0" });
 
+      // 最佳解答流程由 ContentInteractionService 處理（含點數與任務狀態）
       var result = await _contentInteractionService.SelectBestAnswerAsync(dto.EntrustMissionId, dto.ContentId, userId);
 
       if (!result.Ok)

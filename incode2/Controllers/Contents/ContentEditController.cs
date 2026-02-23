@@ -19,9 +19,9 @@ namespace incode2.Controllers.Contents
 
     public async Task<IActionResult> Index()
     {
-      //這邊我成功Join兩個資料表
+      // 從 Content 帶出 ContentHistory，供編輯畫面比較新舊內容
       var joinA = _context.Content.Include(c => c.ContentHistory);
-      //這邊我成功Join兩個資料表
+      // 將資料庫結果投影成 ViewModel，交由 Views/ContentEdit/Index.cshtml 使用
       var ContentEditViewModel = joinA.Select(d=>new ContentEditViewModel
       {
         ContentId = d.ContentId,

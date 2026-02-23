@@ -36,6 +36,7 @@ namespace incode2.Controllers.Contents
     [HttpPost]
     public async Task<IActionResult> IndexJson()
     {
+      // 提供給前端 DataTables 的 JSON 資料來源
       var category = await _context.ContentCategory
       .Select(c => new
       {

@@ -145,6 +145,7 @@ namespace incode2.Services.Contents
       }
 
       var replyLookup = replyStats.ToDictionary(x => x.ContentId, x => x);
+      // 將查詢結果轉成 API 回傳用的 ContentListItemDto
       var items = pageItems.Select(c =>
       {
         replyLookup.TryGetValue(c.ContentId, out var stats);
@@ -239,6 +240,7 @@ namespace incode2.Services.Contents
         lastReplyUser = lastReplyUserData;
       }
 
+      // 互動資訊從 ContentInteraction 資料表彙整
       var interactionLookup = await GetUserInteractionLookupAsync(new[] { id }, userId);
       interactionLookup.TryGetValue(id, out var categories);
       var myInteractions = BuildMyInteractions(categories);
@@ -302,6 +304,7 @@ namespace incode2.Services.Contents
         .OrderByDescending(c => c.CreatedAt)
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
+        // 將子回覆資料投影成 ContentDto
         .Select(c => new ContentDto
         {
           ContentId = c.ContentId,
@@ -376,6 +379,7 @@ namespace incode2.Services.Contents
         }
       }
 
+      // 內文寫入檔案後，Body 僅保存檔案路徑
       var bodyUri = await SaveContentBodyAsync(dto.Body);
 
       var content = new Content
@@ -418,6 +422,7 @@ namespace incode2.Services.Contents
       };
       _context.ContentHistory.Add(history);
 
+      // 更新內容時同步覆寫檔案內容
       var bodyUri = await SaveContentBodyAsync(dto.Body);
 
       content.Title = dto.Title;
