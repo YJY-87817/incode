@@ -38,7 +38,7 @@ namespace incode2.ApiControllers.user
 
             try
             {
-                var result = await _authService.RegisterAsync(dto.Email, dto.Password, dto.Username);
+                var result = await _authService.RegisterAsync(dto.Email, dto.Password, dto.Username, dto.ImageUrl);
 
                 if (result == "Success")
                 {

@@ -13,6 +13,7 @@ namespace incode2.Dtos.Users
         public string Password { get; set; }
 
         public string? Username { get; set; }
-        public DateOnly? Birthday { get; set; } 
+        public DateOnly? Birthday { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }
