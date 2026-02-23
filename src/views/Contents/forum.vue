@@ -192,12 +192,13 @@ watch(
   <DefaultFooter />
 
   <button
-    class="btn btn-forum-primary forum-new-topic-fab"
+    class="btn btn-forum-primary forum-new-topic-fab d-inline-flex align-items-center justify-content-center"
     type="button"
     @click="openNewTopicModal"
+    aria-label="發佈新主題"
   >
     <i class="fas fa-plus"></i>
-    <span class="ms-2">發佈新主題</span>
+    <span class="ms-2 d-none d-sm-inline">發佈新主題</span>
   </button>
 </template>
 
@@ -352,17 +353,32 @@ watch(
   position: fixed;
   right: 20px;
   top: 90px;
-  z-index: 999;
+  z-index: 1030;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
 }
 
-@media (max-width: 576px) {
+@media (max-width: 991.98px) {
   .forum-new-topic-fab {
-    right: 12px;
-    bottom: 80px;
+    top: 50%;
+    right: -10px;
+    bottom: auto;
+    transform: translateY(-50%);
+    border-radius: 30px 0 0 30px;
+    width: auto;
+    height: 45px;
+    padding: 0 15px 0 18px;
     font-size: 0.9rem;
+    box-shadow: -4px 0 15px rgba(20, 83, 105, 0.35);
+  }
+
+  .forum-new-topic-fab span {
+    display: none !important;
+  }
+
+  .forum-new-topic-fab i {
+    margin-right: 0 !important;
   }
 }
 
