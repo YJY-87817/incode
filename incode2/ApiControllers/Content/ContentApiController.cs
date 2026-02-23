@@ -160,7 +160,7 @@ namespace incode2.ApiControllers.Content
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       // 交由 ContentService 依 type 篩選使用者貼文
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 1 }, page, pageSize);
+      var result = await _contentService.GetUserContents(userId, new[] { 1 }, page, pageSize);
       
       // 轉換為包含舊欄位的格式以保持向下相容
       var resultObj = result as dynamic;
@@ -187,7 +187,7 @@ namespace incode2.ApiControllers.Content
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       // 交由 ContentService 依 type 篩選使用者回覆
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 2 }, page, pageSize);
+      var result = await _contentService.GetUserContents(userId, new[] { 2 }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
@@ -213,7 +213,7 @@ namespace incode2.ApiControllers.Content
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       // 交由 ContentService 依 type 篩選使用者評論
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 }, page, pageSize);
+      var result = await _contentService.GetUserContents(userId, new[] { 3, 4 }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
