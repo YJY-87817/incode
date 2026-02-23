@@ -1,18 +1,13 @@
-<!-- 明細帳本 (PointTable.vue)
-這是最複雜的部分，也就是下方的列表。
-
-它從大腦拿「過濾後的資料」來顯示。
-
-它包含了一個**「切片功能（分頁）」**：如果大腦給它 100 筆資料，它會設定一次只秀 10 筆，讓你按「下一頁」才看後面的。 -->
 <script setup>
 import { ref, computed, watch } from "vue";
 import { usePointStore } from "@/stores/point/UsePointStore.js";
 
 const store = usePointStore();
-const currentPage = ref(1); //紀錄現在在第幾頁
-const itemsPerPage = 10; //設定一頁秀 10 筆
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
-// 當過濾條件改變時，回到第一頁
+const mainColor = "#145369"; // 定義主色
+
 watch([() => store.searchQuery, () => store.filterType], () => {
   currentPage.value = 1;
 });
@@ -28,22 +23,27 @@ const totalPages = computed(() =>
 
 const getBadgeClass = (category) => {
   const map = {
-    平台任務: "bg-success-subtle text-success",
-    委託任務: "bg-success-subtle text-success",
-    商城商品兌換: "bg-primary-subtle text-primary",
-    點數儲值: "bg-info-subtle text-info",
-    系統調整: "bg-secondary-subtle text-secondary",
+    平台任務: "custom-badge-main",
+    委託任務: "custom-badge-main",
+    預扣: "custom-badge-main",
+    商城: "custom-badge-main",
+    打賞: "custom-badge-main",
+    儲值: "custom-badge-main",
+    系統調整: "custom-badge-main",
   };
   return map[category] || "bg-info-subtle text-info";
 };
 </script>
 
 <template>
-  <div class="card-body p-0 border border-top-0 border-primary">
+  <div
+    class="card-body p-0 border border-top-0"
+    :style="{ borderColor: mainColor + ' !important' }"
+  >
     <div v-if="store.isLoading" class="text-center py-5">
       <div
-        class="spinner-border text-primary"
-        style="width: 3rem; height: 3rem"
+        class="spinner-border"
+        :style="{ width: '3rem', height: '3rem', color: mainColor }"
       ></div>
       <p class="mt-3 text-muted">正在載入點數紀錄...</p>
     </div>
@@ -55,7 +55,7 @@ const getBadgeClass = (category) => {
 
     <div v-else class="table-responsive">
       <table class="table table-hover align-middle mb-0 table-borderless">
-        <thead class="bg-info text-dark small">
+        <thead class="custom-thead">
           <tr>
             <th class="ps-4">日期 / 項目</th>
             <th>類別</th>
@@ -68,6 +68,10 @@ const getBadgeClass = (category) => {
             <td class="ps-4">
               <div class="small text-muted">{{ log.date }}</div>
               <div class="fw-bold text-dark">{{ log.item }}</div>
+              <!-- 新增：顯示訂單編號（如果存在） -->
+              <div v-if="log.subTitle" class="small text-muted mt-1">
+                ({{ log.subTitle }})
+              </div>
             </td>
             <td>
               <span
@@ -80,33 +84,98 @@ const getBadgeClass = (category) => {
               class="text-center fw-bold"
               :class="log.points > 0 ? 'text-success' : 'text-danger'"
             >
-              {{ log.points > 0 ? "+" : "" }}{{ log.points.toLocaleString()
-              }}<i class="bi bi-coin fs-6 ms-1 text-warning"></i>
+              {{ log.points > 0 ? "+" : "" }}{{ log.points.toLocaleString() }}
             </td>
-            <td class="text-end pe-4 text-secondary fw-medium">
-              {{ log.balance.toLocaleString()
-              }}<i class="bi bi-coin fs-6 ms-1 text-warning"></i>
+            <td class="text-end pe-4 fw-medium" :style="{ color: '#145369' }">
+              {{ log.balance.toLocaleString() }}
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div
+    <nav
       v-if="totalPages > 1"
+      aria-label="Page navigation example"
       class="py-3 border-top d-flex justify-content-center"
     >
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <button class="page-link" @click="currentPage--">前一頁</button>
+          <a
+            class="page-link"
+            href="#"
+            aria-label="Previous"
+            @click.prevent="currentPage--"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
         </li>
-        <li class="page-item active">
-          <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
+
+        <li
+          v-for="page in totalPages"
+          :key="page"
+          class="page-item"
+          :class="{ active: currentPage === page }"
+        >
+          <a class="page-link" href="#" @click.prevent="currentPage = page">
+            {{ page }}
+          </a>
         </li>
+
         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-          <button class="page-link" @click="currentPage++">後一頁</button>
+          <a
+            class="page-link"
+            href="#"
+            aria-label="Next"
+            @click.prevent="currentPage++"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
         </li>
       </ul>
-    </div>
+    </nav>
   </div>
 </template>
+
+<style scoped>
+/* --- 強化的表頭樣式 --- */
+.custom-thead {
+  background-color: #86b0bd !important;
+}
+
+.custom-thead th {
+  /* 1. 解決字看不見的問題：改用深色或白色 */
+  /* 如果背景是 #86b0bd，建議用深灰藍色（如照片中的層次感）或純白 */
+  color: #2c3e50 !important;
+
+  /* 2. 強化視覺效果 */
+  font-size: 0.85rem; /* 對應 small */
+  font-weight: 700; /* 加粗文字 */
+  letter-spacing: 1px; /* 增加字距，這對中文非常有效 */
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border: none;
+}
+/* 自定義主色 Badge */
+.custom-badge-main {
+  background-color: #b2c9d1;
+  color: #145369;
+}
+/* 修改一般狀態的數字顏色 */
+.page-link {
+  color: #86b0bd; /* 主色 */
+}
+
+/* 修改滑鼠移過去的顏色 */
+.page-link:hover {
+  color: #86b0bd;
+  background-color: #e9ecef;
+}
+
+/* 修改當前頁面 (Active) 的顏色 */
+.page-item.active .page-link {
+  background-color: #86b0bd !important;
+  border-color: #86b0bd !important;
+  color: #145369 !important;
+}
+</style>

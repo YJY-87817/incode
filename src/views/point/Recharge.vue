@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 // 2. 儲值方案設定
 const plans = ref([
@@ -15,15 +16,15 @@ const selectedPlan = ref(2); // 預設選中熱門方案
 // const selectedPayment = ref("credit-card"); // 預設支付方式
 const customAmount = ref(null);
 const isLoading = ref(false);
-const exchangeRate = 1;
+const exchangeRate = 10;
 
 // 5. 計算屬性
 const finalDetails = computed(() => {
   if (selectedPlan.value === "custom") {
     const amt = customAmount.value || 0;
     return {
-      points: amt,
-      price: amt * exchangeRate,
+      points: Math.floor(amt * exchangeRate), // 金額轉點數
+      price: amt,
       bonus: 0,
     };
   }
@@ -34,7 +35,7 @@ const finalDetails = computed(() => {
 const isSubmitDisabled = computed(() => {
   if (
     selectedPlan.value === "custom" &&
-    (!customAmount.value || customAmount.value < 100)
+    (!customAmount.value || customAmount.value < 10)
   )
     return true;
   return false;
@@ -48,53 +49,77 @@ const selectPlan = (id) => {
 
 // 點確認付款 → 呼叫後端生成訂單 → 自動導到綠界
 // 6. 方法 (優化後的 handleCheckout)
+// 修改後的 handleCheckout 方法
 const handleCheckout = async () => {
   if (isSubmitDisabled.value) return;
-  isLoading.value = true;
 
-  try {
-    // 1. 根據你 Postman 的圖示，payload 欄位名稱要跟後端對上
-    const payload = {
-      cashAmount: finalDetails.value.price, // 對應後端 cashAmount
-      paymentMethod: "credit", // 依後端邏輯決定
-    };
+  // 1. 彈出緩衝提示 (倒數 3 秒)
+  let timerInterval;
+  const result = await Swal.fire({
+    title: "安全跳轉中...",
+    html: "正在為您加密連接綠界金流系統，請稍候 <b>3</b> 秒。",
+    timer: 3000, // 3000ms = 3秒
+    timerProgressBar: true,
+    didOpen: () => {
+      Swal.showLoading();
+      const timer = Swal.getHtmlContainer().querySelector("b");
+      timerInterval = setInterval(() => {
+        const secondsLeft = Math.ceil(Swal.getTimerLeft() / 1000);
+        timer.textContent = secondsLeft;
+      }, 100);
+    },
+    willClose: () => {
+      clearInterval(timerInterval);
+    },
+  });
 
-    // 2. 呼叫後端生成訂單資料
-    const res = await axios.post(
-      "https://localhost:7190/api/PointRechargeApi/recharge",
-      payload,
-      { withCredentials: true },
-    );
+  // 如果使用者在倒數期間沒發生錯誤，則繼續執行
+  if (result.dismiss === Swal.DismissReason.timer || result.isConfirmed) {
+    isLoading.value = true;
 
-    // 這裡的 data 就是你 Postman 看到的那個 JSON 物件
-    const ecpayData = res.data;
+    try {
+      // 2. 呼叫後端生成訂單
+      const payload = {
+        cashAmount: finalDetails.value.price,
+        paymentMethod: "credit",
+      };
 
-    // 3. 建立一個隱藏的 form 物件
-    const form = document.createElement("form");
-    form.method = "POST";
-    // 注意：如果是正式環境要換成正式網址
-    form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/PointRechargeApi/recharge`,
+        payload,
+        { withCredentials: true },
+      );
 
-    // 4. 自動將後端傳回的所有 Key-Value 轉為 input hidden 欄位
-    Object.entries(ecpayData).forEach(([key, value]) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = ecpayData[key];
-      form.appendChild(input);
-    });
+      const ecpayData = res.data;
 
-    // 6. 插入 DOM 並執行提交
-    document.body.appendChild(form);
-    form.submit();
+      // 3. 建立並提交隱藏 Form
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 
-    // 提交後移除該 form (雖然頁面準備跳轉了，但維持乾淨是個好習慣)
-    document.body.removeChild(form);
-  } catch (err) {
-    console.error("金流串接失敗:", err);
-    alert("無法啟動支付流程，請檢查網路或聯繫客服");
-  } finally {
-    isLoading.value = false;
+      Object.entries(ecpayData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    } catch (err) {
+      console.error("金流串接失敗:", err);
+      Swal.fire({
+        icon: "error",
+        title: "支付失敗",
+        text: "無法啟動支付流程，請檢查網路或聯繫客服",
+        confirmButtonColor: "#145369",
+        customClass: { confirmButton: "text-white" },
+      });
+    } finally {
+      isLoading.value = false;
+    }
   }
 };
 
@@ -170,7 +195,7 @@ onMounted(async () => {
                   <div class="row align-items-center">
                     <div class="col-md-6">
                       <h6 class="font-weight-bold text-sm text-secondary mb-3">
-                        自定義儲值額度 (最低 100)
+                        自定義儲值額度 (最低新台幣 10 元)
                       </h6>
                       <div
                         class="input-group input-group-outline"
@@ -187,16 +212,16 @@ onMounted(async () => {
                         />
                       </div>
                       <small
-                        v-if="customAmount && customAmount < 100"
+                        v-if="customAmount && customAmount < 10"
                         class="text-danger mt-1 d-block text-xs"
                       >
-                        金額不可低於 100
+                        金額不可低於 10
                       </small>
                     </div>
                     <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
                       <p class="text-sm mb-0 text-secondary">預計獲得點數</p>
                       <h2 class="font-weight-bolder text-primary mb-0">
-                        {{ (customAmount || 0).toLocaleString() }} Pts
+                        {{ finalDetails.points.toLocaleString() }} Pts
                       </h2>
                     </div>
                   </div>

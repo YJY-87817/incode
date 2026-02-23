@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import service from "@/api/point/axios.js"; // 假設這是你的 API 服務
+import service from "@/api/point/axios.js";
 
 export const useTaskStore = defineStore("task", {
   state: () => ({
@@ -144,28 +144,97 @@ export const useTaskStore = defineStore("task", {
       });
     },
 
-    totalTasks: (state) => {
-      return state.activeTab === "mission"
-        ? state.missions.length
-        : state.entrustMissions.length;
+    filteredMissions: (state) => {
+      let result = [...(state.missions || [])];
+
+      // 搜尋
+      if (state.searchQuery.trim()) {
+        const q = state.searchQuery.toLowerCase().trim();
+        result = result.filter((item) =>
+          (item.title || "").toLowerCase().includes(q),
+        );
+      }
+
+      // 類別
+      if (state.selectedCategory !== "全部") {
+        result = result.filter(
+          (item) => item.category === state.selectedCategory,
+        );
+      }
+
+      // 難度
+      if (state.selectedDifficulty !== "不限難度") {
+        result = result.filter(
+          (item) => item.difficulty === state.selectedDifficulty,
+        );
+      }
+
+      // 時間 (平台任務是匹配字串)
+      if (state.selectedDuration !== "不限時間") {
+        result = result.filter(
+          (item) => item.duration === state.selectedDuration,
+        );
+      }
+
+      // 排序
+      return result.sort((a, b) => {
+        if (state.sortOption === "reward")
+          return (b.reward || 0) - (a.reward || 0);
+        if (state.sortOption === "popular")
+          return (b.participants ?? 0) - (a.participants ?? 0);
+        if (a.featured !== b.featured)
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
     },
 
-    totalParticipants: (state) => {
-      const isMission = state.activeTab === "mission";
-      const list = isMission ? state.missions : state.entrustMissions;
-      const key = isMission ? "participants" : "applicants";
-      return list.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
-    },
+    // 2. 委託任務專用過濾
+    filteredEntrusts: (state) => {
+      let result = [...(state.entrustMissions || [])];
 
-    totalRewardPool: (state) => {
-      const isMission = state.activeTab === "mission";
-      const source = isMission ? state.missions : state.entrustMissions;
+      // 搜尋
+      if (state.searchQuery.trim()) {
+        const q = state.searchQuery.toLowerCase().trim();
+        result = result.filter((item) =>
+          (item.title || "").toLowerCase().includes(q),
+        );
+      }
 
-      return source.reduce((sum, item) => {
-        // 確保讀取正確的欄位：Mission 用 reward，Entrust 用 price
-        const value = isMission ? item.reward || 0 : item.price || 0;
-        return sum + Number(value);
-      }, 0);
+      // 類別
+      if (state.selectedCategory !== "全部") {
+        result = result.filter(
+          (item) => item.category === state.selectedCategory,
+        );
+      }
+
+      // 時間 (委託任務是根據日期計算)
+      if (state.selectedDuration !== "不限時間") {
+        const now = new Date();
+        result = result.filter((item) => {
+          if (!item.rawDeadline) return true;
+          const diffDays =
+            (new Date(item.rawDeadline) - now) / (1000 * 60 * 60 * 24);
+          if (state.selectedDuration === "1-3 天")
+            return diffDays > 0 && diffDays <= 3;
+          if (state.selectedDuration === "3-7 天")
+            return diffDays > 3 && diffDays <= 7;
+          if (state.selectedDuration === "7-14 天")
+            return diffDays > 7 && diffDays <= 14;
+          if (state.selectedDuration === "14 天以上") return diffDays > 14;
+          return true;
+        });
+      }
+
+      // 排序
+      return result.sort((a, b) => {
+        if (state.sortOption === "reward")
+          return (b.price || 0) - (a.price || 0);
+        if (state.sortOption === "popular")
+          return (b.applicants ?? 0) - (a.applicants ?? 0);
+        if (state.sortOption === "urgent")
+          return (b.urgent === true) - (a.urgent === true);
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
     },
   },
 
@@ -222,6 +291,9 @@ export const useTaskStore = defineStore("task", {
 
         this.entrustMissions = (entrustRes.data || []).map((item) => ({
           id: item.entrustMissionId,
+          contentId: item.contentId,
+          username: item.username,
+          imageUrl: item.imageUrl,
           title: item.title || "未命名委託",
           desc: item.detail || "無詳細說明",
           price: item.rewardPoints || 0,
@@ -262,10 +334,8 @@ export const useTaskStore = defineStore("task", {
       try {
         const isPlatform = type === "platform";
         const endpoint = isPlatform
-          ? `/api/MissionApi/${taskId}/missionClaim`
+          ? `/api/MissionApi/${taskId}/claim`
           : `/api/EntrustMissionApi/${taskId}/entrustMissionClaim`;
-
-        console.log(`開始領取 ${type} 任務：ID = ${taskId}`);
 
         const response = await service.post(endpoint);
         const result = response.data;
@@ -296,10 +366,6 @@ export const useTaskStore = defineStore("task", {
             // 4. 寫回 Store 並觸發 UI 刷新
             this[listKey][taskIndex] = task;
             this[listKey] = [...this[listKey]];
-
-            console.log(
-              `${type} 前端更新成功，目前人數: ${isPlatform ? task.participants : task.applicants}`,
-            );
           }
         }
         return result;
@@ -308,7 +374,9 @@ export const useTaskStore = defineStore("task", {
           `領取 ${type} 請求失敗：`,
           err.response?.data || err.message,
         );
-        const msg = err.response?.data?.message || "領取失敗，請稍後再試";
+        const msg = err.response?.data?.message
+          ? `${err.response.data.message} (錯誤碼: ${err.response.data.code || err.response.status})`
+          : "領取失敗，請稍後再試";
         throw new Error(msg);
       }
     }, //之後任務完成邏輯
