@@ -29,12 +29,14 @@ table content_category {
 // 使用者與內容的互動
 table content_interaction {
   content_interaction_id int [pk, increment]
-  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)有人回覆、(6)官方公告"]
+  category_id int [not null, ref: > interaction_category.interaction_category_id, note:"CONSTRAINT FK_content_interaction_interaction_category 互動分類:(1)like、(2)hide、(3)bookmark、(4)report、(5)最佳解、(6)打賞"]
   content_id int [not null, ref: > content.content_id, note: "CONSTRAINT FK_content_interaction_content"]
   user_id int [not null, ref: > user.user_id, note: "CONSTRAINT FK_content_interaction_user"]
+  // 本次新增description
+  description nvarchar(500) [note: "互動備註：檢舉原因、打賞點數等。若為一般按讚則為NULL"]
   created_at datetime [default:`current_timestamp`]
   updated_at datetime [default:`current_timestamp`, note: "管理員修改用"]
-  note {"類似按讚表的擴增"}
+  note {"使用者與內容的互動，類似按讚表的擴增"}
 }
 
 
