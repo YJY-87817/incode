@@ -108,8 +108,8 @@ table user{
   is_active bit [default: 1]
   role_id integer [ref: > role.role_id]
   employeeid integer
-   ResetToken nvarchar(500)  
-ResetTokenExpiry datetime2(7)
+  ResetToken nvarchar(500) 
+  ResetTokenExpiry datetime2(7)  
 }
 
 
