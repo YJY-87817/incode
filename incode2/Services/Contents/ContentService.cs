@@ -11,11 +11,13 @@ namespace incode2.Services.Contents
   {
     private readonly incodedatabaseContext _context;
     private readonly IWebHostEnvironment _environment;
+    private readonly IContentInteractionService _contentInteractionService;
 
-    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment)
+    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IContentInteractionService contentInteractionService)
     {
       _context = context;
       _environment = environment;
+      _contentInteractionService = contentInteractionService;
     }
 
     public async Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy)
@@ -136,12 +138,7 @@ namespace incode2.Services.Contents
             x.LastReply != null ? (int?)x.LastReply.UserId : null);
         }).ToList();
 
-        likeCounts = await _context.ContentInteraction
-          .AsNoTracking()
-          .Where(ci => ci.CategoryId == 1 && contentIds.Contains(ci.ContentId))
-          .GroupBy(ci => ci.ContentId)
-          .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
-          .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
+        likeCounts = await _contentInteractionService.GetLikeCountsAsync(contentIds);
       }
 
       var replyLookup = replyStats.ToDictionary(x => x.ContentId, x => x);
@@ -241,13 +238,10 @@ namespace incode2.Services.Contents
       }
 
       // 互動資訊從 ContentInteraction 資料表彙整
-      var interactionLookup = await GetUserInteractionLookupAsync(new[] { id }, userId);
+      var interactionLookup = await _contentInteractionService.GetUserInteractionLookupAsync(new[] { id }, userId);
       interactionLookup.TryGetValue(id, out var categories);
       var myInteractions = BuildMyInteractions(categories);
-      var likeCount = await _context.ContentInteraction
-        .AsNoTracking()
-        .Where(ci => ci.ContentId == id && ci.CategoryId == 1)
-        .CountAsync();
+      var likeCount = await _contentInteractionService.GetLikeCountAsync(id);
 
       return new ContentDto
       {
@@ -328,12 +322,7 @@ namespace incode2.Services.Contents
       var likeCounts = new Dictionary<int, int>();
       if (contentIds.Count > 0)
       {
-        likeCounts = await _context.ContentInteraction
-          .AsNoTracking()
-          .Where(ci => ci.CategoryId == 1 && contentIds.Contains(ci.ContentId))
-          .GroupBy(ci => ci.ContentId)
-          .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
-          .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
+        likeCounts = await _contentInteractionService.GetLikeCountsAsync(contentIds);
       }
 
       // Populate like counts
@@ -343,7 +332,7 @@ namespace incode2.Services.Contents
         item.LikeCount = likeCount;
       }
 
-      var interactionLookup = await GetUserInteractionLookupAsync(contentIds, userId);
+      var interactionLookup = await _contentInteractionService.GetUserInteractionLookupAsync(contentIds, userId);
       foreach (var item in items)
       {
         interactionLookup.TryGetValue(item.ContentId, out var categories);
@@ -660,30 +649,6 @@ namespace incode2.Services.Contents
         .Distinct()
         .Take(maxImages)
         .ToList();
-    }
-
-    private async Task<Dictionary<int, HashSet<int>>> GetUserInteractionLookupAsync(IEnumerable<int> contentIds, int? userId)
-    {
-      if (!userId.HasValue || userId.Value <= 0)
-      {
-        return new Dictionary<int, HashSet<int>>();
-      }
-
-      var contentIdList = contentIds?.Distinct().ToList() ?? new List<int>();
-      if (contentIdList.Count == 0)
-      {
-        return new Dictionary<int, HashSet<int>>();
-      }
-
-      var interactions = await _context.ContentInteraction
-        .AsNoTracking()
-        .Where(ci => ci.UserId == userId.Value && contentIdList.Contains(ci.ContentId))
-        .Select(ci => new { ci.ContentId, ci.CategoryId })
-        .ToListAsync();
-
-      return interactions
-        .GroupBy(ci => ci.ContentId)
-        .ToDictionary(g => g.Key, g => g.Select(ci => ci.CategoryId).ToHashSet());
     }
 
     private static MyInteractionsDto BuildMyInteractions(IReadOnlyCollection<int> categories)
