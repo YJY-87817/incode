@@ -1,4 +1,4 @@
-﻿using Google.GenAI.Types;
+using Google.GenAI.Types;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
@@ -24,36 +24,40 @@ namespace incode2.Services.Point
             _context = context;
         }
 
-        // 儲值
+        // 儲值成功加點
         public async Task AddPointsFromRechargeAsync(PointRecharge recharge)
         {
             using var tx = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                // 重新從資料庫抓取最新狀態，避免傳進來的 recharge 物件狀態過時
                 var dbOrder = await _context.PointRecharge
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(o => o.PointRechargeId == recharge.PointRechargeId);
 
                 if (dbOrder == null)
                     throw new Exception("訂單不存在");
 
                 if (dbOrder.Status == "success")
-                    return; // 防重送 OK
+                    return; // 冪等
 
-                var success = await ChangePointsAsync(
-                    dbOrder.UserId,
-                    dbOrder.PointsGranted,
-                    "point_recharge",
-                    dbOrder.PointRechargeId,
-                    PointType.PointRecharge
+                bool success = await ChangePointsAsync(
+                    userId: dbOrder.UserId,
+                    changeAmount: dbOrder.PointsGranted,
+                    sourceType: "point_recharge",
+                    sourceId: dbOrder.PointRechargeId,
+                    type: PointType.IncomePointRecharge,
+                    displaySource: "點數儲值",
+                    displaySubTitle: $"訂單 #{dbOrder.OrderNo ?? dbOrder.PointRechargeId.ToString()}"
                 );
 
                 if (!success)
-                    throw new Exception("加點失敗");
+                    throw new Exception("加點失敗（餘額異常）");
 
-                dbOrder.Status = "success";
-                dbOrder.CreatedAt = DateTime.Now;
+                // 更新訂單狀態
+                var orderToUpdate = new PointRecharge { PointRechargeId = dbOrder.PointRechargeId };
+                _context.Attach(orderToUpdate);
+                orderToUpdate.Status = "success";
+                orderToUpdate.CreatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -66,45 +70,47 @@ namespace incode2.Services.Point
         }
 
         // 加扣點 //transaction另外包
-        public async Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type)
+        public async Task<bool> ChangePointsAsync(
+            int userId,
+            int changeAmount,
+            string sourceType,
+            int? sourceId,
+            PointType type,
+            string? displaySource = null,
+            string? displaySubTitle = null)
         {
-            //using var transaction = await _context.Database.BeginTransactionAsync();
-            //try
-            //{
-                var currentBalance = await GetCurrentBalanceAsync(userId);
+            var currentBalance = await GetCurrentBalanceAsync(userId);
+            var newBalance = currentBalance + changeAmount;
 
-                if (changeAmount < 0 && currentBalance + changeAmount < 0)
-                    return false;
+            if (changeAmount < 0 && newBalance < 0)
+                return false;
 
-                _context.PointLog.Add(new PointLog
-                {
-                    UserId = userId,
-                    SourceType = sourceType,
-                    SourceId = sourceId,
-                    PointTypeDefinitionId = (int)type, 
-                    ChangeAmount = changeAmount,
-                    BalanceAfter = currentBalance + changeAmount,
-                    Status = "success",
-                    CreatedAt = DateTime.Now
-                });
+            var log = new PointLog
+            {
+                UserId = userId,
+                SourceType = sourceType,
+                SourceId = sourceId,
+                PointTypeDefinitionId = (int)type,
+                ChangeAmount = changeAmount,
+                BalanceAfter = newBalance,
+                Status = "success",
+                CreatedAt = DateTime.Now,  // 建議改用 UTC 避免時區問題
+                DisplaySource = displaySource,
+                DisplaySourceSubTitle = displaySubTitle
+            };
 
-                //await _context.SaveChangesAsync();
-                //await tx.CommitAsync();
-                return true;
-            //}
-            //catch
-            //{
-                //await tx.RollbackAsync();
-                //return false;
-            //}
-        }  
+            _context.PointLog.Add(log);
+
+            // 不呼叫 SaveChanges，讓呼叫端決定何時 commit
+            return true;
+        }
 
         public async Task<IEnumerable<PointLogDTO>> GetUserLogsAsync(int userId)
         {
-            // 給 API前端用
             return await _context.PointLog
                 .AsNoTracking()
                 .Where(l => l.UserId == userId)
+                .Include(l => l.PointTypeDefinition)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => new PointLogDTO
                 {
@@ -115,17 +121,31 @@ namespace incode2.Services.Point
                     BalanceAfter = l.BalanceAfter,
                     SourceType = l.SourceType,
                     SourceId = l.SourceId,
-                    DisplayName = l.SourceType == "mission"
-                        ? (_context.Mission.Where(m => m.MissionId == l.SourceId).Select(m => m.MissionName).FirstOrDefault() ?? "平台任務獎勵")
-                        : l.SourceType == "entrust_mission"
+
+                    // 主顯示名稱（已包含 subTitle）
+                    DisplayName = !string.IsNullOrWhiteSpace(l.DisplaySource)
+                ? l.DisplaySource
+                  + (string.IsNullOrWhiteSpace(l.DisplaySourceSubTitle)
+                     ? ""
+                     : $" - {l.DisplaySourceSubTitle}")
+                : l.SourceType == "mission"
+                    ? (_context.Mission.Where(m => m.MissionId == l.SourceId).Select(m => m.MissionName).FirstOrDefault() ?? "平台任務獎勵")
+                    : l.SourceType == "entrust_mission"
                         ? (_context.EntrustMission.Where(e => e.EntrustMissionId == l.SourceId).Select(e => e.Title).FirstOrDefault() ?? "委託任務獎勵")
                         : l.SourceType == "entrust_mission_point_reserve"
-                        ? (_context.EntrustMission.Where(e => e.EntrustMissionId == l.SourceId).Select(e => "[預扣] " + e.Title).FirstOrDefault() ?? "委託發布預扣")
-                        : l.SourceType == "orders"
-                        ? "商城商品兌換"
-                        : l.SourceType == "point_recharge"
-                        ? "點數儲值"
-                        : l.PointTypeDefinition != null ? l.PointTypeDefinition.DisplayName : "點數異動"
+                            ? (_context.EntrustMission.Where(e => e.EntrustMissionId == l.SourceId).Select(e => "[預扣] " + e.Title).FirstOrDefault() ?? "委託發布預扣")
+                            : l.SourceType == "orders"
+                               ? (l.ChangeAmount < 0 ? "商城商品購買" : "商城商品退款")
+                                : l.SourceType == "point_recharge"
+                                    ? "點數儲值"
+                                    : l.SourceType == "point_tip"
+                                        ? (l.ChangeAmount < 0 ? "打賞內容" : "收到打賞")
+                                        : l.PointTypeDefinition != null
+                                            ? l.PointTypeDefinition.DisplayName
+                                            : "點數異動",
+
+                    // 關鍵：一定要回傳這個欄位給前端！
+                    DisplaySourceSubTitle = l.DisplaySourceSubTitle
                 })
                 .ToListAsync();
         }
@@ -217,66 +237,79 @@ namespace incode2.Services.Point
         }
 
 
-        public async Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount)
+        public async Task TipAsync(int fromUserId, int toUserId, int contentId, int amount)
         {
             if (fromUserId == toUserId)
                 throw new Exception("不能打賞自己");
 
+            if (amount <= 0)
+                throw new ArgumentException("打賞金額必須大於 0");
+
             using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var fromBalance = await GetCurrentBalanceAsync(fromUserId);
+                if (fromBalance < amount)
+                    throw new Exception("點數不足");
 
-            // 取得雙方最新餘額
-            var fromLast = await _context.PointLog
-                .Where(l => l.UserId == fromUserId)
-                .OrderByDescending(l => l.CreatedAt)
-                .ThenByDescending(l => l.PointLogId)
-                .Select(l => (int?)l.BalanceAfter)
-                .FirstOrDefaultAsync();
+                // 取得內容標題
+                var contentTitle = await _context.Content
+                    .Where(c => c.ContentId == contentId)
+                    .Select(c => c.Title ?? "無標題內容")
+                    .FirstOrDefaultAsync() ?? "內容";
 
-            var toLast = await _context.PointLog
-                .Where(l => l.UserId == toUserId)
-                .OrderByDescending(l => l.CreatedAt)
-                .ThenByDescending(l => l.PointLogId)
-                .Select(l => (int?)l.BalanceAfter)
-                .FirstOrDefaultAsync();
+                // 取得暱稱（這裡用 Email 代替，未來可改 Nickname）
+                var fromNicknameTask = _context.User
+                    .Where(u => u.UserId == fromUserId)
+                    .Select(u => u.Email ?? $"用戶{u.UserId}")
+                    .FirstOrDefaultAsync();
 
-            var fromBalance = fromLast ?? 0;
-            var toBalance = toLast ?? 0;
+                var toNicknameTask = _context.User
+                    .Where(u => u.UserId == toUserId)
+                    .Select(u => u.Email ?? $"用戶{u.UserId}")
+                    .FirstOrDefaultAsync();
 
-            if (fromBalance < amount)
-                throw new Exception("點數不足");
+                await Task.WhenAll(fromNicknameTask, toNicknameTask);
 
-            var fromNewBalance = fromBalance - amount;
-            var toNewBalance = toBalance + amount;
+                var fromNickname = await fromNicknameTask;
+                var toNickname = await toNicknameTask;
 
-            // 新增兩筆 PointLog
-            _context.PointLog.AddRange(
-                new PointLog
-                {
-                    UserId = fromUserId,
-                    PointTypeDefinitionId = (int)PointType.Tip_out,
-                    SourceType = "content",
-                    SourceId = ContentId,
-                    ChangeAmount = -amount,
-                    BalanceAfter = fromNewBalance,
-                    Status = "success",
-                    CreatedAt = DateTime.Now
-                },
-                new PointLog
-                {
-                    UserId = toUserId,
-                    PointTypeDefinitionId = (int)PointType.Tip_in,
-                    SourceType = "content",
-                    SourceId = ContentId,
-                    ChangeAmount = amount,
-                    BalanceAfter = toNewBalance,
-                    Status = "success",
-                    CreatedAt = DateTime.Now
-                }
-            );
+                // 扣款（付出者）
+                bool deductSuccess = await ChangePointsAsync(
+                    userId: fromUserId,
+                    changeAmount: -amount,
+                    sourceType: "point_tip",
+                    sourceId: contentId,
+                    type: PointType.ExpenseTip_out,
+                    displaySource: $"打賞〈{contentTitle}〉",
+                    displaySubTitle: $"給 {toNickname}"
+                );
 
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
+                if (!deductSuccess)
+                    throw new Exception("扣款失敗（餘額異常）");
 
+                // 加款（接收者）
+                bool addSuccess = await ChangePointsAsync(
+                    userId: toUserId,
+                    changeAmount: amount,
+                    sourceType: "point_tip",
+                    sourceId: contentId,
+                    type: PointType.IncomeTip_in,
+                    displaySource: $"收到打賞〈{contentTitle}〉",
+                    displaySubTitle: $"來自 {fromNickname}"
+                );
+
+                if (!addSuccess)
+                    throw new Exception("加款失敗（系統異常）");
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace incode2.DTO
+namespace incode2.DTO
 {
     public class PointLogDTO
     {
@@ -9,6 +9,10 @@
         public string SourceType { get; set; }
 
         public int? SourceId { get; set; }
+
+        public string? DisplaySource { get; set; }
+
+        public string? DisplaySourceSubTitle { get; set; }
 
         public int PointTypeDefinitionId { get; set; }
 
@@ -21,6 +25,6 @@
         public DateTime? CreatedAt { get; set; }
 
         // ← 加上這一行！
-        public string DisplayName { get; set; } = string.Empty;  
+        public string DisplayName { get; set; } = string.Empty;
     }
 }

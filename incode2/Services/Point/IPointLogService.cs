@@ -1,4 +1,4 @@
-﻿using incode2.Constants;
+using incode2.Constants;
 using incode2.DTO;
 using incode2.Dtos;
 using incode2.Models;
@@ -8,6 +8,7 @@ namespace incode2.Services.Point
 {
     public interface IPointLogService
     {
+        
         // 規定必須有一個方法可以根據 UserId 取得點數紀錄
         Task<IEnumerable<PointLogDTO>> GetUserLogsAsync(int userId);
 
@@ -17,12 +18,16 @@ namespace incode2.Services.Point
         // 規定必須有一個方法可以查詢目前總餘額
         Task<int> GetCurrentBalanceAsync(int userId);
 
-        //打賞影評作者（雙向交易）//寫 2 筆 point_log 包在同一個 Transaction
         Task TipAsync(int fromUserId, int toUserId, int ContentId, int amount);
 
-        Task<bool> ChangePointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
+        Task<bool> ChangePointsAsync(int userId,
+            int changeAmount,
+            string sourceType,
+            int? sourceId,
+            PointType type,
+            string? displaySource = null,
+            string? displaySubTitle = null);
 
-        //Task<bool> DeductPointsAsync(int userId, int changeAmount, string sourceType, int sourceId, PointType type);
         Task AddPointsFromRechargeAsync(PointRecharge recharge);
     }
 }

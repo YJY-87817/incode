@@ -17,5 +17,7 @@ public partial class ChatMessage
 
     public DateTime? CreatedAt { get; set; }
 
+    public string Embedding { get; set; }
+
     public virtual ChatSession Session { get; set; }
 }

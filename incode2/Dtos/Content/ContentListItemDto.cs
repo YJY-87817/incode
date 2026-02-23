@@ -13,11 +13,13 @@ namespace incode2.Dtos
     public int? Type { get; set; }
     public DateTime? CreatedAt { get; set; }
     public int ReplyCount { get; set; }
+    public int LikeCount { get; set; }
     public DateTime? LastReplyTime { get; set; }
     public string LastReplyUser { get; set; }
     public int? LastReplyUserId { get; set; }
     public string PreviewText { get; set; }
     public List<string> PreviewImages { get; set; } = new();
     public string PreviewHtml { get; set; }
+    public MyInteractionsDto MyInteractions { get; set; } = new();
   }
 }

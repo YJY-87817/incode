@@ -1,7 +1,8 @@
-﻿using incode2.Dtos;
+using incode2.Dtos;
 using incode2.Extensions;
 using incode2.Models;
 using incode2.Services.Contents;
+using incode2.Services.Point;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +17,13 @@ namespace incode2.ApiControllers.Content
   {
     private readonly IContentService _contentService;
     private readonly IContentEntrustMissionService _contentEntrustMissionService;
+    private readonly IPointLogService _pointLogService;
 
-    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService)
+    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService, IPointLogService pointLogService)
     {
       _contentService = contentService;
       _contentEntrustMissionService = contentEntrustMissionService;
+      _pointLogService = pointLogService;
     }
 
     //所有content
@@ -38,7 +41,8 @@ namespace incode2.ApiControllers.Content
     [HttpGet("{id}")]
     public async Task<IActionResult> GetContent(int id)
     {
-      var content = await _contentService.GetContent(id);
+      var userId = User.GetId();
+      var content = await _contentService.GetContent(id, userId > 0 ? userId : null);
       if (content == null) return NotFound(new { message = "找不到此內容" });
       return Ok(content);
     }
@@ -134,7 +138,8 @@ namespace incode2.ApiControllers.Content
     [HttpGet("{id}/children")]
     public async Task<IActionResult> GetChildrenByContentId(int id, [FromQuery] string? types, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-      var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize);
+      var userId = User.GetId();
+      var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize, userId > 0 ? userId : null);
       return Ok(result);
     }
 
@@ -262,6 +267,41 @@ namespace incode2.ApiControllers.Content
         pageSize = resultObj.pageSize,
         totalPages = resultObj.totalPages
       });
+    }
+
+    // 打賞貼文
+    // POST https://localhost:7190/api/ContentApi/{id}/tip
+    [HttpPost("{id}/tip")]
+    [Authorize]
+    public async Task<IActionResult> TipContent(int id, [FromBody] TipContentDto dto)
+    {
+      var fromUserId = User.GetId();
+      if (fromUserId <= 0)
+      {
+        return Unauthorized(new { message = "請先登入" });
+      }
+
+      if (dto == null || dto.Amount <= 0)
+      {
+        return BadRequest(new { message = "點數必須大於 0" });
+      }
+
+      var content = await _contentService.GetContent(id, fromUserId);
+      if (content == null)
+      {
+        return NotFound(new { message = "找不到此內容" });
+      }
+
+      try
+      {
+        await _pointLogService.TipAsync(fromUserId, content.UserId, id, dto.Amount);
+      }
+      catch (Exception ex)
+      {
+        return BadRequest(new { message = ex.Message });
+      }
+
+      return Ok(new { message = "打賞成功" });
     }
   }
 }
