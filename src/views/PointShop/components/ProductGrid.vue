@@ -19,20 +19,38 @@ const props = defineProps({
 
 const emit = defineEmits(["reset-filters"]);
 
-// --- 分頁相關邏輯 ---
+// --- 分頁與排序相關邏輯 ---
 const currentPage = ref(1); // 目前頁碼
 const pageSize = ref(8); // 每頁顯示幾筆
+const sortBy = ref(""); // 排序方式
+
+// 排序後的商品
+const sortedProducts = computed(() => {
+  const products = [...props.filteredProducts];
+  switch (sortBy.value) {
+    case "pointAsc":
+      return products.sort((a, b) => a.point - b.point);
+    case "pointDesc":
+      return products.sort((a, b) => b.point - a.point);
+    case "nameAsc":
+      return products.sort((a, b) => a.name.localeCompare(b.name));
+    case "nameDesc":
+      return products.sort((a, b) => b.name.localeCompare(a.name));
+    default:
+      return products;
+  }
+});
 
 // 計算總頁數
 const totalPages = computed(() => {
-  return Math.ceil(props.filteredProducts.length / pageSize.value);
+  return Math.ceil(sortedProducts.value.length / pageSize.value);
 });
 
 // 真正要顯示在畫面上的「該頁商品」
 const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   const end = start + pageSize.value;
-  return props.filteredProducts.slice(start, end);
+  return sortedProducts.value.slice(start, end);
 });
 
 // 當篩選條件改變時，自動回到第一頁
@@ -42,6 +60,11 @@ watch(
     currentPage.value = 1;
   },
 );
+
+const handleResetFilters = () => {
+  sortBy.value = "";
+  emit("reset-filters");
+};
 
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
@@ -54,7 +77,6 @@ const changePage = (page) => {
 
 <template>
   <div>
-    <div v-if="loading" class="col-12 text-center py-5">找尋中...</div>
     <div v-if="loading" class="col-12 text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">找尋中...</span>
@@ -63,7 +85,30 @@ const changePage = (page) => {
     </div>
 
     <template v-else-if="filteredProducts.length > 0">
-      <div class="row g-3">
+      <div class="row g-3"> 
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div
+              class="card-body d-flex justify-content-between align-items-center"
+            >
+              <div class="d-flex align-items-center">
+                <label for="sortSelect" class="form-label me-2 mb-0">排序：</label>
+                <select
+                  id="sortSelect"
+                  v-model="sortBy"
+                  class="form-select d-inline-block w-auto text-center"
+                >
+                  <option value="">預設排序</option>
+                  <option value="pointAsc">點數由低到高</option>
+                  <option value="pointDesc">點數由高到低</option>
+                  <option value="nameAsc">名稱 A-Z</option>
+                  <option value="nameDesc">名稱 Z-A</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div
           v-for="item in paginatedProducts"
           :key="item.productId"

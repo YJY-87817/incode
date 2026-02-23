@@ -33,7 +33,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import materialKit from "./material-kit";
 import axios from "axios";
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = "https://localhost:7190/api";
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const app = createApp(App);
 
