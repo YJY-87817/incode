@@ -1,6 +1,8 @@
 <script setup>
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
 // 取得購物車狀態
 const CartNow = useCartStore();
 // 增加、減少、移除商品
@@ -32,7 +34,7 @@ const decrease = (item) => {
             class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
 
             <div class="d-flex align-items-center flex-grow-1">
-              <img :src="`https://localhost:7190/img/product/${item.imageName || 'NoImage.png'}`"
+              <img :src="`${baseUrl}/img/product/${item.imageName || 'NoImage.png'}`"
                 class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
               <div class="ms-3">
                 <h6 class="fw-bold mb-0 text-dark">{{ item.name }}</h6>

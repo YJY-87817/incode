@@ -13,7 +13,7 @@ import mysweet from "sweetalert2";
 const CartNow = useCartStore();
 const authStore = useAuthStore();
 //導覽列會員
-const BACKEND_BASE_URL = "https://localhost:7190";
+const BACKEND_BASE_URL = import.meta.env.VITE_BASE_URL ;
 const userAvatarUrl = computed(() => {
   const path = authStore.user?.avatar;
   if (!path) return null; // 如果沒圖，回傳 null
@@ -48,14 +48,14 @@ const menuItems = computed(() => [
     to: { name: "point-log" },
   },
   {
-    title: "我的訂單",
-    icon: "mdi-cart-outline",
-    to: { name: "Order" },
-  },
-  {
     title: "點數儲值",
     icon: "mdi-cash-plus",
     to: { name: "recharge" },
+  },
+    {
+    title: "我的訂單",
+    icon: "mdi-cart-outline",
+    to: { name: "Order" },
   },
 ]);
 

@@ -4,6 +4,7 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
 import CartSwal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
+const baseUrl = import.meta.env.VITE_BASE_URL;
 const props = defineProps({
   product: {
     type: Object,
@@ -41,7 +42,7 @@ const handleAddToCart = () => {
             class="product-image-container position-relative bg-light overflow-hidden"
           >
             <img
-              :src="`https://localhost:7190/img/product/${product.imageName}`"
+              :src="`${baseUrl}/img/product/${product.imageName}`"
               :alt="product.name"
               class="img-fluid product-image"
             />
