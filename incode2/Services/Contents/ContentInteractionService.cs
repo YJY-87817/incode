@@ -328,5 +328,68 @@ namespace incode2.Services.Contents
         .Select(ic => ic.InteractionCategoryId)
         .FirstOrDefaultAsync();
     }
+
+    public async Task<int?> GetBestAnswerContentId(int entrustMissionId)
+    {
+      var bestCategoryId = await GetBestAnswerCategoryIdAsync();
+      if (bestCategoryId == 0)
+      {
+        return null;
+      }
+
+      var bestDescription = $"entrust_mission:{entrustMissionId}";
+      var bestAnswer = await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.CategoryId == bestCategoryId && ci.Description == bestDescription)
+        .Select(ci => ci.ContentId)
+        .FirstOrDefaultAsync();
+
+      return bestAnswer == 0 ? null : bestAnswer;
+    }
+
+    public async Task<List<ContentInteractionDto>> GetInteractions(
+      int? contentId,
+      int? userId,
+      int? interactionCategoryId,
+      int? entrustMissionId)
+    {
+      var query = _context.ContentInteraction
+        .AsNoTracking()
+        .Include(ci => ci.Category)
+        .AsQueryable();
+
+      if (contentId.HasValue)
+      {
+        query = query.Where(ci => ci.ContentId == contentId.Value);
+      }
+
+      if (userId.HasValue)
+      {
+        query = query.Where(ci => ci.UserId == userId.Value);
+      }
+
+      if (interactionCategoryId.HasValue)
+      {
+        query = query.Where(ci => ci.CategoryId == interactionCategoryId.Value);
+      }
+
+      if (entrustMissionId.HasValue)
+      {
+        var bestDescription = $"entrust_mission:{entrustMissionId.Value}";
+        query = query.Where(ci => ci.Description == bestDescription);
+      }
+
+      return await query
+        .Select(ci => new ContentInteractionDto
+        {
+          ContentInteractionId = ci.ContentInteractionId,
+          InteractionCategoryId = ci.CategoryId,
+          InteractionCategoryName = ci.Category.Name,
+          ContentId = ci.ContentId,
+          UserId = ci.UserId,
+          CreatedAt = ci.CreatedAt ?? DateTime.Now
+        })
+        .ToListAsync();
+    }
   }
 }

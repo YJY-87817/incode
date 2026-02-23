@@ -39,5 +39,16 @@ namespace incode2.Services.Contents
     Task<object> GetInteractionStats(int contentId);
 
     Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId);
+
+    /// <summary>
+    /// 查詢委託任務的最佳解答 ContentId
+    /// </summary>
+    Task<int?> GetBestAnswerContentId(int entrustMissionId);
+
+    Task<List<ContentInteractionDto>> GetInteractions(
+      int? contentId,
+      int? userId,
+      int? interactionCategoryId,
+      int? entrustMissionId);
   }
 }
