@@ -1,6 +1,7 @@
 ﻿using incode2.DTO.user;
 using incode2.Extensions;
 using incode2.Models;
+using incode2.Services;
 using incode2.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,16 +19,68 @@ namespace incode2.ApiController.user
   {
     private readonly incodedatabaseContext _context;
         private readonly IUserService _userService;
+        private readonly IImageService _imageService;
 
-        public UserController(incodedatabaseContext context, IUserService userService)
-    {
+        public UserController(incodedatabaseContext context, IUserService userService, IImageService imageService)
+        {
       _context = context;
             _userService = userService;
+            _imageService = imageService;
         }
 
-        // GET: api/User
-        // 取得所有使用者列表
-        // 管理員能用(或者用於搜尋)
+        [HttpPost("images")]
+        public async Task<IActionResult> UploadImages([FromForm] List<IFormFile> files)
+        {
+            try
+            {
+                if (files == null || files.Count == 0)
+                    return BadRequest(new { message = "未提供檔案" });
+
+                var urls = new List<string>();
+
+                // 1. 直接在這裡指定要存入的實體路徑為 wwwroot/img/user
+                string storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/user");
+
+                // 2. 檢查資料夾是否存在，沒有的話就建立
+                if (!Directory.Exists(storagePath))
+                    Directory.CreateDirectory(storagePath);
+
+                // 3. 處理每一個上傳的檔案
+                foreach (var file in files)
+                {
+                    if (file == null || file.Length == 0) continue;
+
+                    // 產生唯一檔名
+                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                    var filePath = Path.Combine(storagePath, fileName);
+
+                    // 儲存檔案到硬碟
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    // 將前端需要的網址路徑加入 List 
+                    // 這裡回傳的就會是 /img/user/xxx.jpg
+                    urls.Add($"/img/user/{fileName}");
+                }
+
+                if (urls.Count == 0)
+                    return BadRequest(new { message = "沒有有效的檔案" });
+
+                // 4. 回傳給前端
+                return Ok(new { imageUrls = urls });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }   
+
+
+// GET: api/User
+// 取得所有使用者列表
+// 管理員能用(或者用於搜尋)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUser()
         {

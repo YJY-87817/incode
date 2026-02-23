@@ -141,7 +141,7 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.Name = "Incode.Admin";  // 給予不同的 Cookie 名稱
     options.LoginPath = "/Account/Login"; // 後台專用的登入頁面
     options.AccessDeniedPath = "/Account/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // 後台通常時效較短，較安全
+    options.ExpireTimeSpan = TimeSpan.FromHours(10); // 後台通常時效較短，較安全
 
     options.Cookie.Path = "/";
     options.Cookie.HttpOnly = true;

@@ -72,7 +72,6 @@ namespace incode2.Controllers
             {
                 // 根據使用者是否勾選「記住我」(這裡先預設為 true，或者您可以從 model.RememberMe 傳入)
                 IsPersistent = true,
-                ExpiresUtc = DateTime.UtcNow.AddMinutes(60)
             };
 
             // 5. 簽發 "AdminAuth" Cookie
