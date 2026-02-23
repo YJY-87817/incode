@@ -90,7 +90,7 @@ namespace incode2.Controllers
                 }
             }
             // 扣除會員點數（寫入點數紀錄）
-            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", orders.OrderId, PointType.Order);
+            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", orders.OrderId, PointType.ExpenseOrders);
             
             // 檢查點數扣除是否成功
             if (!result)
@@ -190,7 +190,7 @@ namespace incode2.Controllers
                     
                     // 退還點數：將原始訂單的總點數全額退還
                     var cancelOriginalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
-                    await _pointlogService.ChangePointsAsync(orders.UserId, cancelOriginalTotalPoint, "order", orders.OrderId, PointType.Order);
+                    await _pointlogService.ChangePointsAsync(orders.UserId, cancelOriginalTotalPoint, "order", orders.OrderId, PointType.IncomeOrdersRefund);
                 }
                 _context.Orders.Update(orders);
                 await _context.SaveChangesAsync();
@@ -376,7 +376,7 @@ namespace incode2.Controllers
                 
                 // 執行點數變更
                 // diff < 0 : 補扣點數 (使用 Order 類型)
-                var pointType = pointDifference > 0 ? PointType.Order : PointType.Order;
+                var pointType = pointDifference > 0 ? PointType.ExpenseOrders : PointType.IncomeOrdersRefund;
                 var result = await _pointlogService.ChangePointsAsync(orders.UserId, pointDifference, "order", orders.OrderId, pointType);
                 
                 if (!result)
