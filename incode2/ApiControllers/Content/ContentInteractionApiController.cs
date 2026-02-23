@@ -207,5 +207,78 @@ namespace incode2.ApiControllers.Content
 
       return Ok(result);
     }
+
+    // 查詢委託任務的最佳解答
+    // GET https://localhost:7190/api/contentinteractionapi/best-answer/{entrustMissionId}
+    // Path Parameters:
+    //   - entrustMissionId (int): 委託任務ID
+    // Response: { entrustMissionId, bestAnswerContentId }
+    // 範例: GET https://localhost:7190/api/contentinteractionapi/best-answer/2
+    [HttpGet("best-answer/{entrustMissionId}")]
+    public async Task<IActionResult> GetBestAnswer(int entrustMissionId)
+    {
+      if (entrustMissionId <= 0)
+        return BadRequest(new { message = "EntrustMissionId 必須大於 0" });
+
+      var bestAnswerContentId = await _contentInteractionService.GetBestAnswerContentId(entrustMissionId);
+
+      return Ok(new
+      {
+        EntrustMissionId = entrustMissionId,
+        BestAnswerContentId = bestAnswerContentId
+      });
+    }
+
+    // 查詢委託任務的最佳解答 (QueryString 版本)
+    // GET https://localhost:7190/api/contentinteractionapi/best-answer?entrustMissionId=2
+    [HttpGet("best-answer")]
+    public async Task<IActionResult> GetBestAnswerByQuery([FromQuery] int entrustMissionId)
+    {
+      if (entrustMissionId <= 0)
+        return BadRequest(new { message = "EntrustMissionId 必須大於 0" });
+
+      var bestAnswerContentId = await _contentInteractionService.GetBestAnswerContentId(entrustMissionId);
+
+      return Ok(new
+      {
+        EntrustMissionId = entrustMissionId,
+        BestAnswerContentId = bestAnswerContentId
+      });
+    }
+
+    // 依條件查詢互動 (QueryString 版本)
+    // GET https://localhost:7190/api/contentinteractionapi?interactionCategoryId=5
+    // GET https://localhost:7190/api/contentinteractionapi?entrustMissionId=2
+    [HttpGet]
+    public async Task<IActionResult> GetInteractions(
+      [FromQuery] int? contentId,
+      [FromQuery] int? userId,
+      [FromQuery] int? interactionCategoryId,
+      [FromQuery] int? entrustMissionId)
+    {
+      if (contentId.HasValue && contentId <= 0)
+        return BadRequest(new { message = "ContentId 必須大於 0" });
+
+      if (userId.HasValue && userId <= 0)
+        return BadRequest(new { message = "UserId 必須大於 0" });
+
+      if (interactionCategoryId.HasValue && interactionCategoryId <= 0)
+        return BadRequest(new { message = "InteractionCategoryId 必須大於 0" });
+
+      if (entrustMissionId.HasValue && entrustMissionId <= 0)
+        return BadRequest(new { message = "EntrustMissionId 必須大於 0" });
+
+      var interactions = await _contentInteractionService.GetInteractions(
+        contentId,
+        userId,
+        interactionCategoryId,
+        entrustMissionId);
+
+      return Ok(new
+      {
+        Interactions = interactions,
+        interactions.Count
+      });
+    }
   }
 }
