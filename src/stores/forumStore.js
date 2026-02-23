@@ -204,33 +204,6 @@ const buildThreadItem = async (item, fallbackType) => {
   );
   const resolvedLikeCount = extractLikeCount(item);
 
-  if (
-    import.meta.env.DEV &&
-    (fallbackType === CONTENT_TYPES.COMMENT ||
-      fallbackType === CONTENT_TYPES.COMMENT_REPLY)
-  ) {
-    const interactionList =
-      item?.interactions ??
-      item?.Interactions ??
-      item?.contentInteractions ??
-      item?.content_interactions ??
-      null;
-    console.info("[Forum][LikeCount] child item payload", {
-      id: item.contentId ?? item.content_id ?? item.id,
-      type: item.type ?? fallbackType,
-      likeCount: item?.likeCount,
-      like_count: item?.like_count,
-      likesCount: item?.likesCount,
-      likes: item?.likes,
-      totalLikes: item?.totalLikes,
-      interactionLikeCount: item?.interactionLikeCount,
-      interactionsLength: Array.isArray(interactionList)
-        ? interactionList.length
-        : null,
-      resolvedLikeCount,
-    });
-  }
-
   return {
     id: item.contentId ?? item.content_id ?? item.id,
     userId: item.userId ?? item.user_id ?? null,
@@ -953,36 +926,12 @@ export const useForumStore = defineStore("forum", {
       };
 
       try {
-        if (
-          import.meta.env.DEV &&
-          (expectedType === CONTENT_TYPES.COMMENT ||
-            expectedType === CONTENT_TYPES.COMMENT_REPLY)
-        ) {
-          console.info("[Forum][LikeCount] fetch child replies", {
-            parentId,
-            expectedType,
-            page: 1,
-            pageSize,
-          });
-        }
         const res = await contentApi.getChildren(parentId, {
           types: expectedType ? String(expectedType) : undefined,
           page: 1,
           pageSize,
         });
         const items = Array.isArray(res?.items) ? res.items : [];
-        if (
-          import.meta.env.DEV &&
-          (expectedType === CONTENT_TYPES.COMMENT ||
-            expectedType === CONTENT_TYPES.COMMENT_REPLY)
-        ) {
-          console.info("[Forum][LikeCount] child replies response", {
-            parentId,
-            expectedType,
-            itemsLength: items.length,
-            totalCount: res?.totalCount ?? null,
-          });
-        }
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, expectedType)),
         );
