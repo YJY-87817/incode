@@ -76,7 +76,7 @@ namespace incode2.ApiControllers.Chat
         {
             ChatSession session = null; // 宣告一個變數 session 用來存放等一下抓到的聊天室資料，預設為空
 
-            // 1. 如果前端有傳 SessionId，先試著找找看
+            // 如果前端有傳 SessionId，先試著找找看
             if (requestedSessionId > 0)  // 檢查使用者是否指定大於0的聊天室ID
             {
                 session = await _context.ChatSession.FindAsync(requestedSessionId); //去資料庫根據 requestedSessionId 尋找對應的聊天室物件session (等待非同步查詢結果)
@@ -85,7 +85,7 @@ namespace incode2.ApiControllers.Chat
                 if (session != null && session.UserId != userId) return (null, false);
             }
 
-            // 2. 如果沒傳 ID (0) 或者上面沒找到，就自動找該用戶「最新」的 Session (接續上次)
+            // 如果沒傳 ID (0) 或者上面沒找到，就自動找該用戶「最新」的 Session (接續上次)
             if (session == null)
             {
                 session = await _context.ChatSession
@@ -94,7 +94,7 @@ namespace incode2.ApiControllers.Chat
                   .FirstOrDefaultAsync();
             }
 
-            // 3. 真的沒有 (第一次使用 / 資料庫空的) -> 建立新的
+            // 真的沒有 (第一次使用 / 資料庫空的) -> 建立新的
             if (session == null)
             {
                 session = new ChatSession
@@ -128,20 +128,17 @@ namespace incode2.ApiControllers.Chat
                     description = "全台通用電影兌換券，不限平假日皆可使用。適用於首輪電影，提供最震撼的感官體驗，是下班休閒或週末約會的最佳選擇。",
                     imageName = "2026010611432290af.jpg",
                     type = "兌換票券",
-                    series = "票券",
-                    isPhysical = true,
-                    point = 2000,
-                    stock = 200
+                    point = 2000
                 };
                 return JsonSerializer.Serialize(productData);
             }
             return "查無相關商品資料。";
         }
 
-        // ★★★ 新增：Function Calling 的資料庫查詢方法 (文章) ★★★
+        // Function Calling 的資料庫查詢方法 (文章) 
         private string SearchContents(string keyword)
         {
-            // 簡單模擬：如果關鍵字包含以下詞彙，就回傳文章資料
+            // 如果關鍵字包含以下詞彙，就回傳文章資料
             if (keyword.Contains("寄生上流") || keyword.Contains("亞洲") || keyword.Contains("電影"))
             {
                 var contentData = new
@@ -151,11 +148,32 @@ namespace incode2.ApiControllers.Chat
                     categoryName = "亞洲電影",
                     username = "吳建豪",
                     body = "/contents/content-3.html",
-                    createdAt = "2026-02-02"
                 };
                 return JsonSerializer.Serialize(contentData);
             }
             return "查無相關文章。";
+        }
+
+        // Function Calling 的資料庫查詢方法 (點數)
+        private string PointLogs(string keyword)
+        {
+            // 如果關鍵字包含以下詞彙，就回傳點數資料
+            if (keyword.Contains("點數") || keyword.Contains("紀錄") || keyword.Contains("剩餘"))
+            {
+                var pointData = new
+                {
+                    pointLogId = 2,
+                    userId = 1,
+                    sourceType = "entrust_mission_point_reserve",
+                    sourceId = 1,
+                    pointTypeDefinitionId = 0,
+                    changeAmount = -500,
+                    balanceAfter = 1500,
+                    displayName = "委託發布預扣"
+                };
+                return JsonSerializer.Serialize(pointData);
+            }
+            return "查無相關點數。";
         }
 
 
@@ -169,7 +187,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // 一行搞定：自動找舊的，沒有就開新的
+                // 自動找舊的，沒有就開新的
                 var result = await GetOrInitSessionAsync(userId, 0);
 
                 return Ok(new { sessionId = result.Session.ChatSessionId, isNew = result.IsNew });
@@ -191,7 +209,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // 1. Session 處理
+                // Session 處理
                 var (currentSession, _) = await GetOrInitSessionAsync(userId, request.SessionId,
                     request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent);
 
@@ -200,7 +218,7 @@ namespace incode2.ApiControllers.Chat
                 string sessionIdStr = currentSession.ChatSessionId.ToString();
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
 
-                // 2. 存 User 訊息
+                // 存 User 訊息
                 var userMsg = new ChatMessage
                 {
                     SessionId = currentSession.ChatSessionId,
@@ -214,18 +232,18 @@ namespace incode2.ApiControllers.Chat
                 var sessionGroup = _hubContext.Clients.Group(sessionIdStr);
                 await sessionGroup.SendAsync("ReceiveMessage", "User", request.UserContent);
 
-                // 3. 真人客服模式攔截
+                // 真人客服模式攔截
                 if (currentSession.Ishumanmode == true)
                 {
                     await _hubContext.Clients.Group("SupportAgents").SendAsync("ReceiveSupportRequest", currentSession.ChatSessionId, request.UserContent);
                     return Ok(new { success = true, mode = "live", sessionId = currentSession.ChatSessionId });
                 }
 
-                // 4. AI 處理邏輯
+                // AI 處理邏輯
                 string aiResponseText = "";
                 string messageType = "AI";
 
-                // A. 生圖指令
+                // 生圖指令
                 if (request.UserContent.Contains("生圖") || request.UserContent.Contains("產生圖片"))
                 {
                     string imageDescription = request.UserContent.Replace("生圖", "").Replace("產生圖片", "").Trim();
@@ -234,9 +252,9 @@ namespace incode2.ApiControllers.Chat
                 }
                 else
                 {
-                    // B. 一般對話 (包含工具判斷)
+                    // 一般對話 (包含工具判斷)
 
-                    // ★ 從 Prompts.md 讀取系統提示詞
+                    // 從 Prompts.md 讀取系統提示詞
                     string basePrompt = await GetSystemPromptAsync();
 
                     // 第一次呼叫 AI (意圖判斷)
@@ -253,20 +271,24 @@ namespace incode2.ApiControllers.Chat
                         string keyword = firstResponse.Split('|')[1].Trim();
                         string productDataJson = GetProductInfo(keyword);
                         string imagePathPrefix = "/img/product/";
+                        string frontendUrl = "https://localhost:5173";
 
                         string finalPrompt = $@"{basePrompt}
                         ---
-                        你剛剛針對關鍵字「{keyword}」查詢了資料庫。
+                        你剛剛針對關鍵字「{keyword}」查詢了商品資料庫。
                         【查詢結果 JSON】:
                         {productDataJson}
 
-                        請根據上述 JSON 資料，親切地回答使用者的問題 (包含價格、庫存)。
+                        請根據上述 JSON 資料，親切地回答使用者的問題 (包含商品點數)。
                         
-                        ★【圖片顯示強制規則】：
+                        【圖片顯示強制規則】：
                         資料中包含 'imageName' 欄位 (例如 'xxx.jpg')。
                         請務必在回答的最後面，換行並插入一張圖片，使用 Markdown 語法：
-                        ![商品圖片]({imagePathPrefix}{{imageName}})
+                        ![商品圖片]({imagePathPrefix}<這裡填入 imageName>)
                         (注意：請直接將 JSON 中的 imageName 填入，不要自行捏造網址)
+                        【連結顯示規則】：
+                        請使用 Markdown 格式產生連結：[商品標題]({frontendUrl}/PointShop/product/{{productId}})
+                        例如：[電影票卷]({frontendUrl}PointShop/product/1)
                         ---
                         使用者問題: {request.UserContent}";
 
@@ -286,7 +308,7 @@ namespace incode2.ApiControllers.Chat
                         {contentDataJson}
 
                         請根據上述 JSON 資料回答，並務必提供文章連結。
-                        ★【連結顯示規則】：
+                        【連結顯示規則】：
                         請使用 Markdown 格式產生連結：[文章標題]({frontendUrl}/forum/{{contentId}})
                         例如：[寄生上流這部片]({frontendUrl}/forum/3)
                         ---
@@ -294,14 +316,36 @@ namespace incode2.ApiControllers.Chat
 
                         aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
                     }
+                    else if (firstResponse.Contains("CALL_FUNCTION:PointLogs"))
+                    {
+                        // --- 呼叫點數工具 ---
+                        string keyword = firstResponse.Split('|')[1].Trim();
+                        string pointDataJson = PointLogs(keyword);
+                        string frontendUrl = "https://localhost:5173";
+
+                        string finalPrompt = $@"{basePrompt}
+                        ---
+                        你剛剛針對關鍵字「{keyword}」查詢了點數資料庫。
+                        【查詢結果 JSON】:
+                        {pointDataJson}
+
+                        請根據上述 JSON 資料回答，並務必提供點數連結。
+                        【連結顯示規則】：
+                        請使用 Markdown 格式產生連結：[查看點數紀錄]({frontendUrl}/point-log)
+                        (即使 JSON 中有 pointLogId，也不要把它加到網址裡，因為該頁面是列表頁)
+                        ---
+                        使用者問題: {request.UserContent}";
+
+                        aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
+                    }
                     else
                     {
-                        // --- 沒有呼叫工具，直接回覆 ---
+                        // --- 沒有點數工具，直接回覆 ---
                         aiResponseText = firstResponse;
                     }
                 }
 
-                // 5. 存 AI 訊息 (您可能漏了這一段)
+                // 存 AI 訊息 (您可能漏了這一段)
                 var aiMsg = new ChatMessage
                 {
                     SessionId = currentSession.ChatSessionId,
@@ -312,10 +356,10 @@ namespace incode2.ApiControllers.Chat
                 _context.ChatMessage.Add(aiMsg);
                 await _context.SaveChangesAsync();
 
-                // 6. 廣播 AI 回應
+                // 廣播 AI 回應
                 await sessionGroup.SendAsync("ReceiveMessage", messageType, aiResponseText);
 
-                // ★★★ 關鍵：這裡必須要回傳 Ok，否則就會報錯 ★★★
+                // 關鍵：這裡必須要回傳 Ok，否則就會報錯
                 return Ok(new { success = true, sessionId = currentSession.ChatSessionId, mode = "ai" });
             }
             catch (Exception ex)
@@ -410,7 +454,7 @@ namespace incode2.ApiControllers.Chat
             {
                 var session = await _context.ChatSession.FindAsync(request.SessionId);
 
-                // 1. Session 處理與權限檢查
+                // Session 處理與權限檢查
                 if (session == null)
                 {
                     var result = await GetOrInitSessionAsync(userId, request.SessionId);
@@ -421,25 +465,25 @@ namespace incode2.ApiControllers.Chat
                     return Unauthorized();
                 }
 
-                // 2. 更新模式與時間
+                // 更新模式與時間
                 session.Ishumanmode = request.Ishumanmode;
                 session.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
 
-                string modeName = request.Ishumanmode ? "客服人員" : "AI";
+                string modeName = request.Ishumanmode ? "客服" : "AI";
                 string sessionIdStr = session.ChatSessionId.ToString();
 
-                // 3. SignalR 通知
+                // SignalR 通知
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
                 var sessionGroup = _hubContext.Clients.Group(sessionIdStr);
 
                 await sessionGroup.SendAsync("ReceiveMessage", "System", $"已切換至 {modeName} 模式");
                 await sessionGroup.SendAsync("UpdateModeState", session.ChatSessionId, request.Ishumanmode);
 
-                // 4. 若切換為真人，處理存檔與通知
+                // 若切換為真人，處理存檔與通知
                 if (request.Ishumanmode)
                 {
-                    string autoReplyText = "收到您的請求，請稍等 1-2 分鐘，客服人員將為您服務。";
+                    string autoReplyText = "收到您的請求，請稍等1-2分鐘，客服人員將為您服務。";
 
                     _context.ChatMessage.Add(new ChatMessage
                     {
@@ -454,7 +498,7 @@ namespace incode2.ApiControllers.Chat
                     await _hubContext.Clients.Group("SupportAgents").SendAsync("RefreshSessions");
                 }
 
-                // ★ 你指定的唯一回傳行
+                // 你指定的唯一回傳行
                 return Ok(new { success = true, mode = modeName, sessionId = session.ChatSessionId });
             }
             catch (Exception ex)
@@ -481,7 +525,7 @@ namespace incode2.ApiControllers.Chat
 
             try
             {
-                // 1. 圖片實體存檔 (這部分不變)
+                // 圖片實體存檔 
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img", "chat");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
                 string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Image.FileName;
@@ -527,15 +571,15 @@ namespace incode2.ApiControllers.Chat
                 請辨識圖片內容，並判斷使用者的意圖：
 
                 1. **[查商品]**
-                   - 觸發條件：圖片是「商品」、「電影票」、「票券」，且使用者詢問「庫存」、「價格」。
+                   - 觸發條件：圖片看起來像「商品」、「電影票」、「實體票券」或「兌換券」時，請一律查詢商品資訊。
                    - 回傳格式：CALL_FUNCTION:GetProductInfo|{{商品名稱}}
-
+                
                 2. **[查文章]**
                    - 觸發條件：圖片是「電影海報」、「劇照」，且使用者詢問「影評」、「連結」、「介紹」、「好不好看」。
                    - 回傳格式：CALL_FUNCTION:SearchContents|{{電影名稱}}
-
+                
                 3. **[純閒聊/描述]**
-                   - 觸發條件：無需使用工具。
+                   - 觸發條件：不符合上述條件的普通圖片。
                    - 回傳格式：直接回答使用者。
 
                 範例：
@@ -548,7 +592,7 @@ namespace incode2.ApiControllers.Chat
                 // 呼叫新寫的 Service 方法 (傳入圖片 + Prompt)
                 string firstResponse = await _geminiService.AnalyzeImageWithToolAsync(request.Image, toolSystemPrompt);
 
-                // Step 2: 檢查是否觸發 Function Calling (★ 修改處：加入 SearchContents 判斷)
+                // Step 2: 檢查是否觸發 Function Calling (SearchContents 判斷)
                 if (firstResponse.Contains("CALL_FUNCTION:GetProductInfo"))
                 {
                     // A. 解析關鍵字
@@ -571,10 +615,10 @@ namespace incode2.ApiControllers.Chat
                     ---
                     使用者文字: {userText}";
 
-                    // ★ 注意：這裡第二次呼叫也建議把圖片帶進去，讓 AI 可以對照圖片細節與資料庫描述
+                    // 這裡第二次呼叫也建議把圖片帶進去，讓 AI 可以對照圖片細節與資料庫描述
                     aiReplyText = await _geminiService.AnalyzeImageWithToolAsync(request.Image, finalPrompt);
                 }
-                else if (firstResponse.Contains("CALL_FUNCTION:SearchContents")) // ★ 新增：處理文章查詢
+                else if (firstResponse.Contains("CALL_FUNCTION:SearchContents")) // 處理文章查詢
                 {
                     string keyword = firstResponse.Split('|')[1].Trim();
                     string contentDataJson = SearchContents(keyword);
@@ -599,7 +643,7 @@ namespace incode2.ApiControllers.Chat
                     aiReplyText = firstResponse;
                 }
 
-                // 3. 存入 AI 回覆
+                // 存入 AI 回覆
                 _context.ChatMessage.Add(new ChatMessage
                 {
                     SessionId = validSessionId,
@@ -609,7 +653,7 @@ namespace incode2.ApiControllers.Chat
                 });
                 await _context.SaveChangesAsync();
 
-                // 4. 推播 AI 回覆
+                // 推播 AI 回覆
                 await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "AI", aiReplyText);
 
                 return Ok(new { success = true, sessionId = validSessionId, isNew = isNew });
