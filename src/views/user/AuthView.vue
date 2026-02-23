@@ -4,6 +4,7 @@
     import { useRouter, useRoute } from "vue-router";
     import { useAuthStore } from "@/stores/user/auth";
     import Swal from "sweetalert2";
+    import axios from "axios";
 
     const router = useRouter();
     const route = useRoute(); // 用來抓取 redirect 參數
@@ -90,7 +91,7 @@
         confirmPassword: "",
         username: "",
         birth: "",
-        intro: "",
+        imageUrl: "",
     });
 
     // 檔案上傳相關
@@ -136,7 +137,6 @@
         }
     };
 
-    // 模擬上傳圖片
     const uploadImage = async () => {
         if (!selectedFile.value) {
             Swal.fire({
@@ -145,17 +145,37 @@
             });
             return;
         }
+
         isUploading.value = true;
-        // 模擬 API 延遲
-        setTimeout(() => {
-            isUploading.value = false;
+
+        // 建立 FormData 把檔案包起來
+        const formData = new FormData();
+        formData.append('files', selectedFile.value); // 這裡的 'files' 必須對應後端接收的參數名
+
+        try {
+            const response = await axios.post("/User/images", formData);
+
+            // 將後端回傳的圖片網址存到表單資料中，準備跟著註冊一起送出
+            if (response.data && response.data.imageUrls && response.data.imageUrls.length > 0) {
+                regFormData.value.imageUrl = response.data.imageUrls[0];
+
+                Swal.fire({
+                    title: "圖片上傳成功！",
+                    icon: "success",
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        } catch (error) {
+            console.error("圖片上傳失敗", error);
             Swal.fire({
-                title: "圖片上傳成功！",
-                icon: "success",
-                timer: 1500,
-                showConfirmButton: false
+                icon: "error",
+                title: "上傳失敗",
+                text: error.response?.data?.message || "請檢查網路狀態或圖片大小",
             });
-        }, 1000);
+        } finally {
+            isUploading.value = false;
+        }
     };
 
     const handleRegister = async () => {
