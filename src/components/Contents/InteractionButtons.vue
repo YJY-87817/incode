@@ -606,4 +606,22 @@ onMounted(() => {
   width: 1rem;
   text-align: center;
 }
+
+@media (max-width: 768px) {
+  .btn-interaction-button {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-interaction-button i {
+    font-size: 0.9rem;
+  }
+
+  .more-menu-item {
+    min-height: 40px;
+    padding: 0.45rem 0.9rem;
+  }
+}
 </style>

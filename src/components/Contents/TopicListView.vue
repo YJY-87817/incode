@@ -1013,8 +1013,111 @@ watch(
           <p>此分類目前沒有主題</p>
         </div>
 
-        <!-- 主題表格 -->
-        <div v-else class="table-responsive">
+        <!-- 手機卡片列表 -->
+        <div v-else class="d-md-none px-2 pb-2">
+          <div
+            v-for="topic in forumStore.topics"
+            :key="`mobile-topic-${topic.id}`"
+            class="card topic-mobile-card mb-2"
+            @click="goToThread(topic.id)"
+          >
+            <div class="card-body p-2">
+              <div
+                class="d-flex align-items-start justify-content-between gap-2 mb-1"
+              >
+                <div class="d-flex flex-wrap gap-1">
+                  <span
+                    v-if="topic.categoryName"
+                    class="badge bg-secondary-light text-dark"
+                  >
+                    {{ topic.categoryName }}
+                  </span>
+                  <span v-if="topic.isPinned" class="badge bg-danger"
+                    >置頂</span
+                  >
+                  <span v-if="topic.isHot" class="badge bg-warning text-dark"
+                    >熱門</span
+                  >
+                </div>
+                <div class="topic-mobile-reply-count badge bg-primary">
+                  {{ topic.replyCount }}
+                </div>
+              </div>
+
+              <div
+                class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+              >
+                <h6 class="mb-0 fs-6 fw-bold flex-grow-1">
+                  <a
+                    href="javascript:void(0)"
+                    class="topic-title-link text-break"
+                  >
+                    {{ topic.title }}
+                  </a>
+                </h6>
+
+                <div class="interaction-container" @click.stop>
+                  <InteractionButtons
+                    :key="`topic-mobile-interactions-${topic.id}`"
+                    :contentId="topic.id"
+                    :authorUserId="topic.userId"
+                    @interaction-success="handleTopicInteractionSuccess"
+                    @interaction-error="handleTopicInteractionError"
+                    @edit-content="handleTopicEditContent"
+                    @delete-content="handleTopicDeleteContent"
+                  />
+                </div>
+              </div>
+
+              <div class="topic-preview-body topic-preview-collapsed mt-2 mb-2">
+                <div
+                  v-if="topic.imageUrls && topic.imageUrls.length"
+                  class="topic-preview-images-col"
+                >
+                  <div class="topic-preview-images-grid">
+                    <img
+                      v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
+                      :key="url + idx"
+                      :src="url"
+                      alt="貼文圖片"
+                      class="topic-preview-image-thumb"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div class="topic-preview-text-col">
+                  <HtmlIframe
+                    class="topic-preview-iframe"
+                    :html="topic.contentHtml || topic.content"
+                    :min-height="0"
+                    text-color="#145369"
+                    :allow-scripts="true"
+                    :extra-css="getTopicPreviewCss(topic)"
+                  />
+                </div>
+                <div
+                  class="topic-preview-click-layer"
+                  @click="goToThread(topic.id)"
+                ></div>
+              </div>
+
+              <div
+                class="d-flex justify-content-between align-items-center small text-muted"
+              >
+                <UserPreview
+                  :user-id="topic.userId"
+                  :username="topic.author"
+                  :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
+                  :size="22"
+                />
+                <span>{{ formatDate(topic.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌機表格列表 -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table table-hover mb-0">
             <thead class="table-light">
               <tr>
@@ -1637,6 +1740,24 @@ watch(
   object-fit: scale-down;
 }
 
+.topic-mobile-card {
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.topic-mobile-card:active {
+  transform: scale(0.998);
+}
+
+.topic-mobile-reply-count {
+  min-width: 2rem;
+  min-height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* 分頁樣式 */
 .pagination .page-item.active .page-link {
   background-color: #145369;
@@ -1678,8 +1799,38 @@ watch(
     max-height: 400px;
   }
 
+  .reply-mode-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    justify-content: space-between;
+    height: auto;
+    min-height: 42px;
+  }
+
+  .reply-mode-tabs .nav-link,
+  .reply-standalone-btn {
+    flex: 1 1 auto;
+    min-height: 34px;
+  }
+
+  .reply-standalone-btn {
+    width: 100%;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+  }
+
   .quick-reply-actions .btn {
-    min-width: 90px;
+    min-width: 0;
+    min-height: 40px;
+    flex: 1 1 calc(50% - 0.25rem);
   }
 }
 
