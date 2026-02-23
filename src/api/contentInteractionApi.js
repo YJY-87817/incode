@@ -2,11 +2,24 @@ import apiClient from "./request";
 
 const BEST_ANSWER_NAME_REGEX = /(best[-_ ]?answer|最佳解答|最佳解)/i;
 
+/**
+ * 【字段映射幫手】將任何值轉換為數字或 null
+ * 此幫手用於處理 API 回應中可能是字符串或數字的字段
+ */
 const toNumberOrNull = (value) => {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : null;
 };
 
+/**
+ * 【字段映射幫手】確保有效的陣列結構
+ *
+ * 不同的 API 端點可能將陣列包裹在不同的字段中：
+ * - data, interactions, Interactions, items, list, result
+ * - data.interactions, data.Interactions
+ *
+ * 此函數統一提取真正的陣列，以便後續處理
+ */
 const ensureArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -34,6 +47,15 @@ const extractMissionIdFromValue = (value) => {
   return toNumberOrNull(matched[1]);
 };
 
+/**
+ * 【委託任務ID萃取】從記錄中找出委託任務 ID
+ *
+ * 委託任務 ID 可能來自多個位置：
+ * 1. 直接字段：entrustMissionId, entrust_mission_id, missionId, mission_id 等
+ * 2. 注解/備註欄：note, description（如 \"missionId: 123\"）
+ *
+ * 此函數依序檢查所有可能的位置
+ */
 const extractMissionIdFromRecord = (record = {}) => {
   const directMissionId =
     record?.entrustMissionId ??

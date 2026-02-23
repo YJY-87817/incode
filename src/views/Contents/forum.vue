@@ -18,6 +18,7 @@ import { useAuthStore } from "@/stores/user/auth.js";
 const authStore = useAuthStore();
 // 可以抓到前端userID pinia
 
+// ========== 狀態和路由配置 ==========
 const forumStore = useForumStore();
 const route = useRoute();
 const { hasDraftContent } = useForumPost();
@@ -92,6 +93,7 @@ const openNewTopicModal = () => {
 
 /**
  * 同步視窗寬度到 store (供子組件使用)
+ * 此函數被 resize 事件監聽器調用，確保響應式布局信息同步到全局狀態
  */
 const updateWindowWidth = () => {
   forumStore.updateWindowWidth(window.innerWidth);
@@ -99,6 +101,10 @@ const updateWindowWidth = () => {
 
 /**
  * 初始化與清理
+ * 此處是信息流的起點：
+ * 1. updateWindowWidth() → forumStore.updateWindowWidth() (視窗寬度同步)
+ * 2. fetchCategories() → 調用 API 層 → 獲取分類列表 → 更新 state.categories
+ * 3. fetchTopics() → 調用 API 層 → 獲取主題列表 → 更新 state.topics
  */
 onMounted(() => {
   updateWindowWidth();
@@ -121,6 +127,14 @@ watch(
   },
 );
 
+/**
+ * 【主要信息流轉點】 路由參數改變 → 打開線程詳情
+ * 流程：
+ * 1. 用戶點擊主題 → TopicListView.goToThread() → router.push({ params: { id: threadId } })
+ * 2. route.params.id 變化 → 此 watch 被觸發
+ * 3. forumStore.openThread(threadId) → 調用 API 獲取線程詳情 → 並觸發 fetchThreadRepliesPage 等
+ * 4. 線程詳情更新到 state.threadDetail → TopicListView 的對應子組件重新渲染
+ */
 watch(
   () => route.params.id,
   (threadId) => {

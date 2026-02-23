@@ -196,12 +196,25 @@ const fetchBodyHtmlCached = async (body) => {
   }
 };
 
+/**
+ * 【數據轉換層】 API 回應 → 處理後的內部數據結構
+ *
+ * 此函數是整個帖文中數據流的一個關鍵轉換點。
+ * 之所以複雜是因為後端的 API 回應字段格式不統一：
+ * - 有些 camelCase: contentId, userId, createdAt
+ * - 有些 snake_case: content_id, user_id, created_at
+ * 此函數統一化這些候選形式，確保下游組件使用一致的 camelCase 。
+ */
 const buildThreadItem = async (item, fallbackType) => {
+  // 【字段映射】 將 API 回應的各種字段映射到下游的內部統一 id
   const bodyHtml = await fetchBodyHtmlCached(item.body);
   const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
     bodyHtml,
     toAbsoluteUrl,
   );
+  // [字段映射] userId: item.userId 或 item.user_id
+  // [字段映射] createdAt: item.createdAt 或 item.created_at
+  // [字段映射] id: item.contentId 或 item.content_id 或 item.id
   const resolvedLikeCount = extractLikeCount(item);
 
   return {
@@ -222,10 +235,16 @@ const buildThreadItem = async (item, fallbackType) => {
 };
 
 /**
- * 從 API 回應中提取回覆統計資訊
- * 後端現在直接在 ContentDto 頂層提供這些欄位
- * @param {Object} item - API 回應的內容項目
- * @returns {Object} { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId }
+ * 【數據提取】 從 API 回應中提取回覆統計資訊
+ *
+ * 負責: 從 API 回應中提取下列信息：
+ * - replyCount: 此主題的回覆數量
+ * - lastReplyTime: 最後回覆日期
+ * - lastReplyUser: 最後回覆的使用者名稱
+ * - lastReplyUserId: 最後回覆的使用者 ID
+ * 此信息可能來自：
+ * 1. 後端直接提供（版本 5.0+）
+ * 2. 解析出來的 interactions 陣列（舊版）
  */
 const extractReplyStats = (item) => {
   // 優先使用後端直接提供的統計資訊（camelCase）
@@ -265,7 +284,15 @@ const extractLikeCountFromInteractions = (item) => {
   return Math.max(0, likeCount);
 };
 
+/**
+ * 【數據提取 #3】 按讚數提取（複雜的 fallback 鏈）
+ *
+ * 負責: 從不同的 API 回應格式中提取按讚數；
+ * 但不同的各個 API 回應中，該數字段位置各不相同（字段名稱不一致、嵌套位置不一致）。
+ * 此函數專門針對這種差異。
+ */
 const extractLikeCount = (item) => {
+  // 嘗試撈取所有 API 回應可能的候選字段名（camelCase 及 snake_case 一起）
   const candidate =
     item?.likeCount ??
     item?.like_count ??
@@ -283,6 +310,8 @@ const extractLikeCount = (item) => {
   const value = Number(candidate);
   if (Number.isFinite(value)) return Math.max(0, value);
 
+  // 若 straightforward 方法不可行，當作最後的 fallback 兜底策略：
+  // 依據使用者互動資料一筆一筆計算點讚數。
   const fromInteractions = extractLikeCountFromInteractions(item);
   if (Number.isFinite(fromInteractions)) return Math.max(0, fromInteractions);
 
@@ -440,6 +469,12 @@ const normalizeEntrustMissionRecord = (item = {}) => ({
     item?.bestAnswerContentId ?? item?.best_answer_content_id ?? null,
 });
 
+/**
+ * 【輔助函數】 依據內容 ID 獲取委託任務資訊
+ *
+ * 異步後調用 /EntrustMissionApi 對接 → 返回任務情報
+ * 然後結合內容資訊（實際上某些特定 API 輸出結構可能包含）
+ */
 const fetchEntrustMissionMetaByContentId = async (contentId) => {
   const targetId = Number(contentId);
   if (!Number.isFinite(targetId)) return null;
@@ -1302,6 +1337,24 @@ export const useForumStore = defineStore("forum", {
     },
 
     // ========== 帖文詳情 ==========
+    /**
+     * 【信息流複雜點】取得線程詳情
+     *
+     * 此方法是整個論壇系統中複雜性最高的方法之一。信息流如下：
+     * 1. 調用 contentApi.getContent() 取回線程詳情
+     * 2. 從詳情中萃取 body（原始 HTML）→ 經由 fetchBodyHtmlCached() 取回及轉換
+     * 3. 萃取回覆統計（replyCount、lastReplyTime 等）
+     * 4. 【多來源】萃取「委託任務」資訊：
+     *    - 直接從 api 回應中
+     *    - 或透過 fetchEntrustMissionMetaByContentId() 另行取得
+     * 5. 萃取「最佳解」：
+     *    - 檢查本地快取（localStorage）
+     *    - 調用 contentInteractionApi.getBestAnswerResolution()
+     * 6. 填充 state.threadDetail 物件
+     * 7. 最後，並行取得回覆及留言分頁資訊
+     *
+     * 流程中有 3 個外部 API 調用 + 快取讀取，需特別注意。
+     */
     async fetchThreadDetail(threadId) {
       try {
         this.resetThreadPagingState();
@@ -1462,6 +1515,15 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
+    /**
+     * 【入口點】打開線程詳情
+     *
+     * 此方法由 forum.vue 的 watch(route.params.id) 中調用（見 forum.vue L134）
+     * 流程：
+     * 1. 記錄選中的線程 ID 到 state.selectedThread
+     * 2. 調用 fetchThreadDetail() 取回線程詳情及其回覆列表
+     * 3. TopicListView.vue 會根據 state.threadDetail 的更新自動在詳情視圖中展示內容
+     */
     openThread(topicId) {
       this.selectedThread = topicId;
       this.fetchThreadDetail(topicId);

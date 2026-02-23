@@ -696,6 +696,28 @@ watch(
 );
 
 // ========== 巢狀回覆展開/收起邏輯 ==========
+/**
+ * 【多層級巢狀加載】觸發巢狀回覆的非同步加載
+ *
+ * 此函數涉及複雜的兩階段加載機制，目的是最小化初始加載時間：
+ *
+ * 第一次點擊展開時的流程：
+ * 1. toggleNestedReplies() 被調用
+ * 2. 設定 isNestedExpanded.value = true → UI 開始顯示展開狀態
+ * 3. 呼叫 forumStore.ensureChildRepliesLoaded() → 向後端非同步取得子回覆
+ * 4. forumStore 將結果存於 state.childRepliesByParentId[postId] 中
+ * 5. nestedReplies 計算屬性依賴此狀態，自動觸發組件重新渲染
+ * 6. 一旦回覆加載完成，updateNestedToggleState() 計算是否需要（展開/收起）切換按鈕
+ *
+ * 快取機制：
+ * - 已加載過的子回覆會存在記憶體中（childRepliesByParentId）
+ * - 再次點擊展開同一個列表時，不會再向後端查詢（因為 loaded=true）
+ *
+ * 預加載機制（見 onMounted）：
+ * - 在組件掛載時，預先調用 preloadChildRepliesCount() 取得數量（page_size=1）
+ * - 此數據存在 childRepliesCountByParentId，用於顯示「N 則留言」的計數
+ * - 點擊展開時才進行全部加載
+ */
 function toggleNestedReplies() {
   isNestedExpanded.value = !isNestedExpanded.value;
   if (isNestedExpanded.value) {
