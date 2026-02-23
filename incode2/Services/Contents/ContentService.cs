@@ -319,7 +319,28 @@ namespace incode2.Services.Contents
         })
         .ToListAsync();
 
-      var interactionLookup = await GetUserInteractionLookupAsync(items.Select(item => item.ContentId).ToList(), userId);
+      var contentIds = items.Select(item => item.ContentId).ToList();
+
+      // Calculate like counts for each child content
+      var likeCounts = new Dictionary<int, int>();
+      if (contentIds.Count > 0)
+      {
+        likeCounts = await _context.ContentInteraction
+          .AsNoTracking()
+          .Where(ci => ci.CategoryId == 1 && contentIds.Contains(ci.ContentId))
+          .GroupBy(ci => ci.ContentId)
+          .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
+          .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
+      }
+
+      // Populate like counts
+      foreach (var item in items)
+      {
+        likeCounts.TryGetValue(item.ContentId, out var likeCount);
+        item.LikeCount = likeCount;
+      }
+
+      var interactionLookup = await GetUserInteractionLookupAsync(contentIds, userId);
       foreach (var item in items)
       {
         interactionLookup.TryGetValue(item.ContentId, out var categories);
