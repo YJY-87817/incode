@@ -29,8 +29,8 @@ namespace incode2.Controllers
             displaydata.displaycounts = new List<int>();
             // 上方數量顯示用
             displaydata.displaycounts.Add(await _context.User.CountAsync());
-            displaydata.displaycounts.Add(await _context.Content.CountAsync());
-            displaydata.displaycounts.Add(await _context.EntrustMission.CountAsync());
+            displaydata.displaycounts.Add(await _context.PointRecharge.CountAsync());
+            displaydata.displaycounts.Add((int)await _context.PointRecharge.Where(e => e.Status == "success").SumAsync(e => e.CashAmount));
             displaydata.displaycounts.Add(await _context.Orders.Where(e =>e.Status == "待處理").CountAsync());
             // 會員人數圖表
             displaydata.userdisplay = await _context.User
@@ -44,7 +44,7 @@ namespace incode2.Controllers
                 .OrderBy(x => x.createyear)
                 .ThenBy(x => x.createmonth)
                 .ToListAsync();
-
+            // 發文數量排行榜
             displaydata.userContentCounts = await _context.User
                 .Select(u => new UserContentCount
                 {
