@@ -15,10 +15,12 @@ import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const authStore = useAuthStore();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -81,6 +83,63 @@ const threadHasInlineImages = computed(() => {
 // ========== 留言/回文輸入狀態 ==========
 const showQuickReply = ref(false);
 const replyTab = ref(null);
+const optimisticBestAnswerContentId = ref(null);
+
+const activeEntrustMissionId = computed(() => {
+  return forumStore.threadDetail?.entrustMissionId ?? null;
+});
+
+const activeMissionOwnerUserId = computed(() => {
+  return (
+    forumStore.threadDetail?.entrustMissionUserId ??
+    forumStore.threadDetail?.userId ??
+    null
+  );
+});
+
+const activeRewardPoints = computed(() => {
+  return Number(forumStore.threadDetail?.rewardPoints || 0);
+});
+
+const activeBestAnswerContentId = computed(() => {
+  if (optimisticBestAnswerContentId.value) {
+    return optimisticBestAnswerContentId.value;
+  }
+  return forumStore.threadDetail?.bestAnswerContentId ?? null;
+});
+
+const canEnableBestAnswer = computed(() => {
+  return Boolean(activeEntrustMissionId.value);
+});
+
+const handleBestAnswerSelected = async (payload) => {
+  const selectedContentId =
+    payload?.bestAnswerContentId ?? payload?.contentId ?? null;
+  if (!selectedContentId) return;
+
+  optimisticBestAnswerContentId.value = Number(selectedContentId);
+
+  forumStore.threadDetail = {
+    ...forumStore.threadDetail,
+    bestAnswerContentId: Number(selectedContentId),
+    bestAnswerSelected: true,
+  };
+
+  forumStore.cacheBestAnswerSelection({
+    entrustMissionId:
+      payload?.entrustMissionId ?? forumStore.threadDetail?.entrustMissionId,
+    threadId: forumStore.threadDetail?.id,
+    bestAnswerContentId: Number(selectedContentId),
+  });
+
+  await Swal.fire({
+    icon: "success",
+    title: "最佳解答已選定",
+    text: `已發放 ${Number(payload?.rewardPoints || activeRewardPoints.value || 0)} 點給回覆作者`,
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
+};
 
 /**
  * 處理主題互動成功
@@ -537,6 +596,73 @@ function handleThreadReplyingTargetClick() {
     forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
   }
 }
+
+watch(
+  () => forumStore.threadDetail?.id,
+  () => {
+    optimisticBestAnswerContentId.value = null;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => forumStore.topics.map((topic) => Number(topic?.id)).join(","),
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    await forumStore.initializeUserInteractionStates(topicContentIds);
+  },
+  { immediate: true },
+);
+
+const collectThreadInteractionContentIds = () => {
+  const ids = [
+    Number(forumStore.threadDetail?.id),
+    ...paginatedThreadPosts.value.map((item) => Number(item?.id)),
+    ...paginatedThreadComments.value.map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return Array.from(new Set(ids));
+};
+
+watch(
+  () => [
+    forumStore.selectedThread,
+    Number(forumStore.threadDetail?.id || 0),
+    paginatedThreadPosts.value.map((item) => Number(item?.id || 0)).join(","),
+    paginatedThreadComments.value
+      .map((item) => Number(item?.id || 0))
+      .join(","),
+  ],
+  async ([selectedThread]) => {
+    if (!selectedThread) return;
+    const threadContentIds = collectThreadInteractionContentIds();
+    await forumStore.initializeUserInteractionStates(threadContentIds);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [authStore.isAuthenticated, authStore.user?.id],
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    const threadContentIds = collectThreadInteractionContentIds();
+
+    await Promise.all([
+      forumStore.initializeUserInteractionStates(topicContentIds, {
+        force: true,
+      }),
+      forumStore.initializeUserInteractionStates(threadContentIds, {
+        force: true,
+      }),
+    ]);
+  },
+);
 </script>
 
 <template>
@@ -754,6 +880,12 @@ function handleThreadReplyingTargetClick() {
                 :category-id="forumStore.threadDetail.categoryId"
                 :hide-nested-replies="false"
                 :preview-only="true"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
               />
               <nav v-if="threadCommentsTotalPages > 1" class="mt-3">
                 <ul
@@ -810,6 +942,12 @@ function handleThreadReplyingTargetClick() {
                 :hide-nested-replies="false"
                 :preview-only="true"
                 :show-parent-link="false"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
               />
             </div>
 
@@ -875,8 +1013,111 @@ function handleThreadReplyingTargetClick() {
           <p>此分類目前沒有主題</p>
         </div>
 
-        <!-- 主題表格 -->
-        <div v-else class="table-responsive">
+        <!-- 手機卡片列表 -->
+        <div v-else class="d-md-none px-2 pb-2">
+          <div
+            v-for="topic in forumStore.topics"
+            :key="`mobile-topic-${topic.id}`"
+            class="card topic-mobile-card mb-2"
+            @click="goToThread(topic.id)"
+          >
+            <div class="card-body p-2">
+              <div
+                class="d-flex align-items-start justify-content-between gap-2 mb-1"
+              >
+                <div class="d-flex flex-wrap gap-1">
+                  <span
+                    v-if="topic.categoryName"
+                    class="badge bg-secondary-light text-dark"
+                  >
+                    {{ topic.categoryName }}
+                  </span>
+                  <span v-if="topic.isPinned" class="badge bg-danger"
+                    >置頂</span
+                  >
+                  <span v-if="topic.isHot" class="badge bg-warning text-dark"
+                    >熱門</span
+                  >
+                </div>
+                <div class="topic-mobile-reply-count badge bg-primary">
+                  {{ topic.replyCount }}
+                </div>
+              </div>
+
+              <div
+                class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+              >
+                <h6 class="mb-0 fs-6 fw-bold flex-grow-1">
+                  <a
+                    href="javascript:void(0)"
+                    class="topic-title-link text-break"
+                  >
+                    {{ topic.title }}
+                  </a>
+                </h6>
+
+                <div class="interaction-container" @click.stop>
+                  <InteractionButtons
+                    :key="`topic-mobile-interactions-${topic.id}`"
+                    :contentId="topic.id"
+                    :authorUserId="topic.userId"
+                    @interaction-success="handleTopicInteractionSuccess"
+                    @interaction-error="handleTopicInteractionError"
+                    @edit-content="handleTopicEditContent"
+                    @delete-content="handleTopicDeleteContent"
+                  />
+                </div>
+              </div>
+
+              <div class="topic-preview-body topic-preview-collapsed mt-2 mb-2">
+                <div
+                  v-if="topic.imageUrls && topic.imageUrls.length"
+                  class="topic-preview-images-col"
+                >
+                  <div class="topic-preview-images-grid">
+                    <img
+                      v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
+                      :key="url + idx"
+                      :src="url"
+                      alt="貼文圖片"
+                      class="topic-preview-image-thumb"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div class="topic-preview-text-col">
+                  <HtmlIframe
+                    class="topic-preview-iframe"
+                    :html="topic.contentHtml || topic.content"
+                    :min-height="0"
+                    text-color="#145369"
+                    :allow-scripts="true"
+                    :extra-css="getTopicPreviewCss(topic)"
+                  />
+                </div>
+                <div
+                  class="topic-preview-click-layer"
+                  @click="goToThread(topic.id)"
+                ></div>
+              </div>
+
+              <div
+                class="d-flex justify-content-between align-items-center small text-muted"
+              >
+                <UserPreview
+                  :user-id="topic.userId"
+                  :username="topic.author"
+                  :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
+                  :size="22"
+                />
+                <span>{{ formatDate(topic.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌機表格列表 -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table table-hover mb-0">
             <thead class="table-light">
               <tr>
@@ -1499,6 +1740,24 @@ function handleThreadReplyingTargetClick() {
   object-fit: scale-down;
 }
 
+.topic-mobile-card {
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.topic-mobile-card:active {
+  transform: scale(0.998);
+}
+
+.topic-mobile-reply-count {
+  min-width: 2rem;
+  min-height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* 分頁樣式 */
 .pagination .page-item.active .page-link {
   background-color: #145369;
@@ -1540,8 +1799,38 @@ function handleThreadReplyingTargetClick() {
     max-height: 400px;
   }
 
+  .reply-mode-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    justify-content: space-between;
+    height: auto;
+    min-height: 42px;
+  }
+
+  .reply-mode-tabs .nav-link,
+  .reply-standalone-btn {
+    flex: 1 1 auto;
+    min-height: 34px;
+  }
+
+  .reply-standalone-btn {
+    width: 100%;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+  }
+
   .quick-reply-actions .btn {
-    min-width: 90px;
+    min-width: 0;
+    min-height: 40px;
+    flex: 1 1 calc(50% - 0.25rem);
   }
 }
 

@@ -32,6 +32,12 @@
                     主文
                   </button>
                   <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+                  <span
+                    v-if="isBestAnswerPost"
+                    class="badge bg-warning text-dark"
+                  >
+                    最佳解
+                  </span>
                   <h6 class="card-title post-author mb-0" @click.stop>
                     <UserPreview
                       :user-id="post.userId"
@@ -44,7 +50,7 @@
                     class="text-muted post-time clickable"
                     @click.stop="goToPostDetail"
                   >
-                    {{ post.createdAt }}
+                    {{ formatDate(post.createdAt) }}
                   </small>
                 </div>
               </div>
@@ -53,8 +59,14 @@
                   :key="`interactions-${post.id}`"
                   :contentId="post.id"
                   :authorUserId="post.userId"
+                  :enable-best-answer="enableBestAnswer"
+                  :entrust-mission-id="entrustMissionId"
+                  :mission-owner-user-id="missionOwnerUserId"
+                  :best-answer-content-id="bestAnswerContentId"
+                  :reward-points="rewardPoints"
                   @interaction-success="handleInteractionSuccess"
                   @interaction-error="handleInteractionError"
+                  @best-answer-selected="handleBestAnswerSelected"
                   @edit-content="handleEditContent"
                   @delete-content="handleDeleteContent"
                 />
@@ -136,7 +148,10 @@
     </div>
 
     <!-- 巢狀回覆 -->
-    <div v-if="canHaveNestedReplies" class="nested-replies-section ms-3 mt-2">
+    <div
+      v-if="canHaveNestedReplies"
+      class="nested-replies-section ms-0 ms-md-3 mt-2"
+    >
       <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
         <button
           v-if="canReplyHere"
@@ -216,6 +231,12 @@
             :is-reply="true"
             :category-id="categoryId"
             :preview-only="true"
+            :enable-best-answer="enableBestAnswer"
+            :entrust-mission-id="entrustMissionId"
+            :mission-owner-user-id="missionOwnerUserId"
+            :best-answer-content-id="bestAnswerContentId"
+            :reward-points="rewardPoints"
+            @best-answer-selected="handleBestAnswerSelected"
           />
           <div
             v-if="nestedRepliesLoaded && nestedRepliesCount === 0"
@@ -289,7 +310,7 @@ import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { normalizeRichContent } from "@/utils/sanitizeHtml.js";
-import { toAbsoluteUrl } from "@/utils/contentBody.js";
+import { toAbsoluteUrl, formatDate } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
@@ -326,7 +347,29 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  enableBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  entrustMissionId: {
+    type: Number,
+    default: null,
+  },
+  missionOwnerUserId: {
+    type: Number,
+    default: null,
+  },
+  bestAnswerContentId: {
+    type: Number,
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
 });
+
+const emit = defineEmits(["best-answer-selected"]);
 
 const showReply = ref(false);
 const isPreviewExpanded = ref(false);
@@ -471,6 +514,11 @@ const badgeClass = computed(() => {
     default:
       return "bg-light text-dark";
   }
+});
+
+const isBestAnswerPost = computed(() => {
+  if (!props.bestAnswerContentId || !props.post?.id) return false;
+  return Number(props.bestAnswerContentId) === Number(props.post.id);
 });
 
 const parentContentId = computed(
@@ -973,6 +1021,10 @@ async function handleInteractionError(data) {
   });
 }
 
+function handleBestAnswerSelected(payload) {
+  emit("best-answer-selected", payload);
+}
+
 /**
  * 處理編輯內容
  */
@@ -1398,6 +1450,36 @@ async function handleDeleteContent(contentId) {
 }
 
 @media (max-width: 768px) {
+  .thread-reply-btn,
+  .nested-toggle-btn {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    padding: 4px;
+  }
+
+  .reply-mode-tabs .nav-link {
+    min-height: 32px;
+    flex: 1 1 auto;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .quick-reply-actions .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 40px;
+    min-width: 0;
+  }
+
   .preview-row {
     flex-direction: column;
   }
@@ -1408,6 +1490,10 @@ async function handleDeleteContent(contentId) {
 
   .preview-images-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nested-replies-section {
+    margin-left: 0 !important;
   }
 }
 

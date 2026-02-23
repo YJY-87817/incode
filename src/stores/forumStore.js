@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import apiClient from "@/api/request.js";
 import contentApi from "@/api/contentApi.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
+import { useAuthStore } from "@/stores/user/auth.js";
 import {
   fetchBodyHtml,
   parseBodyContent,
@@ -22,6 +23,68 @@ const topicPageCache = new Map();
 const topicPagePending = new Map();
 const contentBodyCache = new Map();
 const contentBodyPending = new Map();
+const entrustMissionByContentCache = new Map();
+const entrustMissionByContentPending = new Map();
+const interactionInitPending = new Map();
+const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
+
+const readBestAnswerCache = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(BEST_ANSWER_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeBestAnswerCache = (payload) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BEST_ANSWER_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore write failure
+  }
+};
+
+const toBestAnswerCacheKey = ({ entrustMissionId, threadId }) => {
+  const missionNumericId = Number(entrustMissionId);
+  if (Number.isFinite(missionNumericId) && missionNumericId > 0) {
+    return `m:${missionNumericId}`;
+  }
+
+  const threadNumericId = Number(threadId);
+  if (Number.isFinite(threadNumericId) && threadNumericId > 0) {
+    return `t:${threadNumericId}`;
+  }
+
+  return null;
+};
+
+const getCachedBestAnswerContentId = ({ entrustMissionId, threadId }) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  if (!key) return null;
+  const cache = readBestAnswerCache();
+  const value = Number(cache[key]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+const setCachedBestAnswerContentId = ({
+  entrustMissionId,
+  threadId,
+  bestAnswerContentId,
+}) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  const numericContentId = Number(bestAnswerContentId);
+  if (!key || !Number.isFinite(numericContentId) || numericContentId <= 0) {
+    return;
+  }
+  const cache = readBestAnswerCache();
+  cache[key] = numericContentId;
+  writeBestAnswerCache(cache);
+};
 
 const buildTopicsCacheKey = ({
   categoryId,
@@ -143,6 +206,7 @@ const buildThreadItem = async (item, fallbackType) => {
     parentContentId: item.parentContentId ?? item.parent_content_id ?? null,
     categoryId: item.categoryId ?? item.category_id ?? null,
     title: item.title ?? "",
+    likeCount: extractLikeCount(item),
   };
 };
 
@@ -165,6 +229,12 @@ const extractReplyStats = (item) => {
     lastReplyUser,
     lastReplyUserId,
   };
+};
+
+const extractLikeCount = (item) => {
+  const value = Number(item?.likeCount ?? item?.like_count ?? 0);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, value);
 };
 
 const extractPreviewPayload = (item) => {
@@ -224,6 +294,138 @@ const normalizeCategory = (raw, fallbackName = "") => {
   };
 };
 
+const normalizeEntrustMissionMeta = (detail = {}) => {
+  const mission =
+    detail?.entrustMission ??
+    detail?.entrust_mission ??
+    detail?.task ??
+    detail?.mission ??
+    null;
+
+  const entrustMissionId =
+    detail?.entrustMissionId ??
+    detail?.entrust_mission_id ??
+    mission?.entrustMissionId ??
+    mission?.entrust_mission_id ??
+    mission?.id ??
+    null;
+
+  const rewardPoints =
+    detail?.rewardPoints ??
+    detail?.reward_points ??
+    mission?.rewardPoints ??
+    mission?.reward_points ??
+    0;
+
+  const missionOwnerUserId =
+    mission?.userId ??
+    mission?.user_id ??
+    detail?.entrustMissionUserId ??
+    detail?.entrust_mission_user_id ??
+    detail?.userId ??
+    detail?.user_id ??
+    null;
+
+  const bestAnswerContentId =
+    detail?.bestAnswerContentId ??
+    detail?.best_answer_content_id ??
+    mission?.bestAnswerContentId ??
+    mission?.best_answer_content_id ??
+    null;
+
+  return {
+    entrustMissionId: entrustMissionId ? Number(entrustMissionId) : null,
+    rewardPoints: Number(rewardPoints || 0),
+    entrustMissionUserId: missionOwnerUserId
+      ? Number(missionOwnerUserId)
+      : null,
+    bestAnswerContentId: bestAnswerContentId
+      ? Number(bestAnswerContentId)
+      : null,
+  };
+};
+
+const normalizeEntrustMissionRecord = (item = {}) => ({
+  entrustMissionId:
+    item?.entrustMissionId ?? item?.entrust_mission_id ?? item?.id ?? null,
+  entrustMissionUserId:
+    item?.userId ??
+    item?.user_id ??
+    item?.ownerUserId ??
+    item?.owner_user_id ??
+    null,
+  rewardPoints: item?.rewardPoints ?? item?.reward_points ?? 0,
+  bestAnswerContentId:
+    item?.bestAnswerContentId ?? item?.best_answer_content_id ?? null,
+});
+
+const fetchEntrustMissionMetaByContentId = async (contentId) => {
+  const targetId = Number(contentId);
+  if (!Number.isFinite(targetId)) return null;
+
+  if (entrustMissionByContentCache.has(targetId)) {
+    return entrustMissionByContentCache.get(targetId);
+  }
+
+  if (entrustMissionByContentPending.has(targetId)) {
+    return entrustMissionByContentPending.get(targetId);
+  }
+
+  const request = (async () => {
+    try {
+      const response = await apiClient.get("/EntrustMissionApi");
+      const records = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      records.forEach((record) => {
+        const linkedContentId = Number(
+          record?.contentId ?? record?.content_id ?? null,
+        );
+        if (!Number.isFinite(linkedContentId)) return;
+        entrustMissionByContentCache.set(
+          linkedContentId,
+          normalizeEntrustMissionRecord(record),
+        );
+      });
+
+      return entrustMissionByContentCache.get(targetId) ?? null;
+    } catch (error) {
+      console.error("載入委託任務資訊失敗:", error);
+      return null;
+    } finally {
+      entrustMissionByContentPending.delete(targetId);
+    }
+  })();
+
+  entrustMissionByContentPending.set(targetId, request);
+  return request;
+};
+
+const toInteractionCategoryId = (record) => {
+  const categoryId = Number(
+    record?.interactionCategoryId ??
+      record?.interaction_category_id ??
+      record?.categoryId ??
+      record?.category_id ??
+      null,
+  );
+  return Number.isFinite(categoryId) ? categoryId : null;
+};
+
+const extractUserInteractions = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.Interactions)) return payload.Interactions;
+  if (Array.isArray(payload?.interactions)) return payload.interactions;
+  if (Array.isArray(payload?.data?.Interactions))
+    return payload.data.Interactions;
+  if (Array.isArray(payload?.data?.interactions))
+    return payload.data.interactions;
+  return [];
+};
+
 export const useForumStore = defineStore("forum", {
   state: () => ({
     // ========== 全局狀態 ==========
@@ -265,6 +467,12 @@ export const useForumStore = defineStore("forum", {
       type: null,
       isPinned: false,
       isHot: false,
+      likeCount: 0,
+      entrustMissionId: null,
+      entrustMissionUserId: null,
+      rewardPoints: 0,
+      bestAnswerContentId: null,
+      bestAnswerSelected: false,
     },
     threadPosts: [],
     threadComments: [],
@@ -334,6 +542,8 @@ export const useForumStore = defineStore("forum", {
     currentInteractionAuthorUserId: null,
     interactionStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
     interactionLoadingStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
+    interactionStateInitialized: {}, // { contentId: true/false }
+    interactionInitBatchSize: 5,
 
     // ========== 快速回覆相關 ==========
     quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
@@ -921,6 +1131,7 @@ export const useForumStore = defineStore("forum", {
                   null,
                 createdAt: item.createdAt,
                 type: item.type,
+                likeCount: extractLikeCount(item),
                 replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
                 lastReplyTime:
                   stats.lastReplyTime ?? fallbackStats.lastReplyTime ?? null,
@@ -958,6 +1169,14 @@ export const useForumStore = defineStore("forum", {
 
         this.pagination = result.pagination;
         this.topics = result.topics;
+
+        const topicContentIds = result.topics
+          .map((topic) => Number(topic?.id))
+          .filter((id) => Number.isFinite(id) && id > 0);
+
+        this.initializeUserInteractionStates(topicContentIds).catch((error) => {
+          console.error("批次初始化互動狀態失敗:", error);
+        });
 
         const shouldFetchFallbackStats =
           this.replyStatsFallbackEnabled &&
@@ -1027,6 +1246,45 @@ export const useForumStore = defineStore("forum", {
 
           // 提取後端提供的回覆統計資訊
           const stats = extractReplyStats(detail);
+          const detailEntrustMeta = normalizeEntrustMissionMeta(detail);
+          const fallbackEntrustMeta = await fetchEntrustMissionMetaByContentId(
+            detail.contentId ?? threadId,
+          );
+          const entrustMissionMeta = {
+            entrustMissionId:
+              detailEntrustMeta.entrustMissionId ??
+              fallbackEntrustMeta?.entrustMissionId ??
+              null,
+            entrustMissionUserId:
+              detailEntrustMeta.entrustMissionUserId ??
+              fallbackEntrustMeta?.entrustMissionUserId ??
+              null,
+            rewardPoints:
+              detailEntrustMeta.rewardPoints > 0
+                ? detailEntrustMeta.rewardPoints
+                : Number(fallbackEntrustMeta?.rewardPoints || 0),
+            bestAnswerContentId:
+              detailEntrustMeta.bestAnswerContentId ??
+              fallbackEntrustMeta?.bestAnswerContentId ??
+              null,
+          };
+
+          const threadContentId = detail.contentId ?? threadId;
+          const cachedBestAnswerContentId = getCachedBestAnswerContentId({
+            entrustMissionId: entrustMissionMeta.entrustMissionId,
+            threadId: threadContentId,
+          });
+
+          const resolvedBestAnswerContentId =
+            await contentInteractionApi.getBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadContentId,
+              fallbackBestAnswerContentId:
+                entrustMissionMeta.bestAnswerContentId ??
+                cachedBestAnswerContentId,
+            });
+          const finalBestAnswerContentId =
+            resolvedBestAnswerContentId ?? cachedBestAnswerContentId;
 
           // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
           let isPinned = detail.isPinned ?? false;
@@ -1065,12 +1323,26 @@ export const useForumStore = defineStore("forum", {
             type: detail.type,
             isPinned: isPinned,
             isHot: isHot,
+            likeCount: extractLikeCount(detail),
             // 添加回覆統計資訊
             replyCount: stats.replyCount ?? 0,
             lastReplyTime: stats.lastReplyTime ?? null,
             lastReplyUser: stats.lastReplyUser ?? null,
             lastReplyUserId: stats.lastReplyUserId ?? null,
+            entrustMissionId: entrustMissionMeta.entrustMissionId,
+            entrustMissionUserId: entrustMissionMeta.entrustMissionUserId,
+            rewardPoints: entrustMissionMeta.rewardPoints,
+            bestAnswerContentId: finalBestAnswerContentId,
+            bestAnswerSelected: Boolean(finalBestAnswerContentId),
           };
+
+          if (finalBestAnswerContentId) {
+            setCachedBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadId: threadContentId,
+              bestAnswerContentId: finalBestAnswerContentId,
+            });
+          }
 
           // 更新快取的統計資訊
           if (detail.contentId && stats.replyCount !== null) {
@@ -1115,10 +1387,16 @@ export const useForumStore = defineStore("forum", {
         type: null,
         isPinned: false,
         isHot: false,
+        likeCount: 0,
         replyCount: 0,
         lastReplyTime: null,
         lastReplyUser: null,
         lastReplyUserId: null,
+        entrustMissionId: null,
+        entrustMissionUserId: null,
+        rewardPoints: 0,
+        bestAnswerContentId: null,
+        bestAnswerSelected: false,
       };
       this.threadPosts = [];
       this.threadComments = [];
@@ -1140,6 +1418,18 @@ export const useForumStore = defineStore("forum", {
       };
       this.childRepliesByParentId = {};
       this.childRepliesCountByParentId = {};
+    },
+
+    cacheBestAnswerSelection({
+      entrustMissionId = null,
+      threadId = null,
+      bestAnswerContentId = null,
+    } = {}) {
+      setCachedBestAnswerContentId({
+        entrustMissionId,
+        threadId,
+        bestAnswerContentId,
+      });
     },
 
     changeThreadPage(page) {
@@ -1325,6 +1615,8 @@ export const useForumStore = defineStore("forum", {
       clearTopicPageCache();
       contentBodyCache.clear();
       contentBodyPending.clear();
+      entrustMissionByContentCache.clear();
+      entrustMissionByContentPending.clear();
     },
 
     // ========== 搜尋功能 ==========
@@ -1402,6 +1694,211 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
+    async initializeUserInteractionState(contentId, { force = false } = {}) {
+      const targetContentId = Number(contentId);
+      if (!Number.isFinite(targetContentId) || targetContentId <= 0) return;
+
+      this.setCurrentInteractionContent(targetContentId, null);
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        this.interactionStates[targetContentId] = {
+          1: false,
+          2: false,
+          3: false,
+          4: false,
+        };
+        this.interactionStateInitialized[targetContentId] = false;
+        return;
+      }
+
+      if (!force && this.interactionStateInitialized[targetContentId]) {
+        return;
+      }
+
+      if (interactionInitPending.has(targetContentId)) {
+        await interactionInitPending.get(targetContentId);
+        return;
+      }
+
+      const request = (async () => {
+        try {
+          const response =
+            await contentInteractionApi.getUserInteraction(targetContentId);
+          const interactions = extractUserInteractions(response);
+          const activeCategories = new Set(
+            interactions.map(toInteractionCategoryId).filter(Boolean),
+          );
+
+          this.interactionStates[targetContentId] = {
+            1: activeCategories.has(1),
+            2: activeCategories.has(2),
+            3: activeCategories.has(3),
+            4: activeCategories.has(4),
+          };
+          this.interactionStateInitialized[targetContentId] = true;
+        } catch (error) {
+          if (error?.response?.status === 401) {
+            this.interactionStates[targetContentId] = {
+              1: false,
+              2: false,
+              3: false,
+              4: false,
+            };
+            this.interactionStateInitialized[targetContentId] = false;
+            return;
+          }
+
+          console.error("初始化使用者互動狀態失敗:", error);
+        } finally {
+          interactionInitPending.delete(targetContentId);
+        }
+      })();
+
+      interactionInitPending.set(targetContentId, request);
+      await request;
+    },
+
+    async initializeUserInteractionStates(
+      contentIds,
+      { force = false, batchSize = null } = {},
+    ) {
+      const normalizedIds = Array.from(
+        new Set(
+          (Array.isArray(contentIds) ? contentIds : [])
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id) && id > 0),
+        ),
+      );
+
+      if (!normalizedIds.length) return;
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        normalizedIds.forEach((id) => {
+          this.setCurrentInteractionContent(id, null);
+          this.interactionStates[id] = {
+            1: false,
+            2: false,
+            3: false,
+            4: false,
+          };
+          this.interactionStateInitialized[id] = false;
+        });
+        return;
+      }
+
+      const targetIds = force
+        ? normalizedIds
+        : normalizedIds.filter((id) => !this.interactionStateInitialized[id]);
+
+      if (!targetIds.length) return;
+
+      const defaultBatchSize = Math.max(
+        1,
+        Number(this.interactionInitBatchSize) || 1,
+      );
+      const resolvedBatchSize = Math.max(
+        1,
+        Number(batchSize ?? defaultBatchSize) || defaultBatchSize,
+      );
+
+      for (
+        let index = 0;
+        index < targetIds.length;
+        index += resolvedBatchSize
+      ) {
+        const chunk = targetIds.slice(index, index + resolvedBatchSize);
+        await Promise.all(
+          chunk.map((id) => this.initializeUserInteractionState(id, { force })),
+        );
+      }
+    },
+
+    setInteractionInitBatchSize(size) {
+      const nextSize = Number(size);
+      if (!Number.isFinite(nextSize)) return;
+
+      this.interactionInitBatchSize = Math.min(20, Math.max(1, nextSize));
+    },
+
+    getContentLikeCount(contentId) {
+      const targetId = Number(contentId);
+      if (!Number.isFinite(targetId) || targetId <= 0) return 0;
+
+      const findCount = (items = []) => {
+        const matched = items.find((item) => Number(item?.id) === targetId);
+        if (!matched) return null;
+        const count = Number(matched?.likeCount);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+      };
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        const detailCount = Number(this.threadDetail?.likeCount ?? 0);
+        if (Number.isFinite(detailCount)) return Math.max(0, detailCount);
+      }
+
+      const topicCount = findCount(this.topics);
+      if (topicCount !== null) return topicCount;
+
+      const postCount = findCount(this.threadPosts);
+      if (postCount !== null) return postCount;
+
+      const commentCount = findCount(this.threadComments);
+      if (commentCount !== null) return commentCount;
+
+      const childReplyCollections = Object.values(this.childRepliesByParentId);
+      for (const payload of childReplyCollections) {
+        const childCount = findCount(payload?.items || []);
+        if (childCount !== null) return childCount;
+      }
+
+      return 0;
+    },
+
+    setContentLikeCount(contentId, likeCount) {
+      const targetId = Number(contentId);
+      const nextCount = Number(likeCount);
+      if (!Number.isFinite(targetId) || targetId <= 0) return;
+      if (!Number.isFinite(nextCount)) return;
+
+      const normalizedCount = Math.max(0, nextCount);
+      const updateCollection = (items = []) =>
+        items.map((item) =>
+          Number(item?.id) === targetId
+            ? { ...item, likeCount: normalizedCount }
+            : item,
+        );
+
+      this.topics = updateCollection(this.topics);
+      this.threadPosts = updateCollection(this.threadPosts);
+      this.threadComments = updateCollection(this.threadComments);
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        this.threadDetail = {
+          ...this.threadDetail,
+          likeCount: normalizedCount,
+        };
+      }
+
+      Object.entries(this.childRepliesByParentId || {}).forEach(
+        ([parentId, payload]) => {
+          this.childRepliesByParentId[parentId] = {
+            ...payload,
+            items: updateCollection(payload?.items || []),
+          };
+        },
+      );
+    },
+
     /**
      * 執行互動
      * @param {number} contentId - 內容 ID
@@ -1424,6 +1921,10 @@ export const useForumStore = defineStore("forum", {
 
         if (response.isRemoved) {
           this.interactionStates[contentId][categoryId] = false;
+          if (categoryId === 1) {
+            const currentLikeCount = this.getContentLikeCount(contentId);
+            this.setContentLikeCount(contentId, currentLikeCount - 1);
+          }
           // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
           if (categoryId === 2) {
             clearTopicPageCache();
@@ -1431,6 +1932,10 @@ export const useForumStore = defineStore("forum", {
           return { success: true, isRemoved: true, message: "互動已移除" };
         } else {
           this.interactionStates[contentId][categoryId] = true;
+          if (categoryId === 1) {
+            const currentLikeCount = this.getContentLikeCount(contentId);
+            this.setContentLikeCount(contentId, currentLikeCount + 1);
+          }
           const categoryNames = {
             1: "讚",
             2: "隱藏",

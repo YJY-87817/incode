@@ -20,20 +20,95 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  enableBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  entrustMissionId: {
+    type: Number,
+    default: null,
+  },
+  missionOwnerUserId: {
+    type: Number,
+    default: null,
+  },
+  bestAnswerContentId: {
+    type: Number,
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const authStore = useAuthStore();
 const forumStore = useForumStore();
 
+const isCurrentListTopic = computed(() => {
+  if (forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  return (forumStore.topics || []).some(
+    (item) => Number(item?.id) === targetId,
+  );
+});
+
+const isCurrentThreadContent = computed(() => {
+  if (!forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  if (!Number.isFinite(targetId) || targetId <= 0) return false;
+
+  const relatedIds = [
+    Number(forumStore.threadDetail?.id),
+    ...(forumStore.threadPosts || []).map((item) => Number(item?.id)),
+    ...(forumStore.threadComments || []).map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return relatedIds.includes(targetId);
+});
+
+const isBatchManagedContent = computed(() => {
+  return isCurrentListTopic.value || isCurrentThreadContent.value;
+});
+
 // 初始化當前內容的互動狀態
 watch(
   () => props.contentId,
-  (newId) => {
+  async (newId) => {
     if (newId) {
       forumStore.setCurrentInteractionContent(newId, props.authorUserId);
+      if (!isBatchManagedContent.value) {
+        await forumStore.initializeUserInteractionState(newId);
+      }
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => [authStore.isAuthenticated, authStore.user?.id],
+  async ([isAuthenticated]) => {
+    if (!props.contentId) return;
+
+    if (isBatchManagedContent.value) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      forumStore.interactionStates[props.contentId] = {
+        1: false,
+        2: false,
+        3: false,
+        4: false,
+      };
+      forumStore.interactionStateInitialized[props.contentId] = false;
+      return;
+    }
+
+    await forumStore.initializeUserInteractionState(props.contentId, {
+      force: true,
+    });
+  },
 );
 
 // 檢查是否為當前使用者的內容
@@ -45,13 +120,12 @@ const isOwnContent = computed(() => {
   );
 });
 
-onMounted(() => {});
-
 const emit = defineEmits([
   "interaction-success",
   "interaction-error",
   "edit-content",
   "delete-content",
+  "best-answer-selected",
 ]);
 
 /**
@@ -60,9 +134,20 @@ const emit = defineEmits([
 const categories = ref([
   { id: 1, name: "like", label: "讚", icon: "fas fa-thumbs-up" },
   { id: 3, name: "bookmark", label: "收藏", icon: "fas fa-bookmark" },
-  { id: 2, name: "hide", label: "隱藏", icon: "fas fa-eye-slash" },
-  { id: 4, name: "block", label: "檢舉", icon: "fas fa-ban" },
 ]);
+
+const likeCount = computed(() => {
+  return forumStore.getContentLikeCount(props.contentId);
+});
+
+const getCategoryLabel = (category) => {
+  if (category?.id === 1) {
+    return likeCount.value > 0
+      ? `${category.label} ${likeCount.value}`
+      : category.label;
+  }
+  return category?.label ?? "";
+};
 
 // 從 Pinia store 獲取互動狀態
 const interactionStates = computed(() => {
@@ -134,6 +219,89 @@ function getButtonClass(categoryId) {
 const showMoreMenu = computed(() => {
   return forumStore.isMoreMenuOpen(props.contentId);
 });
+
+const currentUserId = computed(() => authStore.user?.id ?? null);
+
+const isMissionOwner = computed(() => {
+  if (!currentUserId.value || !props.missionOwnerUserId) return false;
+  return Number(currentUserId.value) === Number(props.missionOwnerUserId);
+});
+
+const hasSelectedBestAnswer = computed(() => {
+  return Boolean(props.bestAnswerContentId);
+});
+
+const canShowBestAnswerButton = computed(() => {
+  return (
+    props.enableBestAnswer &&
+    Boolean(props.entrustMissionId) &&
+    Boolean(props.contentId) &&
+    isMissionOwner.value &&
+    !hasSelectedBestAnswer.value
+  );
+});
+
+const bestAnswerLoading = ref(false);
+
+const getBestAnswerErrorMessage = (error) => {
+  const status = error?.response?.status;
+  const backendMessage = error?.response?.data?.message;
+
+  if (backendMessage) return backendMessage;
+
+  switch (status) {
+    case 400:
+      return "該回覆不屬於此委託任務";
+    case 401:
+      return "請先登入後再操作";
+    case 403:
+      return "只有原發文者可以選定最佳解答";
+    case 404:
+      return "找不到任務或回覆，請重新整理後再試";
+    case 409:
+      return "此任務已設定過最佳解答";
+    default:
+      return "設定最佳解答失敗，請稍後再試";
+  }
+};
+
+const handleBestAnswer = async () => {
+  if (!canShowBestAnswerButton.value || bestAnswerLoading.value) return;
+
+  bestAnswerLoading.value = true;
+  try {
+    const response = await contentInteractionApi.bestAnswer({
+      entrustMissionId: props.entrustMissionId,
+      contentId: props.contentId,
+    });
+
+    emit("best-answer-selected", {
+      contentId: props.contentId,
+      entrustMissionId: props.entrustMissionId,
+      rewardedUserId:
+        response?.data?.rewardedUserId ?? response?.rewardedUserId ?? null,
+      rewardPoints:
+        response?.data?.rewardPoints ??
+        response?.rewardPoints ??
+        props.rewardPoints ??
+        0,
+      bestAnswerContentId:
+        response?.data?.bestAnswerContentId ??
+        response?.bestAnswerContentId ??
+        props.contentId,
+      message: response?.message || "最佳解答已選定",
+    });
+  } catch (error) {
+    emit("interaction-error", {
+      contentId: props.contentId,
+      categoryId: null,
+      categoryName: "best-answer",
+      error: getBestAnswerErrorMessage(error),
+    });
+  } finally {
+    bestAnswerLoading.value = false;
+  }
+};
 
 /**
  * 切換更多選單
@@ -213,6 +381,18 @@ onMounted(() => {
     :class="{ 'more-menu-open': showMoreMenu }"
   >
     <button
+      v-if="canShowBestAnswerButton"
+      class="btn btn-sm btn-interaction-button btn-best-answer"
+      @click="handleBestAnswer"
+      :disabled="bestAnswerLoading"
+      title="最佳解答"
+      type="button"
+    >
+      <i :class="['fas fa-award', { 'fa-spin': bestAnswerLoading }]"></i>
+      <span class="ms-1">最佳解</span>
+    </button>
+
+    <button
       v-for="cat in categories"
       :key="cat.id"
       class="btn btn-sm btn-interaction-button"
@@ -223,11 +403,11 @@ onMounted(() => {
       type="button"
     >
       <i :class="[cat.icon, { 'fa-spin': isLoading[cat.id] }]"></i>
-      <span class="ms-1">{{ cat.label }}</span>
+      <span class="ms-1">{{ getCategoryLabel(cat) }}</span>
     </button>
 
-    <!-- 更多選單 (僅當為自己的內容時顯示) -->
-    <div v-if="isOwnContent" class="more-menu-container position-relative">
+    <!-- 更多選單 -->
+    <div class="more-menu-container position-relative">
       <button
         class="btn btn-sm btn-interaction-button btn-interaction"
         @click.stop="toggleMoreMenu"
@@ -240,11 +420,37 @@ onMounted(() => {
 
       <!-- 下拉選單 -->
       <div v-if="showMoreMenu" class="more-menu-dropdown" @click.stop>
-        <button class="more-menu-item" @click="handleEdit" type="button">
+        <button
+          class="more-menu-item"
+          @click="handleInteraction(2, 'hide')"
+          :disabled="isLoading[2]"
+          type="button"
+        >
+          <i
+            :class="['fas fa-eye-slash me-2', { 'fa-spin': isLoading[2] }]"
+          ></i>
+          隱藏
+        </button>
+        <button
+          class="more-menu-item"
+          @click="handleInteraction(4, 'block')"
+          :disabled="isLoading[4]"
+          type="button"
+        >
+          <i :class="['fas fa-ban me-2', { 'fa-spin': isLoading[4] }]"></i>
+          檢舉
+        </button>
+        <button
+          v-if="isOwnContent"
+          class="more-menu-item"
+          @click="handleEdit"
+          type="button"
+        >
           <i class="fas fa-edit me-2"></i>
           編輯
         </button>
         <button
+          v-if="isOwnContent"
           class="more-menu-item more-menu-item-danger"
           @click="handleDelete"
           type="button"
@@ -332,6 +538,18 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 
+.btn-best-answer {
+  background-color: #145369;
+  border: 1px solid #145369;
+  color: #fff0dd;
+}
+
+.btn-best-answer:hover:not(:disabled) {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
+}
+
 /* 更多選單容器 */
 .more-menu-container {
   position: relative;
@@ -387,5 +605,23 @@ onMounted(() => {
 .more-menu-item i {
   width: 1rem;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .btn-interaction-button {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-interaction-button i {
+    font-size: 0.9rem;
+  }
+
+  .more-menu-item {
+    min-height: 40px;
+    padding: 0.45rem 0.9rem;
+  }
 }
 </style>

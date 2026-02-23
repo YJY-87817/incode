@@ -298,11 +298,33 @@ const handleClearCategory = () => {
 
 @media (max-width: 576px) {
   .category-container {
-    max-height: 200px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    padding-bottom: 0.25rem;
+  }
+
+  .category-container > .m-1 {
+    flex: 0 0 auto;
+    margin: 0 0.35rem 0 0 !important;
   }
 
   .category-card {
-    min-width: calc(50% - 0.5rem);
+    min-width: 150px;
+    min-height: 44px;
+    padding: 0.45rem 0.7rem !important;
+  }
+
+  .category-card h6 {
+    margin-bottom: 0.2rem !important;
+    font-size: 0.78rem;
+  }
+
+  .category-tags {
+    font-size: 0.62rem;
+    line-height: 1.2;
   }
 }
 </style>
