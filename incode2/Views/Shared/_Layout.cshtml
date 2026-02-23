@@ -104,7 +104,7 @@
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" asp-area="" asp-controller="Product" asp-action="Index">商品管理</a>
                         <a class="collapse-item" asp-area="" asp-controller="Order" asp-action="Index">訂單管理</a>
-                        <a class="collapse-item" asp-area="" asp-controller="Shipped" asp-action="Index">寄送管理</a>
+                        @* <a class="collapse-item" asp-area="" asp-controller="Shipped" asp-action="Index">寄送管理</a> *@
                     </div>
                 </div>
             </li>
@@ -151,7 +151,7 @@
             <!-- Main Content -->
             <div id="content">
                 <!-- Topbar -->
-                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <nav class="navbar navbar-expand navbar-light topbar mb-4 static-top shadow text-white" style="background-color:#86b0bd !important">
                     <!-- Sidebar Toggle (Topbar) -->
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                         <i class="fa fa-bars"></i>
