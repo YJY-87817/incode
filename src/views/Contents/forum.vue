@@ -6,7 +6,7 @@ import { useForumPost } from "@/composables/useForumPost";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import DefaultFooter from "@/examples/footers/FooterDefault.vue";
+import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import CategoryFilter from "@/components/Contents/CategoryFilter.vue";
 import NewTopicModal from "@/components/Contents/NewTopicModal.vue";
 import NewTopicSidebar from "@/components/Contents/NewTopicSidebar.vue";
