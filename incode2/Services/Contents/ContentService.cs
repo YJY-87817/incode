@@ -481,10 +481,10 @@ namespace incode2.Services.Contents
       .ToListAsync();
     }
 
-    public async Task<object> GetUserContentsByTypes(int userId, IEnumerable<int> types, int page, int pageSize)
+    public async Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize)
     {
-      var typeList = types?.Distinct().ToList() ?? new List<int>();
-      if (typeList.Count == 0)
+      var typeList = types?.Distinct().ToList();
+      if (types != null && (typeList == null || typeList.Count == 0))
       {
         return new
         {
@@ -499,8 +499,14 @@ namespace incode2.Services.Contents
       var query = _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive == 1 && typeList.Contains(c.Type))
-        .OrderByDescending(c => c.CreatedAt);
+        .Where(c => c.UserId == userId && c.IsActive == 1)
+        .OrderByDescending(c => c.CreatedAt)
+        .AsQueryable();
+
+      if (typeList != null && typeList.Count > 0)
+      {
+        query = query.Where(c => typeList.Contains(c.Type));
+      }
 
       var totalCount = await query.CountAsync();
 
@@ -532,31 +538,6 @@ namespace incode2.Services.Contents
         pageSize,
         totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
       };
-    }
-
-    public async Task<List<ContentDto>> GetUserContents(int userId)
-    {
-      return await _context.Content
-        .Include(c => c.User)
-        .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive == 1)
-        .OrderByDescending(c => c.CreatedAt)
-        .Select(c => new ContentDto
-        {
-          ContentId = c.ContentId,
-          ParentContentId = c.ParentContentId,
-          UserId = c.UserId,
-          Username = c.User.Username,
-          CategoryId = c.CategoryId,
-          CategoryName = c.Category != null ? c.Category.CategoryName : null,
-          Title = c.Title,
-          Body = c.Body,
-          Type = c.Type,
-          CreatedAt = (DateTime)c.CreatedAt,
-          UpdatedAt = (DateTime)c.UpdatedAt,
-          Ishidden = c.IsActive == 2 ? true : false
-        })
-        .ToListAsync();
     }
 
     public async Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize)
