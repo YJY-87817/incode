@@ -61,26 +61,23 @@ export const useMissionStore = defineStore("mission", {
 
         if (isEntrust) {
           url = "/api/EntrustMissionProgressApi/claim-reward";
-          payload = { progressId }; // 委託用 entrustMissionProgressId
+          payload = { progressId };
         } else {
           url = "/api/MissionProgressApi/claim-reward";
-          payload = { progressId }; // 平台用 missionProgressId
+          payload = { progressId };
         }
 
-        console.log("發送領獎請求：", {
-          url,
-          payload,
-          isEntrust,
-        });
+        console.log("發送領獎請求：", { url, payload, isEntrust });
 
         const response = await axios.post(url, payload);
 
-        console.log("領獎回應：", response.data);
-
+        // 這裡通常 axios 若回傳 400 會直接跳進 catch，
+        // 但如果後端 ok: false 且 status 是 200，則在此處處理
         if (!response.data.ok) {
           throw new Error(response.data.message || "領取失敗");
         }
 
+        // 成功領取後，務必重新獲取最新清單
         await this.fetchMyMissions();
 
         return this.myMissions.find((m) =>
@@ -89,11 +86,21 @@ export const useMissionStore = defineStore("mission", {
             : m.missionProgressId === progressId,
         );
       } catch (err) {
-        console.error("領獎錯誤：", err.response?.data || err.message);
+        const errorMsg = err.response?.data?.message || err.message;
+        console.error("領獎錯誤詳情：", errorMsg);
+
+        // ✨ 同步 UI 狀態的核心邏輯
+        // 如果後端說「已領取過」(400 Bad Request)，代表前端狀態已過時
+        if (err.response?.status === 400 || errorMsg.includes("已領取過")) {
+          console.warn("偵測到狀態不同步，正在強制刷新任務清單...");
+          await this.fetchMyMissions();
+        }
+
+        // 統一處理登入過期等通用錯誤
         this.handleError(err);
-        throw new Error(
-          err.response?.data?.message || "領取獎勵失敗，請稍後再試",
-        );
+
+        // 拋出錯誤給 UI 層 (SweetAlert) 顯示
+        throw new Error(errorMsg);
       }
     },
 

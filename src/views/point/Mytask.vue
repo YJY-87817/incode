@@ -13,7 +13,7 @@ const activeTab = ref("ongoing");
 const isDetailOpen = ref(false);
 const selectedMission = ref(null);
 
-// 過濾任務
+// 過濾任務：整合狀態與 canClaimReward 判斷
 const filteredMissions = computed(() => {
   return missionStore.myMissions.filter((m) => {
     const isEntrust = !!m.entrustMissionId;
@@ -26,11 +26,17 @@ const filteredMissions = computed(() => {
     }
 
     if (activeTab.value === "pending") {
-      return m.status === "completed" || (isEntrust && m.status === "approved");
+      // 個人委託看 status，系統任務需額外檢查 canClaimReward
+      if (isEntrust) return m.status === "approved";
+      return m.status === "completed" && m.canClaimReward === true;
     }
 
     if (activeTab.value === "completed") {
-      return m.status === "rewarded";
+      // 已領取，或是處於冷卻期（completed 但不能領）
+      return (
+        m.status === "rewarded" ||
+        (!isEntrust && m.status === "completed" && m.canClaimReward === false)
+      );
     }
 
     return true;
@@ -43,7 +49,7 @@ const viewDetail = (mission) => {
   isDetailOpen.value = true;
 };
 
-// 計算進度條寬度（增加安全檢查）
+// 計算進度條寬度
 const calculateWidth = (mission) => {
   if (mission.entrustMissionId) {
     const statusMap = {
@@ -55,7 +61,6 @@ const calculateWidth = (mission) => {
     };
     return statusMap[mission.status] || 0;
   }
-
   if (!mission.targetCount || mission.targetCount <= 0) return 0;
   return Math.min(
     100,
@@ -63,18 +68,17 @@ const calculateWidth = (mission) => {
   );
 };
 
-// 領取獎勵
+// 領取獎勵 (修正後的函式，已清除重複與錯誤)
 const claimReward = async (mission) => {
   const missionName = mission.missionName || mission.title || "此任務";
-
-  // 先檢查是否有進度 ID
   const progressId =
     mission.missionProgressId || mission.entrustMissionProgressId;
+
   if (!progressId) {
     Swal.fire({
       icon: "error",
       title: "無法領取",
-      text: "系統無法取得此任務的進度資訊，請重新載入頁面或聯絡客服",
+      text: "系統無法取得此任務的進度資訊，請重新整理頁面",
       confirmButtonColor: "#145369",
     });
     return;
@@ -107,22 +111,33 @@ const claimReward = async (mission) => {
       title: "領取成功",
       text: "獎勵已發放至您的帳戶。",
       confirmButtonColor: "#145369",
-      customClass: { confirmButton: "text-white" },
+      timer: 2000,
     });
 
     if (selectedMission.value) isDetailOpen.value = false;
   } catch (err) {
-    Swal.fire({
-      icon: "error",
-      title: "領取失敗",
-      text: err.message || "領取失敗，請稍後再試",
-      confirmButtonColor: "#145369",
-      customClass: { confirmButton: "text-white" },
-    });
+    console.error("領取過程出錯:", err.message);
+
+    // 處理狀態同步問題
+    if (err.message.includes("已領取過")) {
+      await Swal.fire({
+        icon: "info",
+        title: "提示",
+        text: "偵測到獎勵先前已領取，清單已為您自動更新。",
+        confirmButtonColor: "#145369",
+      });
+      if (selectedMission.value) isDetailOpen.value = false;
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "領取失敗",
+        text: err.message || "伺服器繁忙，請稍後再試",
+        confirmButtonColor: "#145369",
+      });
+    }
   }
 };
 
-// 格式化日期
 const formatDate = (date) =>
   date ? new Date(date).toLocaleString("zh-TW") : "---";
 
@@ -265,7 +280,8 @@ onMounted(() => {
 
                     <button
                       v-if="
-                        mission.status === 'completed' ||
+                        (mission.status === 'completed' &&
+                          mission.canClaimReward) ||
                         mission.status === 'approved'
                       "
                       @click="claimReward(mission)"
@@ -275,10 +291,14 @@ onMounted(() => {
                     </button>
 
                     <span
-                      v-else-if="mission.status === 'rewarded'"
+                      v-else-if="
+                        mission.status === 'rewarded' ||
+                        (mission.status === 'completed' &&
+                          !mission.canClaimReward)
+                      "
                       class="text-success text-xs font-weight-bold"
                     >
-                      <i class="fas fa-check-circle me-1"></i>已領取
+                      <i class="fas fa-check-circle me-1"></i>已完成
                     </span>
                   </div>
                 </div>
