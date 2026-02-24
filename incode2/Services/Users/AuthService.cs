@@ -1,4 +1,5 @@
 ﻿using incode2.Models;
+using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Users
@@ -9,13 +10,15 @@ namespace incode2.Services.Users
         private readonly IPasswordService _passwordService;
         private readonly IUserService _userService;
         private readonly IEmailService _emailService;
+        private readonly IMissionService _missionService;
 
-        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService)
+        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService, IMissionService missionService)
         {
             _context = context;
             _passwordService = passwordService;
             _userService = userService;
             _emailService = emailService;
+            _missionService = missionService;
         }
         public async Task<string> RegisterAsync(string email, string password, string? preferredUsername, string? imageUrl = null)
         {           
@@ -101,6 +104,9 @@ namespace incode2.Services.Users
                     Message = "帳號或密碼錯誤"
                 };
             }
+
+            // 登入成功 → 觸發每日登入任務
+            await _missionService.TriggerMissionAsync(user.UserId, "login");
 
             return new LoginResult
             {

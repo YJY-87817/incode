@@ -85,11 +85,11 @@ namespace incode2.Services.Point
             if (cycleStart < new DateTime(1753, 1, 1) || cycleEnd > new DateTime(9999, 12, 31))
             {
                 // 強制修正為安全範圍，或拋出明確錯誤
-                cycleStart = DateTime.UtcNow.Date;
+                cycleStart = DateTime.Now.Date;
                 cycleEnd = cycleStart.AddYears(10); 
             }
 
-            // 先檢查是否存在（使用 UTC 一致的比較）
+            // 先檢查是否存在
             var existing = await _context.MissionProgress
                 .AnyAsync(p => p.UserId == userId &&
                                p.MissionId == missionId &&
@@ -112,7 +112,7 @@ namespace incode2.Services.Point
                     MissionId = missionId,
                     CurrentCount = 0,
                     Status = "ongoing",
-                    AcceptedAt = DateTime.UtcNow,
+                    AcceptedAt = DateTime.Now,
                     CycleStartAt = cycleStart,
                     CycleEndAt = cycleStart.AddDays(7) // 保守設一個範圍，實際以 resetType 為主
                 };
@@ -123,7 +123,7 @@ namespace incode2.Services.Point
                 {
                     progress.CurrentCount = 1;
                     progress.Status = "completed";
-                    progress.CompletedAt = DateTime.UtcNow;
+                    progress.CompletedAt = DateTime.Now;
                 }
 
                 _context.MissionProgress.Add(progress);
@@ -195,7 +195,7 @@ namespace incode2.Services.Point
         // 週期計算輔助方法
         private (DateTime Start, DateTime End) GetCycleRange(string? resetType)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var date = now.Date;
 
             DateTime start;
@@ -239,5 +239,77 @@ namespace incode2.Services.Point
             return (start, end);
         }
 
+        //事件入口
+        public async Task TriggerMissionAsync(int userId, string actionType, int increment = 1)
+        {
+            var now = DateTime.Now;
+
+            // 抓所有符合 actionType 的有效任務，不限定週期
+            var missions = await _context.Mission
+                .Where(m => m.IsActive &&
+                            m.TargetType == actionType)
+                .ToListAsync();
+
+            foreach (var mission in missions)
+            {
+                var (cycleStart, cycleEnd) = GetCycleRange(mission.ResetType);
+
+                // 取得本週期的進度
+                var progress = await _context.MissionProgress
+                    .FirstOrDefaultAsync(p =>
+                        p.UserId == userId &&
+                        p.MissionId == mission.MissionId &&
+                        p.CycleStartAt == cycleStart);
+
+                // 如果今天/本週期還沒建立 → 建立新進度
+                if (progress == null)
+                {
+                    progress = new MissionProgress
+                    {
+                        UserId = userId,
+                        MissionId = mission.MissionId,
+                        CurrentCount = 0,
+                        Status = "ongoing",
+                        AcceptedAt = now,
+                        CycleStartAt = cycleStart,
+                        CycleEndAt = cycleEnd
+                    };
+
+                    _context.MissionProgress.Add(progress);
+                }
+
+                // 判斷是否可以累加
+                bool canIncrement = true;
+
+                switch (mission.ResetType?.ToLowerInvariant())
+                {
+                    case "daily":
+                        // 每日任務，每日只算一次
+                        canIncrement = progress.CurrentCount == 0;
+                        break;
+                    case "weekly":
+                    case "monthly":
+                    case "yearly":
+                    case "once":
+                        // 週期任務，允許累加
+                        canIncrement = true;
+                        break;
+                }
+
+                if (canIncrement)
+                {
+                    progress.CurrentCount += increment;
+                }
+
+                // 自動完成判斷
+                if (progress.CurrentCount >= mission.TargetCount)
+                {
+                    progress.Status = "completed";
+                    progress.CompletedAt = now;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

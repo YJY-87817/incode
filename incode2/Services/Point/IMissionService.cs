@@ -9,5 +9,6 @@ namespace incode2.Services.Point
         Task<ResultDTO> ClaimMissionAsync(int missionId, int userId);//接取任務
         Task<MissionDTO> GetMissionByIdAsync(int id);
         Task<ResultDTO> CreateMissionAsync(MissionDTO dto);
+        Task TriggerMissionAsync(int userId, string actionType, int increment = 1);
     }
 }
