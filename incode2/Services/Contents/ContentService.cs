@@ -1,6 +1,7 @@
 using incode2.Dtos;
 using incode2.Models;
 using incode2.Partials;
+using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,11 +12,13 @@ namespace incode2.Services.Contents
   {
     private readonly incodedatabaseContext _context;
     private readonly IWebHostEnvironment _environment;
+    private readonly IMissionService _missionService;
 
-    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment)
+    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IMissionService missionService)
     {
-      _context = context;
-      _environment = environment;
+       _context = context;
+       _environment = environment;
+       _missionService = missionService;
     }
 
     public async Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy)
@@ -372,7 +375,21 @@ namespace incode2.Services.Contents
 
       _context.Content.Add(content);
       await _context.SaveChangesAsync();
-      return content;
+
+            // 只在「發文」才觸發任務，避免回覆算入
+            if (!dto.ParentContentId.HasValue && dto.Type == 1)
+            {
+                // 先判斷字數
+                var contentLength = dto.Body?.Length ?? 0;
+
+                if (contentLength >= 200)
+                {
+                    // 字數符合，才觸發任務
+                    await _missionService.TriggerMissionAsync(dto.UserId, "post", 1);
+                }               
+            }
+
+            return content;
     }
 
     //修改content

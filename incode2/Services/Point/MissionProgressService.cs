@@ -181,10 +181,10 @@ namespace incode2.Services.Point
                     var last = progress.RewardedAt.Value;
                     bool sameCycle = resetType switch
                     {
-                        "daily" => last.Date == DateTime.UtcNow.Date,
-                        "weekly" => IsSameWeek(last, DateTime.UtcNow),
-                        "monthly" => last.Year == DateTime.UtcNow.Year && last.Month == DateTime.UtcNow.Month,
-                        "yearly" => last.Year == DateTime.UtcNow.Year,
+                        "daily" => last.Date == DateTime.Now.Date,
+                        "weekly" => IsSameWeek(last, DateTime.Now),
+                        "monthly" => last.Year == DateTime.Now.Year && last.Month == DateTime.Now.Month,
+                        "yearly" => last.Year == DateTime.Now.Year,
                         "once" or "none" => true,
                         _ => false
                     };
@@ -193,7 +193,7 @@ namespace incode2.Services.Point
                         return new ResultDTO { Ok = false, Code = 400, Message = "本週期已領取過獎勵" };
                 }
 
-                progress.RewardedAt = DateTime.UtcNow;
+                progress.RewardedAt = DateTime.Now;
                 progress.Status = "rewarded";
 
                 var success = await _pointLogService.ChangePointsAsync(

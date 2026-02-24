@@ -282,7 +282,7 @@ namespace incode2.ApiControllers.Content
             if (dto == null || dto.Amount <= 0)
                 return BadRequest(new { message = "打賞點數必須大於 0" });
 
-            var content = await _contentService.GetContent(id);
+            var content = await _contentService.GetContent(id,fromUserId);
             if (content == null)
                 return NotFound(new { message = "找不到此內容" });
 
