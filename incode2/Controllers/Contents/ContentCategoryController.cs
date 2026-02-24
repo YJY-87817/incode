@@ -1,15 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace incode2.Controllers.Contents
 {
-  public class ContentCategoryController : Controller
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
+
+    public class ContentCategoryController : Controller
   {
     private readonly incodedatabaseContext _context;
 

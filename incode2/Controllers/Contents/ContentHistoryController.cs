@@ -1,15 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using incode2.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace incode2.Controllers.Contents
 {
-  [Route("/ContentHistory/{action=Index}/{content_history_id?}")]
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
+
+    [Route("/ContentHistory/{action=Index}/{content_history_id?}")]
   public class ContentHistoryController : Controller
   {
     private readonly incodedatabaseContext _context;

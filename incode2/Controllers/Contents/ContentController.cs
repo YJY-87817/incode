@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using incode2.Models;
+﻿using incode2.Models;
 using incode2.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Controllers.Contents
 {
-  public class ContentController : Controller
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
+
+    public class ContentController : Controller
   {
     private readonly incodedatabaseContext _context;
 
