@@ -231,6 +231,30 @@ const sortOption = computed({
   set: (value) => forumStore.setSortOption(value),
 });
 
+const sortOptions = [
+  { value: "latest", label: "最新發佈時間" },
+  { value: "latest-reply", label: "最新回應時間" },
+  { value: "most-replies", label: "最多回應數量" },
+  { value: "most-likes", label: "最多按讚數量" },
+];
+const showSortDropdown = ref(false);
+const sortLabel = computed(() => {
+  const match = sortOptions.find((option) => option.value === sortOption.value);
+  return match?.label || "";
+});
+
+const selectSortOption = (option) => {
+  if (!option) return;
+  sortOption.value = option.value;
+  showSortDropdown.value = false;
+};
+
+const hideSortDropdown = () => {
+  setTimeout(() => {
+    showSortDropdown.value = false;
+  }, 150);
+};
+
 /**
  * 執行線程分頁
  */
@@ -713,17 +737,39 @@ watch(
         <span class="badge bg-info">
           共 {{ forumStore.pagination.totalCount }} 筆
         </span>
-        <div class="ms-sm-2">
-          <select
-            v-model="sortOption"
-            class="form-select form-select-sm"
-            aria-label="主題排序"
+        <div class="ms-sm-2 sort-dropdown">
+          <div class="category-input-wrapper">
+            <input
+              :value="sortLabel"
+              class="form-control category-input"
+              readonly
+              aria-label="主題排序"
+              @focus="showSortDropdown = true"
+              @blur="hideSortDropdown"
+            />
+            <span
+              class="category-input-dropdown"
+              aria-hidden="true"
+              @mousedown.prevent="showSortDropdown = true"
+            >
+              ▾
+            </span>
+          </div>
+          <div
+            v-if="showSortDropdown"
+            class="category-dropdown border rounded mt-2"
           >
-            <option value="latest">最新發佈時間</option>
-            <option value="latest-reply">最新回應時間</option>
-            <option value="most-replies">最多回應數量</option>
-            <option value="most-likes">最多按讚數量</option>
-          </select>
+            <button
+              v-for="option in sortOptions"
+              :key="option.value"
+              type="button"
+              class="dropdown-item w-100 text-start"
+              :class="{ active: option.value === sortOption }"
+              @mousedown.prevent="selectSortOption(option)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1447,6 +1493,55 @@ watch(
 
 .card-header h5 {
   color: #fff;
+}
+
+.sort-dropdown {
+  min-width: 180px;
+}
+
+.category-input-wrapper {
+  position: relative;
+}
+
+.category-input {
+  padding-right: 2rem;
+  border: 1px solid #d1d3d4;
+}
+
+.category-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  color: #9aa0a6;
+  font-size: 0.9rem;
+  pointer-events: auto;
+}
+
+.category-input:focus {
+  border-color: #86b0bd;
+  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
+}
+
+.category-dropdown {
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
+  border-color: #d1d3d4 !important;
+}
+
+.dropdown-item {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: #145369;
+}
+
+.dropdown-item.active,
+.dropdown-item:hover {
+  background: #fff0dd;
+  color: #145369;
 }
 
 .card-footer {
