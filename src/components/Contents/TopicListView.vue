@@ -243,6 +243,9 @@ const sortLabel = computed(() => {
   const match = sortOptions.find((option) => option.value === sortOption.value);
   return match?.label || "";
 });
+const sortInputSize = computed(() =>
+  Math.max((sortLabel.value || "").length + 4, 8),
+);
 
 const selectSortOption = (option) => {
   if (!option) return;
@@ -771,6 +774,7 @@ watch(
           <div class="category-input-wrapper" @click.stop="toggleSortDropdown">
             <input
               :value="sortLabel"
+              :size="sortInputSize"
               class="form-control category-input"
               readonly
               aria-label="主題排序"
@@ -1526,17 +1530,23 @@ watch(
 }
 
 .sort-dropdown {
-  min-width: 180px;
+  display: inline-block;
+  min-width: 0;
+  width: fit-content;
   position: relative;
 }
 
 .category-input-wrapper {
   position: relative;
+  display: inline-block;
+  width: fit-content;
 }
 
 .category-input {
+  padding-left: 0.9rem;
   padding-right: 2rem;
   border: 1px solid #d1d3d4;
+  width: auto;
 }
 
 .category-input-dropdown {
