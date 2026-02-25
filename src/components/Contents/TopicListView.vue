@@ -778,6 +778,12 @@ watch(
               置頂
             </span>
             <span
+              v-if="forumStore.threadDetail?.hasEntrustMission"
+              class="badge bg-secondary-light text-dark"
+            >
+              委託任務
+            </span>
+            <span
               v-if="forumStore.threadDetail?.isHot"
               class="badge bg-warning text-dark"
             >
@@ -1068,6 +1074,11 @@ watch(
                   <span v-if="topic.isPinned" class="badge bg-danger"
                     >置頂</span
                   >
+                  <span
+                    v-if="topic.hasEntrustMission"
+                    class="badge bg-secondary-light text-dark"
+                    >委託任務</span
+                  >
                   <span v-if="topic.isHot" class="badge bg-warning text-dark"
                     >熱門</span
                   >
@@ -1203,6 +1214,12 @@ watch(
                         </button>
                         <span v-if="topic.isPinned" class="badge bg-danger">
                           置頂
+                        </span>
+                        <span
+                          v-if="topic.hasEntrustMission"
+                          class="badge bg-secondary-light text-dark"
+                        >
+                          委託任務
                         </span>
                         <span
                           v-if="topic.isHot"

@@ -590,6 +590,7 @@ export const useForumStore = defineStore("forum", {
       type: null,
       isPinned: false,
       isHot: false,
+      hasEntrustMission: false,
       likeCount: 0,
       entrustMissionId: null,
       entrustMissionUserId: null,
@@ -1267,6 +1268,8 @@ export const useForumStore = defineStore("forum", {
                 viewCount: item.viewCount ?? 0,
                 isPinned: item.isPinned ?? false,
                 isHot: (stats.replyCount ?? fallbackStats.replyCount ?? 0) > 10,
+                hasEntrustMission:
+                  item.hasEntrustMission ?? item.has_entrust_mission ?? false,
               };
             }),
           );
@@ -1435,6 +1438,8 @@ export const useForumStore = defineStore("forum", {
           let isPinned = detail.isPinned ?? false;
           let isHot = (stats.replyCount ?? 0) > 10;
           let categoryName = detail.categoryName ?? null;
+          let hasEntrustMission =
+            detail.hasEntrustMission ?? detail.has_entrust_mission ?? false;
 
           if (this.topics && this.topics.length > 0) {
             const matchedTopic = this.topics.find(
@@ -1444,6 +1449,8 @@ export const useForumStore = defineStore("forum", {
               isPinned = matchedTopic.isPinned ?? isPinned;
               isHot = matchedTopic.isHot ?? isHot;
               categoryName = matchedTopic.categoryName ?? categoryName;
+              hasEntrustMission =
+                matchedTopic.hasEntrustMission ?? hasEntrustMission;
             }
           }
 
@@ -1468,6 +1475,7 @@ export const useForumStore = defineStore("forum", {
             type: detail.type,
             isPinned: isPinned,
             isHot: isHot,
+            hasEntrustMission: Boolean(hasEntrustMission),
             likeCount: extractLikeCount(detail),
             // 添加回覆統計資訊
             replyCount: stats.replyCount ?? 0,
@@ -1546,6 +1554,7 @@ export const useForumStore = defineStore("forum", {
         type: null,
         isPinned: false,
         isHot: false,
+        hasEntrustMission: false,
         likeCount: 0,
         replyCount: 0,
         lastReplyTime: null,
