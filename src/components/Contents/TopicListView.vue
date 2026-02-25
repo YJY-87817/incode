@@ -779,12 +779,11 @@ watch(
               readonly
               aria-label="主題排序"
               @click.stop="toggleSortDropdown"
-              @blur="hideSortDropdown"
             />
             <span
               class="category-input-dropdown"
               aria-hidden="true"
-              @click.prevent="toggleSortDropdown"
+              @click.stop="toggleSortDropdown"
             >
               ▾
             </span>
