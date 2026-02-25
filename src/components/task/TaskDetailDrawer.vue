@@ -1,9 +1,9 @@
 <!-- src/components/mission-hall/TaskDetailDrawer.vue -->
 <script setup>
 import { computed } from "vue";
-import { useTaskStore } from "@/stores/point/UseTaskStore";
+import { useRouter } from "vue-router";
 
-const store = useTaskStore();
+const router = useRouter();
 
 const props = defineProps({
   open: {
@@ -14,70 +14,48 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
-  tab: {
-    type: String,
-    required: true, // 'mission' 或 'entrust'
-  },
-  isClaiming: {
-    type: Boolean,
-    default: false,
-  },
 });
 
-const emit = defineEmits(["update:open", "claim"]);
+const emit = defineEmits(["update:open"]);
 
 // 關閉抽屜
 const close = () => {
   emit("update:open", false);
 };
 
-// 領取/接取任務 - 統一傳送完整 payload 給父層處理
-const handleClaim = () => {
-  if (!props.task?.id) return;
-
-  const payload = {
-    type: props.tab === "mission" ? "platform" : "entrust",
-    [props.tab === "mission" ? "mission" : "commission"]: props.task,
-  };
-
-  emit("claim", payload);
-  // 不直接 close，讓父層決定（成功後再關閉，避免失敗還關）
+// 前往討論區
+const goToForum = () => {
+  if (!props.task?.contentId) return;
+  router.push(`/forum/${props.task.contentId}`);
 };
 
-// 動態獎勵文字
+// 顯示賞金
 const rewardText = computed(() => {
   if (!props.task) return "0 Pts";
-  const points =
-    props.tab === "mission"
-      ? props.task.reward || props.task.rewardPoints || 0
-      : props.task.price || props.task.rewardPoints || 0;
-  return props.tab === "mission" ? `+${points} Pts` : `${points} Pts`;
+  const points = props.task.price || props.task.rewardPoints || 0;
+  return `${points} Pts`;
 });
 
-// 按鈕文字與狀態
-const buttonText = computed(() => {
-  if (props.task?.completed) return "已完成";
-  if (props.task?.claimed) return props.tab === "mission" ? "已領取" : "已接取";
-  return props.tab === "mission" ? "立即領取" : "立即接取";
-});
-
-const isClaimable = computed(() => {
-  return !props.task?.claimed && !props.task?.completed;
+// 按鈕是否可用
+const isButtonDisabled = computed(() => {
+  return !props.task?.contentId;
 });
 </script>
 
 <template>
   <div class="detail-drawer shadow-xl bg-white" :class="{ open: props.open }">
     <div v-if="props.task?.id" class="h-100 d-flex flex-column">
+      <!-- Header -->
       <div
         class="p-4 border-bottom d-flex justify-content-between align-items-center custom-bg-light"
       >
-        <h5 class="mb-0 font-weight-bolder custom-text-main">任務詳情</h5>
+        <h5 class="mb-0 font-weight-bolder custom-text-main">委託任務詳情</h5>
         <button @click="close" class="btn btn-link text-dark p-0 mb-0">
           <i class="fas fa-times text-lg"></i>
         </button>
       </div>
 
+      <!-- 內容 -->
       <div class="p-4 flex-grow-1 overflow-auto">
         <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
           <span class="badge custom-bg-main text-white">
@@ -85,7 +63,7 @@ const isClaimable = computed(() => {
           </span>
           <span class="text-xs text-dark">
             <i class="fas fa-clock me-1"></i>
-            {{ props.task.deadline || props.task.duration || "無期限" }}
+            {{ props.task.deadline || "無期限" }}
           </span>
           <span v-if="props.task.urgent" class="badge bg-gradient-danger">
             急
@@ -93,58 +71,12 @@ const isClaimable = computed(() => {
         </div>
 
         <h4 class="font-weight-bolder mb-4 text-dark">
-          {{ props.task.title || props.task.missionName || "未命名任務" }}
+          {{ props.task.title || "未命名任務" }}
         </h4>
 
-        <div v-if="props.tab === 'mission'" class="mb-5">
-          <div class="row g-3 text-center">
-            <div class="col-4">
-              <div
-                class="icon icon-shape custom-bg-main text-white mb-2 mx-auto shadow-sm"
-                style="width: 48px; height: 48px; line-height: 48px"
-              >
-                <i class="fas fa-tasks"></i>
-              </div>
-              <div class="text-xs font-weight-bold">難度</div>
-              <div
-                :class="[
-                  'badge mt-1 px-3',
-                  store.getDifficultyColor(props.task.difficulty),
-                ]"
-              >
-                {{ props.task.difficulty || "中等" }}
-              </div>
-            </div>
-            <div class="col-4">
-              <div
-                class="icon icon-shape custom-bg-main text-white mb-2 mx-auto shadow-sm"
-                style="width: 48px; height: 48px; line-height: 48px"
-              >
-                <i class="fas fa-calendar-alt"></i>
-              </div>
-              <div class="text-xs font-weight-bold">持續時間</div>
-              <div class="badge bg-gray-200 text-dark mt-1 px-3">
-                {{ props.task.duration || "每日" }}
-              </div>
-            </div>
-            <div class="col-4">
-              <div
-                class="icon icon-shape custom-bg-main text-white mb-2 mx-auto shadow-sm"
-                style="width: 48px; height: 48px; line-height: 48px"
-              >
-                <i class="fas fa-users"></i>
-              </div>
-              <div class="text-xs font-weight-bold">參與人數</div>
-              <div class="badge bg-gray-200 text-dark mt-1 px-3">
-                {{ props.task.participants || 0 }} 人
-              </div>
-            </div>
-          </div>
-        </div>
-
+        <!-- 任務描述 -->
         <h6
-          class="text-uppercase text-xs font-weight-bold mb-2"
-          style="color: #145369"
+          class="text-uppercase text-xs font-weight-bold mb-2 custom-text-main"
         >
           任務描述
         </h6>
@@ -155,9 +87,9 @@ const isClaimable = computed(() => {
           {{ props.task.desc || "無詳細說明" }}
         </div>
 
+        <!-- 發布者 -->
         <h6
-          class="text-uppercase text-xs font-weight-bold mb-3"
-          style="color: #145369"
+          class="text-uppercase text-xs font-weight-bold mb-3 custom-text-main"
         >
           發布者資訊
         </h6>
@@ -194,34 +126,28 @@ const isClaimable = computed(() => {
         </div>
       </div>
 
+      <!-- 底部 -->
       <div class="p-4 border-top bg-white">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <span class="text-sm font-weight-bold" style="color: #145369"
-            >預計獲得賞金</span
-          >
+          <span class="text-sm font-weight-bold custom-text-main">
+            預計獲得賞金
+          </span>
           <h3 class="mb-0 font-weight-bolder custom-text-main">
             {{ rewardText }}
           </h3>
         </div>
 
         <button
-          :disabled="!isClaimable || props.isClaiming"
-          :class="[
-            'btn w-100 btn-lg mb-0 shadow-md transition-all',
-            isClaimable && !props.isClaiming
-              ? 'custom-btn-action'
-              : 'btn-outline-secondary',
-          ]"
-          @click="handleClaim"
+          :disabled="isButtonDisabled"
+          class="btn w-100 btn-lg mb-0 shadow-md custom-btn-action transition-all"
+          @click="goToForum"
         >
-          <span v-if="props.isClaiming">
-            <i class="fas fa-spinner fa-spin me-2"></i>處理中...
-          </span>
-          <span v-else>{{ buttonText }}</span>
+          前往討論區
         </button>
       </div>
     </div>
 
+    <!-- 無任務 -->
     <div
       v-else
       class="p-5 text-center text-muted h-100 d-flex flex-column justify-content-center"
@@ -233,18 +159,16 @@ const isClaimable = computed(() => {
 </template>
 
 <style scoped>
-/* 引用品牌色定義 */
 .custom-text-main {
   color: #145369 !important;
 }
 .custom-bg-main {
-  background-color: #145369 !important; /* 強調用深色 */
+  background-color: #145369 !important;
 }
 .custom-bg-light {
-  background-color: rgba(20, 83, 105, 0.05) !important; /* 標頭淡淡的底色 */
+  background-color: rgba(20, 83, 105, 0.05) !important;
 }
 
-/* 底部主要按鈕樣式 */
 .custom-btn-action {
   background-color: #145369 !important;
   color: white !important;

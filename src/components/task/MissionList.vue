@@ -6,13 +6,13 @@ import Swal from "sweetalert2";
 
 const store = useTaskStore();
 const router = useRouter();
-const emit = defineEmits(["open-detail", "claim"]);
-
-const list = computed(() => store.filteredList);
+const emit = defineEmits(["claim"]);
+const list = computed(() => {
+  return [...store.filteredList].sort((a, b) => a.id - b.id);
+});
 
 // 領取任務邏輯
 async function handleClaim(mission) {
-  // 1. 確認視窗
   const result = await Swal.fire({
     title: "確定領取？",
     text: `您即將開始任務：「${mission.title}」`,
