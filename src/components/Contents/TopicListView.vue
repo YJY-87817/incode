@@ -1497,6 +1497,7 @@ watch(
 
 .sort-dropdown {
   min-width: 180px;
+  position: relative;
 }
 
 .category-input-wrapper {
@@ -1524,6 +1525,11 @@ watch(
 }
 
 .category-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
   max-height: 220px;
   overflow-y: auto;
   background: #fff;
