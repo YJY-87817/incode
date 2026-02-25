@@ -255,6 +255,10 @@ const hideSortDropdown = () => {
   }, 150);
 };
 
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value;
+};
+
 /**
  * 執行線程分頁
  */
@@ -738,19 +742,19 @@ watch(
           共 {{ forumStore.pagination.totalCount }} 筆
         </span>
         <div class="ms-sm-2 sort-dropdown">
-          <div class="category-input-wrapper">
+          <div class="category-input-wrapper" @click="toggleSortDropdown">
             <input
               :value="sortLabel"
               class="form-control category-input"
               readonly
               aria-label="主題排序"
-              @focus="showSortDropdown = true"
+              @click.stop="toggleSortDropdown"
               @blur="hideSortDropdown"
             />
             <span
               class="category-input-dropdown"
               aria-hidden="true"
-              @mousedown.prevent="showSortDropdown = true"
+              @click.prevent="toggleSortDropdown"
             >
               ▾
             </span>
