@@ -580,10 +580,10 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } img:not([style*='width']) { width: 100%; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "body { white-space: pre-wrap; text-align: left !important; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } p, div, figure, figcaption { text-align: left !important; } figure, .image { display: block !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; max-height: 320px; object-fit: contain; display: block !important; float: none !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } .image img { margin-left: 0 !important; margin-right: auto !important; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
-  return `${baseIframeCss} img { display: none; }`;
+  return `${baseIframeCss} img { display: none !important; } figure, .image { display: none !important; }`;
 });
 
 const iframeExtraCssExpanded = computed(() => baseIframeCss);
