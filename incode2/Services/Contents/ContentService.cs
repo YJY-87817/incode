@@ -90,6 +90,7 @@ namespace incode2.Services.Contents
       var contentIds = pageItems.Select(c => c.ContentId).ToList();
       var replyStats = new List<(int ContentId, int ReplyCount, DateTime? LastReplyTime, string LastReplyUser, int? LastReplyUserId)>();
       var likeCounts = new Dictionary<int, int>();
+      var entrustMissionContentIds = new HashSet<int>();
       if (contentIds.Count > 0)
       {
         var replyStatsRaw = await _context.Content
@@ -139,6 +140,17 @@ namespace incode2.Services.Contents
         }).ToList();
 
         likeCounts = await _contentInteractionService.GetLikeCountsAsync(contentIds);
+
+        var now = DateTime.Now;
+        entrustMissionContentIds = await _context.EntrustMission
+          .AsNoTracking()
+          .Where(em => em.IsActive
+            && (em.Status == "open" || em.Status == "in_progress")
+            && (!em.Deadline.HasValue || em.Deadline.Value >= now)
+            && contentIds.Contains(em.ContentId))
+          .Select(em => em.ContentId)
+          .Distinct()
+          .ToHashSetAsync();
       }
 
       var replyLookup = replyStats.ToDictionary(x => x.ContentId, x => x);
@@ -166,7 +178,8 @@ namespace incode2.Services.Contents
           LastReplyUserId = stats.ContentId == 0 ? null : stats.LastReplyUserId,
           PreviewText = BuildPreviewText(c.Title, c.Body, 120),
           PreviewImages = BuildPreviewImages(c.Body, 3),
-          PreviewHtml = null
+          PreviewHtml = null,
+          HasEntrustMission = entrustMissionContentIds.Contains(c.ContentId)
         };
       }).ToList();
 
