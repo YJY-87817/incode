@@ -27,8 +27,6 @@ public partial class MissionProgress
 
     public DateTime? CycleEndAt { get; set; }
 
-    public DateTime? LastResetAt { get; set; }
-
     public virtual Mission Mission { get; set; }
 
     public virtual User User { get; set; }

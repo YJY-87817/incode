@@ -11,12 +11,14 @@ namespace incode2.Services.Contents
     private readonly incodedatabaseContext _context;
     private readonly IPointLogService _pointLogService;
     private readonly IPointReserveService _pointReserveService;
+    private readonly IMissionService _missionService;
 
-    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService)
+        public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService, IMissionService missionService)
         {
             _context = context;
             _pointLogService = pointLogService;
             _pointReserveService = pointReserveService;
+            _missionService = missionService;
         }
 
         // 取得特定內容的所有互動
@@ -98,6 +100,16 @@ namespace incode2.Services.Contents
         CreatedAt = DateTime.Now
       };
       _context.ContentInteraction.Add(newInteraction);
+
+      // qiu 檢查是否為讚的互動分類，如果是，觸發任務
+      bool isLikeCategory = await IsLikeCategoryAsync(dto.InteractionCategoryId);
+
+      if (isLikeCategory)
+      {
+         await _missionService.TriggerMissionAsync(dto.UserId, "like", 1);
+      }
+      //-----------------------------------------------------
+
       await _context.SaveChangesAsync();
 
       return await _context.ContentInteraction
@@ -115,10 +127,16 @@ namespace incode2.Services.Contents
         .FirstAsync();
     }
 
+        private async Task<bool> IsLikeCategoryAsync(int categoryId)
+        {
+            // 方法1：硬編碼 CategoryId（如果你的讚永遠是固定 ID，例如 1）
+             return categoryId == 1;
+        }
 
-    // 移除互動
 
-    public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
+        // 移除互動
+
+        public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
       var interaction = await _context.ContentInteraction
         .FirstOrDefaultAsync(ci => ci.ContentId == contentId 

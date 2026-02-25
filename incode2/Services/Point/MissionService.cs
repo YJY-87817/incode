@@ -242,25 +242,22 @@ namespace incode2.Services.Point
         //事件入口
         public async Task TriggerMissionAsync(int userId, string actionType, int increment = 1)
         {
-            var now = DateTime.Now;
-
+            var now = DateTime.Now; 
             // 抓所有符合 actionType 的有效任務，不限定週期
             var missions = await _context.Mission
                 .Where(m => m.IsActive &&
                             m.TargetType == actionType)
                 .ToListAsync();
-
             foreach (var mission in missions)
             {
+                var resetType = (mission.ResetType ?? "none").ToLowerInvariant();
                 var (cycleStart, cycleEnd) = GetCycleRange(mission.ResetType);
-
                 // 取得本週期的進度
                 var progress = await _context.MissionProgress
                     .FirstOrDefaultAsync(p =>
                         p.UserId == userId &&
                         p.MissionId == mission.MissionId &&
                         p.CycleStartAt == cycleStart);
-
                 // 如果今天/本週期還沒建立 → 建立新進度
                 if (progress == null)
                 {
@@ -274,33 +271,33 @@ namespace incode2.Services.Point
                         CycleStartAt = cycleStart,
                         CycleEndAt = cycleEnd
                     };
-
                     _context.MissionProgress.Add(progress);
                 }
-
                 // 判斷是否可以累加
                 bool canIncrement = true;
-
-                switch (mission.ResetType?.ToLowerInvariant())
+                switch (resetType)
                 {
                     case "daily":
-                        // 每日任務，每日只算一次
-                        canIncrement = progress.CurrentCount == 0;
+                        // 只對「每天簽到」這類一次性的做限制
+                        if (mission.TargetType == "login")
+                        {
+                            canIncrement = progress.CurrentCount == 0;
+                        }
+                        // 其他 daily 任務（post, like, comment 等）允許累計
                         break;
                     case "weekly":
                     case "monthly":
                     case "yearly":
                     case "once":
+                    case "none":
                         // 週期任務，允許累加
                         canIncrement = true;
                         break;
                 }
-
                 if (canIncrement)
                 {
                     progress.CurrentCount += increment;
                 }
-
                 // 自動完成判斷
                 if (progress.CurrentCount >= mission.TargetCount)
                 {
@@ -308,7 +305,6 @@ namespace incode2.Services.Point
                     progress.CompletedAt = now;
                 }
             }
-
             await _context.SaveChangesAsync();
         }
     }
