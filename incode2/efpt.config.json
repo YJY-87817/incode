@@ -55,10 +55,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[entrust_mission_progress]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[follow]",
          "ObjectType": 0
       },

@@ -183,7 +183,6 @@ builder.Services.AddScoped<IPointLogService, PointLogService>();
 builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
 builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
-builder.Services.AddScoped<IEntrustMissionProgressService, EntrustMissionProgressService>();
 builder.Services.AddScoped<IPointReserveService, PointReserveService>();
 builder.Services.AddScoped<EcpayService>();
 
