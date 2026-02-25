@@ -772,12 +772,6 @@ watch(
               主文
             </button>
             <span
-              v-if="forumStore.threadDetail?.isPinned"
-              class="badge bg-danger"
-            >
-              置頂
-            </span>
-            <span
               v-if="forumStore.threadDetail?.hasEntrustMission"
               class="badge bg-secondary"
             >
@@ -1071,9 +1065,6 @@ watch(
                   >
                     {{ topic.categoryName }}
                   </span>
-                  <span v-if="topic.isPinned" class="badge bg-danger"
-                    >置頂</span
-                  >
                   <span
                     v-if="topic.hasEntrustMission"
                     class="badge bg-secondary"
@@ -1212,9 +1203,6 @@ watch(
                           <i class="fas fa-link me-1"></i>
                           主文
                         </button>
-                        <span v-if="topic.isPinned" class="badge bg-danger">
-                          置頂
-                        </span>
                         <span
                           v-if="topic.hasEntrustMission"
                           class="badge bg-secondary"

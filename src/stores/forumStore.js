@@ -588,7 +588,6 @@ export const useForumStore = defineStore("forum", {
       categoryName: null,
       parentContentId: null,
       type: null,
-      isPinned: false,
       isHot: false,
       hasEntrustMission: false,
       likeCount: 0,
@@ -1266,7 +1265,6 @@ export const useForumStore = defineStore("forum", {
                   fallbackStats.lastReplyUserId ??
                   null,
                 viewCount: item.viewCount ?? 0,
-                isPinned: item.isPinned ?? false,
                 isHot: (stats.replyCount ?? fallbackStats.replyCount ?? 0) > 10,
                 hasEntrustMission:
                   item.hasEntrustMission ?? item.has_entrust_mission ?? false,
@@ -1434,8 +1432,7 @@ export const useForumStore = defineStore("forum", {
             ? resolvedBestAnswerContentId
             : (resolvedBestAnswerContentId ?? cachedBestAnswerContentId);
 
-          // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
-          let isPinned = detail.isPinned ?? false;
+          // 從主題列表中查找對應主題以獲取 isHot 和 categoryName
           let isHot = (stats.replyCount ?? 0) > 10;
           let categoryName = detail.categoryName ?? null;
           let hasEntrustMission =
@@ -1446,7 +1443,6 @@ export const useForumStore = defineStore("forum", {
               (t) => String(t.id) === String(threadId),
             );
             if (matchedTopic) {
-              isPinned = matchedTopic.isPinned ?? isPinned;
               isHot = matchedTopic.isHot ?? isHot;
               categoryName = matchedTopic.categoryName ?? categoryName;
               hasEntrustMission =
@@ -1473,7 +1469,6 @@ export const useForumStore = defineStore("forum", {
               detail.parent_id ??
               null,
             type: detail.type,
-            isPinned: isPinned,
             isHot: isHot,
             hasEntrustMission: Boolean(hasEntrustMission),
             likeCount: extractLikeCount(detail),
@@ -1552,7 +1547,6 @@ export const useForumStore = defineStore("forum", {
         categoryName: null,
         parentContentId: null,
         type: null,
-        isPinned: false,
         isHot: false,
         hasEntrustMission: false,
         likeCount: 0,
