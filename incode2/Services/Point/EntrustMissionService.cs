@@ -7,196 +7,155 @@ using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Point
 {
-  public class EntrustMissionService : IEntrustMissionService
-  {
+    public class EntrustMissionService : IEntrustMissionService
+    {
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
         private readonly IPointReserveService _pointReserveService;
 
-        public EntrustMissionService(incodedatabaseContext context,
+        public EntrustMissionService(
+            incodedatabaseContext context,
             IPointLogService pointLogService,
-            IPointReserveService pointReserveService) 
-        { 
-            _context = context; 
+            IPointReserveService pointReserveService)
+        {
+            _context = context;
             _pointLogService = pointLogService;
             _pointReserveService = pointReserveService;
         }
 
-        //拿全部委託任務資料
-    public async Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync()
-    {
+        // 公開列表：所有可見的委託任務（進行中 + 已結案）
+        public async Task<IEnumerable<EntrustMissionDTO>> GetAllEntrustMissionAsync()
+        {
             var now = DateTime.Now;
+
             return await _context.EntrustMission
-          .Where(em => em.IsActive
-          && (em.Status == "open" || em.Status == "in_progress")
-          && (!em.Deadline.HasValue || em.Deadline.Value >= now)) // 過濾過期
-          .Select(em => new EntrustMissionDTO
-          {
-            EntrustMissionId = em.EntrustMissionId,
-            UserId = em.UserId,
-            ContentId = em.ContentId,
-            Title = em.Title,
-            Detail = em.Detail,
-            RewardPoints = em.RewardPoints,
-            Category = em.Category ?? "其他",
-            Deadline = em.Deadline,
-            Status = em.Status ?? "open",
-            IsUrgent = em.IsUrgent ?? false,
-            IsActive = em.IsActive,
-            CreatedAt = em.CreatedAt,
-            UpdatedAt = em.UpdatedAt,
-            Username = em.User.Username,
-            ImageUrl = em.User.ImageUrl
-          })
-          .OrderByDescending(em => em.IsUrgent)      // 急件優先
-          .ThenByDescending(em => em.CreatedAt)      // 新發布優先
-          .ToListAsync();
-    }
+                .Where(em => em.IsActive
+                    && (em.Status == "open" || em.Status == "completed")
+                    && (!em.Deadline.HasValue || em.Deadline.Value >= now || em.Status == "completed"))
+                .Include(em => em.User)
+                .Select(em => new EntrustMissionDTO
+                {
+                    EntrustMissionId = em.EntrustMissionId,
+                    UserId = em.UserId,
+                    ContentId = em.ContentId,
+                    Title = em.Title,
+                    Detail = em.Detail,
+                    RewardPoints = em.RewardPoints,
+                    Category = em.Category ?? "其他",
+                    Deadline = em.Deadline,
+                    Status = em.Status ?? "open",
+                    IsUrgent = em.IsUrgent ?? false,
+                    IsActive = em.IsActive,
+                    CreatedAt = em.CreatedAt,
+                    UpdatedAt = em.UpdatedAt,
+                    Username = em.User.Username,
+                    ImageUrl = em.User.ImageUrl,
 
-        //接取委託任務
-    public async Task<ResultDTO> ClaimEntrustMissionAsync(int entrustMissionId, int userId)
-    {
-      using var transaction = await _context.Database.BeginTransactionAsync();
-      try
-      {
-        // 鎖定該筆委託任務記錄
-        var mission = await _context.EntrustMission
-            .FromSqlRaw("SELECT * FROM entrust_mission WITH (UPDLOCK, ROWLOCK) WHERE entrust_mission_id = {0}", entrustMissionId)
-            .FirstOrDefaultAsync();
+                    BestContentId = em.BestContentId,
+                    BestUserId = em.BestUserId,
+                    SelectedAt = em.SelectedAt,
 
-        if (mission == null)
-        {
-          return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
+                    // 唯讀計算屬性不需要在這裡賦值，DTO 會自動計算
+                    // HasBestAnswer = em.BestContentId.HasValue （自動）
+                })
+                .OrderByDescending(em => em.IsUrgent)
+                .ThenByDescending(em => em.CreatedAt)
+                .ToListAsync();
         }
 
-        if (!mission.IsActive)
+        // 我的委託任務：我發起的 + 我獲得最佳解答的
+        public async Task<IEnumerable<EntrustMissionDTO>> GetMyEntrustMissionsAsync(int userId)
         {
-          return new ResultDTO { Ok = false, Code = 410, Message = "該委託任務已下架" };
+            return await _context.EntrustMission
+                .Where(em => em.IsActive && (em.UserId == userId || em.BestUserId == userId))
+                .Include(em => em.User)
+                .Select(em => new EntrustMissionDTO
+                {
+                    EntrustMissionId = em.EntrustMissionId,
+                    UserId = em.UserId,
+                    ContentId = em.ContentId,
+                    Title = em.Title,
+                    Detail = em.Detail,
+                    RewardPoints = em.RewardPoints,
+                    Category = em.Category ?? "其他",
+                    Deadline = em.Deadline,
+                    Status = em.Status ?? "open",
+                    IsUrgent = em.IsUrgent ?? false,
+                    IsActive = em.IsActive,
+                    CreatedAt = em.CreatedAt,
+                    UpdatedAt = em.UpdatedAt,
+                    Username = em.User.Username,
+                    ImageUrl = em.User.ImageUrl,
+
+                    BestContentId = em.BestContentId,
+                    BestUserId = em.BestUserId,
+                    SelectedAt = em.SelectedAt,
+
+                    // 唯讀計算屬性自動計算，不需手動賦值
+                    IsOwner = em.UserId == userId,
+                    IsBestAnswerWinner = em.BestUserId == userId
+                })
+                .OrderByDescending(em => em.CreatedAt)
+                .ToListAsync();
         }
 
-        if (!string.Equals(mission.Status, "open", StringComparison.OrdinalIgnoreCase))
+        // 取得單一委託詳情（補充最佳解答資訊）
+        public async Task<EntrustMissionDTO?> GetEntrustMissionByIdAsync(int id)
         {
-          return new ResultDTO { Ok = false, Code = 400, Message = $"任務狀態為 {mission.Status}，無法接取" };
+            return await _context.EntrustMission
+                .Where(em => em.EntrustMissionId == id && em.IsActive)
+                .Include(em => em.User)
+                .Include(em => em.Content)
+                .Select(em => new EntrustMissionDTO
+                {
+                    EntrustMissionId = em.EntrustMissionId,
+                    UserId = em.UserId,
+                    ContentId = em.ContentId,
+                    Title = em.Title,
+                    Detail = em.Detail,
+                    RewardPoints = em.RewardPoints,
+                    Category = em.Category ?? "其他",
+                    Deadline = em.Deadline,
+                    Status = em.Status ?? "open",
+                    IsUrgent = em.IsUrgent ?? false,
+                    IsActive = em.IsActive,
+                    CreatedAt = em.CreatedAt,
+                    UpdatedAt = em.UpdatedAt,
+                    Username = em.User.Username,
+                    ImageUrl = em.User.ImageUrl,
+
+                    BestContentId = em.BestContentId,
+                    BestUserId = em.BestUserId,
+                    SelectedAt = em.SelectedAt,
+                })
+                .FirstOrDefaultAsync();
         }
 
-        if (mission.Deadline.HasValue && mission.Deadline.Value < DateTime.Now)
-        {
-          return new ResultDTO { Ok = false, Code = 400, Message = "任務已過截止時間" };
-        }
-
-        // 防同一人重複接取「這個」任務（保留原判斷）
-        bool alreadyClaimedThis = await _context.EntrustMissionProgress
-            .AnyAsync(p => p.EntrustMissionId == entrustMissionId && p.UserId == userId);
-
-        if (alreadyClaimedThis)
-        {
-          return new ResultDTO { Ok = false, Code = 409, Message = "您已經接取過此任務" };
-        }
-
-        // 新增進度記錄
-        var progress = new EntrustMissionProgress
-        {
-          UserId = userId,
-          EntrustMissionId = entrustMissionId,
-          Status = EntrustMissionProgressStatus.Ongoing,
-          AcceptedAt = DateTime.Now
-        };
-
-        _context.EntrustMissionProgress.Add(progress);
-
-        // 更新主表
-        mission.Status = "in_progress";
-        mission.UpdatedAt = DateTime.Now;
-
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        string discussionUrl = $"https://localhost:5173/forum/{mission.ContentId}";
-
-        return new ResultDTO
-        {
-          Ok = true,
-          Code = 200,
-          Message = "成功接取委託任務",
-          Data = new
-          {
-            EntrustMissionId = entrustMissionId,
-            Status = mission.Status,
-            AcceptedAt = progress.AcceptedAt,
-            DiscussionUrl = discussionUrl
-          }
-        };
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        // _logger.LogError(ex, "接取委託任務失敗 - MissionId: {Id}, UserId: {UserId}", entrustMissionId, userId);
-        return new ResultDTO { Ok = false, Code = 500, Message = "接取任務失敗，請稍後再試" };
-      }
-    }
-
-    public async Task<EntrustMissionDTO?> GetEntrustMissionByIdAsync(int id)
-    {
-      return await _context.EntrustMission
-          .Where(em => em.EntrustMissionId == id && em.IsActive)  // 建議加上 IsActive 過濾
-          .Include(em => em.User)
-          .Include(em => em.Content)
-          .Select(em => new EntrustMissionDTO
-          {
-            EntrustMissionId = em.EntrustMissionId,
-            UserId = em.UserId,
-            ContentId = em.ContentId,
-            Title = em.Title,
-            Detail = em.Detail,
-            RewardPoints = em.RewardPoints,
-            Category = em.Category ?? "其他",
-            Deadline = em.Deadline,
-            Status = em.Status ?? "其他",
-            IsUrgent = em.IsUrgent ?? false,
-            IsActive = em.IsActive,
-            CreatedAt = em.CreatedAt,
-            UpdatedAt = em.UpdatedAt,
-          })
-          .FirstOrDefaultAsync();
-    }
-        // 發布委託
+        // 發布新委託（基本維持，無需 progress 記錄）
         public async Task<ResultDTO> CreateEntrustMissionAsync(EntrustMissionDTO dto)
         {
             int userId = dto.UserId;
             DateTime now = DateTime.Now;
 
-            // ========= 基本業務驗證 =========
+            // 基本驗證
             if (dto.RewardPoints <= 0)
                 return new ResultDTO { Ok = false, Code = 400, Message = "賞金必須大於 0" };
-
             if (dto.ContentId <= 0)
                 return new ResultDTO { Ok = false, Code = 400, Message = "必須選擇關聯內容" };
-
-            if (dto.Deadline.HasValue && dto.Deadline < DateTime.Now)
+            if (dto.Deadline.HasValue && dto.Deadline < now)
                 return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
 
-            // ========= Content 是否存在 =========
-            bool contentExists = await _context.Content
-                .AsNoTracking()
-                .AnyAsync(c => c.ContentId == dto.ContentId);
-
+            bool contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId);
             if (!contentExists)
                 return new ResultDTO { Ok = false, Code = 404, Message = "指定的內容不存在" };
 
-            // ========= 使用者是否存在 =========
-            bool userExists = await _context.User
-                .AsNoTracking()
-                .AnyAsync(u => u.UserId == userId);
-
+            bool userExists = await _context.User.AnyAsync(u => u.UserId == userId);
             if (!userExists)
                 return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
 
-            // ========= Transaction =========
             using var tx = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                // 建立委託任務
                 var entrustMission = new EntrustMission
                 {
                     UserId = userId,
@@ -211,13 +170,13 @@ namespace incode2.Services.Point
                     IsActive = true,
                     CreatedAt = now,
                     UpdatedAt = now
+                    // Best* 欄位預設 null
                 };
 
                 _context.EntrustMission.Add(entrustMission);
-                // 先 Save 只為了拿 ID
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // 先存取 ID
 
-                // 預扣點數 (第三步)
+                // 預扣點數
                 var reserveSuccess = await _pointReserveService.ReserveAsync(
                     userId,
                     dto.RewardPoints,
@@ -230,7 +189,6 @@ namespace incode2.Services.Point
                     return new ResultDTO { Ok = false, Code = 400, Message = "點數不足或預扣失敗" };
                 }
 
-                //再 Save 預扣 + 點數 log
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
 
@@ -245,64 +203,11 @@ namespace incode2.Services.Point
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                var realMessage = ex.InnerException?.Message ?? ex.Message;
-                return new ResultDTO
-                {
-                    Ok = false,
-                    Code = 500,
-                    Message = $"除錯訊息: {realMessage}"
-                };
+                return new ResultDTO { Ok = false, Code = 500, Message = $"建立失敗：{ex.Message}" };
             }
         }
 
-        //完成「提交成果」
-        public async Task<ResultDTO> SubmitEntrustMissionAsync(int missionId, int userId)
-        {
-            var progress = await _context.EntrustMissionProgress
-                .FirstOrDefaultAsync(p =>
-                    p.EntrustMissionId == missionId &&
-                    p.UserId == userId);
-
-            if (progress == null)
-                return new ResultDTO { Ok = false, Code = 404, Message = "未接取此任務" };
-
-            if (progress.Status != "ongoing")
-                return new ResultDTO { Ok = false, Code = 400, Message = "目前狀態無法提交" };
-
-            progress.Status = EntrustMissionProgressStatus.Submitted;
-            progress.SubmittedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
-            return new ResultDTO
-            {
-                Ok = true,
-                Code = 200,
-                Message = "任務已提交，等待發布者審核"
-            };
-        }
-
-        //Rejected
-        public async Task<ResultDTO> RejectEntrustMissionAsync(int progressId, int ownerId)
-        {
-            var progress = await _context.EntrustMissionProgress
-                .Include(p => p.EntrustMission)
-                .FirstOrDefaultAsync(p => p.EntrustMissionProgressId == progressId);
-
-            if (progress == null)
-                return new ResultDTO { Ok = false, Code = 404 };
-
-            if (progress.EntrustMission.UserId != ownerId)
-                return new ResultDTO { Ok = false, Code = 403 };
-
-            progress.Status = "rejected";
-
-            await _context.SaveChangesAsync();
-
-            return new ResultDTO { Ok = true, Code = 200 };
-        }
-
-        //取消委託任務時退還預扣點數
+        // 取消委託（退還預扣點數）
         public async Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -315,18 +220,16 @@ namespace incode2.Services.Point
                     return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
 
                 if (mission.UserId != userId)
-                    return new ResultDTO { Ok = false, Code = 403, Message = "只有任務發起者可以取消任務" };
+                    return new ResultDTO { Ok = false, Code = 403, Message = "只有任務發起者可以取消" };
 
-                // 1️⃣ 更新任務狀態
+                if (mission.Status == "completed")
+                    return new ResultDTO { Ok = false, Code = 400, Message = "已結案的任務無法取消" };
+
                 mission.Status = "cancelled";
                 mission.UpdatedAt = DateTime.Now;
 
-                // 2️⃣ 退還預扣點數
-                var releaseSuccess = await _pointReserveService.ReleaseAsync(
-                    mission.UserId,
-                    entrustMissionId
-                );
-
+                // 退還預扣點數（如果還沒消耗）
+                var releaseSuccess = await _pointReserveService.ReleaseAsync(mission.UserId, entrustMissionId);
                 if (!releaseSuccess)
                 {
                     await transaction.RollbackAsync();
@@ -336,24 +239,18 @@ namespace incode2.Services.Point
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new ResultDTO
-                {
-                    Ok = true,
-                    Code = 200,
-                    Message = "委託任務已取消，預扣點數已退回"
-                };
+                return new ResultDTO { Ok = true, Code = 200, Message = "委託任務已取消，預扣點數已退回" };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ResultDTO
-                {
-                    Ok = false,
-                    Code = 500,
-                    Message = ex.Message
-                };
+                return new ResultDTO { Ok = false, Code = 500, Message = ex.Message };
             }
         }
 
+        // 已移除的方法（可直接刪除或註解）
+        // public async Task<ResultDTO> ClaimEntrustMissionAsync(...) { ... }          // 舊流程，移除
+        // public async Task<ResultDTO> SubmitEntrustMissionAsync(...) { ... }        // 舊流程，移除
+        // public async Task<ResultDTO> RejectEntrustMissionAsync(...) { ... }        // 舊流程，移除
     }
 }

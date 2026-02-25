@@ -45,11 +45,11 @@ public partial class User
 
     public virtual ICollection<ContentNotification> ContentNotification { get; set; } = new List<ContentNotification>();
 
-    public virtual ICollection<EntrustMission> EntrustMission { get; set; } = new List<EntrustMission>();
+    public virtual ICollection<EntrustMission> EntrustMissionBestUser { get; set; } = new List<EntrustMission>();
 
     public virtual ICollection<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; } = new List<EntrustMissionPointReserve>();
 
-    public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
+    public virtual ICollection<EntrustMission> EntrustMissionUser { get; set; } = new List<EntrustMission>();
 
     public virtual ICollection<Follow> FollowFollowee { get; set; } = new List<Follow>();
 

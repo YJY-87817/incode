@@ -35,7 +35,9 @@ public partial class Content
 
     public virtual ICollection<ContentNotification> ContentNotification { get; set; } = new List<ContentNotification>();
 
-    public virtual ICollection<EntrustMission> EntrustMission { get; set; } = new List<EntrustMission>();
+    public virtual ICollection<EntrustMission> EntrustMissionBestContent { get; set; } = new List<EntrustMission>();
+
+    public virtual ICollection<EntrustMission> EntrustMissionContent { get; set; } = new List<EntrustMission>();
 
     public virtual ICollection<Content> InverseParentContent { get; set; } = new List<Content>();
 
