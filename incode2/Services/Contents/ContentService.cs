@@ -64,9 +64,31 @@ namespace incode2.Services.Contents
           || (!c.Body.StartsWith("/contents/") && c.Body.Contains(normalizedKeyword)));
       }
 
-      query = string.Equals(sortBy, "latest", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(sortBy)
-        ? query.OrderByDescending(c => c.CreatedAt)
-        : query.OrderByDescending(c => c.CreatedAt);
+      var normalizedSortBy = sortBy?.Trim().ToLowerInvariant();
+      var replyTypes = new[] { 2, 3, 4 };
+
+      query = normalizedSortBy switch
+      {
+        "latest-reply" or "latest_reply" or "reply-latest" => query
+          .OrderByDescending(c => (_context.Content
+            .Where(r => r.IsActive == 1
+              && r.ParentContentId == c.ContentId
+              && replyTypes.Contains(r.Type))
+            .Max(r => (DateTime?)r.CreatedAt)) ?? DateTime.MinValue)
+          .ThenByDescending(c => c.CreatedAt),
+        "most-replies" or "most_replies" or "reply-count" => query
+          .OrderByDescending(c => _context.Content
+            .Count(r => r.IsActive == 1
+              && r.ParentContentId == c.ContentId
+              && replyTypes.Contains(r.Type)))
+          .ThenByDescending(c => c.CreatedAt),
+        "most-likes" or "most_likes" or "like-count" => query
+          .OrderByDescending(c => _context.ContentInteraction
+            .Count(ci => ci.ContentId == c.ContentId && ci.CategoryId == 1))
+          .ThenByDescending(c => c.CreatedAt),
+        "latest" or null or "" => query.OrderByDescending(c => c.CreatedAt),
+        _ => query.OrderByDescending(c => c.CreatedAt)
+      };
 
       var totalCount = await query.CountAsync();
       var pageItems = await query
