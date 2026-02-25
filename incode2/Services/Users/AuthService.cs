@@ -106,7 +106,7 @@ namespace incode2.Services.Users
             }
 
             // 登入成功 → 觸發每日登入任務
-            await _missionService.TriggerMissionAsync(user.UserId, "login");
+            await _missionService.TriggerMissionAsync(user.UserId, "login", 1);
 
             return new LoginResult
             {

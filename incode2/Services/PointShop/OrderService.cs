@@ -12,12 +12,14 @@ namespace incode2.Services.PointShop
     {
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointlogService;
+        private readonly IMissionService _missionService;
 
 
-        public OrderService(incodedatabaseContext context, IPointLogService pointLogService)
+        public OrderService(incodedatabaseContext context, IPointLogService pointLogService, IMissionService missionService)
         {
             _context = context;
             _pointlogService = pointLogService;
+            _missionService = missionService;
         }
 
         // 取得UserId的訂單資料
@@ -205,9 +207,41 @@ namespace incode2.Services.PointShop
                 }
                 _context.Orders.Add(newOrder);
 
-                var result = await _pointlogService.ChangePointsAsync(newOrder.UserId, -totalPoints, "order", newOrder.OrderId, PointType.ExpenseOrders);
+                //qiu以下 準備顯示用的 subtitle（只用第一個商品名稱）
+                string displaySubTitle = "商品兌換";
+
+                if (order.Items.Any())
+                {
+                    var firstItem = order.Items.First();  // 取第一個購買項目
+
+                    if (productDict.TryGetValue(firstItem.ProductId, out var firstProd)
+                        && !string.IsNullOrWhiteSpace(firstProd.Name))  // 假設 Product 有 Name 屬性
+                    {
+                        displaySubTitle = $"兌換 {firstProd.Name.Trim()}";
+
+                        if (firstItem.Quantity > 1)
+                        {
+                            displaySubTitle += $" x{firstItem.Quantity}";
+                        }
+                    }
+                    // 如果沒有 Name，就保持預設 "商品兌換"
+                }
+
+                var result = await _pointlogService.ChangePointsAsync(
+                    userId: newOrder.UserId,
+                    changeAmount: -totalPoints,
+                    sourceType: "order",
+                    sourceId: newOrder.OrderId,
+                    type: PointType.ExpenseOrders,
+                    displaySource: "商品兌換",
+                    displaySubTitle: displaySubTitle   // ← 改用動態文字
+                );
+                //qiu以上
 
                 await _context.SaveChangesAsync();
+
+                //平台任務觸發：購買任務
+                await _missionService.TriggerMissionAsync(order.UserId, "purchase", 1);
 
                 return result
                     ? ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功")
@@ -325,7 +359,7 @@ namespace incode2.Services.PointShop
                 oldOrder.Status = "已取消";
                 oldOrder.CanceledAt = DateTime.Now;
 
-                var result = await _pointlogService.ChangePointsAsync(oldOrder.UserId, oldOrder.TotalPoint, "order", oldOrder.OrderId, PointType.IncomeOrdersRefund);
+                var result = await _pointlogService.ChangePointsAsync(userId: oldOrder.UserId,changeAmount: oldOrder.TotalPoint,sourceType: "order",sourceId: oldOrder.OrderId,type: PointType.IncomeOrdersRefund,displaySource: "訂單取消退款",displaySubTitle: $"訂單編號：{oldOrder.OrderId}" );
 
                 await _context.SaveChangesAsync();
                 return result
