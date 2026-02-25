@@ -1561,6 +1561,10 @@ watch(
 .category-input {
   padding-left: 0.9rem;
   padding-right: 2rem;
+  height: 38px;
+  line-height: 1.2;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
   border: 1px solid #d1d3d4;
   width: auto;
 }
