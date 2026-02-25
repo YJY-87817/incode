@@ -28,6 +28,21 @@ const entrustMissionByContentPending = new Map();
 const interactionInitPending = new Map();
 const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
 
+const TOPIC_SORT_OPTION_TO_API = {
+  createdAt_desc: "latest",
+  latest: "latest",
+  "latest-reply": "latest-reply",
+  "most-replies": "most-replies",
+  "most-likes": "most-likes",
+};
+
+const normalizeTopicSortOption = (option) => {
+  const normalized = String(option || "")
+    .trim()
+    .toLowerCase();
+  return TOPIC_SORT_OPTION_TO_API[normalized] ? normalized : "latest";
+};
+
 const readBestAnswerCache = () => {
   if (typeof window === "undefined") return {};
   try {
@@ -571,7 +586,7 @@ export const useForumStore = defineStore("forum", {
       totalCount: 0,
       totalPages: 0,
     },
-    sortOption: "createdAt_desc",
+    sortOption: "latest",
 
     // ========== 帖文詳情 ==========
     selectedThread: null,
@@ -1123,7 +1138,10 @@ export const useForumStore = defineStore("forum", {
           page: targetPage,
           pageSize,
           types: `${CONTENT_TYPES.POST},${CONTENT_TYPES.REPLY}`,
-          sortBy: "latest",
+          sortBy:
+            TOPIC_SORT_OPTION_TO_API[
+              normalizeTopicSortOption(this.sortOption)
+            ] ?? "latest",
         };
 
         if (targetCategory) params.categoryId = targetCategory;
@@ -1795,7 +1813,7 @@ export const useForumStore = defineStore("forum", {
     },
 
     setSortOption(option) {
-      this.sortOption = option === "createdAt_desc" ? option : "createdAt_desc";
+      this.sortOption = normalizeTopicSortOption(option);
       this.pagination.currentPage = 1;
       this.fetchTopics();
     },

@@ -719,7 +719,10 @@ watch(
             class="form-select form-select-sm"
             aria-label="主題排序"
           >
-            <option value="createdAt_desc">發佈時間（新→舊）</option>
+            <option value="latest">最新發佈時間</option>
+            <option value="latest-reply">最新回應時間</option>
+            <option value="most-replies">最多回應數量</option>
+            <option value="most-likes">最多按讚數量</option>
           </select>
         </div>
       </div>
