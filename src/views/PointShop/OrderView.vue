@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 import OrderList from "@/views/PointShop/components/OrderList.vue";
-import FilterOrder from "@/views/PointShop/components/filterorder.vue";
+import FilterOrder from "@/views/PointShop/components/Filterorder.vue";
 
 const selectedStatus = ref(""); // 預設顯示全部訂單
 onMounted(() => {
