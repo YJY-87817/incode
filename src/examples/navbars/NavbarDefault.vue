@@ -167,19 +167,15 @@ watch(
         incode影庫
       </router-link>
       <button
-        class="navbar-toggler shadow-none ms-2"
+        class="navbar-toggler shadow-none"
         type="button"
-        data-bs-toggle="collapse"
+        data-bs-toggle="collapse" 
         data-bs-target="#navigation"
         aria-controls="navigation"
         aria-expanded="false"
         aria-label="Toggle navigation"
       >
-        <span class="navbar-toggler-icon mt-2">
-          <span class="navbar-toggler-bar bar1"></span>
-          <span class="navbar-toggler-bar bar2"></span>
-          <span class="navbar-toggler-bar bar3"></span>
-        </span>
+        <i class="material-icons text-white">menu</i>
       </button>
       <div
         class="collapse navbar-collapse w-100 pt-3 pb-2 py-lg-0"
