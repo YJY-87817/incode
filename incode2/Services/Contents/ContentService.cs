@@ -70,11 +70,11 @@ namespace incode2.Services.Contents
       query = normalizedSortBy switch
       {
         "latest-reply" or "latest_reply" or "reply-latest" => query
-          .OrderByDescending(c => (_context.Content
+          .OrderByDescending(c => _context.Content
             .Where(r => r.IsActive == 1
               && r.ParentContentId == c.ContentId
               && replyTypes.Contains(r.Type))
-            .Max(r => (DateTime?)r.CreatedAt)) ?? DateTime.MinValue)
+            .Max(r => (DateTime?)r.CreatedAt))
           .ThenByDescending(c => c.CreatedAt),
         "most-replies" or "most_replies" or "reply-count" => query
           .OrderByDescending(c => _context.Content
