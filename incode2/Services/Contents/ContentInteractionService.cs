@@ -257,14 +257,18 @@ namespace incode2.Services.Contents
             return new ResultDTO { Ok = false, Code = 400, Message = "預扣狀態錯誤或不存在" };
         }
 
-        //qiu 發放點數給最佳解答使用者
-        var awardSuccess = await _pointLogService.ChangePointsAsync(
-          targetContent.UserId,
-          mission.RewardPoints,
-          "entrust_mission",
-          mission.EntrustMissionId,
-          PointType.IncomeEntrustMission
-          );
+                //qiu 發放點數給最佳解答使用者
+        string displaySubTitle = $"委託任務 #{entrustMissionId} 最佳解答獎勵";
+
+                var awardSuccess = await _pointLogService.ChangePointsAsync(
+                  targetContent.UserId,
+                  mission.RewardPoints,
+                  "entrust_mission",
+                  mission.EntrustMissionId,
+                  PointType.IncomeEntrustMission,
+                  displaySource: "委託任務獎勵",
+                  displaySubTitle: displaySubTitle
+              );
 
         if (!awardSuccess)
         {
