@@ -6,7 +6,7 @@
 -->
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -238,6 +238,7 @@ const sortOptions = [
   { value: "most-likes", label: "最多按讚數量" },
 ];
 const showSortDropdown = ref(false);
+const sortDropdownRef = ref(null);
 const sortLabel = computed(() => {
   const match = sortOptions.find((option) => option.value === sortOption.value);
   return match?.label || "";
@@ -258,6 +259,31 @@ const hideSortDropdown = () => {
 const toggleSortDropdown = () => {
   showSortDropdown.value = !showSortDropdown.value;
 };
+
+const handleDocumentClick = (event) => {
+  if (!showSortDropdown.value) return;
+  const container = sortDropdownRef.value;
+  if (container && !container.contains(event.target)) {
+    showSortDropdown.value = false;
+  }
+};
+
+const handleDocumentKeydown = (event) => {
+  if (event.key !== "Escape") return;
+  if (showSortDropdown.value) {
+    showSortDropdown.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+});
 
 /**
  * 執行線程分頁
@@ -741,8 +767,8 @@ watch(
         <span class="badge bg-info">
           共 {{ forumStore.pagination.totalCount }} 筆
         </span>
-        <div class="ms-sm-2 sort-dropdown">
-          <div class="category-input-wrapper" @click="toggleSortDropdown">
+        <div ref="sortDropdownRef" class="ms-sm-2 sort-dropdown">
+          <div class="category-input-wrapper" @click.stop="toggleSortDropdown">
             <input
               :value="sortLabel"
               class="form-control category-input"
