@@ -1527,6 +1527,22 @@ watch(
 
 .card-header h5 {
   color: #fff;
+  font-size: 0.95rem;
+}
+
+.card-header .badge,
+.card-header .category-input {
+  font-size: 0.95rem;
+}
+
+.card-header .badge.bg-info,
+.card-header .badge.bg-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d3d4;
 }
 
 .sort-dropdown {
