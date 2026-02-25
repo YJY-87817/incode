@@ -110,7 +110,7 @@ onMounted(() => {
   updateWindowWidth();
   window.addEventListener("resize", updateWindowWidth);
   forumStore.fetchCategories();
-  forumStore.fetchTopics();
+  forumStore.setSortOption("latest");
 });
 
 onUnmounted(() => {
