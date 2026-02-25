@@ -779,7 +779,7 @@ watch(
             </span>
             <span
               v-if="forumStore.threadDetail?.hasEntrustMission"
-              class="badge bg-secondary-light text-dark"
+              class="badge bg-secondary"
             >
               委託任務
             </span>
@@ -1076,7 +1076,7 @@ watch(
                   >
                   <span
                     v-if="topic.hasEntrustMission"
-                    class="badge bg-secondary-light text-dark"
+                    class="badge bg-secondary"
                     >委託任務</span
                   >
                   <span v-if="topic.isHot" class="badge bg-warning text-dark"
@@ -1217,7 +1217,7 @@ watch(
                         </span>
                         <span
                           v-if="topic.hasEntrustMission"
-                          class="badge bg-secondary-light text-dark"
+                          class="badge bg-secondary"
                         >
                           委託任務
                         </span>
