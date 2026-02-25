@@ -26,7 +26,7 @@ export const useMissionStore = defineStore("mission", {
       try {
         const [platformRes, entrustRes] = await Promise.all([
           axios.get("/api/MissionProgressApi/my-missions"),
-          axios.get("/api/EntrustMissionProgressApi/user/my-tasks"),
+          axios.get("/api/EntrustMissionApi/my-entrusts"),
         ]);
 
         this.myMissions = [
@@ -37,6 +37,7 @@ export const useMissionStore = defineStore("mission", {
           ...(entrustRes.data || []).map((item) => ({
             ...item,
             isEntrust: true,
+            entrustMissionId: item.entrustMissionId,
           })),
         ];
 
@@ -55,51 +56,38 @@ export const useMissionStore = defineStore("mission", {
      * @param {boolean} isEntrust - 是否為委託任務
      */
     async claimReward(progressId, isEntrust = false) {
+      // 如果是委託任務，直接返回（因為後端已自動發放）
+      if (isEntrust) {
+        console.warn("委託任務獎勵已自動發放，無需手動領取");
+        return;
+      }
+
       try {
-        let url;
-        let payload;
+        const url = "/api/MissionProgressApi/claim-reward";
+        const payload = { progressId };
 
-        if (isEntrust) {
-          url = "/api/EntrustMissionProgressApi/claim-reward";
-          payload = { progressId };
-        } else {
-          url = "/api/MissionProgressApi/claim-reward";
-          payload = { progressId };
-        }
-
-        console.log("發送領獎請求：", { url, payload, isEntrust });
+        console.log("發送系統任務領獎請求：", { url, payload });
 
         const response = await axios.post(url, payload);
 
-        // 這裡通常 axios 若回傳 400 會直接跳進 catch，
-        // 但如果後端 ok: false 且 status 是 200，則在此處處理
         if (!response.data.ok) {
           throw new Error(response.data.message || "領取失敗");
         }
 
-        // 成功領取後，務必重新獲取最新清單
+        // 成功後重新載入清單
         await this.fetchMyMissions();
 
-        return this.myMissions.find((m) =>
-          isEntrust
-            ? m.entrustMissionProgressId === progressId
-            : m.missionProgressId === progressId,
-        );
+        return this.myMissions.find((m) => m.missionProgressId === progressId);
       } catch (err) {
         const errorMsg = err.response?.data?.message || err.message;
-        console.error("領獎錯誤詳情：", errorMsg);
+        console.error("領獎錯誤：", errorMsg);
 
-        // ✨ 同步 UI 狀態的核心邏輯
-        // 如果後端說「已領取過」(400 Bad Request)，代表前端狀態已過時
         if (err.response?.status === 400 || errorMsg.includes("已領取過")) {
-          console.warn("偵測到狀態不同步，正在強制刷新任務清單...");
+          console.warn("狀態不同步，強制刷新...");
           await this.fetchMyMissions();
         }
 
-        // 統一處理登入過期等通用錯誤
         this.handleError(err);
-
-        // 拋出錯誤給 UI 層 (SweetAlert) 顯示
         throw new Error(errorMsg);
       }
     },

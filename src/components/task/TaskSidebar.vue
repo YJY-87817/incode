@@ -62,7 +62,7 @@ const refreshTasks = async () => {
       </button>
     </div>
     <div class="card-body p-4 custom-scrollbar">
-      <div class="section-label">選擇分類</div>
+      <div class="section-label">選擇模式</div>
       <div class="nav flex-column mb-4">
         <button
           v-for="(tab, key) in { mission: '平台挑戰', entrust: '影友委託' }"

@@ -19,27 +19,36 @@ const filteredMissions = computed(() => {
     const isEntrust = !!m.entrustMissionId;
 
     if (activeTab.value === "ongoing") {
-      return (
-        m.status === "ongoing" ||
-        (isEntrust && ["ongoing", "submitted", "rejected"].includes(m.status))
-      );
+      // 平台任務：進行中
+      // 委託任務：徵求解答中 (status === "open")
+      if (isEntrust) {
+        return m.status === "open";
+      }
+      return m.status === "ongoing";
     }
 
     if (activeTab.value === "pending") {
       // 個人委託看 status，系統任務需額外檢查 canClaimReward
-      if (isEntrust) return m.status === "approved";
+      // 平台任務：待領取
+      // 委託任務：因為自動發放，所以不進入待領取
+      if (isEntrust) return false;
       return m.status === "completed" && m.canClaimReward === true;
     }
 
     if (activeTab.value === "completed") {
       // 已領取，或是處於冷卻期（completed 但不能領）
+      // 平台任務：已領取或冷卻期
+      // 委託任務：已結案 (status === "completed")
+      if (isEntrust) {
+        return m.status === "completed";
+      }
       return (
         m.status === "rewarded" ||
-        (!isEntrust && m.status === "completed" && m.canClaimReward === false)
+        (m.status === "completed" && !m.canClaimReward)
       );
     }
 
-    return true;
+    return false;
   });
 });
 
@@ -52,15 +61,10 @@ const viewDetail = (mission) => {
 // 計算進度條寬度
 const calculateWidth = (mission) => {
   if (mission.entrustMissionId) {
-    const statusMap = {
-      ongoing: 15,
-      submitted: 50,
-      rejected: 30,
-      approved: 100,
-      rewarded: 100,
-    };
-    return statusMap[mission.status] || 0;
+    // 委託任務：徵求中 20%，已結案 100%
+    return mission.hasBestAnswer ? 100 : 20;
   }
+  // 平台任務維持原邏輯
   if (!mission.targetCount || mission.targetCount <= 0) return 0;
   return Math.min(
     100,
@@ -68,8 +72,20 @@ const calculateWidth = (mission) => {
   );
 };
 
-// 領取獎勵 (修正後的函式，已清除重複與錯誤)
+// 領取獎勵 只處理平台任務，委託任務已自動發放
 const claimReward = async (mission) => {
+  // 如果是委託任務，直接提示已自動發放
+  if (mission.entrustMissionId) {
+    Swal.fire({
+      icon: "info",
+      title: "獎勵已自動發放",
+      text: "您獲得的最佳解答獎勵已直接入帳，無需手動領取。",
+      confirmButtonColor: "#145369",
+    });
+    return;
+  }
+
+  // 平台任務原有領取邏輯
   const missionName = mission.missionName || mission.title || "此任務";
   const progressId =
     mission.missionProgressId || mission.entrustMissionProgressId;
@@ -103,8 +119,7 @@ const claimReward = async (mission) => {
   if (!result.isConfirmed) return;
 
   try {
-    const isEntrust = !!mission.entrustMissionId;
-    await missionStore.claimReward(progressId, isEntrust);
+    await missionStore.claimReward(progressId, false); // 只傳 false，表示平台任務
 
     await Swal.fire({
       icon: "success",
@@ -233,6 +248,14 @@ onMounted(() => {
                       </span>
                       <h6 class="mb-0 text-sm font-weight-bolder">
                         {{ mission.missionName || mission.title }}
+                        <small v-if="mission.isOwner" class="text-muted ms-2"
+                          >(我發起)</small
+                        >
+                        <small
+                          v-if="mission.isBestAnswerWinner"
+                          class="text-success ms-2"
+                          >(我獲得)</small
+                        >
                       </h6>
                     </div>
                     <p class="text-xs text-black mb-3 text-truncate">
@@ -249,9 +272,11 @@ onMounted(() => {
                       <div class="d-flex justify-content-between">
                         <span class="text-xxs">
                           <template v-if="mission.entrustMissionId">
-                            狀態：<span class="font-weight-bold">{{
-                              mission.status.toUpperCase()
-                            }}</span>
+                            狀態：<span class="font-weight-bold">
+                              {{
+                                mission.hasBestAnswer ? "已結案" : "徵求解答中"
+                              }}
+                            </span>
                           </template>
                           <template v-else>
                             進度：{{ mission.currentCount || 0 }} /
@@ -278,11 +303,12 @@ onMounted(() => {
                       歷程
                     </button>
 
+                    <!-- 平台任務：顯示領取按鈕 -->
                     <button
                       v-if="
-                        (mission.status === 'completed' &&
-                          mission.canClaimReward) ||
-                        mission.status === 'approved'
+                        !mission.entrustMissionId &&
+                        mission.status === 'completed' &&
+                        mission.canClaimReward
                       "
                       @click="claimReward(mission)"
                       class="btn btn-xs btn-theme mb-0"
@@ -290,11 +316,21 @@ onMounted(() => {
                       領取獎勵
                     </button>
 
+                    <!-- 委託任務：如果是我獲得的，顯示已獲得 -->
                     <span
                       v-else-if="
-                        mission.status === 'rewarded' ||
-                        (mission.status === 'completed' &&
-                          !mission.canClaimReward)
+                        mission.entrustMissionId && mission.isBestAnswerWinner
+                      "
+                      class="text-success text-xs font-weight-bold"
+                    >
+                      <i class="fas fa-trophy me-1"></i>已獲得獎勵
+                    </span>
+
+                    <!-- 已完成（平台任務） -->
+                    <span
+                      v-else-if="
+                        !mission.entrustMissionId &&
+                        mission.status === 'rewarded'
                       "
                       class="text-success text-xs font-weight-bold"
                     >
@@ -309,12 +345,15 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- 詳情抽屜：平台任務維持原樣，委託任務簡化 -->
     <div
       :class="['detail-drawer bg-white shadow-xl', isDetailOpen ? 'open' : '']"
     >
       <div v-if="selectedMission" class="p-4">
         <div class="d-flex justify-content-between align-items-center mb-5">
-          <h5 class="font-weight-bolder mb-0">任務日誌</h5>
+          <h5 class="font-weight-bolder mb-0">
+            {{ selectedMission.entrustMissionId ? "委託詳情" : "任務日誌" }}
+          </h5>
           <i
             @click="isDetailOpen = false"
             class="fas fa-times cursor-pointer text-secondary"
@@ -322,67 +361,117 @@ onMounted(() => {
         </div>
 
         <div class="timeline timeline-one-side">
-          <div class="timeline-block mb-3">
-            <span class="timeline-step theme-bg-main text-white">
-              <i class="fas fa-play text-xxs"></i>
-            </span>
-            <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">任務開始</h6>
-              <p class="text-secondary text-xs mt-1">
-                {{ formatDate(selectedMission.acceptedAt) }}
-              </p>
+          <!-- 平台任務原時間軸 -->
+          <template v-if="!selectedMission.entrustMissionId">
+            <div class="timeline-block mb-3">
+              <span class="timeline-step theme-bg-main text-white">
+                <i class="fas fa-play text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  任務開始
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.acceptedAt) }}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div v-if="selectedMission.submittedAt" class="timeline-block mb-3">
-            <span class="timeline-step bg-dark text-white">
-              <i class="fas fa-upload text-xxs"></i>
-            </span>
-            <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">提交作品</h6>
-              <p class="text-secondary text-xs mt-1">
-                {{ formatDate(selectedMission.submittedAt) }}
-              </p>
+            <div v-if="selectedMission.submittedAt" class="timeline-block mb-3">
+              <span class="timeline-step bg-dark text-white">
+                <i class="fas fa-upload text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  提交作品
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.submittedAt) }}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div
-            v-if="selectedMission.completedAt || selectedMission.approvedAt"
-            class="timeline-block mb-3"
-          >
-            <span class="timeline-step bg-success text-white">
-              <i class="fas fa-check text-xxs"></i>
-            </span>
-            <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">任務達標</h6>
-              <p class="text-secondary text-xs mt-1">
-                {{
-                  formatDate(
-                    selectedMission.completedAt || selectedMission.approvedAt,
-                  )
-                }}
-              </p>
+            <div
+              v-if="selectedMission.completedAt || selectedMission.approvedAt"
+              class="timeline-block mb-3"
+            >
+              <span class="timeline-step bg-success text-white">
+                <i class="fas fa-check text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  任務達標
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{
+                    formatDate(
+                      selectedMission.completedAt || selectedMission.approvedAt,
+                    )
+                  }}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div v-if="selectedMission.rewardedAt" class="timeline-block mb-3">
-            <span class="timeline-step bg-warning text-white">
-              <i class="fas fa-coins text-xxs"></i>
-            </span>
-            <div class="timeline-content">
-              <h6 class="text-dark text-sm font-weight-bold mb-0">獎勵撥款</h6>
-              <p class="text-secondary text-xs mt-1">
-                {{ formatDate(selectedMission.rewardedAt) }}
-              </p>
+            <div v-if="selectedMission.rewardedAt" class="timeline-block mb-3">
+              <span class="timeline-step bg-warning text-white">
+                <i class="fas fa-coins text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  獎勵撥款
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.rewardedAt) }}
+                </p>
+              </div>
             </div>
-          </div>
+          </template>
+
+          <!-- 委託任務簡化時間軸 -->
+          <template v-else>
+            <div class="timeline-block mb-3">
+              <span class="timeline-step theme-bg-main text-white">
+                <i class="fas fa-bullhorn text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  委託發布
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.createdAt) }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="selectedMission.selectedAt" class="timeline-block mb-3">
+              <span class="timeline-step bg-success text-white">
+                <i class="fas fa-trophy text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  最佳解答選定
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.selectedAt) }}
+                </p>
+                <small
+                  v-if="selectedMission.isBestAnswerWinner"
+                  class="text-success"
+                >
+                  （你獲得 {{ selectedMission.rewardPoints }} Pts）
+                </small>
+              </div>
+            </div>
+          </template>
         </div>
 
+        <!-- 領取按鈕：只對平台任務顯示 -->
         <div class="mt-5 pt-4 border-top">
           <button
             v-if="
-              selectedMission.status === 'completed' ||
-              selectedMission.status === 'approved'
+              !selectedMission.entrustMissionId &&
+              selectedMission.status === 'completed' &&
+              selectedMission.canClaimReward
             "
             @click="claimReward(selectedMission)"
             class="btn btn-theme w-100"
@@ -399,7 +488,6 @@ onMounted(() => {
       class="drawer-backdrop"
     ></div>
   </div>
-
   <FooterCentered />
 </template>
 
@@ -490,12 +578,46 @@ onMounted(() => {
   z-index: 1090;
 }
 
+/* 側邊欄主體：加深陰影、拉開與背景區隔 */
 .sticky-sidebar {
   position: sticky;
   top: 100px;
   z-index: 1000;
+  border-radius: 15px !important;
+  /* 使用多層陰影：第一層大範圍擴散，第二層強化底部紮實感 */
+  box-shadow:
+    0 15px 35px -5px rgba(0, 0, 0, 0.18),
+    0 5px 15px -8px rgba(0, 0, 0, 0.12) !important;
+  border: none !important;
+  background-color: #ffffff;
 }
-.transition-all {
-  transition: all 0.3s ease;
+
+/* 壓縮上方空格：強制覆蓋 Bootstrap 預設的 padding */
+.sticky-sidebar .card-body {
+  padding-top: 12px !important; /* 縮小頂部內距 */
+}
+
+/* 側邊欄按鈕基礎樣式 */
+.nav-link {
+  border-radius: 10px !important;
+  padding: 12px 16px !important;
+  margin-bottom: 6px !important;
+  color: #444 !important;
+  transition: all 0.25s ease;
+}
+
+/* 側邊欄 Active 狀態：改用您指定的 #86B0BD */
+.active-tab {
+  background-color: #86b0bd !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(134, 176, 189, 0.4) !important;
+}
+
+/* 滑過效果 */
+.nav-link:hover:not(.active-tab) {
+  background-color: #f0f4f7 !important;
+  transform: translateX(5px);
+  color: var(--btn-color) !important;
 }
 </style>
