@@ -244,7 +244,7 @@ const sortLabel = computed(() => {
   return match?.label || "";
 });
 const sortInputSize = computed(() =>
-  Math.max((sortLabel.value || "").length + 4, 8),
+  Math.max((sortLabel.value || "").length + 5, 2),
 );
 
 const selectSortOption = (option) => {
