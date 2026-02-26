@@ -385,7 +385,6 @@ const normalizeCategory = (raw, fallbackName = "") => {
     id,
     name,
     description: source.description ?? null,
-    topicCount: source.topicCount ?? source.topic_count ?? 0,
     postCount: source.postCount ?? source.post_count ?? 0,
   };
 };
@@ -761,7 +760,6 @@ export const useForumStore = defineStore("forum", {
 
       return state.categories.map((category) => ({
         ...category,
-        topicCount: category.topicCount ?? 0,
         postCount: category.postCount ?? 0,
       }));
     },

@@ -116,9 +116,6 @@ const handleClearCategory = () => {
                   'text-primary': forumStore.selectedCategory === category.id,
                 }"
               >
-                <span class="d-inline-block me-2"
-                  >📝 {{ category.topicCount ?? 0 }}</span
-                >
                 <span class="d-inline-block"
                   >💬 {{ category.postCount ?? 0 }}</span
                 >
