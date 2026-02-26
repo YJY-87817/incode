@@ -507,6 +507,7 @@ onMounted(() => {
   line-height: 1;
   height: 28px;
   min-height: 28px;
+  margin-bottom: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

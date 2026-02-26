@@ -830,8 +830,8 @@ watch(
           "
           @click="handleThreadReplyingTargetClick"
         >
-          <!-- 主題徽章 -->
-          <div class="d-flex flex-wrap gap-1">
+          <!-- 主題徽章 + 互動按鈕 -->
+          <div class="d-flex flex-wrap gap-1 align-items-center">
             <span
               v-if="forumStore.threadDetail?.categoryName"
               class="badge bg-secondary-light text-dark"
@@ -862,18 +862,7 @@ watch(
             >
               熱門
             </span>
-          </div>
-
-          <div
-            class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
-          >
-            <h3
-              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
-            >
-              {{ forumStore.threadDetail.title }}
-            </h3>
-
-            <div class="interaction-container" @click.stop>
+            <div class="interaction-container ms-auto" @click.stop>
               <InteractionButtons
                 v-if="forumStore.threadDetail?.id != null"
                 :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
@@ -885,6 +874,16 @@ watch(
                 @delete-content="handleTopicDeleteContent"
               />
             </div>
+          </div>
+
+          <div
+            class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+          >
+            <h3
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
+            >
+              {{ forumStore.threadDetail.title }}
+            </h3>
           </div>
           <p
             class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
@@ -900,7 +899,7 @@ watch(
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
 
-          <!-- 主題互動按鈕已移到標題右側 -->
+          <!-- 主題互動按鈕已移到分類徽章同列 -->
 
           <HtmlIframe
             class="card-text rich-content"
@@ -1135,9 +1134,9 @@ watch(
           >
             <div class="card-body p-2">
               <div
-                class="d-flex align-items-start justify-content-between gap-2 mb-1"
+                class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap"
               >
-                <div class="d-flex flex-wrap gap-1">
+                <div class="d-flex flex-wrap gap-1 align-items-center">
                   <span
                     v-if="topic.categoryName"
                     class="badge bg-secondary-light text-dark"
@@ -1152,8 +1151,19 @@ watch(
                   <span v-if="topic.isHot" class="badge bg-warning text-dark"
                     >熱門</span
                   >
+                  <div class="interaction-container" @click.stop>
+                    <InteractionButtons
+                      :key="`topic-mobile-interactions-${topic.id}`"
+                      :contentId="topic.id"
+                      :authorUserId="topic.userId"
+                      @interaction-success="handleTopicInteractionSuccess"
+                      @interaction-error="handleTopicInteractionError"
+                      @edit-content="handleTopicEditContent"
+                      @delete-content="handleTopicDeleteContent"
+                    />
+                  </div>
                 </div>
-                <div class="topic-mobile-reply-count badge bg-primary">
+                <div class="topic-mobile-reply-count badge bg-primary ms-auto">
                   {{ topic.replyCount }}
                 </div>
               </div>
@@ -1169,18 +1179,6 @@ watch(
                     {{ topic.title }}
                   </a>
                 </h6>
-
-                <div class="interaction-container" @click.stop>
-                  <InteractionButtons
-                    :key="`topic-mobile-interactions-${topic.id}`"
-                    :contentId="topic.id"
-                    :authorUserId="topic.userId"
-                    @interaction-success="handleTopicInteractionSuccess"
-                    @interaction-error="handleTopicInteractionError"
-                    @edit-content="handleTopicEditContent"
-                    @delete-content="handleTopicDeleteContent"
-                  />
-                </div>
               </div>
 
               <div class="topic-preview-body topic-preview-collapsed mt-2 mb-2">
@@ -1263,7 +1261,7 @@ watch(
                   <div class="d-flex align-items-start gap-3">
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
-                      <div class="d-flex flex-wrap gap-1">
+                      <div class="d-flex flex-wrap gap-1 align-items-center">
                         <span
                           v-if="topic.categoryName"
                           class="badge bg-secondary-light text-dark"
@@ -1294,6 +1292,17 @@ watch(
                         >
                           熱門
                         </span>
+                        <div class="interaction-container ms-auto" @click.stop>
+                          <InteractionButtons
+                            :key="`topic-interactions-${topic.id}`"
+                            :contentId="topic.id"
+                            :authorUserId="topic.userId"
+                            @interaction-success="handleTopicInteractionSuccess"
+                            @interaction-error="handleTopicInteractionError"
+                            @edit-content="handleTopicEditContent"
+                            @delete-content="handleTopicDeleteContent"
+                          />
+                        </div>
                       </div>
 
                       <!-- 主題標題 + 互動按鈕 (同一行) -->
@@ -1308,18 +1317,6 @@ watch(
                             {{ topic.title }}
                           </a>
                         </h6>
-
-                        <div class="interaction-container" @click.stop>
-                          <InteractionButtons
-                            :key="`topic-interactions-${topic.id}`"
-                            :contentId="topic.id"
-                            :authorUserId="topic.userId"
-                            @interaction-success="handleTopicInteractionSuccess"
-                            @interaction-error="handleTopicInteractionError"
-                            @edit-content="handleTopicEditContent"
-                            @delete-content="handleTopicDeleteContent"
-                          />
-                        </div>
                       </div>
 
                       <div
@@ -1356,7 +1353,7 @@ watch(
                         ></div>
                       </div>
 
-                      <!-- 互動按鈕已移到標題右側 -->
+                      <!-- 互動按鈕已移到分類徽章同列 -->
                     </div>
                   </div>
                 </td>
