@@ -1372,18 +1372,21 @@ watch(
                 <!-- 發佈時間欄 -->
                 <td class="d-none d-md-table-cell text-muted small created-col">
                   <div class="meta-cell-stack">
-                    <div class="meta-date-text">
-                      {{ formatDate(topic.createdAt) }}
+                    <div class="meta-content-group">
+                      <div class="meta-date-text">
+                        {{ formatDate(topic.createdAt) }}
+                      </div>
+                      <div class="meta-user-row text-muted">
+                        <UserPreview
+                          :user-id="topic.userId"
+                          :username="topic.author"
+                          :avatar-url="
+                            getAvatarUrl(topic.author, topic.authorAvatar)
+                          "
+                          :size="24"
+                        />
+                      </div>
                     </div>
-                    <UserPreview
-                      class="text-muted"
-                      :user-id="topic.userId"
-                      :username="topic.author"
-                      :avatar-url="
-                        getAvatarUrl(topic.author, topic.authorAvatar)
-                      "
-                      :size="24"
-                    />
                   </div>
                 </td>
 
@@ -1392,20 +1395,24 @@ watch(
                   class="d-none d-md-table-cell text-muted small last-reply-col"
                 >
                   <div class="meta-cell-stack">
-                    <div v-if="topic.lastReplyTime" class="meta-date-text">
-                      {{ formatDate(topic.lastReplyTime) }}
-                    </div>
-                    <div v-else class="text-muted">尚無回應</div>
-                    <div
-                      v-if="topic.lastReplyUser"
-                      class="text-muted d-inline-flex align-items-center"
-                    >
-                      <UserPreview
-                        :user-id="topic.lastReplyUserId"
-                        :username="topic.lastReplyUser"
-                        :avatar-url="getAvatarUrl(topic.lastReplyUser)"
-                        :size="24"
-                      />
+                    <div class="meta-content-group">
+                      <div v-if="topic.lastReplyTime" class="meta-date-text">
+                        {{ formatDate(topic.lastReplyTime) }}
+                      </div>
+                      <div v-else class="meta-date-text text-muted">
+                        尚無回應
+                      </div>
+                      <div
+                        v-if="topic.lastReplyUser"
+                        class="meta-user-row text-muted"
+                      >
+                        <UserPreview
+                          :user-id="topic.lastReplyUserId"
+                          :username="topic.lastReplyUser"
+                          :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                          :size="24"
+                        />
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -1765,9 +1772,23 @@ watch(
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
+  justify-content: flex-start;
   width: 100%;
+  height: 100%;
+}
+
+.meta-content-group {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+
+.meta-user-row {
+  display: inline-flex;
+  align-items: center;
+  text-align: left;
 }
 
 .meta-cell-center {
@@ -1779,7 +1800,7 @@ watch(
 }
 
 .meta-date-text {
-  text-align: center;
+  text-align: left;
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
