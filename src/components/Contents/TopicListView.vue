@@ -1165,7 +1165,9 @@ watch(
                     />
                   </div>
                 </div>
-                <div class="topic-mobile-reply-count badge bg-primary ms-auto">
+                <div
+                  class="topic-mobile-reply-count reply-count-badge badge bg-primary ms-auto"
+                >
                   {{ topic.replyCount }}
                 </div>
               </div>
@@ -1396,7 +1398,7 @@ watch(
                 <!-- 回應數欄 -->
                 <td class="reply-col">
                   <div class="meta-cell-center">
-                    <div class="badge bg-primary">
+                    <div class="reply-count-badge badge bg-primary">
                       {{ topic.replyCount }}
                     </div>
                   </div>
@@ -1786,6 +1788,20 @@ watch(
   transition: all 0.3s ease;
 }
 
+.reply-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
 .parent-link-btn {
   height: 22px;
   min-height: 22px;
@@ -2013,10 +2029,6 @@ watch(
 
 .topic-mobile-reply-count {
   min-width: 2rem;
-  min-height: 1.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* 分頁樣式 */
@@ -2096,9 +2108,7 @@ watch(
     line-height: 1.15;
   }
 
-  .reply-col .badge.bg-primary {
-    font-size: 0.72rem;
-    padding: 0.2rem 0.35rem;
+  .reply-count-badge {
     min-width: 2rem;
     text-align: center;
   }
@@ -2112,6 +2122,13 @@ watch(
 
 @media (max-width: 768px) {
   .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .reply-count-badge {
     min-height: 40px;
     height: 40px;
     padding: 0.35rem 0.65rem;
