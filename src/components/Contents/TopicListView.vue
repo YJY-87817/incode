@@ -6,7 +6,7 @@
 -->
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -229,70 +229,6 @@ const displayPages = computed(() => forumStore.displayPages);
 const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
-});
-
-const sortOptions = [
-  { value: "latest", label: "最新發佈時間" },
-  { value: "latest-reply", label: "最新回應時間" },
-  { value: "most-replies", label: "最多回應數量" },
-  { value: "most-likes", label: "最多按讚數量" },
-];
-const showSortDropdown = ref(false);
-const sortDropdownRef = ref(null);
-const sortLabel = computed(() => {
-  const match = sortOptions.find((option) => option.value === sortOption.value);
-  return match?.label || "";
-});
-
-const sortControlWidth = computed(() => {
-  const longestLabelLength = sortOptions.reduce(
-    (maxLength, option) =>
-      Math.max(maxLength, String(option?.label || "").length),
-    0,
-  );
-  const iconReservedWidth = showSortDropdown.value ? 2 : 3.1;
-  return `${longestLabelLength + iconReservedWidth}em`;
-});
-
-const selectSortOption = (option) => {
-  if (!option) return;
-  sortOption.value = option.value;
-  showSortDropdown.value = false;
-};
-
-const hideSortDropdown = () => {
-  setTimeout(() => {
-    showSortDropdown.value = false;
-  }, 150);
-};
-
-const toggleSortDropdown = () => {
-  showSortDropdown.value = !showSortDropdown.value;
-};
-
-const handleDocumentClick = (event) => {
-  if (!showSortDropdown.value) return;
-  const container = sortDropdownRef.value;
-  if (container && !container.contains(event.target)) {
-    showSortDropdown.value = false;
-  }
-};
-
-const handleDocumentKeydown = (event) => {
-  if (event.key !== "Escape") return;
-  if (showSortDropdown.value) {
-    showSortDropdown.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener("click", handleDocumentClick);
-  document.addEventListener("keydown", handleDocumentKeydown);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleDocumentClick);
-  document.removeEventListener("keydown", handleDocumentKeydown);
 });
 
 /**
@@ -764,61 +700,6 @@ watch(
 
 <template>
   <div class="card shadow-sm">
-    <!-- 卡片標題 (列表視圖) -->
-    <div
-      v-if="!forumStore.selectedThread"
-      class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
-    >
-      <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <span class="badge bg-secondary" v-if="forumStore.selectedCategoryName">
-          {{ forumStore.selectedCategoryName }}
-        </span>
-        <span class="badge bg-info">
-          共 {{ forumStore.pagination.totalCount }} 筆
-        </span>
-        <div
-          ref="sortDropdownRef"
-          class="ms-sm-2 sort-dropdown"
-          :style="{ '--sort-control-width': sortControlWidth }"
-        >
-          <div class="category-input-wrapper" @click.stop="toggleSortDropdown">
-            <input
-              :value="sortLabel"
-              class="form-control category-input"
-              :class="{ 'category-input--expanded': showSortDropdown }"
-              readonly
-              aria-label="主題排序"
-              @click.stop="toggleSortDropdown"
-            />
-            <span
-              v-if="!showSortDropdown"
-              class="category-input-dropdown"
-              aria-hidden="true"
-              @click.stop="toggleSortDropdown"
-            >
-              ▾
-            </span>
-          </div>
-          <div
-            v-if="showSortDropdown"
-            class="category-dropdown border rounded mt-2"
-          >
-            <button
-              v-for="option in sortOptions"
-              :key="option.value"
-              type="button"
-              class="dropdown-item text-start"
-              :class="{ active: option.value === sortOption }"
-              @mousedown.prevent="selectSortOption(option)"
-            >
-              {{ option.label }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- 卡片內容 -->
     <div class="card-body p-0">
       <!-- 詳情視圖 -->
@@ -1255,7 +1136,7 @@ watch(
         <!-- 桌機表格列表 -->
         <div class="table-responsive d-none d-md-block">
           <table class="table table-hover mb-0 topic-list-table">
-            <thead class="table-light">
+            <thead class="topic-table-header">
               <tr>
                 <th class="py-2 py-md-3 topic-col">主題</th>
                 <th class="d-none d-md-table-cell created-col">發佈時間</th>
@@ -1557,96 +1438,6 @@ watch(
   font-size: 0.95rem;
 }
 
-.card-header .badge,
-.card-header .category-input {
-  font-size: 0.95rem;
-}
-
-.card-header .badge.bg-info,
-.card-header .badge.bg-secondary {
-  display: inline-flex;
-  align-items: center;
-  height: 38px;
-  padding: 0 0.9rem;
-  border-radius: 0.375rem;
-}
-
-.sort-dropdown {
-  display: inline-block;
-  min-width: 0;
-  width: fit-content;
-  position: relative;
-}
-
-.category-input-wrapper {
-  position: relative;
-  display: inline-block;
-  width: fit-content;
-}
-
-.category-input {
-  padding-left: 0.9rem;
-  padding-right: 2rem;
-  height: 38px;
-  line-height: 1.2;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  border: 1px solid #d1d3d4;
-  width: var(--sort-control-width, 10em);
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.category-input.category-input--expanded {
-  padding-right: 0.9rem;
-}
-
-.category-input-dropdown {
-  position: absolute;
-  top: 50%;
-  right: 0.75rem;
-  transform: translateY(-50%);
-  color: #9aa0a6;
-  font-size: 0.9rem;
-  pointer-events: auto;
-}
-
-.category-input:focus {
-  border-color: #86b0bd;
-  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
-}
-
-.category-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 0;
-  right: auto;
-  width: var(--sort-control-width, 10em);
-  min-width: var(--sort-control-width, 10em);
-  z-index: 20;
-  max-height: 220px;
-  overflow-y: auto;
-  background: #fff;
-  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
-  border-color: #d1d3d4 !important;
-}
-
-.dropdown-item {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: #145369;
-  white-space: nowrap;
-}
-
-.dropdown-item.active,
-.dropdown-item:hover {
-  background: #fff0dd;
-  color: #145369;
-}
-
 .card-footer {
   border-top-color: #d1d3d4;
 }
@@ -1723,6 +1514,24 @@ watch(
 .table-light {
   background-color: #fff0dd !important;
   color: #145369;
+}
+
+.topic-table-header {
+  background-color: #86b0bd;
+  color: #fff;
+}
+
+.topic-table-header th {
+  color: #fff;
+  border-bottom-color: #d1d3d4;
+}
+
+.topic-table-header th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+
+.topic-table-header th:last-child {
+  border-top-right-radius: 0.5rem;
 }
 
 .table-hover tbody tr:hover {
@@ -1871,11 +1680,6 @@ watch(
   background-color: #fff0dd;
   border-color: #145369;
   color: #145369;
-}
-
-.badge.bg-info {
-  background-color: #145369 !important;
-  color: #fff0dd;
 }
 
 .badge.bg-primary {
