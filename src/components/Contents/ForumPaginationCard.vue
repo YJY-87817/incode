@@ -199,7 +199,7 @@ const jumpInputWidth = computed(() => {
         / {{ normalizedTotalPages }}
       </span>
       <button
-        class="btn btn-sm btn-outline-secondary mb-0"
+        class="btn btn-sm btn-outline-secondary mb-0 pagination-jump-button"
         type="button"
         @click="jumpToPageInput"
       >
@@ -243,5 +243,9 @@ const jumpInputWidth = computed(() => {
   padding-left: 0.25rem;
   padding-right: 0.25rem;
   text-align: right;
+}
+
+.pagination-jump-button {
+  padding: 0.1rem 0.3rem;
 }
 </style>
