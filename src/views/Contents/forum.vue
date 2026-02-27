@@ -396,7 +396,7 @@ watch(
   right: 20px;
   /* 一般狀態位置（桌機）：調整上方距離 */
   top: 96px;
-  z-index: 1030;
+  z-index: 990;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
