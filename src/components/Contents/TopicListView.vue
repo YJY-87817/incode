@@ -1326,7 +1326,7 @@ watch(
     <!-- 分頁導航 (列表視圖) -->
     <div
       v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
-      class="card-footer bg-white py-2 py-md-3"
+      class="card-footer bg-white pt-0 pb-2 pb-md-3"
     >
       <nav class="d-flex justify-content-center">
         <ul
