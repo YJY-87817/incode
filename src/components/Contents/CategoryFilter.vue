@@ -180,15 +180,12 @@ onBeforeUnmount(() => {
                 ▾
               </span>
             </div>
-            <div
-              v-if="showSortDropdown"
-              class="category-dropdown border rounded"
-            >
+            <div v-if="showSortDropdown" class="category-dropdown">
               <button
                 v-for="option in sortOptions"
                 :key="option.value"
                 type="button"
-                class="dropdown-item text-start"
+                class="sort-dropdown-item"
                 :class="{ active: option.value === sortOption }"
                 @mousedown.prevent="selectSortOption(option)"
               >
@@ -384,22 +381,45 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   background: #f2f7f9;
   box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
-  border-color: #d1d3d4 !important;
+  border: 1px solid #d1d3d4;
+  border-radius: 4px;
+  padding: 0.35rem;
 }
 
-.dropdown-item {
+.sort-dropdown-item {
+  display: block;
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: none;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
   background: transparent;
   color: #145369;
+  text-align: left;
   white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.25;
+  transition: all 0.2s ease;
 }
 
-.dropdown-item.active,
-.dropdown-item:hover {
+.sort-dropdown-item + .sort-dropdown-item {
+  margin-top: 0.2rem;
+}
+
+.sort-dropdown-item.active,
+.sort-dropdown-item:hover {
   background: #dceaf0;
   color: #145369;
+  transform: translateX(2px);
+}
+
+.sort-dropdown-item:active {
+  transform: translateX(0);
+}
+
+.sort-dropdown-item:focus-visible {
+  outline: 2px solid rgba(20, 83, 105, 0.25);
+  outline-offset: 1px;
 }
 
 /* 可點擊的標題樣式 */
