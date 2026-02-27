@@ -55,7 +55,9 @@ const handleClearCategory = () => {
 <template>
   <div class="card shadow-sm mb-3">
     <!-- 卡片標題 -->
-    <div class="card-header bg-white py-3 d-flex flex-column gap-2">
+    <div
+      class="card-header bg-white px-3 py-2 py-md-3 d-flex flex-column gap-2"
+    >
       <div class="d-flex flex-wrap align-items-center gap-2">
         <h5
           class="mb-0 fs-6 fs-md-5"
@@ -83,7 +85,7 @@ const handleClearCategory = () => {
     </div>
 
     <!-- 分類內容 -->
-    <div class="p-2 p-md-3">
+    <div class="px-3 py-2">
       <!-- 載入中提示 -->
       <div
         v-if="forumStore.isLoading && categories.length === 0"
@@ -104,7 +106,11 @@ const handleClearCategory = () => {
           class="d-flex flex-wrap align-content-start p-0 category-container flex-grow-1"
         >
           <!-- 分類卡片 -->
-          <div v-for="category in categories" :key="category.id" class="m-1">
+          <div
+            v-for="category in categories"
+            :key="category.id"
+            class="category-item"
+          >
             <div
               class="category-card p-2 border rounded cursor-pointer"
               :class="{
@@ -399,6 +405,10 @@ const handleClearCategory = () => {
   scrollbar-color: #d1d3d4 #f0f0f0;
 }
 
+.category-item {
+  margin: 0.25rem 0.25rem 0.25rem 0;
+}
+
 .category-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -489,7 +499,7 @@ const handleClearCategory = () => {
     padding-bottom: 0.25rem;
   }
 
-  .category-container > .m-1 {
+  .category-container > .category-item {
     flex: 0 0 auto;
     margin: 0 0.35rem 0 0 !important;
   }

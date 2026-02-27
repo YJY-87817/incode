@@ -1146,14 +1146,9 @@ onBeforeUnmount(() => {
           <table class="table table-hover mb-0 topic-list-table">
             <thead class="topic-table-header">
               <tr>
-                <th class="py-2 py-md-3 topic-col">
+                <th class="px-3 py-2 py-md-3 topic-col">
                   <div class="d-flex align-items-center flex-wrap gap-2">
-                    <span class="topic-table-header-label">
-                      <span class="topic-table-header-icon" aria-hidden="true"
-                        >📝</span
-                      >
-                      <span>主題</span>
-                    </span>
+                    <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
                       ref="sortDropdownRef"
                       class="topic-sort-dropdown"
