@@ -99,6 +99,16 @@ const jumpToPageInput = () => {
   changePage(targetPage);
 };
 
+const handleJumpInputWheel = (event) => {
+  if (event.deltaY === 0) {
+    return;
+  }
+  const step = event.deltaY < 0 ? 1 : -1;
+  const currentValue = clampPage(pageInput.value);
+  const nextValue = clampPage(currentValue + step);
+  pageInput.value = String(nextValue);
+};
+
 const jumpInputWidth = computed(() => {
   const digits = String(pageInput.value || "1").length;
   return `calc(${Math.max(digits, 1)}ch + 1.8em)`;
@@ -194,6 +204,7 @@ const jumpInputWidth = computed(() => {
         class="form-control form-control-sm pagination-jump-input"
         :style="{ width: jumpInputWidth }"
         @keyup.enter="jumpToPageInput"
+        @wheel.prevent="handleJumpInputWheel"
       />
       <span class="small text-muted pagination-total-pages">
         / {{ normalizedTotalPages }}
