@@ -6,7 +6,7 @@
 -->
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -231,6 +231,62 @@ const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
 });
+
+const sortOptions = [
+  { value: "latest", label: "最新發佈時間" },
+  { value: "latest-reply", label: "最新回應時間" },
+  { value: "most-replies", label: "最多回應數量" },
+  { value: "most-likes", label: "最多按讚數量" },
+];
+
+const showSortDropdown = ref(false);
+const sortDropdownRef = ref(null);
+const hasSelectedSortOption = ref(false);
+
+const sortLabel = computed(() => {
+  const match = sortOptions.find((option) => option.value === sortOption.value);
+  return match?.label || "";
+});
+
+const sortInputLabel = computed(() => {
+  return hasSelectedSortOption.value ? sortLabel.value : "主題排序依據";
+});
+
+const sortControlWidth = computed(() => {
+  const longestLabelLength = sortOptions.reduce(
+    (maxLength, option) =>
+      Math.max(maxLength, String(option?.label || "").length),
+    0,
+  );
+  const iconReservedWidth = showSortDropdown.value ? 2 : 2.3;
+  return `${longestLabelLength + iconReservedWidth}em`;
+});
+
+const selectSortOption = (option) => {
+  if (!option) return;
+  sortOption.value = option.value;
+  hasSelectedSortOption.value = true;
+  showSortDropdown.value = false;
+};
+
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value;
+};
+
+const handleDocumentClick = (event) => {
+  if (!showSortDropdown.value) return;
+  const container = sortDropdownRef.value;
+  if (container && !container.contains(event.target)) {
+    showSortDropdown.value = false;
+  }
+};
+
+const handleDocumentKeydown = (event) => {
+  if (event.key !== "Escape") return;
+  if (showSortDropdown.value) {
+    showSortDropdown.value = false;
+  }
+};
 
 /**
  * 執行線程分頁
@@ -698,6 +754,16 @@ watch(
     ]);
   },
 );
+
+onMounted(() => {
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+});
 </script>
 
 <template>
@@ -1081,12 +1147,55 @@ watch(
             <thead class="topic-table-header">
               <tr>
                 <th class="py-2 py-md-3 topic-col">
-                  <span class="topic-table-header-label">
-                    <span class="topic-table-header-icon" aria-hidden="true"
-                      >📝</span
+                  <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="topic-table-header-label">
+                      <span class="topic-table-header-icon" aria-hidden="true"
+                        >📝</span
+                      >
+                      <span>主題</span>
+                    </span>
+                    <div
+                      ref="sortDropdownRef"
+                      class="topic-sort-dropdown"
+                      :style="{ '--sort-control-width': sortControlWidth }"
                     >
-                    <span>主題</span>
-                  </span>
+                      <div
+                        class="topic-sort-input-wrapper"
+                        @click.stop="toggleSortDropdown"
+                      >
+                        <input
+                          :value="sortInputLabel"
+                          class="form-control topic-sort-input"
+                          :class="{
+                            'topic-sort-input--expanded': showSortDropdown,
+                          }"
+                          readonly
+                          aria-label="主題排序"
+                          @click.stop="toggleSortDropdown"
+                        />
+                        <span
+                          v-if="!showSortDropdown"
+                          class="topic-sort-input-dropdown"
+                          aria-hidden="true"
+                          @click.stop="toggleSortDropdown"
+                        >
+                          ▾
+                        </span>
+                      </div>
+                      <div v-if="showSortDropdown" class="topic-sort-menu">
+                        <button
+                          v-for="option in sortOptions"
+                          :key="option.value"
+                          type="button"
+                          class="topic-sort-item"
+                          :class="{ active: option.value === sortOption.value }"
+                          @mousedown.prevent="selectSortOption(option)"
+                        >
+                          {{ option.label }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </th>
                 <th class="d-none d-md-table-cell created-col">
                   <span class="topic-table-header-label">
@@ -1424,6 +1533,85 @@ watch(
 .topic-table-header-icon {
   font-size: 1rem;
   line-height: 1;
+}
+
+.topic-sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  width: var(--sort-control-width, auto);
+  max-width: 100%;
+  color: #145369;
+}
+
+.topic-sort-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.topic-sort-input {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  font-size: 0.82rem;
+  border: 1px solid #145369;
+  border-radius: 999px;
+  background: #145369;
+  color: #fff;
+  padding: 0 1.45rem 0 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.topic-sort-input.topic-sort-input--expanded {
+  padding-right: 0.7rem;
+}
+
+.topic-sort-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #fff;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.topic-sort-menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid #d1d3d4;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.12);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.topic-sort-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #145369;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.topic-sort-item + .topic-sort-item {
+  border-top: 1px solid rgba(209, 211, 212, 0.8);
+}
+
+.topic-sort-item.active,
+.topic-sort-item:hover {
+  background: #fff0dd;
 }
 
 .topic-table-header th:first-child {
