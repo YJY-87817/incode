@@ -1548,6 +1548,7 @@ onBeforeUnmount(() => {
   height: 28px;
   min-height: 28px;
   font-size: 0.82rem;
+  font-weight: 700;
   border: 1px solid #145369;
   border-radius: 999px;
   background: #145369;
@@ -1569,7 +1570,7 @@ onBeforeUnmount(() => {
   top: 50%;
   right: 0.55rem;
   transform: translateY(-50%);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: #fff;
   pointer-events: auto;
   line-height: 1;
