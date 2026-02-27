@@ -27,6 +27,8 @@ const entrustMissionByContentCache = new Map();
 const entrustMissionByContentPending = new Map();
 const interactionInitPending = new Map();
 const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
+const userAvatarCache = new Map();
+const userAvatarPending = new Map();
 
 const TOPIC_SORT_OPTION_TO_API = {
   createdAt_desc: "latest",
@@ -236,6 +238,7 @@ const buildThreadItem = async (item, fallbackType) => {
     id: item.contentId ?? item.content_id ?? item.id,
     userId: item.userId ?? item.user_id ?? null,
     author: item.username ?? item.userName ?? item.user_name ?? "",
+    authorAvatar: resolveAuthorAvatar(item),
     createdAt: item.createdAt ?? item.created_at ?? null,
     content: textContent,
     contentHtml: sanitizedHtml,
@@ -267,13 +270,151 @@ const extractReplyStats = (item) => {
   const lastReplyTime = item?.lastReplyTime ?? null;
   const lastReplyUser = item?.lastReplyUser ?? null;
   const lastReplyUserId = item?.lastReplyUserId ?? null;
+  const lastReplyUserAvatar = toAbsoluteUrl(
+    item?.lastReplyUserAvatar ??
+      item?.last_reply_user_avatar ??
+      item?.lastReplyAvatar ??
+      item?.last_reply_avatar ??
+      item?.lastReplyUserImageUrl ??
+      item?.last_reply_user_image_url ??
+      item?.lastReplyImageUrl ??
+      item?.last_reply_image_url ??
+      item?.lastReplyImage ??
+      item?.last_reply_image ??
+      item?.lastReplyUserImage ??
+      item?.last_reply_user_image ??
+      item?.lastReplyUser?.imageUrl ??
+      item?.lastReplyUser?.avatarUrl ??
+      "",
+  );
 
   return {
     replyCount,
     lastReplyTime,
     lastReplyUser,
     lastReplyUserId,
+    lastReplyUserAvatar,
   };
+};
+
+const resolveAuthorAvatar = (item = {}) => {
+  const rawAvatar =
+    item?.authorAvatar ??
+    item?.author_avatar ??
+    item?.avatarUrl ??
+    item?.avatar_url ??
+    item?.imageUrl ??
+    item?.image_url ??
+    item?.userAvatar ??
+    item?.user_avatar ??
+    item?.userImageUrl ??
+    item?.user_image_url ??
+    item?.userImage ??
+    item?.user_image ??
+    item?.profileImageUrl ??
+    item?.profile_image_url ??
+    item?.profileImage ??
+    item?.profile_image ??
+    item?.user?.avatarUrl ??
+    item?.user?.avatar_url ??
+    item?.user?.imageUrl ??
+    item?.user?.image_url ??
+    item?.userProfile?.avatarUrl ??
+    item?.userProfile?.avatar_url ??
+    item?.userProfile?.imageUrl ??
+    item?.userProfile?.image_url ??
+    "";
+
+  return toAbsoluteUrl(rawAvatar);
+};
+
+const normalizeUsername = (value) => String(value || "").trim();
+
+const toUserAvatarCacheKeys = ({ userId, username } = {}) => {
+  const keys = [];
+  const numericUserId = Number(userId);
+  const normalizedName = normalizeUsername(username);
+
+  if (Number.isFinite(numericUserId) && numericUserId > 0) {
+    keys.push(`id:${numericUserId}`);
+  }
+
+  if (normalizedName) {
+    keys.push(`name:${normalizedName.toLowerCase()}`);
+  }
+
+  return keys;
+};
+
+const getCachedUserAvatar = ({ userId, username } = {}) => {
+  const keys = toUserAvatarCacheKeys({ userId, username });
+  for (const key of keys) {
+    if (userAvatarCache.has(key)) {
+      return userAvatarCache.get(key) || "";
+    }
+  }
+  return "";
+};
+
+const setCachedUserAvatar = ({ userId, username, avatarUrl } = {}) => {
+  const keys = toUserAvatarCacheKeys({ userId, username });
+  if (keys.length === 0) return;
+
+  const normalizedAvatar = toAbsoluteUrl(avatarUrl || "");
+  keys.forEach((key) => userAvatarCache.set(key, normalizedAvatar));
+};
+
+const extractAvatarFromProfilePayload = (payload = {}) => {
+  const source = payload?.data ?? payload;
+  return toAbsoluteUrl(
+    source?.imageUrl ??
+      source?.ImageUrl ??
+      source?.avatarUrl ??
+      source?.avatar_url ??
+      source?.avatar ??
+      source?.profileImageUrl ??
+      source?.profile_image_url ??
+      "",
+  );
+};
+
+const fetchUserAvatarFromProfile = async ({ userId, username } = {}) => {
+  const normalizedName = normalizeUsername(username);
+  const cached = getCachedUserAvatar({ userId, username: normalizedName });
+  if (cached) return cached;
+  if (!normalizedName) return "";
+
+  const pendingKey = `name:${normalizedName.toLowerCase()}`;
+  if (userAvatarPending.has(pendingKey)) {
+    return userAvatarPending.get(pendingKey);
+  }
+
+  const request = (async () => {
+    try {
+      const profile = await apiClient.get("/User/profile", {
+        params: {
+          username: normalizedName,
+          t: Date.now(),
+        },
+      });
+      const avatar = extractAvatarFromProfilePayload(profile);
+      setCachedUserAvatar({
+        userId,
+        username: normalizedName,
+        avatarUrl: avatar,
+      });
+      return avatar;
+    } catch (error) {
+      console.warn("載入使用者頭像失敗:", normalizedName, error);
+      setCachedUserAvatar({ userId, username: normalizedName, avatarUrl: "" });
+      return "";
+    } finally {
+      userAvatarPending.delete(pendingKey);
+    }
+  })();
+
+  userAvatarPending.set(pendingKey, request);
+  return request;
 };
 
 const extractLikeCountFromInteractions = (item) => {
@@ -766,6 +907,41 @@ export const useForumStore = defineStore("forum", {
   },
 
   actions: {
+    async resolveUserAvatar(userId, username) {
+      return await fetchUserAvatarFromProfile({ userId, username });
+    },
+
+    async enrichTopicAvatarFields(topics = []) {
+      const items = Array.isArray(topics) ? topics : [];
+      if (items.length === 0) return;
+
+      await Promise.all(
+        items.map(async (topic) => {
+          if (!topic) return;
+
+          if (!topic.authorAvatar && topic.author) {
+            const authorAvatar = await this.resolveUserAvatar(
+              topic.userId,
+              topic.author,
+            );
+            if (authorAvatar) {
+              topic.authorAvatar = authorAvatar;
+            }
+          }
+
+          if (topic.lastReplyUser && !topic.lastReplyUserAvatar) {
+            const replyAvatar = await this.resolveUserAvatar(
+              topic.lastReplyUserId,
+              topic.lastReplyUser,
+            );
+            if (replyAvatar) {
+              topic.lastReplyUserAvatar = replyAvatar;
+            }
+          }
+        }),
+      );
+    },
+
     // ========== 視窗寬度 ==========
     updateWindowWidth(width) {
       this.windowWidth = width;
@@ -822,6 +998,7 @@ export const useForumStore = defineStore("forum", {
         lastReplyTime: lastReply?.createdAt ?? null,
         lastReplyUser: lastReply?.username ?? null,
         lastReplyUserId: lastReply?.userId ?? lastReply?.user_id ?? null,
+        lastReplyUserAvatar: resolveAuthorAvatar(lastReply),
         fetchedAt: Date.now(),
       };
     },
@@ -866,6 +1043,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, CONTENT_TYPES.REPLY)),
         );
+        await this.enrichTopicAvatarFields(mapped);
 
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
@@ -905,6 +1083,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, CONTENT_TYPES.COMMENT)),
         );
+        await this.enrichTopicAvatarFields(mapped);
 
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
@@ -983,6 +1162,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, expectedType)),
         );
+        await this.enrichTopicAvatarFields(mapped);
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
           res?.totalPages ??
@@ -1241,6 +1421,7 @@ export const useForumStore = defineStore("forum", {
                   lastReplyTime: stats.lastReplyTime ?? null,
                   lastReplyUser: stats.lastReplyUser ?? null,
                   lastReplyUserId: stats.lastReplyUserId ?? null,
+                  lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
                   fetchedAt: Date.now(),
                 };
               }
@@ -1259,7 +1440,7 @@ export const useForumStore = defineStore("forum", {
                 contentHtml: bodySanitizedHtml ?? "",
                 imageUrls: bodyImages ?? [],
                 author: item.username,
-                authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
+                authorAvatar: resolveAuthorAvatar(item),
                 categoryName: item.categoryName,
                 categoryId: item.categoryId ?? item.category_id ?? null,
                 parentContentId:
@@ -1280,6 +1461,10 @@ export const useForumStore = defineStore("forum", {
                   stats.lastReplyUserId ??
                   fallbackStats.lastReplyUserId ??
                   null,
+                lastReplyUserAvatar:
+                  stats.lastReplyUserAvatar ??
+                  fallbackStats.lastReplyUserAvatar ??
+                  "",
                 viewCount: item.viewCount ?? 0,
                 isHot: (stats.replyCount ?? fallbackStats.replyCount ?? 0) > 10,
                 hasEntrustMission:
@@ -1287,6 +1472,8 @@ export const useForumStore = defineStore("forum", {
               };
             }),
           );
+
+          await this.enrichTopicAvatarFields(topics);
 
           return {
             pagination: {
@@ -1471,6 +1658,7 @@ export const useForumStore = defineStore("forum", {
             userId: detail.userId ?? detail.user_id ?? null,
             title: detail.title,
             author: detail.username,
+            authorAvatar: resolveAuthorAvatar(detail),
             createdAt: detail.createdAt,
             content: textContent,
             contentHtml: sanitizedHtml,
@@ -1493,12 +1681,31 @@ export const useForumStore = defineStore("forum", {
             lastReplyTime: stats.lastReplyTime ?? null,
             lastReplyUser: stats.lastReplyUser ?? null,
             lastReplyUserId: stats.lastReplyUserId ?? null,
+            lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
             entrustMissionId: entrustMissionMeta.entrustMissionId,
             entrustMissionUserId: entrustMissionMeta.entrustMissionUserId,
             rewardPoints: entrustMissionMeta.rewardPoints,
             bestAnswerContentId: finalBestAnswerContentId,
             bestAnswerSelected: Boolean(finalBestAnswerContentId),
           };
+
+          if (!this.threadDetail.authorAvatar && this.threadDetail.author) {
+            this.threadDetail.authorAvatar = await this.resolveUserAvatar(
+              this.threadDetail.userId,
+              this.threadDetail.author,
+            );
+          }
+
+          if (
+            this.threadDetail.lastReplyUser &&
+            !this.threadDetail.lastReplyUserAvatar
+          ) {
+            this.threadDetail.lastReplyUserAvatar =
+              await this.resolveUserAvatar(
+                this.threadDetail.lastReplyUserId,
+                this.threadDetail.lastReplyUser,
+              );
+          }
 
           if (finalBestAnswerContentId) {
             setCachedBestAnswerContentId({
@@ -1520,6 +1727,7 @@ export const useForumStore = defineStore("forum", {
               lastReplyTime: stats.lastReplyTime ?? null,
               lastReplyUser: stats.lastReplyUser ?? null,
               lastReplyUserId: stats.lastReplyUserId ?? null,
+              lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
               fetchedAt: Date.now(),
             };
           }

@@ -907,7 +907,12 @@ watch(
             <UserPreview
               :user-id="forumStore.threadDetail.userId"
               :username="forumStore.threadDetail.author"
-              :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
+              :avatar-url="
+                getAvatarUrl(
+                  forumStore.threadDetail.author,
+                  forumStore.threadDetail.authorAvatar,
+                )
+              "
               :size="26"
             />
             <span>·</span>
@@ -1409,7 +1414,12 @@ watch(
                         <UserPreview
                           :user-id="topic.lastReplyUserId"
                           :username="topic.lastReplyUser"
-                          :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                          :avatar-url="
+                            getAvatarUrl(
+                              topic.lastReplyUser,
+                              topic.lastReplyUserAvatar,
+                            )
+                          "
                           :size="24"
                         />
                       </div>

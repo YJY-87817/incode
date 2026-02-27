@@ -46,7 +46,7 @@
                     <UserPreview
                       :user-id="post.userId"
                       :username="post.author"
-                      :avatar-url="getAvatarUrl(post.author)"
+                      :avatar-url="getAvatarUrl(post.author, post.authorAvatar)"
                       :size="24"
                     />
                   </h6>
