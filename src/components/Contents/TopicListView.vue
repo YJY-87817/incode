@@ -250,7 +250,8 @@ const sortControlWidth = computed(() => {
       Math.max(maxLength, String(option?.label || "").length),
     0,
   );
-  return `${longestLabelLength + 3.1}em`;
+  const iconReservedWidth = showSortDropdown.value ? 1.6 : 3.1;
+  return `${longestLabelLength + iconReservedWidth}em`;
 });
 
 const selectSortOption = (option) => {
@@ -785,12 +786,13 @@ watch(
             <input
               :value="sortLabel"
               class="form-control category-input"
+              :class="{ 'category-input--expanded': showSortDropdown }"
               readonly
               aria-label="主題排序"
               @click.stop="toggleSortDropdown"
             />
             <span
-              v-show="!showSortDropdown"
+              v-if="!showSortDropdown"
               class="category-input-dropdown"
               aria-hidden="true"
               @click.stop="toggleSortDropdown"
@@ -1577,6 +1579,10 @@ watch(
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.category-input.category-input--expanded {
+  padding-right: 0.9rem;
 }
 
 .category-input-dropdown {
