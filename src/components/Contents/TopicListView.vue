@@ -877,7 +877,7 @@ watch(
           </div>
 
           <div
-            class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+            class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
           >
             <h3
               class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
@@ -1171,7 +1171,7 @@ watch(
               </div>
 
               <div
-                class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
               >
                 <h6 class="mb-0 fs-6 fw-bold flex-grow-1">
                   <a
@@ -1309,7 +1309,7 @@ watch(
 
                       <!-- 主題標題 + 互動按鈕 (同一行) -->
                       <div
-                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
                       >
                         <h6 class="mb-0 fs-6 fw-bold">
                           <a
