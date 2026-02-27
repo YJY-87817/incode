@@ -316,6 +316,8 @@ onBeforeUnmount(() => {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   border: 1px solid #d1d3d4;
+  background-color: #e8f1f4;
+  color: #145369;
   width: var(--sort-control-width, 10em);
   min-width: 0;
   max-width: 100%;
@@ -351,7 +353,7 @@ onBeforeUnmount(() => {
   z-index: 20;
   max-height: 220px;
   overflow-y: auto;
-  background: #fff;
+  background: #f2f7f9;
   box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
   border-color: #d1d3d4 !important;
 }
@@ -367,7 +369,7 @@ onBeforeUnmount(() => {
 
 .dropdown-item.active,
 .dropdown-item:hover {
-  background: #fff0dd;
+  background: #dceaf0;
   color: #145369;
 }
 
