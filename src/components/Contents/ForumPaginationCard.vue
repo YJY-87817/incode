@@ -240,6 +240,10 @@ const jumpInputWidth = computed(() => {
   line-height: 1;
 }
 
+.pagination .edge-page-link i {
+  font-size: 0.6em;
+}
+
 .pagination-jump-input {
   width: auto;
   min-width: calc(1ch + 1.8em);
