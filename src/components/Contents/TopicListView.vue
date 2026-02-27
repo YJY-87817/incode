@@ -1080,12 +1080,33 @@ watch(
           <table class="table table-hover mb-0 topic-list-table">
             <thead class="topic-table-header">
               <tr>
-                <th class="py-2 py-md-3 topic-col">主題</th>
-                <th class="d-none d-md-table-cell created-col">發佈時間</th>
-                <th class="d-none d-md-table-cell last-reply-col">
-                  最後回應時間
+                <th class="py-2 py-md-3 topic-col">
+                  <span class="topic-table-header-label">
+                    <span class="topic-table-header-icon" aria-hidden="true"
+                      >📝</span
+                    >
+                    <span>主題</span>
+                  </span>
                 </th>
-                <th class="reply-col">回應</th>
+                <th class="d-none d-md-table-cell created-col">
+                  <span class="topic-table-header-label">
+                    <span class="topic-table-header-icon" aria-hidden="true"
+                      >🗓️</span
+                    >
+                    <span>發佈時間</span>
+                  </span>
+                </th>
+                <th class="d-none d-md-table-cell last-reply-col">
+                  <span class="topic-table-header-label">
+                    <span class="topic-table-header-icon" aria-hidden="true"
+                      >🕒</span
+                    >
+                    <span>最後回應</span>
+                  </span>
+                </th>
+                <th class="reply-col">
+                  <span class="topic-table-header-label"> 回應 </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1378,12 +1399,31 @@ watch(
 
 .topic-table-header {
   background-color: #86b0bd;
-  color: #0f3c4d;
+  color: #fff;
 }
 
 .topic-table-header th {
-  color: #0f3c4d;
+  color: #fff;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
   border-bottom-color: #d1d3d4;
+}
+
+.topic-table-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.topic-table-header-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .topic-table-header th:first-child {
