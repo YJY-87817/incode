@@ -250,7 +250,7 @@ const sortControlWidth = computed(() => {
       Math.max(maxLength, String(option?.label || "").length),
     0,
   );
-  return `${longestLabelLength + 3}em`;
+  return `${longestLabelLength + 3.1}em`;
 });
 
 const selectSortOption = (option) => {
