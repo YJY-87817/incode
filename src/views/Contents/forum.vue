@@ -174,7 +174,7 @@ watch(
 <template>
   <DefaultNavbar light />
 
-  <div class="container mt-5 mb-5">
+  <div class="container mt-3 mb-5">
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
       <div
