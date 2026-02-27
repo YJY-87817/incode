@@ -59,17 +59,26 @@ const handleClearCategory = () => {
       class="card-header bg-white px-3 py-2 py-md-3 d-flex flex-column gap-2"
     >
       <div class="d-flex flex-wrap align-items-center gap-2">
-        <h5 class="mb-0 fs-6 fs-md-5">
+        <h5
+          class="mb-0 fs-6 fs-md-5"
+          :class="{
+            'category-title-clearable': forumStore.selectedCategory !== null,
+          }"
+          @click="forumStore.selectedCategory !== null && handleClearCategory()"
+          :role="forumStore.selectedCategory !== null ? 'button' : undefined"
+          :tabindex="forumStore.selectedCategory !== null ? 0 : -1"
+          @keydown.enter="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
+          @keydown.space.prevent="
+            forumStore.selectedCategory !== null && handleClearCategory()
+          "
+        >
           📁 討論分類
           <span
             v-if="forumStore.selectedCategory !== null"
             class="clear-indicator ms-2"
             title="清除目前分類"
-            role="button"
-            tabindex="0"
-            @click="handleClearCategory"
-            @keydown.enter="handleClearCategory"
-            @keydown.space.prevent="handleClearCategory"
           >
             ✕
           </span>
@@ -324,6 +333,18 @@ const handleClearCategory = () => {
   outline: 2px solid rgba(255, 255, 255, 0.6);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* 可清除分類的標題 */
+.card-header h5.category-title-clearable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-header h5.category-title-clearable:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* 分類卡片樣式 */
