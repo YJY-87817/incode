@@ -745,7 +745,7 @@ watch(
               type="button"
               @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
             >
-              <i class="fas fa-link me-1"></i>
+              <i class="fa-solid fa-people-pulling"></i>
               主文
             </button>
             <span
@@ -1116,7 +1116,7 @@ watch(
                           type="button"
                           @click.stop="goToThread(topic.parentContentId)"
                         >
-                          <i class="fas fa-link me-1"></i>
+                          <i class="fa-solid fa-people-pulling"></i>
                           主文
                         </button>
                         <span
