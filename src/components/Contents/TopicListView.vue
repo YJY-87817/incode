@@ -244,6 +244,15 @@ const sortLabel = computed(() => {
   return match?.label || "";
 });
 
+const sortControlWidth = computed(() => {
+  const longestLabelLength = sortOptions.reduce(
+    (maxLength, option) =>
+      Math.max(maxLength, String(option?.label || "").length),
+    0,
+  );
+  return `${longestLabelLength + 3}em`;
+});
+
 const selectSortOption = (option) => {
   if (!option) return;
   sortOption.value = option.value;
@@ -767,17 +776,21 @@ watch(
         <span class="badge bg-info">
           共 {{ forumStore.pagination.totalCount }} 筆
         </span>
-        <div ref="sortDropdownRef" class="ms-sm-2 sort-dropdown">
+        <div
+          ref="sortDropdownRef"
+          class="ms-sm-2 sort-dropdown"
+          :style="{ '--sort-control-width': sortControlWidth }"
+        >
           <div class="category-input-wrapper" @click.stop="toggleSortDropdown">
             <input
               :value="sortLabel"
-              :style="{ '--input-width': `${sortLabel.length + 4}ch` }"
               class="form-control category-input"
               readonly
               aria-label="主題排序"
               @click.stop="toggleSortDropdown"
             />
             <span
+              v-show="!showSortDropdown"
               class="category-input-dropdown"
               aria-hidden="true"
               @click.stop="toggleSortDropdown"
@@ -793,7 +806,7 @@ watch(
               v-for="option in sortOptions"
               :key="option.value"
               type="button"
-              class="dropdown-item w-100 text-start"
+              class="dropdown-item text-start"
               :class="{ active: option.value === sortOption }"
               @mousedown.prevent="selectSortOption(option)"
             >
@@ -1560,8 +1573,8 @@ watch(
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   border: 1px solid #d1d3d4;
-  width: var(--input-width, auto);
-  min-width: calc(var(--input-width, 10ch) + 3.6rem);
+  width: var(--sort-control-width, 10em);
+  min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -1585,7 +1598,9 @@ watch(
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  right: 0;
+  right: auto;
+  width: var(--sort-control-width, 10em);
+  min-width: var(--sort-control-width, 10em);
   z-index: 20;
   max-height: 220px;
   overflow-y: auto;
@@ -1595,10 +1610,12 @@ watch(
 }
 
 .dropdown-item {
+  width: 100%;
   padding: 0.5rem 0.75rem;
   border: none;
   background: transparent;
   color: #145369;
+  white-space: nowrap;
 }
 
 .dropdown-item.active,
