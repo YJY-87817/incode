@@ -46,10 +46,15 @@ const sortOptions = [
 
 const showSortDropdown = ref(false);
 const sortDropdownRef = ref(null);
+const hasSelectedSortOption = ref(false);
 
 const sortLabel = computed(() => {
   const match = sortOptions.find((option) => option.value === sortOption.value);
   return match?.label || "";
+});
+
+const sortInputLabel = computed(() => {
+  return hasSelectedSortOption.value ? sortLabel.value : "主題排序依據";
 });
 
 const sortControlWidth = computed(() => {
@@ -65,6 +70,7 @@ const sortControlWidth = computed(() => {
 const selectSortOption = (option) => {
   if (!option) return;
   sortOption.value = option.value;
+  hasSelectedSortOption.value = true;
   showSortDropdown.value = false;
 };
 
@@ -158,7 +164,7 @@ onBeforeUnmount(() => {
               @click.stop="toggleSortDropdown"
             >
               <input
-                :value="sortLabel"
+                :value="sortInputLabel"
                 class="form-control category-input"
                 :class="{ 'category-input--expanded': showSortDropdown }"
                 readonly
