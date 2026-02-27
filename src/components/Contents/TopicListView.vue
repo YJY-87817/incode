@@ -250,7 +250,7 @@ const sortControlWidth = computed(() => {
       Math.max(maxLength, String(option?.label || "").length),
     0,
   );
-  const iconReservedWidth = showSortDropdown.value ? 1.6 : 3.1;
+  const iconReservedWidth = showSortDropdown.value ? 2 : 3.1;
   return `${longestLabelLength + iconReservedWidth}em`;
 });
 
