@@ -242,6 +242,10 @@ const sortOptions = [
 const showSortDropdown = ref(false);
 const sortDropdownRef = ref(null);
 const hasSelectedSortOption = ref(false);
+const shouldHideSortIcon = ref(false);
+const isSortControlCompact = ref(false);
+const SORT_CONTROL_ANIMATION_MS = 160;
+let restoreSortIconTimer = null;
 
 const sortLabel = computed(() => {
   const match = sortOptions.find((option) => option.value === sortOption.value);
@@ -258,33 +262,78 @@ const sortControlWidth = computed(() => {
       Math.max(maxLength, String(option?.label || "").length),
     0,
   );
-  const iconReservedWidth = showSortDropdown.value ? 1.3 : 2.3;
+  const iconReservedWidth = isSortControlCompact.value ? 1.3 : 2.3;
   return `${longestLabelLength + iconReservedWidth}em`;
 });
+
+const clearRestoreSortIconTimer = () => {
+  if (restoreSortIconTimer) {
+    clearTimeout(restoreSortIconTimer);
+    restoreSortIconTimer = null;
+  }
+};
+
+const closeSortDropdown = () => {
+  if (!showSortDropdown.value && !isSortControlCompact.value) return;
+
+  clearRestoreSortIconTimer();
+  showSortDropdown.value = false;
+  isSortControlCompact.value = false;
+  restoreSortIconTimer = setTimeout(() => {
+    shouldHideSortIcon.value = false;
+    restoreSortIconTimer = null;
+  }, SORT_CONTROL_ANIMATION_MS);
+};
+
+const openSortDropdown = () => {
+  if (showSortDropdown.value) return;
+
+  clearRestoreSortIconTimer();
+  shouldHideSortIcon.value = true;
+
+  const runOpenTransition = () => {
+    isSortControlCompact.value = true;
+    showSortDropdown.value = true;
+  };
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestAnimationFrame === "function"
+  ) {
+    window.requestAnimationFrame(runOpenTransition);
+    return;
+  }
+
+  setTimeout(runOpenTransition, 0);
+};
 
 const selectSortOption = (option) => {
   if (!option) return;
   sortOption.value = option.value;
   hasSelectedSortOption.value = true;
-  showSortDropdown.value = false;
+  closeSortDropdown();
 };
 
 const toggleSortDropdown = () => {
-  showSortDropdown.value = !showSortDropdown.value;
+  if (showSortDropdown.value) {
+    closeSortDropdown();
+    return;
+  }
+  openSortDropdown();
 };
 
 const handleDocumentClick = (event) => {
   if (!showSortDropdown.value) return;
   const container = sortDropdownRef.value;
   if (container && !container.contains(event.target)) {
-    showSortDropdown.value = false;
+    closeSortDropdown();
   }
 };
 
 const handleDocumentKeydown = (event) => {
   if (event.key !== "Escape") return;
   if (showSortDropdown.value) {
-    showSortDropdown.value = false;
+    closeSortDropdown();
   }
 };
 
@@ -761,6 +810,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  clearRestoreSortIconTimer();
   document.removeEventListener("click", handleDocumentClick);
   document.removeEventListener("keydown", handleDocumentKeydown);
 });
@@ -1162,14 +1212,14 @@ onBeforeUnmount(() => {
                           :value="sortInputLabel"
                           class="form-control topic-sort-input"
                           :class="{
-                            'topic-sort-input--expanded': showSortDropdown,
+                            'topic-sort-input--expanded': isSortControlCompact,
                           }"
                           readonly
                           aria-label="主題排序"
                           @click.stop="toggleSortDropdown"
                         />
                         <span
-                          v-if="!showSortDropdown"
+                          v-if="!shouldHideSortIcon"
                           class="topic-sort-input-dropdown"
                           aria-hidden="true"
                           @click.stop="toggleSortDropdown"
@@ -1536,6 +1586,7 @@ onBeforeUnmount(() => {
   width: var(--sort-control-width, auto);
   max-width: 100%;
   color: #145369;
+  transition: width 0.16s ease;
 }
 
 .topic-sort-input-wrapper {
@@ -1559,6 +1610,7 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  transition: padding-right 0.16s ease;
 }
 
 .topic-sort-input.topic-sort-input--expanded {
