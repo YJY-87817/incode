@@ -1533,9 +1533,9 @@ watch(
 }
 
 .parent-link-btn:hover {
-  background-color: #86b0bd !important;
-  border-color: #86b0bd !important;
-  color: #fff !important;
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
 }
 
 .badge.bg-primary {
