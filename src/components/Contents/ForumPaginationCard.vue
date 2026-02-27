@@ -106,7 +106,7 @@ const jumpInputWidth = computed(() => {
 </script>
 
 <template>
-  <nav class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+  <nav class="d-flex justify-content-center align-items-center flex-wrap gap-0">
     <ul :class="paginationClass">
       <li
         v-if="showEdgeButtons"
@@ -238,6 +238,8 @@ const jumpInputWidth = computed(() => {
   min-width: calc(1ch + 1.8em);
   box-sizing: content-box;
   direction: rtl;
+  font-size: 0.82em;
+  font-weight: 400;
   padding-left: 0.25rem;
   padding-right: 0.25rem;
   text-align: center;
