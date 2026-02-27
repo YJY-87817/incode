@@ -708,7 +708,7 @@ watch(
       <div v-if="forumStore.selectedThread">
         <!-- 返回按鈕 -->
         <div class="p-3 border-bottom">
-          <button class="btn btn-sm btn-forum-secondary" @click="goToList">
+          <button class="btn btn-sm btn-forum-secondary mb-0" @click="goToList">
             <i class="fas fa-arrow-left me-2"></i>
             返回列表
           </button>
