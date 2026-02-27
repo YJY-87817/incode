@@ -98,6 +98,11 @@ const jumpToPageInput = () => {
   const targetPage = clampPage(pageInput.value);
   changePage(targetPage);
 };
+
+const jumpInputWidthCh = computed(() => {
+  const digits = String(pageInput.value || "1").length;
+  return `${Math.max(digits, 1)}ch`;
+});
 </script>
 
 <template>
@@ -188,6 +193,7 @@ const jumpToPageInput = () => {
         min="1"
         :max="normalizedTotalPages"
         class="form-control form-control-sm pagination-jump-input"
+        :style="{ width: jumpInputWidthCh }"
         @keyup.enter="jumpToPageInput"
       />
       <span class="small text-muted pagination-total-pages">
@@ -229,6 +235,19 @@ const jumpToPageInput = () => {
 }
 
 .pagination-jump-input {
-  width: 88px;
+  width: auto;
+  min-width: 1ch;
+  box-sizing: content-box;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.pagination-jump-input::-webkit-outer-spin-button,
+.pagination-jump-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 </style>
