@@ -1232,23 +1232,15 @@ watch(
 
         <!-- 桌機表格列表 -->
         <div class="table-responsive d-none d-md-block">
-          <table class="table table-hover mb-0">
+          <table class="table table-hover mb-0 topic-list-table">
             <thead class="table-light">
               <tr>
-                <th class="py-2 py-md-3" style="width: 60%">主題</th>
-                <th
-                  class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 10%"
-                >
-                  發佈時間
-                </th>
-                <th
-                  class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 10%"
-                >
+                <th class="py-2 py-md-3 topic-col">主題</th>
+                <th class="d-none d-md-table-cell created-col">發佈時間</th>
+                <th class="d-none d-md-table-cell last-reply-col">
                   最後回應時間
                 </th>
-                <th class="py-2 py-md-3 text-center" style="width: 3%">回應</th>
+                <th class="reply-col">回應</th>
               </tr>
             </thead>
             <tbody>
@@ -1259,7 +1251,7 @@ watch(
                 @click="goToThread(topic.id)"
               >
                 <!-- 主題欄 -->
-                <td class="px-3 pt-2 pb-0 pt-md-2 pb-md-0">
+                <td class="px-3 pt-2 pb-0 pt-md-2 pb-md-0 topic-col">
                   <div class="d-flex align-items-start gap-3">
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
@@ -1361,46 +1353,52 @@ watch(
                 </td>
 
                 <!-- 發佈時間欄 -->
-                <td
-                  class="pt-2 pb-0 pt-md-2 pb-md-0 d-none d-md-table-cell text-muted small"
-                >
-                  <div class="text-nowrap">
-                    {{ formatDate(topic.createdAt) }}
-                  </div>
-                  <UserPreview
-                    class="text-muted"
-                    :user-id="topic.userId"
-                    :username="topic.author"
-                    :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
-                    :size="24"
-                  />
-                </td>
-
-                <!-- 最後回應時間欄 -->
-                <td
-                  class="pt-2 pb-0 pt-md-2 pb-md-0 d-none d-md-table-cell text-muted small"
-                >
-                  <div v-if="topic.lastReplyTime" class="text-nowrap">
-                    {{ formatDate(topic.lastReplyTime) }}
-                  </div>
-                  <div v-else class="text-muted">尚無回應</div>
-                  <div
-                    v-if="topic.lastReplyUser"
-                    class="text-muted d-inline-flex align-items-center gap-1"
-                  >
+                <td class="d-none d-md-table-cell text-muted small created-col">
+                  <div class="meta-cell-stack">
+                    <div class="meta-date-text">
+                      {{ formatDate(topic.createdAt) }}
+                    </div>
                     <UserPreview
-                      :user-id="topic.lastReplyUserId"
-                      :username="topic.lastReplyUser"
-                      :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                      class="text-muted"
+                      :user-id="topic.userId"
+                      :username="topic.author"
+                      :avatar-url="
+                        getAvatarUrl(topic.author, topic.authorAvatar)
+                      "
                       :size="24"
                     />
                   </div>
                 </td>
 
+                <!-- 最後回應時間欄 -->
+                <td
+                  class="d-none d-md-table-cell text-muted small last-reply-col"
+                >
+                  <div class="meta-cell-stack">
+                    <div v-if="topic.lastReplyTime" class="meta-date-text">
+                      {{ formatDate(topic.lastReplyTime) }}
+                    </div>
+                    <div v-else class="text-muted">尚無回應</div>
+                    <div
+                      v-if="topic.lastReplyUser"
+                      class="text-muted d-inline-flex align-items-center"
+                    >
+                      <UserPreview
+                        :user-id="topic.lastReplyUserId"
+                        :username="topic.lastReplyUser"
+                        :avatar-url="getAvatarUrl(topic.lastReplyUser)"
+                        :size="24"
+                      />
+                    </div>
+                  </div>
+                </td>
+
                 <!-- 回應數欄 -->
-                <td class="pt-2 pb-0 pt-md-2 pb-md-0 text-center">
-                  <div class="badge bg-primary">
-                    {{ topic.replyCount }}
+                <td class="reply-col">
+                  <div class="meta-cell-center">
+                    <div class="badge bg-primary">
+                      {{ topic.replyCount }}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -1707,6 +1705,62 @@ watch(
   font-size: 0.9rem;
 }
 
+.topic-list-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.topic-col {
+  width: 68%;
+}
+
+.created-col,
+.last-reply-col {
+  width: 14%;
+}
+
+.reply-col {
+  width: 4%;
+  min-width: 3.6rem;
+  white-space: nowrap;
+}
+
+.topic-list-table th.created-col,
+.topic-list-table th.last-reply-col,
+.topic-list-table th.reply-col,
+.topic-list-table td.created-col,
+.topic-list-table td.last-reply-col,
+.topic-list-table td.reply-col {
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.meta-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.meta-cell-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.meta-date-text {
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
 /* 徽章樣式 */
 .badge.bg-secondary {
   background-color: #86b0bd !important;
@@ -1989,6 +2043,33 @@ watch(
 }
 
 /* 響應式調整 */
+@media (max-width: 1200px) and (min-width: 768px) {
+  .topic-col {
+    width: 62%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 15%;
+  }
+
+  .reply-col {
+    width: 8%;
+    min-width: 4rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.82rem;
+    line-height: 1.2;
+  }
+}
+
 @media (max-width: 768px) {
   .interaction-aligned-badge {
     min-height: 40px;
