@@ -148,9 +148,6 @@ onBeforeUnmount(() => {
           v-if="!forumStore.selectedThread"
           class="d-flex flex-wrap gap-2 align-items-center"
         >
-          <span class="badge bg-info">
-            共 {{ forumStore.pagination.totalCount }} 筆
-          </span>
           <div
             ref="sortDropdownRef"
             class="sort-dropdown"
