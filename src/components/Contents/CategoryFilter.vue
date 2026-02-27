@@ -63,7 +63,7 @@ const sortControlWidth = computed(() => {
       Math.max(maxLength, String(option?.label || "").length),
     0,
   );
-  const iconReservedWidth = showSortDropdown.value ? 2 : 3.1;
+  const iconReservedWidth = showSortDropdown.value ? 2 : 2.3;
   return `${longestLabelLength + iconReservedWidth}em`;
 });
 
@@ -331,7 +331,7 @@ onBeforeUnmount(() => {
 
 .category-input {
   padding-left: 0.5rem;
-  padding-right: 1.8rem;
+  padding-right: 1.2rem;
   height: auto;
   line-height: 1.25;
   padding-top: 0.25rem;
