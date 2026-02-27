@@ -530,12 +530,14 @@ onBeforeUnmount(() => {
   }
 
   .sort-dropdown {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .category-input-wrapper,
   .category-input {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .category-card {
