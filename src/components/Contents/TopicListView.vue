@@ -1363,7 +1363,7 @@ watch(
             :class="{ disabled: forumStore.pagination.currentPage === 1 }"
           >
             <a
-              class="page-link"
+              class="page-link edge-page-link"
               href="#"
               @click.prevent="
                 forumStore.pagination.currentPage > 1 && goToPage(1)
@@ -1428,7 +1428,7 @@ watch(
             }"
           >
             <a
-              class="page-link"
+              class="page-link edge-page-link"
               href="#"
               @click.prevent="
                 forumStore.pagination.currentPage <
@@ -1948,6 +1948,12 @@ watch(
   background-color: #fff0dd;
   border-color: #86b0bd;
   color: #145369;
+}
+
+.pagination .edge-page-link {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .pagination-jump-input {
