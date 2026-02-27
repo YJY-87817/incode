@@ -1132,7 +1132,7 @@ watch(
             class="card topic-mobile-card mb-2"
             @click="goToThread(topic.id)"
           >
-            <div class="card-body p-2">
+            <div class="card-body pt-2 pb-0 px-2">
               <div
                 class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap"
               >
@@ -1259,7 +1259,7 @@ watch(
                 @click="goToThread(topic.id)"
               >
                 <!-- 主題欄 -->
-                <td class="p-3 py-md-3">
+                <td class="px-3 pt-2 pb-0 pt-md-2 pb-md-0">
                   <div class="d-flex align-items-start gap-3">
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
@@ -1362,7 +1362,7 @@ watch(
 
                 <!-- 發佈時間欄 -->
                 <td
-                  class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
+                  class="pt-2 pb-0 pt-md-2 pb-md-0 d-none d-md-table-cell text-muted small"
                 >
                   <div class="text-nowrap">
                     {{ formatDate(topic.createdAt) }}
@@ -1378,7 +1378,7 @@ watch(
 
                 <!-- 最後回應時間欄 -->
                 <td
-                  class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
+                  class="pt-2 pb-0 pt-md-2 pb-md-0 d-none d-md-table-cell text-muted small"
                 >
                   <div v-if="topic.lastReplyTime" class="text-nowrap">
                     {{ formatDate(topic.lastReplyTime) }}
@@ -1398,7 +1398,7 @@ watch(
                 </td>
 
                 <!-- 回應數欄 -->
-                <td class="py-3 py-md-3 text-center">
+                <td class="pt-2 pb-0 pt-md-2 pb-md-0 text-center">
                   <div class="badge bg-primary">
                     {{ topic.replyCount }}
                   </div>
