@@ -1198,7 +1198,7 @@ onBeforeUnmount(() => {
               <tr>
                 <th class="px-3 py-2 py-md-3 topic-col">
                   <div
-                    class="d-flex align-items-center flex-nowrap gap-2 w-100"
+                    class="d-flex align-items-center flex-nowrap gap-4 w-100"
                   >
                     <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
