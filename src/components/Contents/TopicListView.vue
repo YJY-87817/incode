@@ -1518,11 +1518,11 @@ watch(
 
 .topic-table-header {
   background-color: #86b0bd;
-  color: #fff;
+  color: #0f3c4d;
 }
 
 .topic-table-header th {
-  color: #fff;
+  color: #0f3c4d;
   border-bottom-color: #d1d3d4;
 }
 
