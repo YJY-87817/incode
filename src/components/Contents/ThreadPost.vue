@@ -31,10 +31,14 @@
                     <i class="fas fa-link me-1"></i>
                     主文
                   </button>
-                  <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+                  <span
+                    class="badge interaction-aligned-badge"
+                    :class="badgeClass"
+                    >{{ typeLabel }}</span
+                  >
                   <span
                     v-if="isBestAnswerPost"
-                    class="badge bg-warning text-dark"
+                    class="badge bg-warning text-dark interaction-aligned-badge"
                   >
                     最佳解
                   </span>

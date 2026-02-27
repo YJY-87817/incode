@@ -858,7 +858,7 @@ watch(
             </span>
             <span
               v-if="forumStore.threadDetail?.isHot"
-              class="badge bg-warning text-dark"
+              class="badge bg-warning text-dark interaction-aligned-badge"
             >
               熱門
             </span>
@@ -1148,7 +1148,9 @@ watch(
                     class="badge bg-secondary interaction-aligned-badge"
                     >委託任務</span
                   >
-                  <span v-if="topic.isHot" class="badge bg-warning text-dark"
+                  <span
+                    v-if="topic.isHot"
+                    class="badge bg-warning text-dark interaction-aligned-badge"
                     >熱門</span
                   >
                   <div class="interaction-container" @click.stop>
@@ -1288,7 +1290,7 @@ watch(
                         </span>
                         <span
                           v-if="topic.isHot"
-                          class="badge bg-warning text-dark"
+                          class="badge bg-warning text-dark interaction-aligned-badge"
                         >
                           熱門
                         </span>
