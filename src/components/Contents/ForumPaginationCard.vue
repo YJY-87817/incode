@@ -99,9 +99,9 @@ const jumpToPageInput = () => {
   changePage(targetPage);
 };
 
-const jumpInputWidthCh = computed(() => {
+const jumpInputWidth = computed(() => {
   const digits = String(pageInput.value || "1").length;
-  return `${Math.max(digits, 1)}ch`;
+  return `calc(${Math.max(digits, 1)}ch + 1.8em)`;
 });
 </script>
 
@@ -186,14 +186,13 @@ const jumpInputWidthCh = computed(() => {
       v-if="showJump"
       class="d-flex align-items-center gap-2 pagination-jump-wrap"
     >
-      <span class="small text-muted">頁碼</span>
       <input
         v-model="pageInput"
         type="number"
         min="1"
         :max="normalizedTotalPages"
         class="form-control form-control-sm pagination-jump-input"
-        :style="{ width: jumpInputWidthCh }"
+        :style="{ width: jumpInputWidth }"
         @keyup.enter="jumpToPageInput"
       />
       <span class="small text-muted pagination-total-pages">
@@ -236,18 +235,11 @@ const jumpInputWidthCh = computed(() => {
 
 .pagination-jump-input {
   width: auto;
-  min-width: 1ch;
+  min-width: calc(1ch + 1.8em);
   box-sizing: content-box;
-  padding-left: 0;
-  padding-right: 0;
+  direction: rtl;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
   text-align: center;
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-.pagination-jump-input::-webkit-outer-spin-button,
-.pagination-jump-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
 </style>
