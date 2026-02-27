@@ -1254,7 +1254,7 @@ onBeforeUnmount(() => {
                         :total-pages="forumStore.pagination.totalPages"
                         :pages="displayPages"
                         :show-edge-buttons="false"
-                        :show-jump="false"
+                        :show-jump="true"
                         pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
                         link-padding-class="topic-header-pagination-link"
                         @page-change="goToPage"
@@ -1615,6 +1615,26 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   line-height: 1.1;
   min-width: 1.65rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.35rem !important;
+}
+
+.topic-header-pagination :deep(.pagination-jump-input) {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.2rem;
+  min-width: calc(1ch + 1.3em);
+}
+
+.topic-header-pagination :deep(.pagination-total-pages) {
+  font-size: 0.72rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.1;
 }
 
 .topic-sort-input-wrapper {
