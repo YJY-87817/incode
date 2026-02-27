@@ -38,7 +38,7 @@ const handleClearCategory = () => {
 </script>
 
 <template>
-  <div class="card shadow-sm mb-4">
+  <div class="card shadow-sm mb-3">
     <!-- 卡片標題 -->
     <div class="card-header bg-white py-3 d-flex flex-column gap-2">
       <div
