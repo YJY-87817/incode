@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import { useForumPost } from "@/composables/useForumPost";
@@ -22,6 +22,8 @@ const authStore = useAuthStore();
 const forumStore = useForumStore();
 const route = useRoute();
 const { hasDraftContent } = useForumPost();
+const isFabPinned = ref(false);
+let navbarObserver = null;
 
 const hasExpandedDraft = computed(() =>
   (forumStore.drafts || []).some((draft) => !draft.isMinimized),
@@ -99,6 +101,25 @@ const updateWindowWidth = () => {
   forumStore.updateWindowWidth(window.innerWidth);
 };
 
+const setupNavbarObserver = () => {
+  const navbarEl = document.querySelector("nav.navbar");
+  if (!navbarEl || !("IntersectionObserver" in window)) {
+    isFabPinned.value = window.scrollY > 80;
+    return;
+  }
+
+  navbarObserver = new IntersectionObserver(
+    ([entry]) => {
+      isFabPinned.value = !entry.isIntersecting;
+    },
+    {
+      threshold: 0,
+    },
+  );
+
+  navbarObserver.observe(navbarEl);
+};
+
 /**
  * 初始化與清理
  * 此處是信息流的起點：
@@ -109,12 +130,17 @@ const updateWindowWidth = () => {
 onMounted(() => {
   updateWindowWidth();
   window.addEventListener("resize", updateWindowWidth);
+  setupNavbarObserver();
   forumStore.fetchCategories();
   forumStore.setSortOption("latest");
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateWindowWidth);
+  if (navbarObserver) {
+    navbarObserver.disconnect();
+    navbarObserver = null;
+  }
 });
 
 /**
@@ -207,6 +233,7 @@ watch(
 
   <button
     class="btn btn-forum-primary forum-new-topic-fab d-inline-flex align-items-center justify-content-center"
+    :class="{ 'forum-new-topic-fab--pinned': isFabPinned }"
     type="button"
     @click="openNewTopicModal"
     aria-label="發佈新主題"
@@ -366,11 +393,16 @@ watch(
 .forum-new-topic-fab {
   position: fixed;
   right: 20px;
-  top: 90px;
+  top: 96px;
   z-index: 1030;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
+  transition: top 0.2s ease;
+}
+
+.forum-new-topic-fab--pinned {
+  top: 14px;
 }
 
 @media (max-width: 991.98px) {
@@ -385,6 +417,16 @@ watch(
     padding: 0 15px 0 18px;
     font-size: 0.9rem;
     box-shadow: -4px 0 15px rgba(20, 83, 105, 0.35);
+  }
+
+  .forum-new-topic-fab.forum-new-topic-fab--pinned {
+    top: 14px;
+    right: 10px;
+    transform: none;
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    height: auto;
+    box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
   }
 
   .forum-new-topic-fab span {
