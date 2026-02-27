@@ -834,7 +834,7 @@ watch(
           <div class="d-flex flex-wrap gap-1 align-items-center">
             <span
               v-if="forumStore.threadDetail?.categoryName"
-              class="badge bg-secondary-light text-dark"
+              class="badge bg-secondary-light text-dark interaction-aligned-badge"
             >
               {{ forumStore.threadDetail.categoryName }}
             </span>
@@ -852,7 +852,7 @@ watch(
             </button>
             <span
               v-if="forumStore.threadDetail?.hasEntrustMission"
-              class="badge bg-secondary"
+              class="badge bg-secondary interaction-aligned-badge"
             >
               委託任務
             </span>
@@ -1139,13 +1139,13 @@ watch(
                 <div class="d-flex flex-wrap gap-1 align-items-center">
                   <span
                     v-if="topic.categoryName"
-                    class="badge bg-secondary-light text-dark"
+                    class="badge bg-secondary-light text-dark interaction-aligned-badge"
                   >
                     {{ topic.categoryName }}
                   </span>
                   <span
                     v-if="topic.hasEntrustMission"
-                    class="badge bg-secondary"
+                    class="badge bg-secondary interaction-aligned-badge"
                     >委託任務</span
                   >
                   <span v-if="topic.isHot" class="badge bg-warning text-dark"
@@ -1264,7 +1264,7 @@ watch(
                       <div class="d-flex flex-wrap gap-1 align-items-center">
                         <span
                           v-if="topic.categoryName"
-                          class="badge bg-secondary-light text-dark"
+                          class="badge bg-secondary-light text-dark interaction-aligned-badge"
                         >
                           {{ topic.categoryName }}
                         </span>
@@ -1282,7 +1282,7 @@ watch(
                         </button>
                         <span
                           v-if="topic.hasEntrustMission"
-                          class="badge bg-secondary"
+                          class="badge bg-secondary interaction-aligned-badge"
                         >
                           委託任務
                         </span>
@@ -1715,12 +1715,21 @@ watch(
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
   color: #145369;
+}
+
+.interaction-aligned-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
   line-height: 1;
+  white-space: nowrap;
+  border: 1px solid #86b0bd;
+  transition: all 0.3s ease;
 }
 
 .parent-link-btn {
@@ -1981,6 +1990,13 @@ watch(
 
 /* 響應式調整 */
 @media (max-width: 768px) {
+  .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
   .table {
     font-size: 0.9rem;
   }

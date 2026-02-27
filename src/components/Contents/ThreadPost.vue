@@ -18,7 +18,7 @@
                 <div class="post-meta">
                   <span
                     v-if="post.categoryName"
-                    class="badge bg-secondary-light text-dark"
+                    class="badge bg-secondary-light text-dark interaction-aligned-badge"
                   >
                     {{ post.categoryName }}
                   </span>
@@ -1193,12 +1193,21 @@ async function handleDeleteContent(contentId) {
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
   color: #145369;
+}
+
+.interaction-aligned-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
   line-height: 1;
+  white-space: nowrap;
+  border: 1px solid #86b0bd;
+  transition: all 0.3s ease;
 }
 
 .post-time {
@@ -1316,6 +1325,15 @@ async function handleDeleteContent(contentId) {
   position: relative;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
 }
 
 .thread-post + .thread-post::before {
