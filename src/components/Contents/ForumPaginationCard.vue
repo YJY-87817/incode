@@ -242,6 +242,6 @@ const jumpInputWidth = computed(() => {
   font-weight: 400;
   padding-left: 0.25rem;
   padding-right: 0.25rem;
-  text-align: center;
+  text-align: right;
 }
 </style>
