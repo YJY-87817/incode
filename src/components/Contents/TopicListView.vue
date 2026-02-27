@@ -1622,19 +1622,31 @@ onBeforeUnmount(() => {
 }
 
 .topic-header-pagination :deep(.pagination-jump-input) {
-  font-size: 0.72rem;
+  font-size: 1rem;
+  font-weight: 700;
   padding: 0.05rem 0.2rem;
   min-width: calc(1ch + 1.3em);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.75);
+  background-color: transparent;
 }
 
 .topic-header-pagination :deep(.pagination-total-pages) {
-  font-size: 0.72rem;
+  font-size: 1rem;
+  color: #fff !important;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.25rem;
-  font-size: 0.72rem;
+  font-size: 1rem;
   line-height: 1.1;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+.topic-header-pagination :deep(.pagination-jump-button:hover) {
+  color: #fff;
+  border-color: #fff;
 }
 
 .topic-sort-input-wrapper {
