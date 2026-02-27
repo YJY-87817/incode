@@ -244,6 +244,9 @@ const resolveThreadIdByContentId = async (contentId) => {
   border-right: 1px solid #d2d6da;
   font-weight: 600;
   color: #145369;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
   user-select: none;
   cursor: pointer;
 }
@@ -306,6 +309,10 @@ const resolveThreadIdByContentId = async (contentId) => {
   font-size: 1.25rem;
   border-radius: 0 0.375rem 0.375rem 0;
   border-left: 1px solid #d2d6da;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .new-topic-banner .banner-close-btn:hover {
