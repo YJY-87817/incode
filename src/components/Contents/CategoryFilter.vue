@@ -14,8 +14,23 @@ const forumStore = useForumStore();
 const route = useRoute();
 const router = useRouter();
 
-// 使用帶實時統計的分類列表
-const categories = computed(() => forumStore.categoriesWithStats);
+const allTopicsCount = computed(() => {
+  return forumStore.categoriesWithStats.reduce((total, category) => {
+    const count = Number(category?.postCount ?? 0);
+    return total + (Number.isFinite(count) ? count : 0);
+  }, 0);
+});
+
+// 使用帶實時統計的分類列表，最前面固定加入「全部」
+const categories = computed(() => [
+  {
+    id: null,
+    name: "全部",
+    description: "顯示所有分類",
+    postCount: allTopicsCount.value,
+  },
+  ...forumStore.categoriesWithStats,
+]);
 
 const sortOption = computed({
   get: () => forumStore.sortOption,
