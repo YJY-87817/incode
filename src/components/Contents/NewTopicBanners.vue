@@ -283,7 +283,7 @@ const resolveThreadIdByContentId = async (contentId) => {
 }
 
 .new-topic-banner:hover {
-  background-color: #f0f5f8;
+  background-color: rgba(20, 83, 105, 0.08);
   border-color: #145369;
 }
 
