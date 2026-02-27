@@ -59,24 +59,17 @@ const handleClearCategory = () => {
       class="card-header bg-white px-3 py-2 py-md-3 d-flex flex-column gap-2"
     >
       <div class="d-flex flex-wrap align-items-center gap-2">
-        <h5
-          class="mb-0 fs-6 fs-md-5"
-          :class="{ 'clearable-title': forumStore.selectedCategory !== null }"
-          @click="forumStore.selectedCategory !== null && handleClearCategory()"
-          role="button"
-          :tabindex="forumStore.selectedCategory !== null ? 0 : -1"
-          @keydown.enter="
-            forumStore.selectedCategory !== null && handleClearCategory()
-          "
-          @keydown.space.prevent="
-            forumStore.selectedCategory !== null && handleClearCategory()
-          "
-        >
+        <h5 class="mb-0 fs-6 fs-md-5">
           📁 討論分類
           <span
             v-if="forumStore.selectedCategory !== null"
             class="clear-indicator ms-2"
-            title="點擊清除分類"
+            title="清除目前分類"
+            role="button"
+            tabindex="0"
+            @click="handleClearCategory"
+            @keydown.enter="handleClearCategory"
+            @keydown.space.prevent="handleClearCategory"
           >
             ✕
           </span>
@@ -313,39 +306,24 @@ const handleClearCategory = () => {
   outline-offset: 1px;
 }
 
-/* 可點擊的標題樣式 */
-.card-header h5.clearable-title {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  user-select: none;
-}
-
-.card-header h5.clearable-title:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateX(2px);
-}
-
-.card-header h5.clearable-title:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 2px;
-}
-
-.card-header h5.clearable-title:active {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: translateX(0);
-}
-
 /* 清除指示器 */
 .clear-indicator {
+  cursor: pointer;
+  user-select: none;
   font-size: 0.8em;
   opacity: 0.8;
   transition: all 0.2s ease;
 }
 
-.card-header h5.clearable-title:hover .clear-indicator {
+.clear-indicator:hover,
+.clear-indicator:focus-visible {
   opacity: 1;
+}
+
+.clear-indicator:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* 分類卡片樣式 */
