@@ -194,28 +194,30 @@ const jumpInputWidth = computed(() => {
 
     <div
       v-if="showJump"
-      class="d-flex align-items-center gap-2 pagination-jump-wrap"
+      class="d-flex align-items-center pagination-jump-shell"
     >
-      <input
-        v-model="pageInput"
-        type="number"
-        min="1"
-        :max="normalizedTotalPages"
-        class="form-control form-control-sm pagination-jump-input"
-        :style="{ width: jumpInputWidth }"
-        @keyup.enter="jumpToPageInput"
-        @wheel.prevent="handleJumpInputWheel"
-      />
-      <span class="small text-muted pagination-total-pages">
-        / {{ normalizedTotalPages }}
-      </span>
-      <button
-        class="btn btn-sm btn-outline-secondary mb-0 pagination-jump-button"
-        type="button"
-        @click="jumpToPageInput"
-      >
-        前往
-      </button>
+      <div class="d-flex align-items-center gap-2 pagination-jump-wrap">
+        <input
+          v-model="pageInput"
+          type="number"
+          min="1"
+          :max="normalizedTotalPages"
+          class="form-control form-control-sm pagination-jump-input"
+          :style="{ width: jumpInputWidth }"
+          @keyup.enter="jumpToPageInput"
+          @wheel.prevent="handleJumpInputWheel"
+        />
+        <span class="small text-muted pagination-total-pages">
+          / {{ normalizedTotalPages }}
+        </span>
+        <button
+          class="btn btn-sm btn-outline-secondary mb-0 pagination-jump-button"
+          type="button"
+          @click="jumpToPageInput"
+        >
+          前往
+        </button>
+      </div>
     </div>
   </nav>
 </template>

@@ -1606,6 +1606,7 @@ onBeforeUnmount(() => {
 
 .topic-header-pagination :deep(nav),
 .topic-header-pagination :deep(.pagination),
+.topic-header-pagination :deep(.pagination-jump-shell),
 .topic-header-pagination :deep(.pagination-jump-wrap) {
   flex-wrap: nowrap !important;
 }
@@ -1617,36 +1618,47 @@ onBeforeUnmount(() => {
   min-width: 1.65rem;
 }
 
+.topic-header-pagination :deep(.pagination-jump-shell) {
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  background-color: #fff;
+  font-size: 0.75rem;
+}
+
 .topic-header-pagination :deep(.pagination-jump-wrap) {
   gap: 0.35rem !important;
 }
 
 .topic-header-pagination :deep(.pagination-jump-input) {
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 0.05rem 0.2rem;
   min-width: calc(1ch + 1.3em);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.75);
+  color: #145369;
+  border-color: #86b0bd;
   background-color: transparent;
 }
 
 .topic-header-pagination :deep(.pagination-total-pages) {
-  font-size: 1rem;
-  color: #fff !important;
+  font-size: 0.75rem;
+  color: #145369 !important;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.25rem;
-  font-size: 1rem;
+  font-size: 0.75rem;
   line-height: 1.1;
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.75);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button:hover) {
-  color: #fff;
-  border-color: #fff;
+  color: #145369;
+  border-color: #145369;
+  background-color: #fff0dd;
 }
 
 .topic-sort-input-wrapper {
