@@ -741,7 +741,7 @@ watch(
                 forumStore.threadDetail?.type === CONTENT_TYPES.REPLY &&
                 forumStore.threadDetail?.parentContentId
               "
-              class="btn btn-sm btn-outline-primary parent-link-btn"
+              class="badge interaction-aligned-badge parent-link-btn"
               type="button"
               @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
             >
@@ -1112,7 +1112,7 @@ watch(
                             topic.type === CONTENT_TYPES.REPLY &&
                             topic.parentContentId
                           "
-                          class="btn btn-sm btn-outline-primary parent-link-btn"
+                          class="badge interaction-aligned-badge parent-link-btn"
                           type="button"
                           @click.stop="goToThread(topic.parentContentId)"
                         >
@@ -1526,20 +1526,16 @@ watch(
 }
 
 .parent-link-btn {
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1;
-  border-color: #86b0bd;
+  border: 1px solid #86b0bd;
   color: #145369;
-  background: transparent;
+  background-color: #d0e8f2;
+  cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: #fff0dd;
-  border-color: #145369;
-  color: #145369;
+  background-color: #86b0bd !important;
+  border-color: #86b0bd !important;
+  color: #fff !important;
 }
 
 .badge.bg-primary {
