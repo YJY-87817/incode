@@ -1711,17 +1711,17 @@ watch(
 }
 
 .topic-col {
-  width: 68%;
+  width: 72.5%;
 }
 
 .created-col,
 .last-reply-col {
-  width: 14%;
+  width: 12%;
 }
 
 .reply-col {
-  width: 4%;
-  min-width: 3.6rem;
+  width: 3.5%;
+  min-width: 3.25rem;
   white-space: nowrap;
 }
 
@@ -2045,17 +2045,17 @@ watch(
 /* 響應式調整 */
 @media (max-width: 1200px) and (min-width: 768px) {
   .topic-col {
-    width: 62%;
+    width: 68%;
   }
 
   .created-col,
   .last-reply-col {
-    width: 15%;
+    width: 13%;
   }
 
   .reply-col {
-    width: 8%;
-    min-width: 4rem;
+    width: 6%;
+    min-width: 3.5rem;
   }
 
   .topic-list-table th.created-col,
@@ -2065,8 +2065,48 @@ watch(
   .topic-list-table td.last-reply-col,
   .topic-list-table td.reply-col,
   .meta-date-text {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     line-height: 1.2;
+  }
+}
+
+@media (max-width: 992px) and (min-width: 768px) {
+  .topic-col {
+    width: 69%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 12.75%;
+  }
+
+  .reply-col {
+    width: 5.5%;
+    min-width: 3.4rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .reply-col .badge.bg-primary {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.35rem;
+    min-width: 2rem;
+    text-align: center;
+  }
+
+  .created-col :deep(.user-avatar-img),
+  .last-reply-col :deep(.user-avatar-img) {
+    width: 22px !important;
+    height: 22px !important;
   }
 }
 
