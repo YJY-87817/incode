@@ -392,7 +392,9 @@ watch(
 /* 浮動發佈新主題按鈕*/
 .forum-new-topic-fab {
   position: fixed;
+  /* 一般狀態位置（桌機）：調整右側距離 */
   right: 20px;
+  /* 一般狀態位置（桌機）：調整上方距離 */
   top: 96px;
   z-index: 1030;
   padding: 0.6rem 1rem;
@@ -402,11 +404,13 @@ watch(
 }
 
 .forum-new-topic-fab--pinned {
+  /* 黏在右上角後（桌機）：調整上方距離 */
   top: 14px;
 }
 
 @media (max-width: 991.98px) {
   .forum-new-topic-fab {
+    /* 一般狀態位置（手機）：原本靠右側中線 */
     top: 50%;
     right: -10px;
     bottom: auto;
@@ -420,7 +424,9 @@ watch(
   }
 
   .forum-new-topic-fab.forum-new-topic-fab--pinned {
+    /* 黏在右上角後（手機）：調整上方距離 */
     top: 14px;
+    /* 黏在右上角後（手機）：調整右側距離 */
     right: 10px;
     transform: none;
     border-radius: 999px;
