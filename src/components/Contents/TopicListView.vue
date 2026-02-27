@@ -1537,7 +1537,6 @@ watch(
   height: 38px;
   padding: 0 0.9rem;
   border-radius: 0.375rem;
-  border: 1px solid #d1d3d4;
 }
 
 .sort-dropdown {
@@ -1730,7 +1729,6 @@ watch(
   font-size: 0.75rem;
   line-height: 1;
   white-space: nowrap;
-  border: 1px solid #86b0bd;
   transition: all 0.3s ease;
 }
 

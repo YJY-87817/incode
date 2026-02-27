@@ -1210,7 +1210,6 @@ async function handleDeleteContent(contentId) {
   font-size: 0.75rem;
   line-height: 1;
   white-space: nowrap;
-  border: 1px solid #86b0bd;
   transition: all 0.3s ease;
 }
 
