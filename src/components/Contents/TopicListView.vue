@@ -1197,7 +1197,9 @@ onBeforeUnmount(() => {
             <thead class="topic-table-header">
               <tr>
                 <th class="px-3 py-2 py-md-3 topic-col">
-                  <div class="d-flex align-items-center flex-wrap gap-2">
+                  <div
+                    class="d-flex align-items-center flex-nowrap gap-2 w-100"
+                  >
                     <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
                       ref="sortDropdownRef"
@@ -1233,23 +1235,41 @@ onBeforeUnmount(() => {
                           :key="option.value"
                           type="button"
                           class="topic-sort-item"
-                          :class="{ active: option.value === sortOption.value }"
+                          :class="{
+                            active: option.value === sortOption.value,
+                          }"
                           @mousedown.prevent="selectSortOption(option)"
                         >
                           {{ option.label }}
                         </button>
                       </div>
                     </div>
+
+                    <div
+                      v-if="forumStore.pagination.totalPages > 1"
+                      class="ms-auto topic-header-pagination"
+                    >
+                      <ForumPaginationCard
+                        :current-page="forumStore.pagination.currentPage"
+                        :total-pages="forumStore.pagination.totalPages"
+                        :pages="displayPages"
+                        :show-edge-buttons="false"
+                        :show-jump="false"
+                        pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+                        link-padding-class="topic-header-pagination-link"
+                        @page-change="goToPage"
+                      />
+                    </div>
                   </div>
                 </th>
                 <th class="d-none d-md-table-cell created-col">
-                  <span class="topic-table-header-label"> 🗓️ 發佈時間 </span>
+                  <span class="topic-table-header-label"> 🗓️ 發佈 </span>
                 </th>
                 <th class="d-none d-md-table-cell last-reply-col">
-                  <span class="topic-table-header-label"> 🕒 最後回應 </span>
+                  <span class="topic-table-header-label"> 🕒 回應 </span>
                 </th>
                 <th class="reply-col">
-                  <span class="topic-table-header-label"> 回應 </span>
+                  <span class="topic-table-header-label"> 回應數 </span>
                 </th>
               </tr>
             </thead>
@@ -1577,6 +1597,24 @@ onBeforeUnmount(() => {
   max-width: 100%;
   color: #145369;
   transition: width 0.16s ease;
+}
+
+.topic-header-pagination {
+  display: flex;
+  align-items: center;
+}
+
+.topic-header-pagination :deep(nav),
+.topic-header-pagination :deep(.pagination),
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
+}
+
+.topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  min-width: 1.65rem;
 }
 
 .topic-sort-input-wrapper {
