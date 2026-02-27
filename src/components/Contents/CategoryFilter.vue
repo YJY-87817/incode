@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
             </div>
             <div
               v-if="showSortDropdown"
-              class="category-dropdown border rounded mt-2"
+              class="category-dropdown border rounded"
             >
               <button
                 v-for="option in sortOptions"
