@@ -253,6 +253,21 @@ const goToPage = (page) => {
   forumStore.changePage(page);
 };
 
+const pageInput = ref("");
+
+const jumpToPageInput = () => {
+  const parsedPage = Number.parseInt(pageInput.value, 10);
+  if (!Number.isFinite(parsedPage)) {
+    pageInput.value = String(forumStore.pagination.currentPage || 1);
+    return;
+  }
+
+  const totalPages = Number(forumStore.pagination.totalPages || 1);
+  const targetPage = Math.min(Math.max(parsedPage, 1), totalPages);
+  goToPage(targetPage);
+  pageInput.value = String(targetPage);
+};
+
 const goToThreadPage = (page) => {
   forumStore.changeThreadPage(page);
 };
@@ -695,6 +710,14 @@ watch(
       }),
     ]);
   },
+);
+
+watch(
+  () => forumStore.pagination.currentPage,
+  (currentPage) => {
+    pageInput.value = String(currentPage || 1);
+  },
+  { immediate: true },
 );
 </script>
 
@@ -1328,10 +1351,29 @@ watch(
       v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
       class="card-footer bg-white pt-0 pb-2 pb-md-3"
     >
-      <nav class="d-flex justify-content-center">
+      <nav
+        class="d-flex justify-content-center align-items-center flex-wrap gap-2"
+      >
         <ul
           class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1"
         >
+          <!-- 最前頁 -->
+          <li
+            class="page-item"
+            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
+          >
+            <a
+              class="page-link"
+              href="#"
+              @click.prevent="
+                forumStore.pagination.currentPage > 1 && goToPage(1)
+              "
+              aria-label="最前頁"
+            >
+              &#8676;
+            </a>
+          </li>
+
           <!-- 上一頁 -->
           <li
             class="page-item"
@@ -1346,19 +1388,6 @@ watch(
             </a>
           </li>
 
-          <!-- 首頁 -->
-          <li v-if="displayPages[0] > 1" class="page-item d-none d-md-block">
-            <a class="page-link" href="#" @click.prevent="goToPage(1)"> 1 </a>
-          </li>
-
-          <!-- 省略號 -->
-          <li
-            v-if="displayPages[0] > 2"
-            class="page-item disabled d-none d-md-block"
-          >
-            <span class="page-link">...</span>
-          </li>
-
           <!-- 分頁數字 -->
           <li
             v-for="pageNum in displayPages"
@@ -1368,34 +1397,6 @@ watch(
           >
             <a class="page-link" href="#" @click.prevent="goToPage(pageNum)">
               {{ pageNum }}
-            </a>
-          </li>
-
-          <!-- 省略號 -->
-          <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages - 1
-            "
-            class="page-item disabled d-none d-md-block"
-          >
-            <span class="page-link">...</span>
-          </li>
-
-          <!-- 末頁 -->
-          <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages
-            "
-            class="page-item d-none d-md-block"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.totalPages)"
-            >
-              {{ forumStore.pagination.totalPages }}
             </a>
           </li>
 
@@ -1416,7 +1417,49 @@ watch(
               &rsaquo;
             </a>
           </li>
+
+          <!-- 最後頁 -->
+          <li
+            class="page-item"
+            :class="{
+              disabled:
+                forumStore.pagination.currentPage ===
+                forumStore.pagination.totalPages,
+            }"
+          >
+            <a
+              class="page-link"
+              href="#"
+              @click.prevent="
+                forumStore.pagination.currentPage <
+                  forumStore.pagination.totalPages &&
+                goToPage(forumStore.pagination.totalPages)
+              "
+              aria-label="最後頁"
+            >
+              &#8677;
+            </a>
+          </li>
         </ul>
+
+        <div class="d-flex align-items-center gap-2 pagination-jump-wrap">
+          <span class="small text-muted">頁碼</span>
+          <input
+            v-model="pageInput"
+            type="number"
+            min="1"
+            :max="forumStore.pagination.totalPages"
+            class="form-control form-control-sm pagination-jump-input"
+            @keyup.enter="jumpToPageInput"
+          />
+          <button
+            class="btn btn-sm btn-outline-secondary mb-0"
+            type="button"
+            @click="jumpToPageInput"
+          >
+            前往
+          </button>
+        </div>
       </nav>
     </div>
   </div>
@@ -1905,6 +1948,10 @@ watch(
   background-color: #fff0dd;
   border-color: #86b0bd;
   color: #145369;
+}
+
+.pagination-jump-input {
+  width: 88px;
 }
 
 /* 載入動畫 */
