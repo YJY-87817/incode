@@ -22,10 +22,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  useCaretIcons: {
-    type: Boolean,
-    default: false,
-  },
   paginationClass: {
     type: String,
     default:
@@ -129,7 +125,7 @@ const jumpInputWidth = computed(() => {
           aria-label="最前頁"
           @click.prevent="changePage(1)"
         >
-          &#8676;
+          <i class="fa-solid fa-backward-step"></i>
         </a>
       </li>
 
@@ -140,8 +136,7 @@ const jumpInputWidth = computed(() => {
           href="#"
           @click.prevent="prevPage"
         >
-          <i v-if="useCaretIcons" class="fa-solid fa-caret-left"></i>
-          <template v-else>&lsaquo;</template>
+          <i class="fa-solid fa-caret-left"></i>
         </a>
       </li>
 
@@ -171,8 +166,7 @@ const jumpInputWidth = computed(() => {
           href="#"
           @click.prevent="nextPage"
         >
-          <i v-if="useCaretIcons" class="fa-solid fa-caret-right"></i>
-          <template v-else>&rsaquo;</template>
+          <i class="fa-solid fa-caret-right"></i>
         </a>
       </li>
 
@@ -187,7 +181,7 @@ const jumpInputWidth = computed(() => {
           aria-label="最後頁"
           @click.prevent="changePage(normalizedTotalPages)"
         >
-          &#8677;
+          <i class="fa-solid fa-forward-step"></i>
         </a>
       </li>
     </ul>
