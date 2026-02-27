@@ -576,6 +576,25 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 576px) {
+  .sort-dropdown {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .category-dropdown {
+    width: 100%;
+    min-width: 100%;
+    padding: 0.4rem;
+  }
+
+  .sort-dropdown-item {
+    min-height: 44px;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    align-items: center;
+    line-height: 1.2;
+  }
+
   .category-container {
     max-height: none;
     overflow-x: auto;
