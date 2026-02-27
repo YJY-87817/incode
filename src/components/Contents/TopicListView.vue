@@ -1243,20 +1243,10 @@ onBeforeUnmount(() => {
                   </div>
                 </th>
                 <th class="d-none d-md-table-cell created-col">
-                  <span class="topic-table-header-label">
-                    <span class="topic-table-header-icon" aria-hidden="true"
-                      >🗓️</span
-                    >
-                    <span>發佈時間</span>
-                  </span>
+                  <span class="topic-table-header-label"> 🗓️ 發佈時間 </span>
                 </th>
                 <th class="d-none d-md-table-cell last-reply-col">
-                  <span class="topic-table-header-label">
-                    <span class="topic-table-header-icon" aria-hidden="true"
-                      >🕒</span
-                    >
-                    <span>最後回應</span>
-                  </span>
+                  <span class="topic-table-header-label"> 🕒 最後回應 </span>
                 </th>
                 <th class="reply-col">
                   <span class="topic-table-header-label"> 回應 </span>
