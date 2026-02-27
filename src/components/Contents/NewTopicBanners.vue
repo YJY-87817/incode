@@ -203,6 +203,7 @@ const resolveThreadIdByContentId = async (contentId) => {
   background: transparent;
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
+  overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: slideUp 0.3s ease-out;
 }
@@ -238,6 +239,8 @@ const resolveThreadIdByContentId = async (contentId) => {
   align-items: center;
   justify-content: center;
   padding: 0.25rem 0.5rem;
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
   border-right: 1px solid #d2d6da;
   font-weight: 600;
   color: #145369;
@@ -301,7 +304,7 @@ const resolveThreadIdByContentId = async (contentId) => {
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
-  border-radius: 0;
+  border-radius: 0 0.375rem 0.375rem 0;
   border-left: 1px solid #d2d6da;
 }
 
