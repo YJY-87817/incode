@@ -361,24 +361,6 @@ watch(
   color: #86b0bd;
 }
 
-/* 分頁樣式 */
-.pagination .page-item.active .page-link {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
-}
-
-.pagination .page-link {
-  color: #145369;
-  border-color: #d1d3d4;
-}
-
-.pagination .page-link:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
-}
-
 /* 載入動畫顏色 */
 .spinner-border {
   color: #145369 !important;

@@ -12,6 +12,7 @@ import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import ForumPaginationCard from "@/components/Contents/ForumPaginationCard.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
@@ -246,26 +247,40 @@ const paginatedThreadComments = computed(
   () => forumStore.paginatedThreadComments,
 );
 
+const buildDisplayPages = (currentPage, totalPages, maxDisplay = 5) => {
+  const pages = [];
+  if (totalPages <= 1) return pages;
+
+  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
+  let end = Math.min(totalPages, start + maxDisplay - 1);
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1);
+  }
+
+  for (let index = start; index <= end; index += 1) {
+    pages.push(index);
+  }
+
+  return pages;
+};
+
+const threadDisplayPages = computed(() =>
+  buildDisplayPages(forumStore.threadCurrentPage, threadTotalPages.value),
+);
+
+const threadCommentsDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.threadCommentsCurrentPage,
+    threadCommentsTotalPages.value,
+  ),
+);
+
 /**
  * 頁面導航
  */
 const goToPage = (page) => {
   forumStore.changePage(page);
-};
-
-const pageInput = ref("");
-
-const jumpToPageInput = () => {
-  const parsedPage = Number.parseInt(pageInput.value, 10);
-  if (!Number.isFinite(parsedPage)) {
-    pageInput.value = String(forumStore.pagination.currentPage || 1);
-    return;
-  }
-
-  const totalPages = Number(forumStore.pagination.totalPages || 1);
-  const targetPage = Math.min(Math.max(parsedPage, 1), totalPages);
-  goToPage(targetPage);
-  pageInput.value = String(targetPage);
 };
 
 const goToThreadPage = (page) => {
@@ -274,34 +289,6 @@ const goToThreadPage = (page) => {
 
 const goToCommentPage = (page) => {
   forumStore.changeThreadCommentsPage(page);
-};
-
-const prevThreadPage = () => {
-  if (forumStore.threadCurrentPage > 1) {
-    forumStore.changeThreadPage(forumStore.threadCurrentPage - 1);
-  }
-};
-
-const nextThreadPage = () => {
-  if (forumStore.threadCurrentPage < threadTotalPages.value) {
-    forumStore.changeThreadPage(forumStore.threadCurrentPage + 1);
-  }
-};
-
-const prevCommentPage = () => {
-  if (forumStore.threadCommentsCurrentPage > 1) {
-    forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage - 1,
-    );
-  }
-};
-
-const nextCommentPage = () => {
-  if (forumStore.threadCommentsCurrentPage < threadCommentsTotalPages.value) {
-    forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage + 1,
-    );
-  }
 };
 
 /**
@@ -711,14 +698,6 @@ watch(
     ]);
   },
 );
-
-watch(
-  () => forumStore.pagination.currentPage,
-  (currentPage) => {
-    pageInput.value = String(currentPage || 1);
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
@@ -922,49 +901,16 @@ watch(
                 :reward-points="activeRewardPoints"
                 @best-answer-selected="handleBestAnswerSelected"
               />
-              <nav v-if="threadCommentsTotalPages > 1" class="mt-3">
-                <ul
-                  class="pagination pagination-sm justify-content-center flex-wrap gap-1"
-                >
-                  <li
-                    class="page-item"
-                    :class="{
-                      disabled: forumStore.threadCommentsCurrentPage === 1,
-                    }"
-                    @click="prevCommentPage"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      <i class="fa-solid fa-caret-left"></i>
-                    </a>
-                  </li>
-                  <li
-                    class="page-item"
-                    v-for="page in threadCommentsTotalPages"
-                    :key="`comment-page-${page}`"
-                    :class="{
-                      active: forumStore.threadCommentsCurrentPage === page,
-                    }"
-                    @click="goToCommentPage(page)"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      {{ page }}
-                    </a>
-                  </li>
-                  <li
-                    class="page-item"
-                    :class="{
-                      disabled:
-                        forumStore.threadCommentsCurrentPage ===
-                        threadCommentsTotalPages,
-                    }"
-                    @click="nextCommentPage"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      <i class="fa-solid fa-caret-right"></i>
-                    </a>
-                  </li>
-                </ul>
-              </nav>
+              <ForumPaginationCard
+                v-if="threadCommentsTotalPages > 1"
+                class="mt-3"
+                :current-page="forumStore.threadCommentsCurrentPage"
+                :total-pages="threadCommentsTotalPages"
+                :pages="threadCommentsDisplayPages"
+                :show-edge-buttons="true"
+                :show-jump="true"
+                @page-change="goToCommentPage"
+              />
             </div>
 
             <!-- 回文分頁 (type=2) -->
@@ -987,43 +933,16 @@ watch(
             </div>
 
             <!-- 分頁導航 -->
-            <nav v-if="threadTotalPages > 1" class="mt-3 mt-md-4">
-              <ul
-                class="pagination pagination-sm justify-content-center flex-wrap gap-1"
-              >
-                <li
-                  class="page-item"
-                  :class="{ disabled: forumStore.threadCurrentPage === 1 }"
-                  @click="prevThreadPage"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    <i class="fa-solid fa-caret-left"></i>
-                  </a>
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in threadTotalPages"
-                  :key="page"
-                  :class="{ active: forumStore.threadCurrentPage === page }"
-                  @click="goToThreadPage(page)"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    {{ page }}
-                  </a>
-                </li>
-                <li
-                  class="page-item"
-                  :class="{
-                    disabled: forumStore.threadCurrentPage === threadTotalPages,
-                  }"
-                  @click="nextThreadPage"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    <i class="fa-solid fa-caret-right"></i>
-                  </a>
-                </li>
-              </ul>
-            </nav>
+            <ForumPaginationCard
+              v-if="threadTotalPages > 1"
+              class="mt-3 mt-md-4"
+              :current-page="forumStore.threadCurrentPage"
+              :total-pages="threadTotalPages"
+              :pages="threadDisplayPages"
+              :show-edge-buttons="true"
+              :show-jump="true"
+              @page-change="goToThreadPage"
+            />
           </div>
         </div>
       </div>
@@ -1351,116 +1270,14 @@ watch(
       v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
       class="card-footer bg-white pt-0 pb-2 pb-md-3"
     >
-      <nav
-        class="d-flex justify-content-center align-items-center flex-wrap gap-2"
-      >
-        <ul
-          class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1"
-        >
-          <!-- 最前頁 -->
-          <li
-            class="page-item"
-            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
-          >
-            <a
-              class="page-link edge-page-link"
-              href="#"
-              @click.prevent="
-                forumStore.pagination.currentPage > 1 && goToPage(1)
-              "
-              aria-label="最前頁"
-            >
-              &#8676;
-            </a>
-          </li>
-
-          <!-- 上一頁 -->
-          <li
-            class="page-item"
-            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.currentPage - 1)"
-            >
-              &lsaquo;
-            </a>
-          </li>
-
-          <!-- 分頁數字 -->
-          <li
-            v-for="pageNum in displayPages"
-            :key="pageNum"
-            class="page-item"
-            :class="{ active: pageNum === forumStore.pagination.currentPage }"
-          >
-            <a class="page-link" href="#" @click.prevent="goToPage(pageNum)">
-              {{ pageNum }}
-            </a>
-          </li>
-
-          <!-- 下一頁 -->
-          <li
-            class="page-item"
-            :class="{
-              disabled:
-                forumStore.pagination.currentPage ===
-                forumStore.pagination.totalPages,
-            }"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.currentPage + 1)"
-            >
-              &rsaquo;
-            </a>
-          </li>
-
-          <!-- 最後頁 -->
-          <li
-            class="page-item"
-            :class="{
-              disabled:
-                forumStore.pagination.currentPage ===
-                forumStore.pagination.totalPages,
-            }"
-          >
-            <a
-              class="page-link edge-page-link"
-              href="#"
-              @click.prevent="
-                forumStore.pagination.currentPage <
-                  forumStore.pagination.totalPages &&
-                goToPage(forumStore.pagination.totalPages)
-              "
-              aria-label="最後頁"
-            >
-              &#8677;
-            </a>
-          </li>
-        </ul>
-
-        <div class="d-flex align-items-center gap-2 pagination-jump-wrap">
-          <span class="small text-muted">頁碼</span>
-          <input
-            v-model="pageInput"
-            type="number"
-            min="1"
-            :max="forumStore.pagination.totalPages"
-            class="form-control form-control-sm pagination-jump-input"
-            @keyup.enter="jumpToPageInput"
-          />
-          <button
-            class="btn btn-sm btn-outline-secondary mb-0"
-            type="button"
-            @click="jumpToPageInput"
-          >
-            前往
-          </button>
-        </div>
-      </nav>
+      <ForumPaginationCard
+        :current-page="forumStore.pagination.currentPage"
+        :total-pages="forumStore.pagination.totalPages"
+        :pages="displayPages"
+        :show-edge-buttons="true"
+        :show-jump="true"
+        @page-change="goToPage"
+      />
     </div>
   </div>
 </template>
@@ -1930,34 +1747,6 @@ watch(
 
 .topic-mobile-reply-count {
   min-width: 2rem;
-}
-
-/* 分頁樣式 */
-.pagination .page-item.active .page-link {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
-}
-
-.pagination .page-link {
-  color: #145369;
-  border-color: #d1d3d4;
-}
-
-.pagination .page-link:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
-}
-
-.pagination .edge-page-link {
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.pagination-jump-input {
-  width: 88px;
 }
 
 /* 載入動畫 */
