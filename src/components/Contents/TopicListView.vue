@@ -240,7 +240,8 @@ const sortOptions = [
 ];
 
 const showSortDropdown = ref(false);
-const sortDropdownRef = ref(null);
+const desktopSortDropdownRef = ref(null);
+const mobileSortDropdownRef = ref(null);
 const hasSelectedSortOption = ref(false);
 const shouldHideSortIcon = ref(false);
 const isSortControlCompact = ref(false);
@@ -324,8 +325,12 @@ const toggleSortDropdown = () => {
 
 const handleDocumentClick = (event) => {
   if (!showSortDropdown.value) return;
-  const container = sortDropdownRef.value;
-  if (container && !container.contains(event.target)) {
+  const isClickInsideSortControls = [
+    desktopSortDropdownRef.value,
+    mobileSortDropdownRef.value,
+  ].some((container) => container && container.contains(event.target));
+
+  if (!isClickInsideSortControls) {
     closeSortDropdown();
   }
 };
@@ -1083,8 +1088,75 @@ onBeforeUnmount(() => {
           <p>此分類目前沒有主題</p>
         </div>
 
+        <div
+          v-if="forumStore.topics.length > 0"
+          class="d-md-none px-2 pt-2 pb-1"
+        >
+          <div class="topic-mobile-toolbar">
+            <div
+              ref="mobileSortDropdownRef"
+              class="topic-sort-dropdown topic-mobile-sort-dropdown"
+              :style="{ '--sort-control-width': sortControlWidth }"
+            >
+              <div
+                class="topic-sort-input-wrapper"
+                @click.stop="toggleSortDropdown"
+              >
+                <input
+                  :value="sortInputLabel"
+                  class="form-control topic-sort-input"
+                  :class="{
+                    'topic-sort-input--expanded': isSortControlCompact,
+                  }"
+                  readonly
+                  aria-label="主題排序"
+                  @click.stop="toggleSortDropdown"
+                />
+                <span
+                  v-if="!shouldHideSortIcon"
+                  class="topic-sort-input-dropdown"
+                  aria-hidden="true"
+                  @click.stop="toggleSortDropdown"
+                >
+                  ▾
+                </span>
+              </div>
+              <div v-if="showSortDropdown" class="topic-sort-menu">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  type="button"
+                  class="topic-sort-item"
+                  :class="{
+                    active: option.value === sortOption.value,
+                  }"
+                  @mousedown.prevent="selectSortOption(option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="forumStore.pagination.totalPages > 1"
+              class="topic-mobile-pagination"
+            >
+              <ForumPaginationCard
+                :current-page="forumStore.pagination.currentPage"
+                :total-pages="forumStore.pagination.totalPages"
+                :pages="displayPages"
+                :show-edge-buttons="false"
+                :show-jump="true"
+                pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+                link-padding-class="topic-header-pagination-link"
+                @page-change="goToPage"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- 手機卡片列表 -->
-        <div v-else class="d-md-none px-2 pb-2">
+        <div v-if="forumStore.topics.length > 0" class="d-md-none px-2 pb-2">
           <div
             v-for="topic in forumStore.topics"
             :key="`mobile-topic-${topic.id}`"
@@ -1197,7 +1269,7 @@ onBeforeUnmount(() => {
                   >
                     <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
-                      ref="sortDropdownRef"
+                      ref="desktopSortDropdownRef"
                       class="topic-sort-dropdown"
                       :style="{ '--sort-control-width': sortControlWidth }"
                     >
@@ -1597,6 +1669,36 @@ onBeforeUnmount(() => {
 .topic-header-pagination {
   display: flex;
   align-items: center;
+}
+
+.topic-mobile-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  background-color: #86b0bd;
+}
+
+.topic-mobile-sort-dropdown {
+  width: 100%;
+  max-width: none;
+}
+
+.topic-mobile-pagination {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.topic-mobile-pagination :deep(nav),
+.topic-mobile-pagination :deep(.pagination) {
+  flex-wrap: nowrap;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-shell) {
+  background-color: #fff;
 }
 
 .topic-header-pagination :deep(nav),
