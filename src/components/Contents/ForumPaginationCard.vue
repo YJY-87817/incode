@@ -112,7 +112,9 @@ const jumpInputWidth = computed(() => {
 </script>
 
 <template>
-  <nav class="d-flex justify-content-center align-items-center flex-wrap gap-0">
+  <nav
+    class="d-flex justify-content-center align-items-center flex-wrap gap-0 pagination-nav-wrapper"
+  >
     <ul :class="paginationClass">
       <li
         v-if="showEdgeButtons"
@@ -217,6 +219,21 @@ const jumpInputWidth = computed(() => {
 </template>
 
 <style scoped>
+.pagination-nav-wrapper {
+  flex-direction: column;
+}
+
+@media (min-width: 576px) {
+  .pagination-nav-wrapper {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .pagination-jump-shell {
+    margin-left: auto;
+  }
+}
+
 .pagination .page-item.active .page-link {
   background-color: #145369;
   border-color: #145369;
@@ -257,6 +274,30 @@ const jumpInputWidth = computed(() => {
 }
 
 .pagination-jump-button {
-  padding: 0.1rem 0.3rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.82em;
+  font-weight: 400;
+  color: #145369;
+  border-color: #d1d3d4;
+  background-color: transparent;
+  transition:
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.pagination-jump-button:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #145369;
+}
+
+.pagination-jump-button:focus,
+.pagination-jump-button:active,
+.pagination-jump-button.active {
+  background-color: transparent;
+  border-color: #d1d3d4;
+  color: #145369;
+  outline: none;
+  box-shadow: none;
 }
 </style>
