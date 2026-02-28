@@ -227,6 +227,14 @@ const handleTopicDeleteContent = async (contentId) => {
  */
 const displayPages = computed(() => forumStore.displayPages);
 
+const mobileDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
 const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
@@ -1144,7 +1152,7 @@ onBeforeUnmount(() => {
               <ForumPaginationCard
                 :current-page="forumStore.pagination.currentPage"
                 :total-pages="forumStore.pagination.totalPages"
-                :pages="displayPages"
+                :pages="mobileDisplayPages"
                 :show-edge-buttons="false"
                 :show-jump="true"
                 pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
