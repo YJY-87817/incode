@@ -1673,23 +1673,28 @@ onBeforeUnmount(() => {
 
 .topic-mobile-toolbar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 0.6rem;
   padding: 0.75rem;
   border: 1px solid #d1d3d4;
   border-radius: 0.6rem;
   background-color: #86b0bd;
+  position: relative;
 }
 
 .topic-mobile-sort-dropdown {
-  width: 100%;
-  max-width: none;
+  flex: 0 0 auto;
+  max-width: 48%;
 }
 
 .topic-mobile-pagination {
   display: flex;
-  justify-content: center;
-  width: 100%;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .topic-mobile-pagination :deep(nav),
