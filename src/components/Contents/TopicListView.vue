@@ -1734,6 +1734,17 @@ onBeforeUnmount(() => {
   color: #145369;
   border-color: #86b0bd;
   background-color: transparent;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-outer-spin-button),
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-inner-spin-button) {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  margin: 0;
 }
 
 .topic-mobile-pagination :deep(.pagination-jump-button) {
