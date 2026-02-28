@@ -1124,11 +1124,6 @@ onBeforeUnmount(() => {
                     />
                   </div>
                 </div>
-                <div
-                  class="topic-mobile-reply-count reply-count-badge badge bg-primary ms-auto"
-                >
-                  {{ topic.replyCount }}
-                </div>
               </div>
 
               <div
@@ -2099,10 +2094,6 @@ onBeforeUnmount(() => {
 
 .topic-mobile-card:active {
   transform: scale(0.998);
-}
-
-.topic-mobile-reply-count {
-  min-width: 2rem;
 }
 
 /* 載入動畫 */
