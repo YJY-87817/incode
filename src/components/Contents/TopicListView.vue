@@ -1694,16 +1694,57 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 1 1 auto;
   justify-content: flex-end;
+  align-items: center;
   min-width: 0;
+  gap: 0.35rem;
 }
 
 .topic-mobile-pagination :deep(nav),
-.topic-mobile-pagination :deep(.pagination) {
-  flex-wrap: nowrap;
+.topic-mobile-pagination :deep(.pagination),
+.topic-mobile-pagination :deep(.pagination-jump-shell),
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
 }
 
 .topic-mobile-pagination :deep(.pagination-jump-shell) {
   background-color: #fff;
+  margin-left: 0;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.25rem !important;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-input) {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.15rem;
+  min-width: calc(1ch + 1em);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: transparent;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.2rem;
+  font-size: 0.7rem;
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
+}
+
+.topic-mobile-pagination :deep(.pagination-total-pages) {
+  font-size: 0.7rem;
+  color: #145369 !important;
+}
+
+.topic-mobile-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.5rem;
 }
 
 .topic-header-pagination :deep(nav),
