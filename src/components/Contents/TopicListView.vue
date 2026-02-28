@@ -1198,7 +1198,7 @@ onBeforeUnmount(() => {
               <tr>
                 <th class="px-3 py-2 py-md-3 topic-col">
                   <div
-                    class="d-flex align-items-center flex-nowrap gap-4 w-100"
+                    class="d-flex align-items-center flex-wrap gap-2 gap-lg-4 w-100"
                   >
                     <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
@@ -1767,6 +1767,7 @@ onBeforeUnmount(() => {
 }
 
 .table-responsive {
+  overflow-x: hidden;
   overflow-y: visible;
 }
 
@@ -1781,7 +1782,7 @@ onBeforeUnmount(() => {
 }
 
 .topic-col {
-  width: 72.5%;
+  width: 71.5%;
 }
 
 .created-col,
@@ -1790,8 +1791,8 @@ onBeforeUnmount(() => {
 }
 
 .reply-col {
-  width: 3.5%;
-  min-width: 3.25rem;
+  width: 4.5%;
+  min-width: 3.75rem;
   white-space: nowrap;
 }
 
