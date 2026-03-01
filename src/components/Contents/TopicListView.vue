@@ -243,6 +243,40 @@ const desktopHeaderDisplayPages = computed(() =>
   ),
 );
 
+const HEADER_COMPACT_BREAKPOINT = 878;
+const HEADER_DENSE_BREAKPOINT = 1200;
+const viewportWidth = ref(
+  typeof window !== "undefined" ? window.innerWidth : Number.MAX_SAFE_INTEGER,
+);
+
+const isCompactDesktopHeaderPagination = computed(
+  () => viewportWidth.value <= HEADER_COMPACT_BREAKPOINT,
+);
+
+const isDenseDesktopHeaderPagination = computed(
+  () => viewportWidth.value <= HEADER_DENSE_BREAKPOINT,
+);
+
+const desktopHeaderPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    isDenseDesktopHeaderPagination.value ? 3 : 5,
+  ),
+);
+
+const desktopHeaderPaginationClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+    : undefined,
+);
+
+const desktopHeaderLinkPaddingClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "topic-header-pagination-link"
+    : undefined,
+);
+
 const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
@@ -356,6 +390,11 @@ const handleDocumentKeydown = (event) => {
   if (showSortDropdown.value) {
     closeSortDropdown();
   }
+};
+
+const handleWindowResize = () => {
+  if (typeof window === "undefined") return;
+  viewportWidth.value = window.innerWidth;
 };
 
 /**
@@ -826,14 +865,17 @@ watch(
 );
 
 onMounted(() => {
+  handleWindowResize();
   document.addEventListener("click", handleDocumentClick);
   document.addEventListener("keydown", handleDocumentKeydown);
+  window.addEventListener("resize", handleWindowResize);
 });
 
 onBeforeUnmount(() => {
   clearRestoreSortIconTimer();
   document.removeEventListener("click", handleDocumentClick);
   document.removeEventListener("keydown", handleDocumentKeydown);
+  window.removeEventListener("resize", handleWindowResize);
 });
 </script>
 
@@ -1335,12 +1377,14 @@ onBeforeUnmount(() => {
                       <ForumPaginationCard
                         :current-page="forumStore.pagination.currentPage"
                         :total-pages="forumStore.pagination.totalPages"
-                        :pages="desktopHeaderDisplayPages"
-                        :show-edge-buttons="false"
+                        :pages="desktopHeaderPages"
+                        :show-edge-buttons="!isCompactDesktopHeaderPagination"
                         :show-jump="true"
-                        :show-direction-buttons="false"
-                        pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
-                        link-padding-class="topic-header-pagination-link"
+                        :show-direction-buttons="
+                          !isCompactDesktopHeaderPagination
+                        "
+                        :pagination-class="desktopHeaderPaginationClass"
+                        :link-padding-class="desktopHeaderLinkPaddingClass"
                         @page-change="goToPage"
                       />
                     </div>
