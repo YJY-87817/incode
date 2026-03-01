@@ -18,14 +18,14 @@ namespace incode2.Controllers.Point
             _context = context;
         }
 
-        // GET: EntrustMission
+        // GET: EntrustMissionTest
         public async Task<IActionResult> Index()
         {
-            var incodedatabaseContext = _context.EntrustMission.Include(e => e.User);
+            var incodedatabaseContext = _context.EntrustMission.Include(e => e.BestContent).Include(e => e.BestUser).Include(e => e.Content).Include(e => e.User);
             return View(await incodedatabaseContext.ToListAsync());
         }
 
-        // GET: EntrustMission/Details/5
+        // GET: EntrustMissionTest/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -34,6 +34,9 @@ namespace incode2.Controllers.Point
             }
 
             var entrustMission = await _context.EntrustMission
+                .Include(e => e.BestContent)
+                .Include(e => e.BestUser)
+                .Include(e => e.Content)
                 .Include(e => e.User)
                 .FirstOrDefaultAsync(m => m.EntrustMissionId == id);
             if (entrustMission == null)
@@ -44,19 +47,22 @@ namespace incode2.Controllers.Point
             return View(entrustMission);
         }
 
-        // GET: EntrustMission/Create
+        // GET: EntrustMissionTest/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username");
+            ViewData["BestContentId"] = new SelectList(_context.Content, "ContentId", "Body");
+            ViewData["BestUserId"] = new SelectList(_context.User, "UserId", "Email");
+            ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email");
             return View();
         }
 
-        // POST: EntrustMission/Create
+        // POST: EntrustMissionTest/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,Status,CreatedAt")] EntrustMission entrustMission)
+        public async Task<IActionResult> Create([Bind("EntrustMissionId,UserId,ContentId,Title,Detail,RewardPoints,Category,Deadline,Status,IsUrgent,IsActive,CreatedAt,UpdatedAt,BestContentId,BestUserId,SelectedAt")] EntrustMission entrustMission)
         {
             if (ModelState.IsValid)
             {
@@ -64,11 +70,14 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
+            ViewData["BestContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.BestContentId);
+            ViewData["BestUserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.BestUserId);
+            ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.ContentId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.UserId);
             return View(entrustMission);
         }
 
-        // GET: EntrustMission/Edit/5
+        // GET: EntrustMissionTest/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -81,16 +90,19 @@ namespace incode2.Controllers.Point
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
+            ViewData["BestContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.BestContentId);
+            ViewData["BestUserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.BestUserId);
+            ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.ContentId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.UserId);
             return View(entrustMission);
         }
 
-        // POST: EntrustMission/Edit/5
+        // POST: EntrustMissionTest/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("EntrustMissionId,UserId,Title,Detail,RewardPoints,Status,CreatedAt")] EntrustMission entrustMission)
+        public async Task<IActionResult> Edit(int id, [Bind("EntrustMissionId,UserId,ContentId,Title,Detail,RewardPoints,Category,Deadline,Status,IsUrgent,IsActive,CreatedAt,UpdatedAt,BestContentId,BestUserId,SelectedAt")] EntrustMission entrustMission)
         {
             if (id != entrustMission.EntrustMissionId)
             {
@@ -117,11 +129,14 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", entrustMission.UserId);
+            ViewData["BestContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.BestContentId);
+            ViewData["BestUserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.BestUserId);
+            ViewData["ContentId"] = new SelectList(_context.Content, "ContentId", "Body", entrustMission.ContentId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", entrustMission.UserId);
             return View(entrustMission);
         }
 
-        // GET: EntrustMission/Delete/5
+        // GET: EntrustMissionTest/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -130,6 +145,9 @@ namespace incode2.Controllers.Point
             }
 
             var entrustMission = await _context.EntrustMission
+                .Include(e => e.BestContent)
+                .Include(e => e.BestUser)
+                .Include(e => e.Content)
                 .Include(e => e.User)
                 .FirstOrDefaultAsync(m => m.EntrustMissionId == id);
             if (entrustMission == null)
@@ -140,7 +158,7 @@ namespace incode2.Controllers.Point
             return View(entrustMission);
         }
 
-        // POST: EntrustMission/Delete/5
+        // POST: EntrustMissionTest/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

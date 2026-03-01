@@ -76,18 +76,33 @@
 
             <!-- Nav Item - Pages Collapse Menu -->
             <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePoint"
+                   aria-expanded="true" aria-controls="collapsePoint">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>點數</span>
+                </a>
+                <div id="collapsePoint" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" asp-area="" asp-controller="PointLog" asp-action="Index">會員點數</a>
+                        <a class="collapse-item" asp-area="" asp-controller="PointLog" asp-action="PointLogsDetail">會員點數查詢</a>
+                        <a class="collapse-item" asp-area="" asp-controller="PointRecharge" asp-action="Index">點數儲值</a>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
                 <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMisson"
                    aria-expanded="true" aria-controls="collapseMisson">
                     <i class="fas fa-fw fa-cog"></i>
-                    <span>任務點數</span>
+                    <span>任務</span>
                 </a>
                 <div id="collapseMisson" class="collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="Index">會員點數</a>
-                        <a class="collapse-item" asp-area="" asp-controller="PointLogs" asp-action="PointLogsDetail">會員點數查詢</a>
-                        <a class="collapse-item" asp-area="" asp-controller="Mission" asp-action="Index">平台任務</a>
                         <a class="collapse-item" asp-area="" asp-controller="EntrustMission" asp-action="Index">委託任務</a>
-                        <a class="collapse-item" asp-area="" asp-controller="PointRecharge" asp-action="Index">點數儲值</a>
+                        <a class="collapse-item" asp-area="" asp-controller="Mission" asp-action="Index">平台任務</a>
+                        <a class="collapse-item" asp-area="" asp-controller="MissionProgress" asp-action="Index">平台任務進度</a>
+
                     </div>
                 </div>
             </li>

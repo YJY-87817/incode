@@ -47,7 +47,7 @@ namespace incode2.Controllers.Point
         // GET: PointRecharge/Create
         public IActionResult Create()
         {
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email");
             return View();
         }
 
@@ -56,7 +56,7 @@ namespace incode2.Controllers.Point
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointRecharge pointRecharge)
+        public async Task<IActionResult> Create([Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,PaymentTradeNo,Status,CreatedAt")] PointRecharge pointRecharge)
         {
             if (ModelState.IsValid)
             {
@@ -64,7 +64,7 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
             return View(pointRecharge);
         }
 
@@ -81,7 +81,7 @@ namespace incode2.Controllers.Point
             {
                 return NotFound();
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
             return View(pointRecharge);
         }
 
@@ -90,7 +90,7 @@ namespace incode2.Controllers.Point
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,RelatedOrderId,Status,CreatedAt")] PointRecharge pointRecharge)
+        public async Task<IActionResult> Edit(int id, [Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,PaymentTradeNo,Status,CreatedAt")] PointRecharge pointRecharge)
         {
             if (id != pointRecharge.PointRechargeId)
             {
@@ -117,7 +117,7 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Username", pointRecharge.UserId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
             return View(pointRecharge);
         }
 

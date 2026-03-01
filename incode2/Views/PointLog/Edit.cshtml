@@ -29,6 +29,16 @@
                 <span asp-validation-for="SourceId" class="text-danger"></span>
             </div>
             <div class="form-group">
+                <label asp-for="DisplaySource" class="control-label"></label>
+                <input asp-for="DisplaySource" class="form-control" />
+                <span asp-validation-for="DisplaySource" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DisplaySourceSubTitle" class="control-label"></label>
+                <input asp-for="DisplaySourceSubTitle" class="form-control" />
+                <span asp-validation-for="DisplaySourceSubTitle" class="text-danger"></span>
+            </div>
+            <div class="form-group">
                 <label asp-for="PointTypeDefinitionId" class="control-label"></label>
                 <select asp-for="PointTypeDefinitionId" class="form-control" asp-items="ViewBag.PointTypeDefinitionId"></select>
                 <span asp-validation-for="PointTypeDefinitionId" class="text-danger"></span>
@@ -37,6 +47,16 @@
                 <label asp-for="ChangeAmount" class="control-label"></label>
                 <input asp-for="ChangeAmount" class="form-control" />
                 <span asp-validation-for="ChangeAmount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BalanceAfter" class="control-label"></label>
+                <input asp-for="BalanceAfter" class="form-control" />
+                <span asp-validation-for="BalanceAfter" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Status" class="control-label"></label>
+                <input asp-for="Status" class="form-control" />
+                <span asp-validation-for="Status" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <label asp-for="CreatedAt" class="control-label"></label>

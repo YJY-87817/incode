@@ -18,44 +18,39 @@ namespace incode2.Controllers.Point
             _context = context;
         }
 
-        // GET: MissionProgress
+        // GET: MissionProgressTest
         public async Task<IActionResult> Index(int? MissionId, int? UserId)
         {
             var query = _context.MissionProgress
                  .Include(m => m.Mission)
                  .Include(m => m.User)
-                 .AsNoTracking();  // 純查看，不追蹤實體，提高效能
+                 .AsNoTracking();
 
-            // 篩選特定任務
             if (MissionId.HasValue)
             {
                 query = query.Where(m => m.MissionId == MissionId.Value);
             }
-
-            // 篩選特定用戶
-            if (UserId.HasValue)
+            else if (UserId.HasValue) // 調整邏輯：如果查用戶，就不查特定任務
             {
                 query = query.Where(m => m.UserId == UserId.Value);
             }
 
-            // 排序：先按任務，再按用戶
             query = query.OrderBy(m => m.MissionId)
                          .ThenBy(m => m.UserId);
 
             var progress = await query.ToListAsync();
 
-            // 設定頁面標題
+            // --- 優化後的標題設定邏輯 ---
             if (MissionId.HasValue)
             {
-                var mission = await _context.Mission
-                    .FirstOrDefaultAsync(m => m.MissionId == MissionId.Value);
-                ViewBag.PageTitle = $"任務進度 - {mission?.MissionName ?? "未知任務"}";
+                // 直接從查詢結果的第一筆資料獲取任務名稱，無需再次查詢資料庫
+                var firstItem = progress.FirstOrDefault();
+                ViewBag.PageTitle = $"任務進度 - {firstItem?.Mission?.MissionName ?? "未找到任務"}";
             }
             else if (UserId.HasValue)
             {
-                var user = await _context.User
-                    .FirstOrDefaultAsync(u => u.UserId == UserId.Value);
-                ViewBag.PageTitle = $"用戶任務進度 - {user?.Username ?? "未知用戶"}";
+                var firstItem = progress.FirstOrDefault();
+                ViewBag.PageTitle = $"用戶任務進度 - {firstItem?.User?.Email ?? "未找到用戶"}";
             }
             else
             {
@@ -65,7 +60,7 @@ namespace incode2.Controllers.Point
             return View(progress);
         }
 
-        // GET: MissionProgress/Details/5
+        // GET: MissionProgressTest/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -82,26 +77,23 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            ViewBag.PageTitle = $"進度詳情 - {missionProgress.Mission?.MissionName ?? "未知任務"}";
-
-
             return View(missionProgress);
         }
 
-        // GET: MissionProgress/Create
+        // GET: MissionProgressTest/Create
         public IActionResult Create()
         {
-            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "MissionDetail");
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account");
+            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "Category");
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email");
             return View();
         }
 
-        // POST: MissionProgress/Create
+        // POST: MissionProgressTest/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MissionProgressId,UserId,MissionId,CurrentCount,AcceptedAt,CompletedAt,RewardedAt")] MissionProgress missionProgress)
+        public async Task<IActionResult> Create([Bind("MissionProgressId,UserId,MissionId,CurrentCount,Status,AcceptedAt,CompletedAt,RewardedAt,CycleStartAt,CycleEndAt")] MissionProgress missionProgress)
         {
             if (ModelState.IsValid)
             {
@@ -109,12 +101,12 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "MissionDetail", missionProgress.MissionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", missionProgress.UserId);
+            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "Category", missionProgress.MissionId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", missionProgress.UserId);
             return View(missionProgress);
         }
 
-        // GET: MissionProgress/Edit/5
+        // GET: MissionProgressTest/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -127,17 +119,17 @@ namespace incode2.Controllers.Point
             {
                 return NotFound();
             }
-            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "MissionDetail", missionProgress.MissionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", missionProgress.UserId);
+            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "Category", missionProgress.MissionId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", missionProgress.UserId);
             return View(missionProgress);
         }
 
-        // POST: MissionProgress/Edit/5
+        // POST: MissionProgressTest/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MissionProgressId,UserId,MissionId,CurrentCount,AcceptedAt,CompletedAt,RewardedAt")] MissionProgress missionProgress)
+        public async Task<IActionResult> Edit(int id, [Bind("MissionProgressId,UserId,MissionId,CurrentCount,Status,AcceptedAt,CompletedAt,RewardedAt,CycleStartAt,CycleEndAt")] MissionProgress missionProgress)
         {
             if (id != missionProgress.MissionProgressId)
             {
@@ -164,12 +156,12 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "MissionDetail", missionProgress.MissionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Account", missionProgress.UserId);
+            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "Category", missionProgress.MissionId);
+            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", missionProgress.UserId);
             return View(missionProgress);
         }
 
-        // GET: MissionProgress/Delete/5
+        // GET: MissionProgressTest/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -189,7 +181,7 @@ namespace incode2.Controllers.Point
             return View(missionProgress);
         }
 
-        // POST: MissionProgress/Delete/5
+        // POST: MissionProgressTest/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
