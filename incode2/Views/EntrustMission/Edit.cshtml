@@ -1,104 +1,209 @@
 ﻿@model incode2.Models.EntrustMission
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "編輯委託任務";
 }
 
-<h1>Edit</h1>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning py-3">
+                    <h4 class="mb-0 fs-5 fw-bold text-dark"><i class="bi bi-pencil-square me-2"></i>委託任務修改</h4>
+                </div>
 
-<h4>EntrustMission</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="EntrustMissionId" />
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class="form-control" asp-items="ViewBag.UserId"></select>
-                <span asp-validation-for="UserId" class="text-danger"></span>
+                <div class="card-body p-4">
+                    <form id="editForm" asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="EntrustMissionId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="UpdatedAt" />
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="mb-3 form-group">
+                                    <label asp-for="UserId" class="form-label fw-bold text-secondary">發布者</label>
+                                    <div class="form-control-plaintext bg-light border rounded px-2">
+                                        @* 直接顯示 User 的 Email，前提是 Model 有載入 User 導覽屬性 *@
+                                        @(Model.User?.Email ?? "未設定")
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label asp-for="Title" class="form-label fw-bold">任務標題 <span class="text-danger">*</span></label>
+                                    <input asp-for="Title" class="form-control" required>
+                                    <span asp-validation-for="Title" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Detail" class="form-label fw-bold">任務詳情</label>
+                                    <textarea asp-for="Detail" class="form-control" rows="4"></textarea>
+                                    <span asp-validation-for="Detail" class="text-danger small"></span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Category" class="form-label fw-bold">類別 <span class="text-danger">*</span></label>
+                                        <input asp-for="Category" class="form-control" required />
+                                        <span asp-validation-for="Category" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="Status" class="form-label fw-bold">狀態 <span class="text-danger">*</span></label>
+                                        <select asp-for="Status" class="form-select border-warning-subtle" required>
+                                            <option value="open">開放中</option>
+                                            <option value="completed">已完成</option>
+                                            <option value="cancelled">已取消</option>
+                                            <option value="expired">已過期</option>
+                                        </select>
+                                        <span asp-validation-for="Status" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="RewardPoints" class="form-label fw-bold text-danger">獎勵點數 <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">P</span>
+                                            <input asp-for="RewardPoints" type="number" class="form-control" min="0" required>
+                                        </div>
+                                        <span asp-validation-for="RewardPoints" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="Deadline" class="form-label fw-bold text-success">截止日期</label>
+                                        <input asp-for="Deadline" class="form-control" type="datetime-local" />
+                                        <span asp-validation-for="Deadline" class="text-danger small"></span>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-light rounded mb-4">
+                                    <div class="row small text-muted">
+                                        <div class="col-6">
+                                            <label class="fw-bold mb-1">建立時間</label>
+                                            <div>@Model.CreatedAt</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="fw-bold mb-1">最後修改</label>
+                                            <div>@Model.UpdatedAt</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5 border-start text-center">
+                                <label class="form-label fw-bold text-muted mb-3">關聯設定</label>
+
+                                <div class="mb-3 text-start">
+                                    <label asp-for="ContentId" class="form-label fw-bold">關聯內容</label>
+                                    <select asp-for="ContentId" class="form-select" asp-items="ViewBag.ContentId">
+                                        <option value="">-- 請選擇 --</option>
+                                    </select>
+                                    <span asp-validation-for="ContentId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3 text-start">
+                                    <label asp-for="BestContentId" class="form-label fw-bold">最佳內容</label>
+                                    <select asp-for="BestContentId" class="form-select" asp-items="ViewBag.BestContentId">
+                                        <option value="">-- 請選擇 --</option>
+                                    </select>
+                                    <span asp-validation-for="BestContentId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3 text-start">
+                                    <label asp-for="BestUserId" class="form-label fw-bold">獲選會員</label>
+                                    <select asp-for="BestUserId" class="form-select" asp-items="ViewBag.BestUserId">
+                                        <option value="">-- 請選擇 --</option>
+                                    </select>
+                                    <span asp-validation-for="BestUserId" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3 text-start">
+                                    <label asp-for="SelectedAt" class="form-label fw-bold">獲選時間</label>
+                                    <input asp-for="SelectedAt" class="form-control" type="datetime-local" />
+                                    <span asp-validation-for="SelectedAt" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mt-4 px-4 text-start">
+                                    <div class="form-check form-switch mb-2">
+                                        <input type="checkbox" name="IsUrgent" value="true" @(Model.IsUrgent == true ? "checked" : "") class="form-check-input" />
+                                        <input type="hidden" name="IsUrgent" value="false" />
+                                        <label class="form-check-label fw-bold text-danger" asp-for="IsUrgent">緊急任務</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "") class="form-check-input" />
+                                        <input type="hidden" name="IsActive" value="false" />
+                                        <label asp-for="IsActive" class="form-check-label fw-bold">啟用任務</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            <strong>請檢查以下必填欄位：</strong>
+                            <ul id="errorList" class="mb-0 mt-2"></ul>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-dark" onclick="validateForm(event)">
+                                <i class="bi bi-check-circle me-1"></i> 儲存修改
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">取消</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="ContentId" class="control-label"></label>
-                <select asp-for="ContentId" class="form-control" asp-items="ViewBag.ContentId"></select>
-                <span asp-validation-for="ContentId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Detail" class="control-label"></label>
-                <input asp-for="Detail" class="form-control" />
-                <span asp-validation-for="Detail" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="RewardPoints" class="control-label"></label>
-                <input asp-for="RewardPoints" class="form-control" />
-                <span asp-validation-for="RewardPoints" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Category" class="control-label"></label>
-                <input asp-for="Category" class="form-control" />
-                <span asp-validation-for="Category" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Deadline" class="control-label"></label>
-                <input asp-for="Deadline" class="form-control" />
-                <span asp-validation-for="Deadline" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="IsUrgent" class="control-label"></label>
-                <input asp-for="IsUrgent" class="form-control" />
-                <span asp-validation-for="IsUrgent" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="BestContentId" class="control-label"></label>
-                <select asp-for="BestContentId" class="form-control" asp-items="ViewBag.BestContentId"></select>
-                <span asp-validation-for="BestContentId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="BestUserId" class="control-label"></label>
-                <select asp-for="BestUserId" class="form-control" asp-items="ViewBag.BestUserId"></select>
-                <span asp-validation-for="BestUserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SelectedAt" class="control-label"></label>
-                <input asp-for="SelectedAt" class="form-control" />
-                <span asp-validation-for="SelectedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function validateForm(event) {
+            const form = document.getElementById('editForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const title = document.querySelector('input[name="Title"]');
+            if (!title.value.trim()) {
+                errors.push('任務標題');
+            }
+
+            const category = document.querySelector('input[name="Category"]');
+            if (!category.value.trim()) {
+                errors.push('類別');
+            }
+
+            const rewardPoints = document.querySelector('input[name="RewardPoints"]');
+            if (!rewardPoints.value) {
+                errors.push('獎勵點數');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
+            }
+        }
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
+
+

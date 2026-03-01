@@ -7,11 +7,7 @@
 <div class="container-fluid py-4">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-coins text-warning me-2"></i>點數異動日誌</h1>
-        <div>
-            @* 修正 Action 名稱 matching: PointLogsDetail *@
-            <a asp-action="PointLogsDetail" class="btn btn-sm btn-info shadow-sm">
-                <i class="fas fa-search fa-sm text-white-50"></i> 詳細分析視圖
-            </a>
+        <div>   
             <a asp-action="Create" class="btn btn-sm btn-primary shadow-sm ms-2">
                 <i class="fas fa-plus fa-sm text-white-50"></i> 手動調整點數
             </a>
@@ -58,7 +54,7 @@
                                     <small class="text-muted">@item.User?.Email</small>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-secondary">@item.PointTypeDefinition?.Category</span>
+                                    <span class="badge bg-primary ">@item.PointTypeDefinition?.Category</span>
                                 </td>
                                 <td>
                                     <div class="small">
@@ -77,16 +73,16 @@
                                         <span class="text-danger">@item.ChangeAmount.ToString("N0")</span>
                                     }
                                 </td>
-                                <td class="text-center font-weight-bold text-dark">
+                                <td class="text-center font-weight-bold text-primary">
                                     @item.BalanceAfter.ToString("N0")
                                 </td>
                                 <td class="text-center">
-                                    @if (item.Status == "completed" || item.Status == "1")
+                                    @if (item.Status == "success" || item.Status == "1")
                                     {
                                         <span class="badge bg-success shadow-sm">成功</span>
                                     }
                                     else
-                                    {
+                                    { 
                                         <span class="badge bg-warning text-dark shadow-sm">@item.Status</span>
                                     }
                                 </td>
@@ -98,9 +94,9 @@
                                            title="查看 @item.User?.Username 的完整點數明細">
                                             <i class="fas fa-users"></i>
                                         </a>
-                                        <a asp-action="Details" asp-route-id="@item.PointLogId" class="btn btn-sm btn-outline-info" title="查看詳情">
+                                        @* <a asp-action="Details" asp-route-id="@item.PointLogId" class="btn btn-sm btn-outline-info" title="查看詳情">
                                             <i class="fas fa-eye"></i>
-                                        </a>
+                                        </a> *@
                                         <a asp-action="Edit" asp-route-id="@item.PointLogId" class="btn btn-sm btn-outline-primary" title="編輯紀錄">
                                             <i class="fas fa-edit"></i>
                                         </a>

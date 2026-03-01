@@ -94,7 +94,11 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var pointLog = await _context.PointLog.FindAsync(id);
+            var pointLog = await _context.PointLog
+                .Include(p => p.PointTypeDefinition)
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(m => m.PointLogId == id);
+
             if (pointLog == null)
             {
                 return NotFound();

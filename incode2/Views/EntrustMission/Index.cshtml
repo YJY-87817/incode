@@ -8,7 +8,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tasks me-2"></i>委託任務管理</h6>
-            <a asp-action="Create" class="btn btn-success btn-sm shadow-sm">
+            <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm">
                 <i class="fas fa-plus fa-sm text-white-50"></i> 新增任務
             </a>
         </div>
@@ -54,9 +54,24 @@
                                     }
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge @(item.Status == "已完成" ? "bg-success" : "bg-warning text-dark")">
-                                        @item.Status
-                                    </span>
+                                    @switch (item.Status)
+                                    {
+                                        case "open":
+                                            <span class="badge bg-success">開放中</span>
+                                            break;
+                                        case "completed":
+                                            <span class="badge bg-primary">已完成</span>
+                                            break;
+                                        case "cancelled":
+                                            <span class="badge bg-secondary">已取消</span>
+                                            break;
+                                        case "expired":
+                                            <span class="badge bg-danger">已過期</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-light text-dark">@item.Status</span>
+                                            break;
+                                    }
                                 </td>
                                 <td class="text-center">
                                     @if (item.IsUrgent ?? false)
@@ -79,8 +94,8 @@
                                 <td class="text-center">
                                     <div class="btn-group shadow-sm">
                                         <a asp-action="Edit" asp-route-id="@item.EntrustMissionId" class="btn btn-sm btn-outline-primary" title="編輯"><i class="fas fa-edit"></i></a>
-                                        <a asp-action="Details" asp-route-id="@item.EntrustMissionId" class="btn btn-sm btn-outline-info" title="詳情"><i class="fas fa-eye"></i></a>
-                                        <a asp-action="Delete" asp-route-id="@item.EntrustMissionId" class="btn btn-sm btn-outline-danger" title="刪除"><i class="fas fa-trash"></i></a>
+                                        @* <a asp-action="Details" asp-route-id="@item.EntrustMissionId" class="btn btn-sm btn-outline-info" title="詳情"><i class="fas fa-eye"></i></a> *@
+                                        @* <a asp-action="Delete" asp-route-id="@item.EntrustMissionId" class="btn btn-sm btn-outline-danger" title="刪除"><i class="fas fa-trash"></i></a> *@
                                     </div>
                                 </td>
                             </tr>
