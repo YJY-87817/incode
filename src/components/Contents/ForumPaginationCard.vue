@@ -235,6 +235,7 @@ const jumpInputWidth = computed(() => {
 @media (min-width: 576px) {
   .pagination-nav-wrapper {
     flex-direction: row;
+    flex-wrap: nowrap !important;
     gap: 1rem;
   }
 
