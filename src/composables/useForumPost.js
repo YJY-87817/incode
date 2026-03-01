@@ -25,7 +25,7 @@ export function useForumPost() {
       case "commentReply":
         return "詳細回覆";
       default:
-        return "發佈新主題";
+        return "新主題";
     }
   };
 
