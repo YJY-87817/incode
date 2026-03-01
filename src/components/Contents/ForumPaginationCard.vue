@@ -239,7 +239,7 @@ const jumpInputWidth = computed(() => {
   }
 
   .pagination-jump-shell {
-    margin-left: auto;
+    margin-left: 0;
   }
 }
 
