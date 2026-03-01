@@ -18,7 +18,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">參與者明細列表</h6>
-            <a asp-action="Create" class="btn btn-success btn-sm shadow-sm">
+            <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm">
                 <i class="fas fa-plus fa-sm text-white-50"></i> 手動新增記錄
             </a>
         </div>
@@ -89,12 +89,12 @@
                                         <a asp-action="Edit" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-primary" title="編輯">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a asp-action="Details" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-info" title="詳情">
+                                        @* <a asp-action="Details" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-info" title="詳情">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a asp-action="Delete" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-danger" title="刪除">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </a> *@
                                     </div>
                                 </td>
                             </tr>

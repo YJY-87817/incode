@@ -114,13 +114,25 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var missionProgress = await _context.MissionProgress.FindAsync(id);
+            var missionProgress = await _context.MissionProgress
+                .Include(m => m.User)    // 確保有 Include 關聯物件
+                .Include(m => m.Mission) // 確保有 Include 關聯物件
+                .FirstOrDefaultAsync(m => m.MissionProgressId == id);
+
             if (missionProgress == null)
             {
                 return NotFound();
             }
-            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "Category", missionProgress.MissionId);
+
+
+            // 2. 將關聯資料的名稱放入 ViewBag
+            ViewBag.UserEmail = missionProgress.User?.Email ?? "未知會員";
+            ViewBag.MissionName = missionProgress.Mission?.MissionName ?? "未知任務";
+
+            // 原有的下拉選單資料 (如果還有需要的話)
+            ViewData["MissionId"] = new SelectList(_context.Mission, "MissionId", "MissionName", missionProgress.MissionId);
             ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", missionProgress.UserId);
+
             return View(missionProgress);
         }
 

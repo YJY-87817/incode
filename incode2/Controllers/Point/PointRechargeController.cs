@@ -76,7 +76,10 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var pointRecharge = await _context.PointRecharge.FindAsync(id);
+            var pointRecharge = await _context.PointRecharge
+                .Include(p => p.User) // <--- 確保這行存在
+                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
+
             if (pointRecharge == null)
             {
                 return NotFound();

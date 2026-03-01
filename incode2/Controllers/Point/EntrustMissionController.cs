@@ -85,7 +85,12 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var entrustMission = await _context.EntrustMission.FindAsync(id);
+            var entrustMission = await _context.EntrustMission
+                .Include(e => e.BestContent)
+                .Include(e => e.BestUser)
+                .Include(e => e.Content)
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(m => m.EntrustMissionId == id);
             if (entrustMission == null)
             {
                 return NotFound();

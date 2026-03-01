@@ -72,7 +72,9 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var mission = await _context.Mission.FindAsync(id);
+            var mission = await _context.Mission
+                .Include(m => m.MissionProgress)
+                .FirstOrDefaultAsync(m => m.MissionId == id);
             if (mission == null)
             {
                 return NotFound();
