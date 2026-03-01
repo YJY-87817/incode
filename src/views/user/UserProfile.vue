@@ -89,7 +89,7 @@
               const doc = parser.parseFromString(rawHtml, "text/html");
 
               const imgTag = doc.querySelector("img");
-              extractedImg = imgTag ? imgTag.src : null;
+              extractedImg = imgTag ? imgTag.getAttribute("src") : null;
 
               const text = doc.body.textContent?.trim() || "";
               displayText = text ? text.substring(0, 60) + "..." : "本篇文章僅包含圖片";
