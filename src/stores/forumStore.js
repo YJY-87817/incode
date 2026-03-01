@@ -1561,6 +1561,7 @@ export const useForumStore = defineStore("forum", {
      */
     async fetchThreadDetail(threadId) {
       try {
+        // 新人提醒：每次切 thread 都先重置分頁，避免上一個 thread 的資料殘留。
         this.resetThreadPagingState();
 
         const detailRes = await contentApi.getContent(threadId);
@@ -1595,6 +1596,8 @@ export const useForumStore = defineStore("forum", {
           const fallbackEntrustMeta = await fetchEntrustMissionMetaByContentId(
             detail.contentId ?? threadId,
           );
+          // 這裡是多來源整併：優先用 detail 直接給的欄位，不足再補 fallback API。
+          // 你若要追「委託任務資料怪怪的」，先從這段開始比對來源。
           const entrustMissionMeta = {
             entrustMissionId:
               detailEntrustMeta.entrustMissionId ??
@@ -1628,6 +1631,8 @@ export const useForumStore = defineStore("forum", {
                 entrustMissionMeta.bestAnswerContentId ??
                 cachedBestAnswerContentId,
             });
+          // 新人提醒：最佳解不是只看一個欄位，這裡有 API + localStorage 的容錯鏈。
+          // 目的：避免後端回傳暫時缺漏時，前端整個「掉最佳解狀態」。
 
           const resolvedBestAnswerContentId =
             resolvedBestAnswer?.contentId ?? null;
@@ -1753,6 +1758,7 @@ export const useForumStore = defineStore("forum", {
      */
     openThread(topicId) {
       this.selectedThread = topicId;
+      // 這裡不 await 是刻意的：讓 UI 先切到詳情畫面，再由 loading 狀態補資料。
       this.fetchThreadDetail(topicId);
     },
 
@@ -1855,8 +1861,16 @@ export const useForumStore = defineStore("forum", {
       if (this.isSubmittingNewTopic) return;
       this.isSubmittingNewTopic = true;
 
+      const authStore = useAuthStore();
+      const currentUserId = Number(authStore.user?.id);
+      if (!Number.isFinite(currentUserId) || currentUserId <= 0) {
+        alert("請先登入後再發表");
+        this.isSubmittingNewTopic = false;
+        return;
+      }
+
       const dto = {
-        userId: 1,
+        userId: currentUserId,
         categoryId: this.newTopic.categoryId,
         parentContentId: this.newTopic.parentContentId,
         title: this.newTopic.title.trim(),

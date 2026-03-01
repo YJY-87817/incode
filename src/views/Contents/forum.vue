@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import { useForumPost } from "@/composables/useForumPost";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -14,9 +15,7 @@ import NewTopicBanners from "@/components/Contents/NewTopicBanners.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
 
 // 可以抓到前端userID pinia
-import { useAuthStore } from "@/stores/user/auth.js";
-const authStore = useAuthStore();
-// 可以抓到前端userID pinia
+const { ensureLoggedIn } = useLoginGuardAlert();
 
 // ========== 狀態和路由配置 ==========
 const forumStore = useForumStore();
@@ -81,7 +80,10 @@ const resolveThreadId = (rawId) => {
   return Number.isNaN(numericId) ? rawId : numericId;
 };
 
-const openNewTopicModal = () => {
+const openNewTopicModal = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = forumStore.selectedCategory ?? null;

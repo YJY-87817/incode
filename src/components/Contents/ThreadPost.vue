@@ -310,6 +310,7 @@ import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import contentApi from "@/api/contentApi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
@@ -318,6 +319,7 @@ import { toAbsoluteUrl, formatDate } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const { ensureLoggedIn, getCurrentUserId } = useLoginGuardAlert();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -790,7 +792,12 @@ function autoResizeTextarea(event) {
   textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
-function toggleReply() {
+async function toggleReply() {
+  if (!showReply.value) {
+    const canContinue = await ensureLoggedIn("請先登入後操作");
+    if (!canContinue) return;
+  }
+
   showReply.value = !showReply.value;
   if (!showReply.value) {
     forumStore.cancelQuickReply(props.post.id);
@@ -802,7 +809,10 @@ function toggleReply() {
   showQuickReply.value = true;
 }
 
-function selectQuickReply() {
+async function selectQuickReply() {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -810,7 +820,10 @@ function selectQuickReply() {
   showQuickReply.value = true;
 }
 
-function selectDetailedReply() {
+async function selectDetailedReply() {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -913,6 +926,8 @@ const openDetailedReplyModal = () => {
 };
 
 async function submitReply() {
+  // 新人提醒：這是「快速回覆」專屬流程（純文字 textarea），
+  // 跟 NewTopicModal 的詳細回覆是兩條不同入口，但最後都打 ContentApi。
   const replyContent = forumStore.getQuickReplyContent(props.post.id);
 
   if (!replyContent.trim()) {
@@ -929,10 +944,15 @@ async function submitReply() {
   const isSubmitting = forumStore.getQuickReplySubmitting(props.post.id);
   if (isSubmitting) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return;
+
   forumStore.setQuickReplySubmitting(props.post.id, true);
 
   const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
+    userId: currentUserId,
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
     title: buildReplyTitle(props.post.title || contentSummary.value),
@@ -952,7 +972,8 @@ async function submitReply() {
     forumStore.clearQuickReply(props.post.id);
     showReply.value = false;
 
-    // 直接调用 forumStore 重新获取帖文详情
+    // 直接調用 forumStore 重新獲取帖文詳情
+    // 不手動 append 本地列表，避免巢狀回覆/分頁計數和後端不一致。
     if (forumStore.selectedThread) {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }

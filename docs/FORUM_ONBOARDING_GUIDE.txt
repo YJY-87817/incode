@@ -1,0 +1,275 @@
+【Forum 新人接手導覽（從根目錄到資訊流）】
+
+版本說明
+- 此文件以目前專案（incode2_vue3）現況撰寫，重點是你接手 forum 功能時，先知道「誰是入口、資料怎麼跑、哪裡有卡控」。
+- 先看大方向，再回頭鑽細節最省時間。
+
+==================================================
+一、先用 3 分鐘建立全局地圖（根目錄視角）
+==================================================
+
+1) 你現在接手的是前端 Vue3 + Vite + Pinia 專案
+- 入口：src/main.js
+- 路由：src/router/index.js
+- 全域狀態：src/stores/
+- API 封裝：src/api/
+- 頁面：src/views/
+- 功能型組件：src/components/
+
+2) 與 forum 最直接有關的資料夾
+- 頁面入口：src/views/Contents/forum.vue
+- 核心狀態：src/stores/forumStore.js
+- 發文共用流程：src/composables/useForumPost.js
+- Forum API：
+  - src/api/contentApi.js
+  - src/api/contentInteractionApi.js
+  - src/api/imageapi.js
+- Forum UI：src/components/Contents/
+  - CategoryFilter.vue（分類）
+  - TopicListView.vue（列表+詳情容器）
+  - ThreadPost.vue（單則內容）
+  - InteractionButtons.vue（讚/收藏/更多）
+  - NewTopicModal.vue（大型編輯器）
+  - NewTopicSidebar.vue（草稿側欄）
+  - QuickReplyBox.vue（簡易回覆）
+  - TiptapEditor.vue（富文字編輯器）
+
+3) 啟動與 API 基礎設定
+- Vite dev server 在 vite.config.js，有 /api、/contents、/img 代理到後端 https://localhost:7190
+- API client 在 src/api/request.js：
+  - baseURL = VITE_API_BASE_URL 或 /api
+  - request interceptor 自動帶 Bearer token
+  - response interceptor 401 時會報錯
+
+==================================================
+二、Forum 的主流程（你先記這一條線就夠了）
+==================================================
+
+【大白話一句話】
+路由進 forum 頁面 -> forum.vue 只負責「協調」 -> forumStore 負責「資料真相」 -> 各組件只讀寫 store 狀態 -> store 透過 contentApi/contentInteractionApi 打後端。
+
+【完整流程圖（文字版）】
+A. 使用者進入 /forum
+  -> router/index.js 匹配到 views/Contents/forum.vue
+  -> forum.vue onMounted:
+     1. 同步 windowWidth 到 forumStore
+     2. forumStore.fetchCategories()
+     3. forumStore.setSortOption("latest")（內部會 fetchTopics）
+
+B. forum 列表資料載入
+  -> forumStore.fetchTopics()
+  -> contentApi.getContents(params)
+  -> forumStore 內做「資料正規化 + 快取 + 頭像補全 + 互動狀態初始化」
+  -> TopicListView 根據 forumStore.topics 渲染
+
+C. 點某篇主題進詳情
+  -> TopicListView.goToThread(threadId) -> router.push({ name: "forum-thread", params: { id } })
+  -> forum.vue watch(route.params.id)
+  -> forumStore.openThread(id)
+  -> forumStore.fetchThreadDetail(id)
+     - contentApi.getContent(id)
+     - 解析/清理 HTML（sanitize）
+     - 補委託任務資訊（必要時打 EntrustMissionApi）
+     - 解析最佳解（contentInteractionApi）
+     - 並行載入回文分頁 + 留言分頁（getChildren）
+
+D. 發文/回覆
+  -> NewTopicModal 或 NewTopicSidebar 呼叫 useForumPost.publishPost()
+  -> validatePost() + validateEntrustMission()
+  -> contentApi.createContent() 或 createContentWithEntrustMission()
+  -> 成功後 clear caches + fetchTopics +（若在詳情）fetchThreadDetail
+
+E. 互動（讚/收藏/隱藏/檢舉/最佳解）
+  -> InteractionButtons -> forumStore.handleInteraction() 或 contentInteractionApi.bestAnswer()
+  -> 更新 interactionStates + likeCount（前端先做 optimistic/同步）
+  -> 視情況刷新列表/詳情
+
+==================================================
+三、forum.vue 在做什麼（定位：頁面協調層）
+==================================================
+
+你可以把 forum.vue 看成「導演」，不是演員。
+它不做太多商業邏輯，主要做：
+- 啟動時該抓什麼資料
+- 路由改變時該切列表 or 詳情
+- UI 外觀狀態（FAB、sidebar 顯示）
+
+關鍵 watch：
+1) watch(route.params.id)
+- 有 id -> forumStore.openThread(id)
+- 沒 id -> forumStore.closeThread()
+
+2) watch(forumStore.lastRefreshTime)
+- 收到 refresh 訊號 -> forumStore.fetchTopics()
+
+3) watch(pendingScrollTargetId / thread detail 長度)
+- 用於「新增留言/回覆後自動滾到目標內容」
+
+Sidebar 顯示規則（務必理解）
+- shouldShowSidebar = 有展開中的草稿，或有內容的最小化草稿
+- 所以你在 ThreadPost 建立 detailed reply 草稿後，側欄會出現
+
+==================================================
+四、forumStore.js 是核心大腦（接手必讀）
+==================================================
+
+1) store state 是單一真相來源（SSOT）
+- 列表：topics + pagination + sortOption + selectedCategory
+- 詳情：threadDetail + threadPosts + threadComments + 各自分頁
+- 草稿：drafts + currentEditingDraftId + newTopic
+- 互動：interactionStates / loadingStates
+- 視覺連動：pendingScrollTargetId / replyingTo*
+
+2) 為什麼這個 store 看起來很長？
+- 主要在解決「後端欄位不一致」問題：camelCase/snake_case 混用
+- 還有多種來源（ContentApi、InteractionApi、EntrustMissionApi）需要合併
+- 再加上快取（topic page、body html、best answer）
+
+3) fetchTopics 的責任
+- 組 params（category、keyword、sort、page）
+- hit 快取（30 秒）避免重複打 API
+- 解析 preview/body、抽 reply stats / like count
+- 初始化互動狀態（批次）
+
+4) fetchThreadDetail 的責任（最重要）
+- 讀主文 -> 清理內容 -> 合併委託任務 metadata
+- 解析 best answer（含 localStorage fallback）
+- 填 threadDetail
+- 並行抓回文/留言分頁
+
+5) interaction 的責任分工
+- API 由 contentInteractionApi 提供
+- 狀態由 forumStore 管（每個 contentId 有 like/hide/bookmark/block）
+- handleInteraction 會更新 likeCount 並處理 hide 的刷新
+
+==================================================
+五、前後端配合細節（你最常踩雷的地方）
+==================================================
+
+1) ContentApi（內容主體）
+- GET /ContentApi               列表
+- GET /ContentApi/{id}          單篇
+- GET /ContentApi/{id}/children 子內容分頁
+- POST /ContentApi              新增
+- POST /ContentApi/with-entrust-mission  新增+委託任務
+- PUT /ContentApi/{id}          編輯
+- DELETE /ContentApi/{id}       刪除
+
+2) ContentInteractionApi（互動）
+- POST /ContentInteractionApi   點讚/收藏/隱藏/檢舉
+- GET /ContentInteractionApi/user/{contentId}  當前使用者互動狀態
+- POST /contentinteractionapi/best-answer      設定最佳解
+
+3) 圖片流程
+- TiptapEditor -> imageapi.uploadImage(files)
+- POST /images/upload (multipart/form-data)
+- 回傳 URL 會轉為絕對路徑後寫入 HTML
+
+4) 安全與內容清理
+- normalizeRichContent() 會用 DOMPurify 清理 HTML
+- 並補強 a 標籤 rel/target、img src 正規化
+- 這是避免 XSS 與亂格式的重要卡控
+
+==================================================
+六、目前可見的卡控/驗證點（業務規則）
+==================================================
+
+1) 發文基本卡控（useForumPost）
+- title/body 必填（特定模式可隱藏 title）
+- 非回覆模式需 category
+- 委託任務必填完整且 rewardPoints > 0
+
+2) 互動權限卡控（InteractionButtons）
+- 編輯/刪除僅顯示給 isOwnContent
+- 最佳解按鈕顯示條件：
+  - 已登入
+  - 在 thread 詳情頁
+  - 該帖啟用 entrust mission
+  - 操作者是任務擁有者
+  - 尚未選過最佳解
+
+3) 路由層卡控（router.beforeEach）
+- meta.requiresAuth 才會強制登入
+- forum 路由目前是公開可看
+
+4) 快取卡控（forumStore）
+- topic page cache TTL = 30 秒
+- 回覆統計 fallback cache
+- best answer localStorage cache（提升容錯）
+
+==================================================
+七、你接手後第一週建議巡檢清單（超實用）
+==================================================
+
+1) 先確認「使用者 ID 來源」
+- 目前 forum 主要送出流程已改為使用 authStore.user.id（不再預設 userId:1）
+- 新增/回覆/互動的未登入處理為 SweetAlert 提示，使用者可關閉並留在當前頁面
+
+2) 清點 API 回傳欄位是否已統一
+- 目前前端做了大量 fallback 映射
+- 若後端可統一命名，前端可大幅瘦身
+
+3) 檢查 main.js 的 axios interceptor
+- 檔案內使用 useAuthStore / Swal，但未顯示 import（需確認實際編譯是否正常）
+
+4) 檢查 forumStore 的 persist 範圍
+- store 設定 persist: true，長期可能造成舊狀態殘留
+- 尤其 threadDetail/drafts/interactions 是否都適合持久化，要依產品決策
+
+==================================================
+八、遇到 bug 時怎麼追（新人排錯路徑）
+==================================================
+
+Case A：列表資料怪怪的
+- 先看 forumStore.fetchTopics() 組的 params
+- 再看 contentApi.getContents 的實際回傳
+- 最後看 build/normalize 流程是否把欄位吃掉
+
+Case B：點進詳情資料不完整
+- 看 route.params.id 是否正確
+- 看 forum.vue watch(route.params.id) 有沒有觸發
+- 看 forumStore.fetchThreadDetail()：
+  - getContent
+  - getChildren(reply/comment)
+  - best answer resolution
+
+Case C：按讚數量不同步
+- 看 forumStore.handleInteraction() 是否有執行 setContentLikeCount
+- 看 contentId 在 topics/threadPosts/threadComments 是否同一個 id
+
+Case D：詳細回覆草稿不見
+- 看 ThreadPost.selectDetailedReply() 的草稿建立
+- 看 forum.vue shouldShowSidebar 條件
+- 看 NewTopicSidebar 是否把草稿誤刪
+
+==================================================
+九、最短學習路徑（建議照順序看）
+==================================================
+
+第 1 輪（30~45 分鐘）
+1. src/router/index.js（forum 路由）
+2. src/views/Contents/forum.vue（頁面協調）
+3. src/stores/forumStore.js（先看 state + fetchTopics + fetchThreadDetail + handleInteraction）
+
+第 2 輪（45~60 分鐘）
+4. src/components/Contents/TopicListView.vue（列表/詳情切換）
+5. src/components/Contents/ThreadPost.vue（回覆、巢狀、快速回覆）
+6. src/components/Contents/InteractionButtons.vue（互動按鈕）
+
+第 3 輪（30 分鐘）
+7. src/components/Contents/NewTopicModal.vue + NewTopicSidebar.vue
+8. src/composables/useForumPost.js
+9. src/api/contentApi.js + contentInteractionApi.js + imageapi.js
+
+==================================================
+十、你現在可以怎麼問我（下一步）
+==================================================
+
+你可以直接指定其中一條線，我可以帶你深入：
+- 「從按下發佈到 DB 寫入，逐行 trace」
+- 「最佳解流程所有 API 與 fallback」
+- 「草稿 + Sidebar + Modal 的同步機制」
+- 「我想把 userId:1 改成真正登入者，怎麼安全重構」
+
+---
+（文件結束）

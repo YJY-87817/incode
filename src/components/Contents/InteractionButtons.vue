@@ -5,6 +5,7 @@ import contentInteractionApi from "@/api/contentInteractionApi";
 import contentApi from "@/api/contentApi";
 import { useAuthStore } from "@/stores/user/auth";
 import { useForumStore } from "@/stores/forumStore";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 
 /**
  * Props
@@ -44,6 +45,11 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const forumStore = useForumStore();
+const {
+  ensureLoggedIn,
+  isLoggedIn: isLoggedInByGuard,
+  getCurrentUserId,
+} = useLoginGuardAlert();
 
 const isCurrentListTopic = computed(() => {
   if (forumStore.selectedThread) return false;
@@ -178,6 +184,9 @@ const isLoading = computed(() => {
 async function handleInteraction(categoryId, categoryName) {
   if (isLoading.value[categoryId]) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   const result = await forumStore.handleInteraction(
     props.contentId,
     categoryId,
@@ -220,11 +229,10 @@ const showMoreMenu = computed(() => {
   return forumStore.isMoreMenuOpen(props.contentId);
 });
 
-const currentUserId = computed(() => authStore.user?.id ?? null);
+const currentUserId = computed(() => getCurrentUserId());
 
 const isLoggedIn = computed(() => {
-  if (authStore.isAuthenticated) return true;
-  return Boolean(currentUserId.value);
+  return isLoggedInByGuard();
 });
 
 const isMissionOwner = computed(() => {
@@ -289,6 +297,9 @@ const getBestAnswerErrorMessage = (error) => {
 
 const handleBestAnswer = async () => {
   if (!canShowBestAnswerButton.value || bestAnswerLoading.value) return;
+
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
 
   bestAnswerLoading.value = true;
   try {

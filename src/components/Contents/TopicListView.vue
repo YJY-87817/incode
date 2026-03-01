@@ -23,12 +23,12 @@ import ForumPaginationCard from "@/components/Contents/ForumPaginationCard.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
-import { useAuthStore } from "@/stores/user/auth.js";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
-const authStore = useAuthStore();
+const { ensureLoggedIn, getCurrentUserId, isLoggedIn } = useLoginGuardAlert();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -512,7 +512,10 @@ const goToCommentPage = (page) => {
 /**
  * 留言/回文輸入框相關
  */
-const selectQuickReply = () => {
+const selectQuickReply = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
   if (replyTab.value === "quick" && showQuickReply.value) {
     showQuickReply.value = false;
@@ -523,7 +526,10 @@ const selectQuickReply = () => {
   }
 };
 
-const selectDetailedComment = () => {
+const selectDetailedComment = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   replyTab.value = "detailed";
   if (showQuickReply.value && forumStore.threadDetail?.id) {
     forumStore.clearQuickReply(forumStore.threadDetail.id);
@@ -572,10 +578,15 @@ const submitQuickReply = async () => {
   );
   if (isSubmitting) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return;
+
   forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, true);
 
   const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
+    userId: currentUserId,
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
     title: buildReplyTitle(forumStore.threadDetail.title),
@@ -898,7 +909,7 @@ watch(
 );
 
 watch(
-  () => [authStore.isAuthenticated, authStore.user?.id],
+  () => [isLoggedIn(), getCurrentUserId()],
   async () => {
     const topicContentIds = forumStore.topics
       .map((topic) => Number(topic?.id))
