@@ -6,7 +6,14 @@
 -->
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
@@ -243,18 +250,56 @@ const desktopHeaderDisplayPages = computed(() =>
   ),
 );
 
+const TOPIC_LIST_MOBILE_BREAKPOINT = 768;
+const TOPIC_LIST_DENSE_BREAKPOINT = 992;
+const TOPIC_LIST_COMPACT_BREAKPOINT = 1200;
 const HEADER_COMPACT_BREAKPOINT = 878;
 const HEADER_DENSE_BREAKPOINT = 1200;
 const viewportWidth = ref(
   typeof window !== "undefined" ? window.innerWidth : Number.MAX_SAFE_INTEGER,
 );
+const topicListCardRef = ref(null);
+const topicListCardWidth = ref(Number.MAX_SAFE_INTEGER);
+let topicListResizeObserver = null;
+
+const effectiveTopicListWidth = computed(() => {
+  const measuredWidth = Number(topicListCardWidth.value || 0);
+  if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
+    return measuredWidth;
+  }
+  return viewportWidth.value;
+});
+
+const isMobileTopicListWidth = computed(
+  () => effectiveTopicListWidth.value < TOPIC_LIST_MOBILE_BREAKPOINT,
+);
+
+const isDenseTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_DENSE_BREAKPOINT,
+);
+
+const isCompactTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_COMPACT_BREAKPOINT,
+);
+
+const showMobileTopicList = computed(() => isMobileTopicListWidth.value);
+
+const topicListResponsiveClasses = computed(() => ({
+  "topic-list--container-max-1200": isCompactTopicListWidth.value,
+  "topic-list--container-max-992": isDenseTopicListWidth.value,
+  "topic-list--container-max-768": isMobileTopicListWidth.value,
+}));
 
 const isCompactDesktopHeaderPagination = computed(
-  () => viewportWidth.value <= HEADER_COMPACT_BREAKPOINT,
+  () => effectiveTopicListWidth.value <= HEADER_COMPACT_BREAKPOINT,
 );
 
 const isDenseDesktopHeaderPagination = computed(
-  () => viewportWidth.value <= HEADER_DENSE_BREAKPOINT,
+  () => effectiveTopicListWidth.value <= HEADER_DENSE_BREAKPOINT,
 );
 
 const desktopHeaderPages = computed(() =>
@@ -395,6 +440,14 @@ const handleDocumentKeydown = (event) => {
 const handleWindowResize = () => {
   if (typeof window === "undefined") return;
   viewportWidth.value = window.innerWidth;
+
+  const cardEl = topicListCardRef.value;
+  if (!cardEl) return;
+
+  const nextWidth = Math.round(cardEl.getBoundingClientRect().width || 0);
+  if (Number.isFinite(nextWidth) && nextWidth > 0) {
+    topicListCardWidth.value = nextWidth;
+  }
 };
 
 /**
@@ -864,8 +917,25 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
   handleWindowResize();
+
+  if (
+    typeof window !== "undefined" &&
+    typeof ResizeObserver !== "undefined" &&
+    topicListCardRef.value
+  ) {
+    topicListResizeObserver = new ResizeObserver((entries) => {
+      const [entry] = entries;
+      const width = Math.round(entry?.contentRect?.width || 0);
+      if (Number.isFinite(width) && width > 0) {
+        topicListCardWidth.value = width;
+      }
+    });
+    topicListResizeObserver.observe(topicListCardRef.value);
+  }
+
   document.addEventListener("click", handleDocumentClick);
   document.addEventListener("keydown", handleDocumentKeydown);
   window.addEventListener("resize", handleWindowResize);
@@ -873,6 +943,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearRestoreSortIconTimer();
+
+  if (topicListResizeObserver) {
+    topicListResizeObserver.disconnect();
+    topicListResizeObserver = null;
+  }
+
   document.removeEventListener("click", handleDocumentClick);
   document.removeEventListener("keydown", handleDocumentKeydown);
   window.removeEventListener("resize", handleWindowResize);
@@ -880,7 +956,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="card shadow-sm">
+  <div
+    ref="topicListCardRef"
+    class="card shadow-sm"
+    :class="topicListResponsiveClasses"
+  >
     <!-- 卡片內容 -->
     <div class="card-body p-0">
       <!-- 詳情視圖 -->
@@ -1147,8 +1227,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="forumStore.topics.length > 0"
-          class="d-md-none px-2 pt-2 pb-1"
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pt-2 pb-1"
         >
           <div class="topic-mobile-toolbar">
             <div
@@ -1214,7 +1294,10 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- 手機卡片列表 -->
-        <div v-if="forumStore.topics.length > 0" class="d-md-none px-2 pb-2">
+        <div
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pb-2"
+        >
           <div
             v-for="topic in forumStore.topics"
             :key="`mobile-topic-${topic.id}`"
@@ -1317,7 +1400,10 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- 桌機表格列表 -->
-        <div class="table-responsive d-none d-md-block">
+        <div
+          v-if="forumStore.topics.length > 0 && !showMobileTopicList"
+          class="table-responsive"
+        >
           <table class="table table-hover mb-0 topic-list-table">
             <thead class="topic-table-header">
               <tr>
@@ -2027,6 +2113,129 @@ onBeforeUnmount(() => {
   padding: 0 !important;
   text-align: center;
   vertical-align: middle;
+}
+
+.topic-list--container-max-1200 .topic-col {
+  width: 66.5%;
+}
+
+.topic-list--container-max-1200 .created-col,
+.topic-list--container-max-1200 .last-reply-col {
+  width: 13.25%;
+}
+
+.topic-list--container-max-1200 .reply-col {
+  width: 7%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-1200 .topic-list-table th.created-col,
+.topic-list--container-max-1200 .topic-list-table th.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table th.reply-col,
+.topic-list--container-max-1200 .topic-list-table td.created-col,
+.topic-list--container-max-1200 .topic-list-table td.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table td.reply-col,
+.topic-list--container-max-1200 .meta-date-text {
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.topic-list--container-max-992 .topic-col {
+  width: 65.5%;
+}
+
+.topic-list--container-max-992 .created-col,
+.topic-list--container-max-992 .last-reply-col {
+  width: 13.5%;
+}
+
+.topic-list--container-max-992 .reply-col {
+  width: 7.5%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-992 .topic-header-main-row {
+  gap: 0.45rem !important;
+}
+
+.topic-list--container-max-992 .topic-sort-dropdown {
+  width: min(var(--sort-control-width, 100%), 8.6rem);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.45rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-shell) {
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.22rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-wrap) {
+  gap: 0.2rem !important;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-input) {
+  font-size: 0.68rem;
+  min-width: calc(1ch + 1.1em);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-total-pages) {
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-button) {
+  padding: 0.04rem 0.2rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992 .topic-list-table th.created-col,
+.topic-list--container-max-992 .topic-list-table th.last-reply-col,
+.topic-list--container-max-992 .topic-list-table th.reply-col,
+.topic-list--container-max-992 .topic-list-table td.created-col,
+.topic-list--container-max-992 .topic-list-table td.last-reply-col,
+.topic-list--container-max-992 .topic-list-table td.reply-col,
+.topic-list--container-max-992 .meta-date-text {
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+.topic-list--container-max-992 .reply-count-badge {
+  min-width: 2rem;
+  text-align: center;
+}
+
+.topic-list--container-max-992 .created-col :deep(.user-avatar-img),
+.topic-list--container-max-992 .last-reply-col :deep(.user-avatar-img) {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.topic-list--container-max-768 .interaction-aligned-badge,
+.topic-list--container-max-768 .reply-count-badge {
+  min-height: 40px;
+  height: 40px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.topic-list--container-max-768 .topic-title-link {
+  font-size: 0.95rem;
 }
 
 .meta-cell-stack {
