@@ -235,6 +235,14 @@ const mobileDisplayPages = computed(() =>
   ),
 );
 
+const desktopHeaderDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
 const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
@@ -1273,7 +1281,7 @@ onBeforeUnmount(() => {
               <tr>
                 <th class="px-3 py-2 py-md-3 topic-col">
                   <div
-                    class="d-flex align-items-center flex-wrap gap-2 gap-lg-4 w-100"
+                    class="d-flex align-items-center flex-nowrap gap-2 gap-lg-4 w-100 topic-header-main-row"
                   >
                     <span class="topic-table-header-label"> 📝 主題 </span>
                     <div
@@ -1327,9 +1335,10 @@ onBeforeUnmount(() => {
                       <ForumPaginationCard
                         :current-page="forumStore.pagination.currentPage"
                         :total-pages="forumStore.pagination.totalPages"
-                        :pages="displayPages"
+                        :pages="desktopHeaderDisplayPages"
                         :show-edge-buttons="false"
                         :show-jump="true"
+                        :show-direction-buttons="false"
                         pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
                         link-padding-class="topic-header-pagination-link"
                         @page-change="goToPage"
@@ -1677,6 +1686,13 @@ onBeforeUnmount(() => {
 .topic-header-pagination {
   display: flex;
   align-items: center;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.topic-header-main-row {
+  flex-wrap: nowrap !important;
+  min-width: 0;
 }
 
 .topic-mobile-toolbar {
@@ -1953,8 +1969,8 @@ onBeforeUnmount(() => {
 }
 
 .reply-col {
-  width: 4.5%;
-  min-width: 3.75rem;
+  width: 5.5%;
+  min-width: 4.6rem;
   white-space: nowrap;
 }
 
@@ -2271,17 +2287,17 @@ onBeforeUnmount(() => {
 /* 響應式調整 */
 @media (max-width: 1200px) and (min-width: 768px) {
   .topic-col {
-    width: 68%;
+    width: 66.5%;
   }
 
   .created-col,
   .last-reply-col {
-    width: 13%;
+    width: 13.25%;
   }
 
   .reply-col {
-    width: 6%;
-    min-width: 3.5rem;
+    width: 7%;
+    min-width: 4.5rem;
   }
 
   .topic-list-table th.created-col,
@@ -2298,17 +2314,55 @@ onBeforeUnmount(() => {
 
 @media (max-width: 992px) and (min-width: 768px) {
   .topic-col {
-    width: 69%;
+    width: 65.5%;
   }
 
   .created-col,
   .last-reply-col {
-    width: 12.75%;
+    width: 13.5%;
   }
 
   .reply-col {
-    width: 5.5%;
-    min-width: 3.4rem;
+    width: 7.5%;
+    min-width: 4.5rem;
+  }
+
+  .topic-header-main-row {
+    gap: 0.45rem !important;
+  }
+
+  .topic-sort-dropdown {
+    width: min(var(--sort-control-width, 100%), 8.6rem);
+  }
+
+  .topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+    padding: 0.12rem 0.3rem;
+    font-size: 0.7rem;
+    min-width: 1.45rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-shell) {
+    margin-left: 0.25rem;
+    padding: 0.05rem 0.22rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-wrap) {
+    gap: 0.2rem !important;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-input) {
+    font-size: 0.68rem;
+    min-width: calc(1ch + 1.1em);
+  }
+
+  .topic-header-pagination :deep(.pagination-total-pages) {
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-button) {
+    padding: 0.04rem 0.2rem;
+    font-size: 0.68rem;
   }
 
   .topic-list-table th.created-col,

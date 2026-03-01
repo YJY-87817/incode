@@ -22,6 +22,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showDirectionButtons: {
+    type: Boolean,
+    default: true,
+  },
   paginationClass: {
     type: String,
     default:
@@ -131,7 +135,11 @@ const jumpInputWidth = computed(() => {
         </a>
       </li>
 
-      <li class="page-item" :class="{ disabled: currentPage === 1 }">
+      <li
+        v-if="showDirectionButtons"
+        class="page-item"
+        :class="{ disabled: currentPage === 1 }"
+      >
         <a
           class="page-link"
           :class="linkPaddingClass"
@@ -159,6 +167,7 @@ const jumpInputWidth = computed(() => {
       </li>
 
       <li
+        v-if="showDirectionButtons"
         class="page-item"
         :class="{ disabled: currentPage === normalizedTotalPages }"
       >
