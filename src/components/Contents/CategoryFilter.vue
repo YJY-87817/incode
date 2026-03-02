@@ -521,15 +521,5 @@ const handleClearCategory = () => {
     min-height: 44px;
     padding: 0.45rem 0.7rem !important;
   }
-
-  .category-card h6 {
-    margin-bottom: 0.2rem !important;
-    font-size: 0.78rem;
-  }
-
-  .category-tags {
-    font-size: 0.62rem;
-    line-height: 1.2;
-  }
 }
 </style>

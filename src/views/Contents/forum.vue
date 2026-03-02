@@ -242,7 +242,6 @@ watch(
   >
     <i class="fas fa-plus"></i>
     <span class="ms-2 d-none d-sm-inline">發佈新主題</span>
-    <span class="ms-2 d-none d-sm-inline">發佈新主題</span>
   </button>
 </template>
 
@@ -358,6 +357,9 @@ watch(
 /* 鏈接顏色 */
 .topic-title-link {
   color: #432f28;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .topic-title-link:hover {
@@ -433,6 +435,8 @@ watch(
 .reply-box {
   background-color: rgba(255, 240, 221, 0.5);
   border-left-color: #145369;
+  padding: 1rem;
+  border-radius: 0.5rem;
 }
 
 /* 邊框顏色 */
@@ -481,12 +485,6 @@ watch(
 }
 
 /* 主題標題連結樣式 */
-.topic-title-link {
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
 /* 響應式調整 */
 @media (max-width: 768px) {
   .table {
@@ -514,12 +512,6 @@ watch(
   .table thead {
     font-size: 0.8rem;
   }
-}
-
-/* 留言框樣式 */
-.reply-box {
-  padding: 1rem;
-  border-radius: 0.5rem;
 }
 
 .reply-box textarea {
