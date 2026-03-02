@@ -69,8 +69,8 @@ const getBadgeClass = (category) => {
               <div class="small text-muted">{{ log.date }}</div>
               <div class="fw-bold text-dark">{{ log.item }}</div>
               <!-- 新增：顯示訂單編號（如果存在） -->
-              <div v-if="log.subTitle" class="small text-muted mt-1">
-                ({{ log.subTitle }})
+              <div v-if="log.subTitle" class="small text-gray-dark mt-1">
+                {{ log.subTitle }}
               </div>
             </td>
             <td>

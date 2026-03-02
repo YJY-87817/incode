@@ -1,88 +1,17 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useTaskStore } from "@/stores/point/UseTaskStore";
 import { useRouter } from "vue-router";
-import Swal from "sweetalert2";
 
 const store = useTaskStore();
 const router = useRouter();
-const emit = defineEmits(["open-detail", "claim"]);
-
-const isClaiming = ref(false);
+const emit = defineEmits(["open-detail"]);
 
 const list = computed(() => store.filteredList);
 
-const handleClaim = async ({ type, commission }) => {
-  // 檢查 ID，相容後端不同的命名慣例
-  const taskId = commission.id || commission.entrustMissionId;
-  if (!taskId || isClaiming.value) return;
-
-  // 1. 確認視窗
-  const confirmResult = await Swal.fire({
-    title: "確定接取？",
-    text: `您即將接取委託：「${commission.title || "未命名委託"}」`,
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonColor: "#145369",
-    cancelButtonColor: "#86B0BD",
-    confirmButtonText: "確定接取",
-    cancelButtonText: "取消",
-    reverseButtons: true,
-    customClass: {
-      confirmButton: "text-white",
-      cancelButton: "text-white",
-    },
-  });
-
-  if (!confirmResult.isConfirmed) return;
-
-  isClaiming.value = true;
-  const originalStatus = commission.claimed;
-
-  try {
-    // 呼叫 Pinia action
-    await store.claimTask(type, taskId);
-
-    // 前端樂觀更新
-    commission.claimed = true;
-
-    // 2. 成功提示並引導跳轉
-    const nextStep = await Swal.fire({
-      title: "接取成功！",
-      text: "任務已加入您的執行清單。",
-      icon: "success",
-      showCancelButton: true,
-      confirmButtonColor: "#145369",
-      cancelButtonColor: "#86B0BD",
-      confirmButtonText: "前往我的任務",
-      cancelButtonText: "留在本頁",
-      reverseButtons: true,
-      customClass: {
-        confirmButton: "text-white",
-        cancelButton: "text-white",
-      },
-    });
-
-    // 點擊「前往我的任務」跳轉至 /mytask
-    if (nextStep.isConfirmed) {
-      router.push("/mytask");
-    } else if (type === "entrust" && commission.contentId) {
-      // 如果留在本頁且是委託，按原邏輯視需求決定是否跳討論區
-      // 若想完全手動控制，此處可保留空白
-    }
-  } catch (err) {
-    // 失敗時回滾狀態
-    commission.claimed = originalStatus;
-    Swal.fire({
-      icon: "error",
-      title: "接取失敗",
-      text: err.message || "接取失敗，請稍後再試",
-      confirmButtonColor: "#145369",
-      customClass: { confirmButton: "text-white" },
-    });
-  } finally {
-    isClaiming.value = false;
-  }
+const goToForum = (commission) => {
+  if (!commission.contentId) return;
+  router.push(`/forum/${commission.contentId}`);
 };
 </script>
 
@@ -202,20 +131,11 @@ const handleClaim = async ({ type, commission }) => {
                 </button>
 
                 <button
-                  v-if="!c.claimed"
-                  :disabled="isClaiming"
-                  @click="handleClaim({ type: 'entrust', commission: c })"
+                  @click="goToForum(c)"
                   class="btn btn-sm custom-btn-primary mb-0"
                 >
-                  {{ isClaiming ? "處理中..." : "接取" }}
+                  前往
                 </button>
-
-                <span
-                  v-else
-                  class="text-success text-xs font-weight-bolder px-3"
-                >
-                  <i class="fas fa-check-circle me-1"></i>已接取
-                </span>
               </td>
             </tr>
           </tbody>
