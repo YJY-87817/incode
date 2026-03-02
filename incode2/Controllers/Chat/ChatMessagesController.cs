@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 
 namespace incode2.Controllers.Chat
 {
-   
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class ChatMessagesController : Controller
     {
         private readonly incodedatabaseContext _context;
