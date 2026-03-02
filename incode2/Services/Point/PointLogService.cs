@@ -30,6 +30,7 @@ namespace incode2.Services.Point
             using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 為了冪等性，檢查資料庫最新狀態（不追蹤）
                 var dbOrder = await _context.PointRecharge
                     .AsNoTracking()
                     .FirstOrDefaultAsync(o => o.PointRechargeId == recharge.PointRechargeId);
@@ -38,28 +39,28 @@ namespace incode2.Services.Point
                     throw new Exception("訂單不存在");
 
                 if (dbOrder.Status == "success")
-                    return; // 冪等
+                {
+                    await tx.CommitAsync(); // 已經成功過了，還是 commit 保持一致
+                    return;
+                }
 
+                // 執行加點（這邊會寫 PointLog，但不 SaveChanges）
                 bool success = await ChangePointsAsync(
-                    userId: dbOrder.UserId,
-                    changeAmount: dbOrder.PointsGranted,
+                    userId: recharge.UserId,           // 直接用傳進來的
+                    changeAmount: recharge.PointsGranted,
                     sourceType: "point_recharge",
-                    sourceId: dbOrder.PointRechargeId,
+                    sourceId: recharge.PointRechargeId,
                     type: PointType.IncomePointRecharge,
                     displaySource: "點數儲值",
-                    displaySubTitle: $"訂單 #{dbOrder.OrderNo ?? dbOrder.PointRechargeId.ToString()}"
+                    displaySubTitle: $"訂單 #{recharge.OrderNo ?? recharge.PointRechargeId.ToString()}"
                 );
 
                 if (!success)
                     throw new Exception("加點失敗（餘額異常）");
 
-                // 更新訂單狀態
-                var orderToUpdate = new PointRecharge { PointRechargeId = dbOrder.PointRechargeId };
-                _context.Attach(orderToUpdate);
-                orderToUpdate.Status = "success";
-                orderToUpdate.CreatedAt = DateTime.Now;
+                // ★ 重要：這裡不要更新 recharge 狀態，也不要 SaveChanges
+                // 讓呼叫端負責更新訂單狀態
 
-                await _context.SaveChangesAsync();
                 await tx.CommitAsync();
             }
             catch
