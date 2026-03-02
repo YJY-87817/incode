@@ -104,6 +104,7 @@ const loadHistory = async () => {
     }
 
     try {
+        // 時間戳記（?_t=），強迫瀏覽器每次都去後端問最新狀態
         const res = await axios.get(`${API_BASE_URL}/api/ChatMessages/GetHistory/${sessionId}`, { withCredentials: true });
         const data = res.data;
         
@@ -224,20 +225,28 @@ const initSignalR = async () => {
 const checkLoginAndInit = async () => {
     const currentPath = route.path.toLowerCase();
 
+    // 1. 如果在黑名單頁面 (登入/註冊頁)
     if (excludedPaths.includes(currentPath)) {
         isLoggedIn.value = false;
+        
+        // ★★★ 補上這三行，徹底清空前一個帳號的記憶 ★★★
+        currentSessionId.value = 0; 
+        chatStore.setSessionId(0);
+        chatStore.clearMessages(); 
+        
         if (connection.value) {
             connection.value.stop();
             connection.value = null;
         }
         return;
     }
+    
     if (isLoggedIn.value && connection.value) {
         return;
     }
 
     try {
-        const res = await axios.get(`${API_BASE_URL}/api/ChatMessages/CheckLogin`, { 
+        const res = await axios.get(`${API_BASE_URL}/api/ChatMessages/CheckLogin`, {
             withCredentials: true 
         });
         
@@ -248,9 +257,14 @@ const checkLoginAndInit = async () => {
                 await initSignalR();
             }
         } else {
+            // 2. 如果 API 回傳未登入 (例如 Cookie 過期)
             isLoggedIn.value = false;
+            
+            // 這裡你原本就有寫，維持不變
             currentSessionId.value = 0;
             chatStore.setSessionId(0);
+            chatStore.clearMessages(); // ★ 建議多加這行清空畫面
+            
             if (connection.value) {
                 connection.value.stop();
                 connection.value = null;
@@ -382,10 +396,6 @@ const triggerTransfer = async () => {
              chatStore.setSessionId(res.data.sessionId);
         }
 
-        if (res.data.success) {
-            isHumanMode.value = true;
-            chatStore.addMessage({ role: 'ai', text: `<i>(已請求切換為人工客服)</i>`, isSystem: true, time: new Date() });
-        }
 
     } catch (error) { 
         console.error("切換失敗", error);
@@ -488,7 +498,7 @@ onUnmounted(() => {
                <div class="avatar">🤖</div>
              </div>
              <div class="bubble-content">
-               <div class="bubble">你好！我是電影 AI 助手。你可以問我電影問題，或傳海報給我辨識喔！</div>
+               <div class="bubble">你好！我是AI助手。你可以問我問題，或傳圖片給我辨識喔！</div>
              </div>
           </div>
           
