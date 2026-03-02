@@ -18,23 +18,27 @@
                 <div class="post-meta">
                   <span
                     v-if="post.categoryName"
-                    class="badge bg-secondary-light text-dark"
+                    class="badge bg-secondary-light text-dark interaction-aligned-badge"
                   >
                     {{ post.categoryName }}
                   </span>
                   <button
                     v-if="shouldShowParentLink"
-                    class="btn btn-sm btn-outline-primary parent-link-btn"
+                    class="badge interaction-aligned-badge parent-link-btn"
                     type="button"
                     @click.stop="goToParentThread"
                   >
                     <i class="fas fa-link me-1"></i>
                     主文
                   </button>
-                  <span class="badge" :class="badgeClass">{{ typeLabel }}</span>
+                  <span
+                    class="badge interaction-aligned-badge"
+                    :class="badgeClass"
+                    >{{ typeLabel }}</span
+                  >
                   <span
                     v-if="isBestAnswerPost"
-                    class="badge bg-warning text-dark"
+                    class="badge bg-warning text-dark interaction-aligned-badge"
                   >
                     最佳解
                   </span>
@@ -42,7 +46,7 @@
                     <UserPreview
                       :user-id="post.userId"
                       :username="post.author"
-                      :avatar-url="getAvatarUrl(post.author)"
+                      :avatar-url="getAvatarUrl(post.author, post.authorAvatar)"
                       :size="24"
                     />
                   </h6>
@@ -306,6 +310,7 @@ import { useRouter } from "vue-router";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import contentApi from "@/api/contentApi.js";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
@@ -314,6 +319,7 @@ import { toAbsoluteUrl, formatDate } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
+const { ensureLoggedIn, getCurrentUserId } = useLoginGuardAlert();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -580,10 +586,10 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } img:not([style*='width']) { width: 100%; } img { max-width: 100%; max-height: 320px; object-fit: contain; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "body { white-space: pre-wrap; text-align: left !important; padding-left: 0 !important; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } p, div, figure, figcaption { text-align: left !important; margin-left: 0 !important; padding-left: 0 !important; } figure, .image { display: block !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; max-height: 320px; object-fit: contain; object-position: left center !important; display: block !important; float: none !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } .image img { margin-left: 0 !important; margin-right: auto !important; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
-  return `${baseIframeCss} img { display: none; }`;
+  return `${baseIframeCss} img { display: none !important; } figure, .image { display: none !important; }`;
 });
 
 const iframeExtraCssExpanded = computed(() => baseIframeCss);
@@ -696,6 +702,28 @@ watch(
 );
 
 // ========== 巢狀回覆展開/收起邏輯 ==========
+/**
+ * 【多層級巢狀加載】觸發巢狀回覆的非同步加載
+ *
+ * 此函數涉及複雜的兩階段加載機制，目的是最小化初始加載時間：
+ *
+ * 第一次點擊展開時的流程：
+ * 1. toggleNestedReplies() 被調用
+ * 2. 設定 isNestedExpanded.value = true → UI 開始顯示展開狀態
+ * 3. 呼叫 forumStore.ensureChildRepliesLoaded() → 向後端非同步取得子回覆
+ * 4. forumStore 將結果存於 state.childRepliesByParentId[postId] 中
+ * 5. nestedReplies 計算屬性依賴此狀態，自動觸發組件重新渲染
+ * 6. 一旦回覆加載完成，updateNestedToggleState() 計算是否需要（展開/收起）切換按鈕
+ *
+ * 快取機制：
+ * - 已加載過的子回覆會存在記憶體中（childRepliesByParentId）
+ * - 再次點擊展開同一個列表時，不會再向後端查詢（因為 loaded=true）
+ *
+ * 預加載機制（見 onMounted）：
+ * - 在組件掛載時，預先調用 preloadChildRepliesCount() 取得數量（page_size=1）
+ * - 此數據存在 childRepliesCountByParentId，用於顯示「N 則留言」的計數
+ * - 點擊展開時才進行全部加載
+ */
 function toggleNestedReplies() {
   isNestedExpanded.value = !isNestedExpanded.value;
   if (isNestedExpanded.value) {
@@ -764,7 +792,12 @@ function autoResizeTextarea(event) {
   textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
-function toggleReply() {
+async function toggleReply() {
+  if (!showReply.value) {
+    const canContinue = await ensureLoggedIn("請先登入後操作");
+    if (!canContinue) return;
+  }
+
   showReply.value = !showReply.value;
   if (!showReply.value) {
     forumStore.cancelQuickReply(props.post.id);
@@ -776,7 +809,10 @@ function toggleReply() {
   showQuickReply.value = true;
 }
 
-function selectQuickReply() {
+async function selectQuickReply() {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -784,7 +820,10 @@ function selectQuickReply() {
   showQuickReply.value = true;
 }
 
-function selectDetailedReply() {
+async function selectDetailedReply() {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   if (!showReply.value) {
     showReply.value = true;
   }
@@ -887,6 +926,8 @@ const openDetailedReplyModal = () => {
 };
 
 async function submitReply() {
+  // 新人提醒：這是「快速回覆」專屬流程（純文字 textarea），
+  // 跟 NewTopicModal 的詳細回覆是兩條不同入口，但最後都打 ContentApi。
   const replyContent = forumStore.getQuickReplyContent(props.post.id);
 
   if (!replyContent.trim()) {
@@ -903,10 +944,15 @@ async function submitReply() {
   const isSubmitting = forumStore.getQuickReplySubmitting(props.post.id);
   if (isSubmitting) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return;
+
   forumStore.setQuickReplySubmitting(props.post.id, true);
 
   const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
+    userId: currentUserId,
     categoryId: props.post.categoryId, // 使用被回覆內容的 categoryId（後端會自動覆蓋）
     parentContentId: props.post.id, // 回覆到當前貼文/留言
     title: buildReplyTitle(props.post.title || contentSummary.value),
@@ -926,7 +972,8 @@ async function submitReply() {
     forumStore.clearQuickReply(props.post.id);
     showReply.value = false;
 
-    // 直接调用 forumStore 重新获取帖文详情
+    // 直接調用 forumStore 重新獲取帖文詳情
+    // 不手動 append 本地列表，避免巢狀回覆/分頁計數和後端不一致。
     if (forumStore.selectedThread) {
       await forumStore.fetchThreadDetail(forumStore.selectedThread);
     }
@@ -1152,31 +1199,35 @@ async function handleDeleteContent(contentId) {
 }
 
 .parent-link-btn {
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1;
-  border-color: #86b0bd;
+  border: 1px solid #86b0bd;
   color: #145369;
-  background: transparent;
+  background-color: #d0e8f2;
+  cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: #fff0dd;
-  border-color: #145369;
-  color: #145369;
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
 }
 
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
   color: #145369;
+}
+
+.interaction-aligned-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
   line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
 .post-time {
@@ -1294,6 +1345,15 @@ async function handleDeleteContent(contentId) {
   position: relative;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
 }
 
 .thread-post + .thread-post::before {

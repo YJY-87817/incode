@@ -1,4 +1,5 @@
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 import contentApi from "@/api/contentApi.js";
 import Swal from "sweetalert2";
 
@@ -8,6 +9,7 @@ import Swal from "sweetalert2";
  */
 export function useForumPost() {
   const forumStore = useForumStore();
+  const { getCurrentUserId, showLoginRequiredAlert } = useLoginGuardAlert();
 
   /**
    * 獲取模式對應的標題
@@ -25,7 +27,7 @@ export function useForumPost() {
       case "commentReply":
         return "詳細回覆";
       default:
-        return "發佈新主題";
+        return "新主題";
     }
   };
 
@@ -123,10 +125,20 @@ export function useForumPost() {
     contentType,
     entrustMission = null,
   }) => {
+    // 新人提醒：這裡是「真正送出到後端」的最後一站。
+    // modal/sidebar 都會走到這裡，所以你要改發文 DTO，優先改這段。
     const resolvedType = resolveContentType(parentContentId, contentType);
 
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      return {
+        success: false,
+        error: new Error("LOGIN_REQUIRED"),
+      };
+    }
+
     const dto = {
-      userId: 1, // TODO: 改成實際使用者 ID
+      userId: currentUserId,
       categoryId,
       parentContentId,
       title,
@@ -137,6 +149,7 @@ export function useForumPost() {
     try {
       if (entrustMission) {
         await contentApi.createContentWithEntrustMission({
+          userId: currentUserId,
           parentContentId,
           categoryId,
           title,
@@ -159,6 +172,8 @@ export function useForumPost() {
    * @param {number|null} parentContentId - 父內容 ID
    */
   const refreshAfterPost = async (parentContentId) => {
+    // 新人提醒：送出成功後不直接「手動塞資料」進列表，
+    // 而是清快取 + 重抓，避免多個畫面狀態不同步。
     // 清除緩存以確保獲取最新數據
     forumStore.clearContentCaches();
 
@@ -287,6 +302,10 @@ export function useForumPost() {
     const result = await submitPost(params);
 
     if (!result.success) {
+      if (result?.error?.message === "LOGIN_REQUIRED") {
+        await showLoginRequiredAlert("請先登入後操作");
+        return false;
+      }
       await showErrorMessage();
       return false;
     }

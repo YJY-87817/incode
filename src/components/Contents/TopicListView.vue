@@ -6,21 +6,29 @@
 -->
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
 import { useRouter } from "vue-router";
 import apiClient from "@/api/request.js";
 import ThreadPost from "@/components/Contents/ThreadPost.vue";
 import QuickReplyBox from "@/components/Contents/QuickReplyBox.vue";
 import InteractionButtons from "@/components/Contents/InteractionButtons.vue";
+import ForumPaginationCard from "@/components/Contents/ForumPaginationCard.vue";
 import HtmlIframe from "@/components/HtmlIframe.vue";
 import UserPreview from "@/views/user/components/UserPreview.vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
-import { useAuthStore } from "@/stores/user/auth.js";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
 import Swal from "sweetalert2";
 
 const forumStore = useForumStore();
-const authStore = useAuthStore();
+const { ensureLoggedIn, getCurrentUserId, isLoggedIn } = useLoginGuardAlert();
 const router = useRouter();
 
 const getAvatarUrl = (name, explicitUrl = "") => {
@@ -66,6 +74,18 @@ const getTopicPreviewCss = (topic) => {
   return basePreviewCss;
 };
 
+/**
+ * 【信息流跳轉點】從主題列表打開詳情視圖
+ *
+ * 流程（詳見 forum.vue L134）：
+ * 1. 用戶點擊主題 → 此函數被調用→ router.push({ name: 'forum-thread', params: { id: threadId } })
+ * 2. route.params.id 改變 → forum.vue 中的 watch 被觸發
+ * 3. watch 調用 forumStore.openThread(threadId)
+ * 4. openThread() 呼叫 fetchThreadDetail() → 向後端取得線程詳情及回覆列表
+ * 5. threadDetail 及 threadPosts/threadComments 更新 → 此組件（TopicListView）偵測到更新 → 自動渲染詳情視圖
+ *
+ * 注意：此組件無 props，完全依賴 forumStore 進行通訊，所有狀態變化都在 store 中同步。
+ */
 const goToThread = (threadId) => {
   if (!threadId) return;
   router.push({ name: "forum-thread", params: { id: threadId } });
@@ -214,10 +234,221 @@ const handleTopicDeleteContent = async (contentId) => {
  */
 const displayPages = computed(() => forumStore.displayPages);
 
+const mobileDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
+const desktopHeaderDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
+const TOPIC_LIST_MOBILE_BREAKPOINT = 768;
+const TOPIC_LIST_DENSE_BREAKPOINT = 992;
+const TOPIC_LIST_COMPACT_BREAKPOINT = 1200;
+const HEADER_COMPACT_BREAKPOINT = 878;
+const HEADER_DENSE_BREAKPOINT = 1200;
+const viewportWidth = ref(
+  typeof window !== "undefined" ? window.innerWidth : Number.MAX_SAFE_INTEGER,
+);
+const topicListCardRef = ref(null);
+const topicListCardWidth = ref(Number.MAX_SAFE_INTEGER);
+let topicListResizeObserver = null;
+
+const effectiveTopicListWidth = computed(() => {
+  const measuredWidth = Number(topicListCardWidth.value || 0);
+  if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
+    return measuredWidth;
+  }
+  return viewportWidth.value;
+});
+
+const isMobileTopicListWidth = computed(
+  () => effectiveTopicListWidth.value < TOPIC_LIST_MOBILE_BREAKPOINT,
+);
+
+const isDenseTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_DENSE_BREAKPOINT,
+);
+
+const isCompactTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_COMPACT_BREAKPOINT,
+);
+
+const showMobileTopicList = computed(() => isMobileTopicListWidth.value);
+
+const topicListResponsiveClasses = computed(() => ({
+  "topic-list--container-max-1200": isCompactTopicListWidth.value,
+  "topic-list--container-max-992": isDenseTopicListWidth.value,
+  "topic-list--container-max-768": isMobileTopicListWidth.value,
+}));
+
+const isCompactDesktopHeaderPagination = computed(
+  () => effectiveTopicListWidth.value <= HEADER_COMPACT_BREAKPOINT,
+);
+
+const isDenseDesktopHeaderPagination = computed(
+  () => effectiveTopicListWidth.value <= HEADER_DENSE_BREAKPOINT,
+);
+
+const desktopHeaderPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    isDenseDesktopHeaderPagination.value ? 3 : 5,
+  ),
+);
+
+const desktopHeaderPaginationClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+    : undefined,
+);
+
+const desktopHeaderLinkPaddingClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "topic-header-pagination-link"
+    : undefined,
+);
+
 const sortOption = computed({
   get: () => forumStore.sortOption,
   set: (value) => forumStore.setSortOption(value),
 });
+
+const sortOptions = [
+  { value: "latest", label: "最新發佈時間" },
+  { value: "latest-reply", label: "最新回應時間" },
+  { value: "most-replies", label: "最多回應數量" },
+  { value: "most-likes", label: "最多按讚數量" },
+];
+
+const showSortDropdown = ref(false);
+const desktopSortDropdownRef = ref(null);
+const mobileSortDropdownRef = ref(null);
+const hasSelectedSortOption = ref(false);
+const shouldHideSortIcon = ref(false);
+const isSortControlCompact = ref(false);
+const SORT_CONTROL_ANIMATION_MS = 160;
+let restoreSortIconTimer = null;
+
+const sortLabel = computed(() => {
+  const match = sortOptions.find((option) => option.value === sortOption.value);
+  return match?.label || "";
+});
+
+const sortInputLabel = computed(() => {
+  return hasSelectedSortOption.value ? sortLabel.value : "主題排序依據";
+});
+
+const sortControlWidth = computed(() => {
+  const longestLabelLength = sortOptions.reduce(
+    (maxLength, option) =>
+      Math.max(maxLength, String(option?.label || "").length),
+    0,
+  );
+  const iconReservedWidth = isSortControlCompact.value ? 1.3 : 2.3;
+  return `${longestLabelLength + iconReservedWidth}em`;
+});
+
+const clearRestoreSortIconTimer = () => {
+  if (restoreSortIconTimer) {
+    clearTimeout(restoreSortIconTimer);
+    restoreSortIconTimer = null;
+  }
+};
+
+const closeSortDropdown = () => {
+  if (!showSortDropdown.value && !isSortControlCompact.value) return;
+
+  clearRestoreSortIconTimer();
+  showSortDropdown.value = false;
+  isSortControlCompact.value = false;
+  restoreSortIconTimer = setTimeout(() => {
+    shouldHideSortIcon.value = false;
+    restoreSortIconTimer = null;
+  }, SORT_CONTROL_ANIMATION_MS);
+};
+
+const openSortDropdown = () => {
+  if (showSortDropdown.value) return;
+
+  clearRestoreSortIconTimer();
+  shouldHideSortIcon.value = true;
+
+  const runOpenTransition = () => {
+    isSortControlCompact.value = true;
+    showSortDropdown.value = true;
+  };
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestAnimationFrame === "function"
+  ) {
+    window.requestAnimationFrame(runOpenTransition);
+    return;
+  }
+
+  setTimeout(runOpenTransition, 0);
+};
+
+const selectSortOption = (option) => {
+  if (!option) return;
+  sortOption.value = option.value;
+  hasSelectedSortOption.value = true;
+  closeSortDropdown();
+};
+
+const toggleSortDropdown = () => {
+  if (showSortDropdown.value) {
+    closeSortDropdown();
+    return;
+  }
+  openSortDropdown();
+};
+
+const handleDocumentClick = (event) => {
+  if (!showSortDropdown.value) return;
+  const isClickInsideSortControls = [
+    desktopSortDropdownRef.value,
+    mobileSortDropdownRef.value,
+  ].some((container) => container && container.contains(event.target));
+
+  if (!isClickInsideSortControls) {
+    closeSortDropdown();
+  }
+};
+
+const handleDocumentKeydown = (event) => {
+  if (event.key !== "Escape") return;
+  if (showSortDropdown.value) {
+    closeSortDropdown();
+  }
+};
+
+const handleWindowResize = () => {
+  if (typeof window === "undefined") return;
+  viewportWidth.value = window.innerWidth;
+
+  const cardEl = topicListCardRef.value;
+  if (!cardEl) return;
+
+  const nextWidth = Math.round(cardEl.getBoundingClientRect().width || 0);
+  if (Number.isFinite(nextWidth) && nextWidth > 0) {
+    topicListCardWidth.value = nextWidth;
+  }
+};
 
 /**
  * 執行線程分頁
@@ -232,6 +463,35 @@ const threadCommentsTotalPages = computed(
 
 const paginatedThreadComments = computed(
   () => forumStore.paginatedThreadComments,
+);
+
+const buildDisplayPages = (currentPage, totalPages, maxDisplay = 5) => {
+  const pages = [];
+  if (totalPages <= 1) return pages;
+
+  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
+  let end = Math.min(totalPages, start + maxDisplay - 1);
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1);
+  }
+
+  for (let index = start; index <= end; index += 1) {
+    pages.push(index);
+  }
+
+  return pages;
+};
+
+const threadDisplayPages = computed(() =>
+  buildDisplayPages(forumStore.threadCurrentPage, threadTotalPages.value),
+);
+
+const threadCommentsDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.threadCommentsCurrentPage,
+    threadCommentsTotalPages.value,
+  ),
 );
 
 /**
@@ -249,38 +509,13 @@ const goToCommentPage = (page) => {
   forumStore.changeThreadCommentsPage(page);
 };
 
-const prevThreadPage = () => {
-  if (forumStore.threadCurrentPage > 1) {
-    forumStore.changeThreadPage(forumStore.threadCurrentPage - 1);
-  }
-};
-
-const nextThreadPage = () => {
-  if (forumStore.threadCurrentPage < threadTotalPages.value) {
-    forumStore.changeThreadPage(forumStore.threadCurrentPage + 1);
-  }
-};
-
-const prevCommentPage = () => {
-  if (forumStore.threadCommentsCurrentPage > 1) {
-    forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage - 1,
-    );
-  }
-};
-
-const nextCommentPage = () => {
-  if (forumStore.threadCommentsCurrentPage < threadCommentsTotalPages.value) {
-    forumStore.changeThreadCommentsPage(
-      forumStore.threadCommentsCurrentPage + 1,
-    );
-  }
-};
-
 /**
  * 留言/回文輸入框相關
  */
-const selectQuickReply = () => {
+const selectQuickReply = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
   if (replyTab.value === "quick" && showQuickReply.value) {
     showQuickReply.value = false;
@@ -291,7 +526,10 @@ const selectQuickReply = () => {
   }
 };
 
-const selectDetailedComment = () => {
+const selectDetailedComment = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   replyTab.value = "detailed";
   if (showQuickReply.value && forumStore.threadDetail?.id) {
     forumStore.clearQuickReply(forumStore.threadDetail.id);
@@ -340,10 +578,15 @@ const submitQuickReply = async () => {
   );
   if (isSubmitting) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return;
+
   forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, true);
 
   const dto = {
-    userId: 1, // TODO: 改成實際使用者 ID
+    userId: currentUserId,
     categoryId: forumStore.threadDetail.categoryId,
     parentContentId: forumStore.threadDetail.id,
     title: buildReplyTitle(forumStore.threadDetail.title),
@@ -624,7 +867,19 @@ const collectThreadInteractionContentIds = () => {
     ...paginatedThreadComments.value.map((item) => Number(item?.id)),
   ].filter((id) => Number.isFinite(id) && id > 0);
 
-  return Array.from(new Set(ids));
+  // 收集所有巢狀回覆（留言和回覆）的 ID
+  const nestedRepliesIds = [];
+  Object.values(forumStore.childRepliesByParentId || {}).forEach((payload) => {
+    const items = payload?.items || [];
+    items.forEach((item) => {
+      const itemId = Number(item?.id);
+      if (Number.isFinite(itemId) && itemId > 0) {
+        nestedRepliesIds.push(itemId);
+      }
+    });
+  });
+
+  return Array.from(new Set([...ids, ...nestedRepliesIds]));
 };
 
 watch(
@@ -635,6 +890,15 @@ watch(
     paginatedThreadComments.value
       .map((item) => Number(item?.id || 0))
       .join(","),
+    // 監聽巢狀回覆的變化
+    JSON.stringify(
+      Object.entries(forumStore.childRepliesByParentId || {}).map(
+        ([parentId, payload]) => [
+          parentId,
+          (payload?.items || []).map((item) => Number(item?.id || 0)),
+        ],
+      ),
+    ),
   ],
   async ([selectedThread]) => {
     if (!selectedThread) return;
@@ -645,7 +909,7 @@ watch(
 );
 
 watch(
-  () => [authStore.isAuthenticated, authStore.user?.id],
+  () => [isLoggedIn(), getCurrentUserId()],
   async () => {
     const topicContentIds = forumStore.topics
       .map((topic) => Number(topic?.id))
@@ -663,42 +927,58 @@ watch(
     ]);
   },
 );
+
+onMounted(async () => {
+  await nextTick();
+  handleWindowResize();
+
+  if (
+    typeof window !== "undefined" &&
+    typeof ResizeObserver !== "undefined" &&
+    topicListCardRef.value
+  ) {
+    topicListResizeObserver = new ResizeObserver((entries) => {
+      const [entry] = entries;
+      const width = Math.round(entry?.contentRect?.width || 0);
+      if (Number.isFinite(width) && width > 0) {
+        topicListCardWidth.value = width;
+      }
+    });
+    topicListResizeObserver.observe(topicListCardRef.value);
+  }
+
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+  window.addEventListener("resize", handleWindowResize);
+});
+
+onBeforeUnmount(() => {
+  clearRestoreSortIconTimer();
+
+  if (topicListResizeObserver) {
+    topicListResizeObserver.disconnect();
+    topicListResizeObserver = null;
+  }
+
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+  window.removeEventListener("resize", handleWindowResize);
+});
 </script>
 
 <template>
-  <div class="card shadow-sm">
-    <!-- 卡片標題 (列表視圖) -->
-    <div
-      v-if="!forumStore.selectedThread"
-      class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 py-3"
-    >
-      <h5 class="mb-0 fs-6 fs-md-5">📋 討論主題</h5>
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <span class="badge bg-secondary" v-if="forumStore.selectedCategoryName">
-          {{ forumStore.selectedCategoryName }}
-        </span>
-        <span class="badge bg-info">
-          共 {{ forumStore.pagination.totalCount }} 筆
-        </span>
-        <div class="ms-sm-2">
-          <select
-            v-model="sortOption"
-            class="form-select form-select-sm"
-            aria-label="主題排序"
-          >
-            <option value="createdAt_desc">發佈時間（新→舊）</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
+  <div
+    ref="topicListCardRef"
+    class="card shadow-sm"
+    :class="topicListResponsiveClasses"
+  >
     <!-- 卡片內容 -->
     <div class="card-body p-0">
       <!-- 詳情視圖 -->
       <div v-if="forumStore.selectedThread">
         <!-- 返回按鈕 -->
         <div class="p-3 border-bottom">
-          <button class="btn btn-sm btn-forum-secondary" @click="goToList">
+          <button class="btn btn-sm btn-forum-secondary mb-0" @click="goToList">
             <i class="fas fa-arrow-left me-2"></i>
             返回列表
           </button>
@@ -718,11 +998,11 @@ watch(
           "
           @click="handleThreadReplyingTargetClick"
         >
-          <!-- 主題徽章 -->
-          <div class="d-flex flex-wrap gap-1">
+          <!-- 主題徽章 + 互動按鈕 -->
+          <div class="d-flex flex-wrap gap-1 align-items-center">
             <span
               v-if="forumStore.threadDetail?.categoryName"
-              class="badge bg-secondary-light text-dark"
+              class="badge bg-secondary-light text-dark interaction-aligned-badge"
             >
               {{ forumStore.threadDetail.categoryName }}
             </span>
@@ -731,37 +1011,26 @@ watch(
                 forumStore.threadDetail?.type === CONTENT_TYPES.REPLY &&
                 forumStore.threadDetail?.parentContentId
               "
-              class="btn btn-sm btn-outline-primary parent-link-btn"
+              class="badge interaction-aligned-badge parent-link-btn"
               type="button"
               @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
             >
-              <i class="fas fa-link me-1"></i>
+              <i class="fa-solid fa-people-pulling"></i>
               主文
             </button>
             <span
-              v-if="forumStore.threadDetail?.isPinned"
-              class="badge bg-danger"
+              v-if="forumStore.threadDetail?.hasEntrustMission"
+              class="badge bg-secondary interaction-aligned-badge"
             >
-              置頂
+              委託任務
             </span>
             <span
               v-if="forumStore.threadDetail?.isHot"
-              class="badge bg-warning text-dark"
+              class="badge bg-warning text-dark interaction-aligned-badge"
             >
               熱門
             </span>
-          </div>
-
-          <div
-            class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
-          >
-            <h3
-              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
-            >
-              {{ forumStore.threadDetail.title }}
-            </h3>
-
-            <div class="interaction-container" @click.stop>
+            <div class="interaction-container ms-auto" @click.stop>
               <InteractionButtons
                 v-if="forumStore.threadDetail?.id != null"
                 :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
@@ -774,6 +1043,16 @@ watch(
               />
             </div>
           </div>
+
+          <div
+            class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
+          >
+            <h3
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
+            >
+              {{ forumStore.threadDetail.title }}
+            </h3>
+          </div>
           <p
             class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
           >
@@ -781,14 +1060,19 @@ watch(
             <UserPreview
               :user-id="forumStore.threadDetail.userId"
               :username="forumStore.threadDetail.author"
-              :avatar-url="getAvatarUrl(forumStore.threadDetail.author)"
+              :avatar-url="
+                getAvatarUrl(
+                  forumStore.threadDetail.author,
+                  forumStore.threadDetail.authorAvatar,
+                )
+              "
               :size="26"
             />
             <span>·</span>
             <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
           </p>
 
-          <!-- 主題互動按鈕已移到標題右側 -->
+          <!-- 主題互動按鈕已移到分類徽章同列 -->
 
           <HtmlIframe
             class="card-text rich-content"
@@ -887,49 +1171,16 @@ watch(
                 :reward-points="activeRewardPoints"
                 @best-answer-selected="handleBestAnswerSelected"
               />
-              <nav v-if="threadCommentsTotalPages > 1" class="mt-3">
-                <ul
-                  class="pagination pagination-sm justify-content-center flex-wrap gap-1"
-                >
-                  <li
-                    class="page-item"
-                    :class="{
-                      disabled: forumStore.threadCommentsCurrentPage === 1,
-                    }"
-                    @click="prevCommentPage"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      <i class="fa-solid fa-caret-left"></i>
-                    </a>
-                  </li>
-                  <li
-                    class="page-item"
-                    v-for="page in threadCommentsTotalPages"
-                    :key="`comment-page-${page}`"
-                    :class="{
-                      active: forumStore.threadCommentsCurrentPage === page,
-                    }"
-                    @click="goToCommentPage(page)"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      {{ page }}
-                    </a>
-                  </li>
-                  <li
-                    class="page-item"
-                    :class="{
-                      disabled:
-                        forumStore.threadCommentsCurrentPage ===
-                        threadCommentsTotalPages,
-                    }"
-                    @click="nextCommentPage"
-                  >
-                    <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                      <i class="fa-solid fa-caret-right"></i>
-                    </a>
-                  </li>
-                </ul>
-              </nav>
+              <ForumPaginationCard
+                v-if="threadCommentsTotalPages > 1"
+                class="mt-3"
+                :current-page="forumStore.threadCommentsCurrentPage"
+                :total-pages="threadCommentsTotalPages"
+                :pages="threadCommentsDisplayPages"
+                :show-edge-buttons="true"
+                :show-jump="true"
+                @page-change="goToCommentPage"
+              />
             </div>
 
             <!-- 回文分頁 (type=2) -->
@@ -952,43 +1203,16 @@ watch(
             </div>
 
             <!-- 分頁導航 -->
-            <nav v-if="threadTotalPages > 1" class="mt-3 mt-md-4">
-              <ul
-                class="pagination pagination-sm justify-content-center flex-wrap gap-1"
-              >
-                <li
-                  class="page-item"
-                  :class="{ disabled: forumStore.threadCurrentPage === 1 }"
-                  @click="prevThreadPage"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    <i class="fa-solid fa-caret-left"></i>
-                  </a>
-                </li>
-                <li
-                  class="page-item"
-                  v-for="page in threadTotalPages"
-                  :key="page"
-                  :class="{ active: forumStore.threadCurrentPage === page }"
-                  @click="goToThreadPage(page)"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    {{ page }}
-                  </a>
-                </li>
-                <li
-                  class="page-item"
-                  :class="{
-                    disabled: forumStore.threadCurrentPage === threadTotalPages,
-                  }"
-                  @click="nextThreadPage"
-                >
-                  <a class="page-link px-2 px-md-3" href="javascript:void(0)">
-                    <i class="fa-solid fa-caret-right"></i>
-                  </a>
-                </li>
-              </ul>
-            </nav>
+            <ForumPaginationCard
+              v-if="threadTotalPages > 1"
+              class="mt-3 mt-md-4"
+              :current-page="forumStore.threadCurrentPage"
+              :total-pages="threadTotalPages"
+              :pages="threadDisplayPages"
+              :show-edge-buttons="true"
+              :show-jump="true"
+              @page-change="goToThreadPage"
+            />
           </div>
         </div>
       </div>
@@ -1013,39 +1237,121 @@ watch(
           <p>此分類目前沒有主題</p>
         </div>
 
+        <div
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pt-2 pb-1"
+        >
+          <div class="topic-mobile-toolbar">
+            <div
+              ref="mobileSortDropdownRef"
+              class="topic-sort-dropdown topic-mobile-sort-dropdown"
+              :style="{ '--sort-control-width': sortControlWidth }"
+            >
+              <div
+                class="topic-sort-input-wrapper"
+                @click.stop="toggleSortDropdown"
+              >
+                <input
+                  :value="sortInputLabel"
+                  class="form-control topic-sort-input"
+                  :class="{
+                    'topic-sort-input--expanded': isSortControlCompact,
+                  }"
+                  readonly
+                  aria-label="主題排序"
+                  @click.stop="toggleSortDropdown"
+                />
+                <span
+                  v-if="!shouldHideSortIcon"
+                  class="topic-sort-input-dropdown"
+                  aria-hidden="true"
+                  @click.stop="toggleSortDropdown"
+                >
+                  ▾
+                </span>
+              </div>
+              <div v-if="showSortDropdown" class="topic-sort-menu">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  type="button"
+                  class="topic-sort-item"
+                  :class="{
+                    active: option.value === sortOption.value,
+                  }"
+                  @mousedown.prevent="selectSortOption(option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="forumStore.pagination.totalPages > 1"
+              class="topic-mobile-pagination"
+            >
+              <ForumPaginationCard
+                :current-page="forumStore.pagination.currentPage"
+                :total-pages="forumStore.pagination.totalPages"
+                :pages="mobileDisplayPages"
+                :show-edge-buttons="false"
+                :show-jump="true"
+                pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+                link-padding-class="topic-header-pagination-link"
+                @page-change="goToPage"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- 手機卡片列表 -->
-        <div v-else class="d-md-none px-2 pb-2">
+        <div
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pb-2"
+        >
           <div
             v-for="topic in forumStore.topics"
             :key="`mobile-topic-${topic.id}`"
             class="card topic-mobile-card mb-2"
             @click="goToThread(topic.id)"
           >
-            <div class="card-body p-2">
+            <div class="card-body pt-2 pb-0 px-2">
               <div
-                class="d-flex align-items-start justify-content-between gap-2 mb-1"
+                class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap"
               >
-                <div class="d-flex flex-wrap gap-1">
+                <div class="d-flex flex-wrap gap-1 align-items-center">
                   <span
                     v-if="topic.categoryName"
-                    class="badge bg-secondary-light text-dark"
+                    class="badge bg-secondary-light text-dark interaction-aligned-badge"
                   >
                     {{ topic.categoryName }}
                   </span>
-                  <span v-if="topic.isPinned" class="badge bg-danger"
-                    >置頂</span
+                  <span
+                    v-if="topic.hasEntrustMission"
+                    class="badge bg-secondary interaction-aligned-badge"
+                    >委託任務</span
                   >
-                  <span v-if="topic.isHot" class="badge bg-warning text-dark"
+                  <span
+                    v-if="topic.isHot"
+                    class="badge bg-warning text-dark interaction-aligned-badge"
                     >熱門</span
                   >
-                </div>
-                <div class="topic-mobile-reply-count badge bg-primary">
-                  {{ topic.replyCount }}
+                  <div class="interaction-container" @click.stop>
+                    <InteractionButtons
+                      :key="`topic-mobile-interactions-${topic.id}`"
+                      :contentId="topic.id"
+                      :authorUserId="topic.userId"
+                      @interaction-success="handleTopicInteractionSuccess"
+                      @interaction-error="handleTopicInteractionError"
+                      @edit-content="handleTopicEditContent"
+                      @delete-content="handleTopicDeleteContent"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div
-                class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
+                class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
               >
                 <h6 class="mb-0 fs-6 fw-bold flex-grow-1">
                   <a
@@ -1055,18 +1361,6 @@ watch(
                     {{ topic.title }}
                   </a>
                 </h6>
-
-                <div class="interaction-container" @click.stop>
-                  <InteractionButtons
-                    :key="`topic-mobile-interactions-${topic.id}`"
-                    :contentId="topic.id"
-                    :authorUserId="topic.userId"
-                    @interaction-success="handleTopicInteractionSuccess"
-                    @interaction-error="handleTopicInteractionError"
-                    @edit-content="handleTopicEditContent"
-                    @delete-content="handleTopicDeleteContent"
-                  />
-                </div>
               </div>
 
               <div class="topic-preview-body topic-preview-collapsed mt-2 mb-2">
@@ -1117,24 +1411,91 @@ watch(
         </div>
 
         <!-- 桌機表格列表 -->
-        <div class="table-responsive d-none d-md-block">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
+        <div
+          v-if="forumStore.topics.length > 0 && !showMobileTopicList"
+          class="table-responsive"
+        >
+          <table class="table table-hover mb-0 topic-list-table">
+            <thead class="topic-table-header">
               <tr>
-                <th class="py-2 py-md-3" style="width: 60%">主題</th>
-                <th
-                  class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 10%"
-                >
-                  發佈時間
+                <th class="px-3 py-2 py-md-3 topic-col">
+                  <div
+                    class="d-flex align-items-center flex-nowrap gap-2 gap-lg-4 w-100 topic-header-main-row"
+                  >
+                    <span class="topic-table-header-label"> 📝 主題 </span>
+                    <div
+                      ref="desktopSortDropdownRef"
+                      class="topic-sort-dropdown"
+                      :style="{ '--sort-control-width': sortControlWidth }"
+                    >
+                      <div
+                        class="topic-sort-input-wrapper"
+                        @click.stop="toggleSortDropdown"
+                      >
+                        <input
+                          :value="sortInputLabel"
+                          class="form-control topic-sort-input"
+                          :class="{
+                            'topic-sort-input--expanded': isSortControlCompact,
+                          }"
+                          readonly
+                          aria-label="主題排序"
+                          @click.stop="toggleSortDropdown"
+                        />
+                        <span
+                          v-if="!shouldHideSortIcon"
+                          class="topic-sort-input-dropdown"
+                          aria-hidden="true"
+                          @click.stop="toggleSortDropdown"
+                        >
+                          ▾
+                        </span>
+                      </div>
+                      <div v-if="showSortDropdown" class="topic-sort-menu">
+                        <button
+                          v-for="option in sortOptions"
+                          :key="option.value"
+                          type="button"
+                          class="topic-sort-item"
+                          :class="{
+                            active: option.value === sortOption.value,
+                          }"
+                          @mousedown.prevent="selectSortOption(option)"
+                        >
+                          {{ option.label }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      v-if="forumStore.pagination.totalPages > 1"
+                      class="ms-auto topic-header-pagination"
+                    >
+                      <ForumPaginationCard
+                        :current-page="forumStore.pagination.currentPage"
+                        :total-pages="forumStore.pagination.totalPages"
+                        :pages="desktopHeaderPages"
+                        :show-edge-buttons="!isCompactDesktopHeaderPagination"
+                        :show-jump="true"
+                        :show-direction-buttons="
+                          !isCompactDesktopHeaderPagination
+                        "
+                        :pagination-class="desktopHeaderPaginationClass"
+                        :link-padding-class="desktopHeaderLinkPaddingClass"
+                        @page-change="goToPage"
+                      />
+                    </div>
+                  </div>
                 </th>
-                <th
-                  class="py-2 py-md-3 d-none d-md-table-cell"
-                  style="width: 10%"
-                >
-                  最後回應時間
+                <th class="d-none d-md-table-cell created-col">
+                  <span class="topic-table-header-label"> 🗓️ 發佈 </span>
                 </th>
-                <th class="py-2 py-md-3 text-center" style="width: 3%">回應</th>
+                <th class="d-none d-md-table-cell last-reply-col">
+                  <span class="topic-table-header-label"> 🕒 回應 </span>
+                </th>
+                <th class="reply-col">
+                  <span class="topic-table-header-label"> 回應數 </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1145,14 +1506,14 @@ watch(
                 @click="goToThread(topic.id)"
               >
                 <!-- 主題欄 -->
-                <td class="p-3 py-md-3">
+                <td class="px-3 pt-2 pb-0 pt-md-2 pb-md-0 topic-col">
                   <div class="d-flex align-items-start gap-3">
                     <div class="flex-grow-1 min-width-0">
                       <!-- 主題徽章 -->
-                      <div class="d-flex flex-wrap gap-1">
+                      <div class="d-flex flex-wrap gap-1 align-items-center">
                         <span
                           v-if="topic.categoryName"
-                          class="badge bg-secondary-light text-dark"
+                          class="badge bg-secondary-light text-dark interaction-aligned-badge"
                         >
                           {{ topic.categoryName }}
                         </span>
@@ -1161,38 +1522,26 @@ watch(
                             topic.type === CONTENT_TYPES.REPLY &&
                             topic.parentContentId
                           "
-                          class="btn btn-sm btn-outline-primary parent-link-btn"
+                          class="badge interaction-aligned-badge parent-link-btn"
                           type="button"
                           @click.stop="goToThread(topic.parentContentId)"
                         >
-                          <i class="fas fa-link me-1"></i>
+                          <i class="fa-solid fa-people-pulling"></i>
                           主文
                         </button>
-                        <span v-if="topic.isPinned" class="badge bg-danger">
-                          置頂
+                        <span
+                          v-if="topic.hasEntrustMission"
+                          class="badge bg-secondary interaction-aligned-badge"
+                        >
+                          委託任務
                         </span>
                         <span
                           v-if="topic.isHot"
-                          class="badge bg-warning text-dark"
+                          class="badge bg-warning text-dark interaction-aligned-badge"
                         >
                           熱門
                         </span>
-                      </div>
-
-                      <!-- 主題標題 + 互動按鈕 (同一行) -->
-                      <div
-                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap"
-                      >
-                        <h6 class="mb-0 fs-6 fw-bold">
-                          <a
-                            href="javascript:void(0)"
-                            class="topic-title-link text-break"
-                          >
-                            {{ topic.title }}
-                          </a>
-                        </h6>
-
-                        <div class="interaction-container" @click.stop>
+                        <div class="interaction-container ms-auto" @click.stop>
                           <InteractionButtons
                             :key="`topic-interactions-${topic.id}`"
                             :contentId="topic.id"
@@ -1203,6 +1552,20 @@ watch(
                             @delete-content="handleTopicDeleteContent"
                           />
                         </div>
+                      </div>
+
+                      <!-- 主題標題 + 互動按鈕 (同一行) -->
+                      <div
+                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
+                      >
+                        <h6 class="mb-0 fs-6 fw-bold">
+                          <a
+                            href="javascript:void(0)"
+                            class="topic-title-link text-break"
+                          >
+                            {{ topic.title }}
+                          </a>
+                        </h6>
                       </div>
 
                       <div
@@ -1239,52 +1602,70 @@ watch(
                         ></div>
                       </div>
 
-                      <!-- 互動按鈕已移到標題右側 -->
+                      <!-- 互動按鈕已移到分類徽章同列 -->
                     </div>
                   </div>
                 </td>
 
                 <!-- 發佈時間欄 -->
-                <td
-                  class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
-                >
-                  <div class="text-nowrap">
-                    {{ formatDate(topic.createdAt) }}
+                <td class="d-none d-md-table-cell text-muted small created-col">
+                  <div class="meta-cell-stack">
+                    <div class="meta-content-group">
+                      <div class="meta-date-text">
+                        {{ formatDate(topic.createdAt) }}
+                      </div>
+                      <div class="meta-user-row text-muted">
+                        <UserPreview
+                          :user-id="topic.userId"
+                          :username="topic.author"
+                          :avatar-url="
+                            getAvatarUrl(topic.author, topic.authorAvatar)
+                          "
+                          :size="24"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <UserPreview
-                    class="text-muted"
-                    :user-id="topic.userId"
-                    :username="topic.author"
-                    :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
-                    :size="24"
-                  />
                 </td>
 
                 <!-- 最後回應時間欄 -->
                 <td
-                  class="py-3 py-md-3 d-none d-md-table-cell text-muted small"
+                  class="d-none d-md-table-cell text-muted small last-reply-col"
                 >
-                  <div v-if="topic.lastReplyTime" class="text-nowrap">
-                    {{ formatDate(topic.lastReplyTime) }}
-                  </div>
-                  <div v-else class="text-muted">尚無回應</div>
-                  <div
-                    v-if="topic.lastReplyUser"
-                    class="text-muted d-inline-flex align-items-center gap-1"
-                  >
-                    <UserPreview
-                      :user-id="topic.lastReplyUserId"
-                      :username="topic.lastReplyUser"
-                      :avatar-url="getAvatarUrl(topic.lastReplyUser)"
-                      :size="24"
-                    />
+                  <div class="meta-cell-stack">
+                    <div class="meta-content-group">
+                      <div v-if="topic.lastReplyTime" class="meta-date-text">
+                        {{ formatDate(topic.lastReplyTime) }}
+                      </div>
+                      <div v-else class="meta-date-text text-muted">
+                        尚無回應
+                      </div>
+                      <div
+                        v-if="topic.lastReplyUser"
+                        class="meta-user-row text-muted"
+                      >
+                        <UserPreview
+                          :user-id="topic.lastReplyUserId"
+                          :username="topic.lastReplyUser"
+                          :avatar-url="
+                            getAvatarUrl(
+                              topic.lastReplyUser,
+                              topic.lastReplyUserAvatar,
+                            )
+                          "
+                          :size="24"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </td>
 
                 <!-- 回應數欄 -->
-                <td class="py-3 py-md-3 text-center">
-                  <div class="badge bg-primary">
-                    {{ topic.replyCount }}
+                <td class="reply-col">
+                  <div class="meta-cell-center">
+                    <div class="reply-count-badge badge bg-primary">
+                      {{ topic.replyCount }}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -1297,98 +1678,16 @@ watch(
     <!-- 分頁導航 (列表視圖) -->
     <div
       v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
-      class="card-footer bg-white py-2 py-md-3"
+      class="card-footer bg-white pt-0 pb-2 pb-md-3 px-0"
     >
-      <nav class="d-flex justify-content-center">
-        <ul
-          class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1"
-        >
-          <!-- 上一頁 -->
-          <li
-            class="page-item"
-            :class="{ disabled: forumStore.pagination.currentPage === 1 }"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.currentPage - 1)"
-            >
-              &lsaquo;
-            </a>
-          </li>
-
-          <!-- 首頁 -->
-          <li v-if="displayPages[0] > 1" class="page-item d-none d-md-block">
-            <a class="page-link" href="#" @click.prevent="goToPage(1)"> 1 </a>
-          </li>
-
-          <!-- 省略號 -->
-          <li
-            v-if="displayPages[0] > 2"
-            class="page-item disabled d-none d-md-block"
-          >
-            <span class="page-link">...</span>
-          </li>
-
-          <!-- 分頁數字 -->
-          <li
-            v-for="pageNum in displayPages"
-            :key="pageNum"
-            class="page-item"
-            :class="{ active: pageNum === forumStore.pagination.currentPage }"
-          >
-            <a class="page-link" href="#" @click.prevent="goToPage(pageNum)">
-              {{ pageNum }}
-            </a>
-          </li>
-
-          <!-- 省略號 -->
-          <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages - 1
-            "
-            class="page-item disabled d-none d-md-block"
-          >
-            <span class="page-link">...</span>
-          </li>
-
-          <!-- 末頁 -->
-          <li
-            v-if="
-              displayPages[displayPages.length - 1] <
-              forumStore.pagination.totalPages
-            "
-            class="page-item d-none d-md-block"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.totalPages)"
-            >
-              {{ forumStore.pagination.totalPages }}
-            </a>
-          </li>
-
-          <!-- 下一頁 -->
-          <li
-            class="page-item"
-            :class="{
-              disabled:
-                forumStore.pagination.currentPage ===
-                forumStore.pagination.totalPages,
-            }"
-          >
-            <a
-              class="page-link"
-              href="#"
-              @click.prevent="goToPage(forumStore.pagination.currentPage + 1)"
-            >
-              &rsaquo;
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <ForumPaginationCard
+        :current-page="forumStore.pagination.currentPage"
+        :total-pages="forumStore.pagination.totalPages"
+        :pages="displayPages"
+        :show-edge-buttons="true"
+        :show-jump="true"
+        @page-change="goToPage"
+      />
     </div>
   </div>
 </template>
@@ -1406,6 +1705,7 @@ watch(
 
 .card-header h5 {
   color: #fff;
+  font-size: 0.95rem;
 }
 
 .card-footer {
@@ -1486,6 +1786,292 @@ watch(
   color: #145369;
 }
 
+.topic-table-header {
+  background-color: #86b0bd;
+  color: #fff;
+}
+
+.topic-table-header th {
+  color: #fff;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  border-bottom-color: #d1d3d4;
+}
+
+.topic-table-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.topic-table-header-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.topic-sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  width: var(--sort-control-width, auto);
+  max-width: 100%;
+  color: #145369;
+  transition: width 0.16s ease;
+}
+
+.topic-header-pagination {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.topic-header-main-row {
+  flex-wrap: nowrap !important;
+  min-width: 0;
+}
+
+.topic-mobile-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  background-color: #86b0bd;
+  position: relative;
+}
+
+.topic-mobile-sort-dropdown {
+  flex: 0 0 auto;
+  max-width: 48%;
+}
+
+.topic-mobile-pagination {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.topic-mobile-pagination :deep(nav),
+.topic-mobile-pagination :deep(.pagination),
+.topic-mobile-pagination :deep(.pagination-jump-shell),
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-shell) {
+  background-color: #fff;
+  margin-left: 0;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.25rem !important;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-input) {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.15rem;
+  min-width: calc(1ch + 1em);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: transparent;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-outer-spin-button),
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-inner-spin-button) {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  margin: 0;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.2rem;
+  font-size: 0.7rem;
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
+}
+
+.topic-mobile-pagination :deep(.pagination-total-pages) {
+  font-size: 0.7rem;
+  color: #145369 !important;
+}
+
+.topic-mobile-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.5rem;
+}
+
+.topic-header-pagination :deep(nav),
+.topic-header-pagination :deep(.pagination),
+.topic-header-pagination :deep(.pagination-jump-shell),
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
+}
+
+.topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  min-width: 1.65rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-shell) {
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  background-color: #fff;
+  font-size: 0.75rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.35rem !important;
+}
+
+.topic-header-pagination :deep(.pagination-jump-input) {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.05rem 0.2rem;
+  min-width: calc(1ch + 1.3em);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: transparent;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+.topic-header-pagination
+  :deep(.pagination-jump-input::-webkit-outer-spin-button),
+.topic-header-pagination
+  :deep(.pagination-jump-input::-webkit-inner-spin-button) {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  margin: 0;
+}
+
+.topic-header-pagination :deep(.pagination-total-pages) {
+  font-size: 0.75rem;
+  color: #145369 !important;
+}
+
+.topic-header-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
+}
+
+.topic-header-pagination :deep(.pagination-jump-button:hover) {
+  color: #145369;
+  border-color: #145369;
+  background-color: #fff0dd;
+}
+
+.topic-sort-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.topic-sort-input {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid #145369;
+  border-radius: 999px;
+  background: #145369;
+  color: #fff;
+  padding: 0 1.45rem 0 0.7rem;
+  line-height: 28px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: padding-right 0.16s ease;
+}
+
+.topic-sort-input.topic-sort-input--expanded {
+  padding-right: 0.7rem;
+}
+
+.topic-sort-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+  font-size: 0.82rem;
+  color: #fff;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.topic-sort-menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid #d1d3d4;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.12);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.topic-sort-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #145369;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.topic-sort-item + .topic-sort-item {
+  border-top: 1px solid rgba(209, 211, 212, 0.8);
+}
+
+.topic-sort-item.active,
+.topic-sort-item:hover {
+  background: #fff0dd;
+}
+
+.topic-table-header th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+
+.topic-table-header th:last-child {
+  border-top-right-radius: 0.5rem;
+}
+
 .table-hover tbody tr:hover {
   background-color: rgba(255, 240, 221, 0.5) !important;
 }
@@ -1500,12 +2086,206 @@ watch(
 }
 
 .table-responsive {
+  overflow-x: hidden;
   overflow-y: visible;
 }
 
 .table thead {
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.topic-list-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.topic-col {
+  width: 71.5%;
+}
+
+.created-col,
+.last-reply-col {
+  width: 12%;
+}
+
+.reply-col {
+  width: 5.5%;
+  min-width: 4.6rem;
+  white-space: nowrap;
+}
+
+.topic-list-table th.created-col,
+.topic-list-table th.last-reply-col,
+.topic-list-table th.reply-col,
+.topic-list-table td.created-col,
+.topic-list-table td.last-reply-col,
+.topic-list-table td.reply-col {
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.topic-list--container-max-1200 .topic-col {
+  width: 66.5%;
+}
+
+.topic-list--container-max-1200 .created-col,
+.topic-list--container-max-1200 .last-reply-col {
+  width: 13.25%;
+}
+
+.topic-list--container-max-1200 .reply-col {
+  width: 7%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-1200 .topic-list-table th.created-col,
+.topic-list--container-max-1200 .topic-list-table th.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table th.reply-col,
+.topic-list--container-max-1200 .topic-list-table td.created-col,
+.topic-list--container-max-1200 .topic-list-table td.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table td.reply-col,
+.topic-list--container-max-1200 .meta-date-text {
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.topic-list--container-max-992 .topic-col {
+  width: 65.5%;
+}
+
+.topic-list--container-max-992 .created-col,
+.topic-list--container-max-992 .last-reply-col {
+  width: 13.5%;
+}
+
+.topic-list--container-max-992 .reply-col {
+  width: 7.5%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-992 .topic-header-main-row {
+  gap: 0.45rem !important;
+}
+
+.topic-list--container-max-992 .topic-sort-dropdown {
+  width: min(var(--sort-control-width, 100%), 8.6rem);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.45rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-shell) {
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.22rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-wrap) {
+  gap: 0.2rem !important;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-input) {
+  font-size: 0.68rem;
+  min-width: calc(1ch + 1.1em);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-total-pages) {
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-button) {
+  padding: 0.04rem 0.2rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992 .topic-list-table th.created-col,
+.topic-list--container-max-992 .topic-list-table th.last-reply-col,
+.topic-list--container-max-992 .topic-list-table th.reply-col,
+.topic-list--container-max-992 .topic-list-table td.created-col,
+.topic-list--container-max-992 .topic-list-table td.last-reply-col,
+.topic-list--container-max-992 .topic-list-table td.reply-col,
+.topic-list--container-max-992 .meta-date-text {
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+.topic-list--container-max-992 .reply-count-badge {
+  min-width: 2rem;
+  text-align: center;
+}
+
+.topic-list--container-max-992 .created-col :deep(.user-avatar-img),
+.topic-list--container-max-992 .last-reply-col :deep(.user-avatar-img) {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.topic-list--container-max-768 .interaction-aligned-badge,
+.topic-list--container-max-768 .reply-count-badge {
+  min-height: 40px;
+  height: 40px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.topic-list--container-max-768 .topic-title-link {
+  font-size: 0.95rem;
+}
+
+.meta-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+}
+
+.meta-content-group {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+
+.meta-user-row {
+  display: inline-flex;
+  align-items: center;
+  text-align: left;
+}
+
+.meta-cell-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.meta-date-text {
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 /* 徽章樣式 */
@@ -1517,34 +2297,47 @@ watch(
 .badge.bg-secondary-light {
   background-color: #d0e8f2 !important;
   color: #145369;
+}
+
+.interaction-aligned-badge {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
   line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.reply-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
 .parent-link-btn {
-  height: 22px;
-  min-height: 22px;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1;
-  border-color: #86b0bd;
+  border: 1px solid #86b0bd;
   color: #145369;
-  background: transparent;
+  background-color: #d0e8f2;
+  cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: #fff0dd;
-  border-color: #145369;
-  color: #145369;
-}
-
-.badge.bg-info {
-  background-color: #145369 !important;
-  color: #fff0dd;
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
 }
 
 .badge.bg-primary {
@@ -1750,39 +2543,130 @@ watch(
   transform: scale(0.998);
 }
 
-.topic-mobile-reply-count {
-  min-width: 2rem;
-  min-height: 1.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 分頁樣式 */
-.pagination .page-item.active .page-link {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
-}
-
-.pagination .page-link {
-  color: #145369;
-  border-color: #d1d3d4;
-}
-
-.pagination .page-link:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
-}
-
 /* 載入動畫 */
 .spinner-border {
   color: #145369 !important;
 }
 
 /* 響應式調整 */
+@media (max-width: 1200px) and (min-width: 768px) {
+  .topic-col {
+    width: 66.5%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 13.25%;
+  }
+
+  .reply-col {
+    width: 7%;
+    min-width: 4.5rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.84rem;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 992px) and (min-width: 768px) {
+  .topic-col {
+    width: 65.5%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 13.5%;
+  }
+
+  .reply-col {
+    width: 7.5%;
+    min-width: 4.5rem;
+  }
+
+  .topic-header-main-row {
+    gap: 0.45rem !important;
+  }
+
+  .topic-sort-dropdown {
+    width: min(var(--sort-control-width, 100%), 8.6rem);
+  }
+
+  .topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+    padding: 0.12rem 0.3rem;
+    font-size: 0.7rem;
+    min-width: 1.45rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-shell) {
+    margin-left: 0.25rem;
+    padding: 0.05rem 0.22rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-wrap) {
+    gap: 0.2rem !important;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-input) {
+    font-size: 0.68rem;
+    min-width: calc(1ch + 1.1em);
+  }
+
+  .topic-header-pagination :deep(.pagination-total-pages) {
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-button) {
+    padding: 0.04rem 0.2rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .reply-count-badge {
+    min-width: 2rem;
+    text-align: center;
+  }
+
+  .created-col :deep(.user-avatar-img),
+  .last-reply-col :deep(.user-avatar-img) {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
 @media (max-width: 768px) {
+  .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .reply-count-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
   .table {
     font-size: 0.9rem;
   }

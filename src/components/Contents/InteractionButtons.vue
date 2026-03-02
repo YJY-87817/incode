@@ -5,6 +5,7 @@ import contentInteractionApi from "@/api/contentInteractionApi";
 import contentApi from "@/api/contentApi";
 import { useAuthStore } from "@/stores/user/auth";
 import { useForumStore } from "@/stores/forumStore";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 
 /**
  * Props
@@ -44,6 +45,11 @@ const props = defineProps({
 
 const authStore = useAuthStore();
 const forumStore = useForumStore();
+const {
+  ensureLoggedIn,
+  isLoggedIn: isLoggedInByGuard,
+  getCurrentUserId,
+} = useLoginGuardAlert();
 
 const isCurrentListTopic = computed(() => {
   if (forumStore.selectedThread) return false;
@@ -178,6 +184,9 @@ const isLoading = computed(() => {
 async function handleInteraction(categoryId, categoryName) {
   if (isLoading.value[categoryId]) return;
 
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   const result = await forumStore.handleInteraction(
     props.contentId,
     categoryId,
@@ -220,11 +229,30 @@ const showMoreMenu = computed(() => {
   return forumStore.isMoreMenuOpen(props.contentId);
 });
 
-const currentUserId = computed(() => authStore.user?.id ?? null);
+const currentUserId = computed(() => getCurrentUserId());
+
+const isLoggedIn = computed(() => {
+  return isLoggedInByGuard();
+});
 
 const isMissionOwner = computed(() => {
-  if (!currentUserId.value || !props.missionOwnerUserId) return false;
+  if (!currentUserId.value) return false;
+  if (!props.missionOwnerUserId) return false;
   return Number(currentUserId.value) === Number(props.missionOwnerUserId);
+});
+
+const isInThreadDetailPage = computed(() => {
+  if (!forumStore.selectedThread) return false;
+  const targetId = Number(props.contentId);
+  if (!Number.isFinite(targetId) || targetId <= 0) return false;
+
+  const detailRelatedIds = [
+    Number(forumStore.threadDetail?.id),
+    ...(forumStore.threadPosts || []).map((item) => Number(item?.id)),
+    ...(forumStore.threadComments || []).map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  return detailRelatedIds.includes(targetId);
 });
 
 const hasSelectedBestAnswer = computed(() => {
@@ -233,6 +261,8 @@ const hasSelectedBestAnswer = computed(() => {
 
 const canShowBestAnswerButton = computed(() => {
   return (
+    isLoggedIn.value &&
+    isInThreadDetailPage.value &&
     props.enableBestAnswer &&
     Boolean(props.entrustMissionId) &&
     Boolean(props.contentId) &&
@@ -267,6 +297,9 @@ const getBestAnswerErrorMessage = (error) => {
 
 const handleBestAnswer = async () => {
   if (!canShowBestAnswerButton.value || bestAnswerLoading.value) return;
+
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
 
   bestAnswerLoading.value = true;
   try {
@@ -485,6 +518,7 @@ onMounted(() => {
   line-height: 1;
   height: 28px;
   min-height: 28px;
+  margin-bottom: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

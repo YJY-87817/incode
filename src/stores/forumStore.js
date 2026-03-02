@@ -27,6 +27,23 @@ const entrustMissionByContentCache = new Map();
 const entrustMissionByContentPending = new Map();
 const interactionInitPending = new Map();
 const BEST_ANSWER_CACHE_KEY = "forum.bestAnswerByKey.v1";
+const userAvatarCache = new Map();
+const userAvatarPending = new Map();
+
+const TOPIC_SORT_OPTION_TO_API = {
+  createdAt_desc: "latest",
+  latest: "latest",
+  "latest-reply": "latest-reply",
+  "most-replies": "most-replies",
+  "most-likes": "most-likes",
+};
+
+const normalizeTopicSortOption = (option) => {
+  const normalized = String(option || "")
+    .trim()
+    .toLowerCase();
+  return TOPIC_SORT_OPTION_TO_API[normalized] ? normalized : "latest";
+};
 
 const readBestAnswerCache = () => {
   if (typeof window === "undefined") return {};
@@ -83,6 +100,15 @@ const setCachedBestAnswerContentId = ({
   }
   const cache = readBestAnswerCache();
   cache[key] = numericContentId;
+  writeBestAnswerCache(cache);
+};
+
+const clearCachedBestAnswerContentId = ({ entrustMissionId, threadId }) => {
+  const key = toBestAnswerCacheKey({ entrustMissionId, threadId });
+  if (!key) return;
+  const cache = readBestAnswerCache();
+  if (!(key in cache)) return;
+  delete cache[key];
   writeBestAnswerCache(cache);
 };
 
@@ -187,16 +213,32 @@ const fetchBodyHtmlCached = async (body) => {
   }
 };
 
+/**
+ * 【數據轉換層】 API 回應 → 處理後的內部數據結構
+ *
+ * 此函數是整個帖文中數據流的一個關鍵轉換點。
+ * 之所以複雜是因為後端的 API 回應字段格式不統一：
+ * - 有些 camelCase: contentId, userId, createdAt
+ * - 有些 snake_case: content_id, user_id, created_at
+ * 此函數統一化這些候選形式，確保下游組件使用一致的 camelCase 。
+ */
 const buildThreadItem = async (item, fallbackType) => {
+  // 【字段映射】 將 API 回應的各種字段映射到下游的內部統一 id
   const bodyHtml = await fetchBodyHtmlCached(item.body);
   const { sanitizedHtml, textContent, imageUrls } = normalizeRichContent(
     bodyHtml,
     toAbsoluteUrl,
   );
+  // [字段映射] userId: item.userId 或 item.user_id
+  // [字段映射] createdAt: item.createdAt 或 item.created_at
+  // [字段映射] id: item.contentId 或 item.content_id 或 item.id
+  const resolvedLikeCount = extractLikeCount(item);
+
   return {
     id: item.contentId ?? item.content_id ?? item.id,
     userId: item.userId ?? item.user_id ?? null,
     author: item.username ?? item.userName ?? item.user_name ?? "",
+    authorAvatar: resolveAuthorAvatar(item),
     createdAt: item.createdAt ?? item.created_at ?? null,
     content: textContent,
     contentHtml: sanitizedHtml,
@@ -206,15 +248,21 @@ const buildThreadItem = async (item, fallbackType) => {
     parentContentId: item.parentContentId ?? item.parent_content_id ?? null,
     categoryId: item.categoryId ?? item.category_id ?? null,
     title: item.title ?? "",
-    likeCount: extractLikeCount(item),
+    likeCount: resolvedLikeCount,
   };
 };
 
 /**
- * 從 API 回應中提取回覆統計資訊
- * 後端現在直接在 ContentDto 頂層提供這些欄位
- * @param {Object} item - API 回應的內容項目
- * @returns {Object} { replyCount, lastReplyTime, lastReplyUser, lastReplyUserId }
+ * 【數據提取】 從 API 回應中提取回覆統計資訊
+ *
+ * 負責: 從 API 回應中提取下列信息：
+ * - replyCount: 此主題的回覆數量
+ * - lastReplyTime: 最後回覆日期
+ * - lastReplyUser: 最後回覆的使用者名稱
+ * - lastReplyUserId: 最後回覆的使用者 ID
+ * 此信息可能來自：
+ * 1. 後端直接提供（版本 5.0+）
+ * 2. 解析出來的 interactions 陣列（舊版）
  */
 const extractReplyStats = (item) => {
   // 優先使用後端直接提供的統計資訊（camelCase）
@@ -222,19 +270,208 @@ const extractReplyStats = (item) => {
   const lastReplyTime = item?.lastReplyTime ?? null;
   const lastReplyUser = item?.lastReplyUser ?? null;
   const lastReplyUserId = item?.lastReplyUserId ?? null;
+  const lastReplyUserAvatar = toAbsoluteUrl(
+    item?.lastReplyUserAvatar ??
+      item?.last_reply_user_avatar ??
+      item?.lastReplyAvatar ??
+      item?.last_reply_avatar ??
+      item?.lastReplyUserImageUrl ??
+      item?.last_reply_user_image_url ??
+      item?.lastReplyImageUrl ??
+      item?.last_reply_image_url ??
+      item?.lastReplyImage ??
+      item?.last_reply_image ??
+      item?.lastReplyUserImage ??
+      item?.last_reply_user_image ??
+      item?.lastReplyUser?.imageUrl ??
+      item?.lastReplyUser?.avatarUrl ??
+      "",
+  );
 
   return {
     replyCount,
     lastReplyTime,
     lastReplyUser,
     lastReplyUserId,
+    lastReplyUserAvatar,
   };
 };
 
+const resolveAuthorAvatar = (item = {}) => {
+  const rawAvatar =
+    item?.authorAvatar ??
+    item?.author_avatar ??
+    item?.avatarUrl ??
+    item?.avatar_url ??
+    item?.imageUrl ??
+    item?.image_url ??
+    item?.userAvatar ??
+    item?.user_avatar ??
+    item?.userImageUrl ??
+    item?.user_image_url ??
+    item?.userImage ??
+    item?.user_image ??
+    item?.profileImageUrl ??
+    item?.profile_image_url ??
+    item?.profileImage ??
+    item?.profile_image ??
+    item?.user?.avatarUrl ??
+    item?.user?.avatar_url ??
+    item?.user?.imageUrl ??
+    item?.user?.image_url ??
+    item?.userProfile?.avatarUrl ??
+    item?.userProfile?.avatar_url ??
+    item?.userProfile?.imageUrl ??
+    item?.userProfile?.image_url ??
+    "";
+
+  return toAbsoluteUrl(rawAvatar);
+};
+
+const normalizeUsername = (value) => String(value || "").trim();
+
+const toUserAvatarCacheKeys = ({ userId, username } = {}) => {
+  const keys = [];
+  const numericUserId = Number(userId);
+  const normalizedName = normalizeUsername(username);
+
+  if (Number.isFinite(numericUserId) && numericUserId > 0) {
+    keys.push(`id:${numericUserId}`);
+  }
+
+  if (normalizedName) {
+    keys.push(`name:${normalizedName.toLowerCase()}`);
+  }
+
+  return keys;
+};
+
+const getCachedUserAvatar = ({ userId, username } = {}) => {
+  const keys = toUserAvatarCacheKeys({ userId, username });
+  for (const key of keys) {
+    if (userAvatarCache.has(key)) {
+      return userAvatarCache.get(key) || "";
+    }
+  }
+  return "";
+};
+
+const setCachedUserAvatar = ({ userId, username, avatarUrl } = {}) => {
+  const keys = toUserAvatarCacheKeys({ userId, username });
+  if (keys.length === 0) return;
+
+  const normalizedAvatar = toAbsoluteUrl(avatarUrl || "");
+  keys.forEach((key) => userAvatarCache.set(key, normalizedAvatar));
+};
+
+const extractAvatarFromProfilePayload = (payload = {}) => {
+  const source = payload?.data ?? payload;
+  return toAbsoluteUrl(
+    source?.imageUrl ??
+      source?.ImageUrl ??
+      source?.avatarUrl ??
+      source?.avatar_url ??
+      source?.avatar ??
+      source?.profileImageUrl ??
+      source?.profile_image_url ??
+      "",
+  );
+};
+
+const fetchUserAvatarFromProfile = async ({ userId, username } = {}) => {
+  const normalizedName = normalizeUsername(username);
+  const cached = getCachedUserAvatar({ userId, username: normalizedName });
+  if (cached) return cached;
+  if (!normalizedName) return "";
+
+  const pendingKey = `name:${normalizedName.toLowerCase()}`;
+  if (userAvatarPending.has(pendingKey)) {
+    return userAvatarPending.get(pendingKey);
+  }
+
+  const request = (async () => {
+    try {
+      const profile = await apiClient.get("/User/profile", {
+        params: {
+          username: normalizedName,
+          t: Date.now(),
+        },
+      });
+      const avatar = extractAvatarFromProfilePayload(profile);
+      setCachedUserAvatar({
+        userId,
+        username: normalizedName,
+        avatarUrl: avatar,
+      });
+      return avatar;
+    } catch (error) {
+      console.warn("載入使用者頭像失敗:", normalizedName, error);
+      setCachedUserAvatar({ userId, username: normalizedName, avatarUrl: "" });
+      return "";
+    } finally {
+      userAvatarPending.delete(pendingKey);
+    }
+  })();
+
+  userAvatarPending.set(pendingKey, request);
+  return request;
+};
+
+const extractLikeCountFromInteractions = (item) => {
+  const interactions =
+    item?.interactions ??
+    item?.Interactions ??
+    item?.contentInteractions ??
+    item?.content_interactions ??
+    null;
+
+  if (!Array.isArray(interactions)) return null;
+
+  const likeCount = interactions.filter((interaction) => {
+    const categoryId = Number(
+      interaction?.interactionCategoryId ??
+        interaction?.interaction_category_id ??
+        interaction?.categoryId ??
+        interaction?.category_id,
+    );
+    return categoryId === 1;
+  }).length;
+
+  return Math.max(0, likeCount);
+};
+
+/**
+ * 【數據提取 #3】 按讚數提取（複雜的 fallback 鏈）
+ *
+ * 負責: 從不同的 API 回應格式中提取按讚數；
+ * 但不同的各個 API 回應中，該數字段位置各不相同（字段名稱不一致、嵌套位置不一致）。
+ * 此函數專門針對這種差異。
+ */
 const extractLikeCount = (item) => {
-  const value = Number(item?.likeCount ?? item?.like_count ?? 0);
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, value);
+  // 嘗試撈取所有 API 回應可能的候選字段名（camelCase 及 snake_case 一起）
+  const candidate =
+    item?.likeCount ??
+    item?.like_count ??
+    item?.likesCount ??
+    item?.likes_count ??
+    item?.likes ??
+    item?.totalLikes ??
+    item?.total_likes ??
+    item?.thumbsUpCount ??
+    item?.thumbs_up_count ??
+    item?.interactionLikeCount ??
+    item?.interaction_like_count ??
+    null;
+
+  const value = Number(candidate);
+  if (Number.isFinite(value)) return Math.max(0, value);
+
+  // 若 straightforward 方法不可行，當作最後的 fallback 兜底策略：
+  // 依據使用者互動資料一筆一筆計算點讚數。
+  const fromInteractions = extractLikeCountFromInteractions(item);
+  if (Number.isFinite(fromInteractions)) return Math.max(0, fromInteractions);
+
+  return 0;
 };
 
 const extractPreviewPayload = (item) => {
@@ -289,7 +526,6 @@ const normalizeCategory = (raw, fallbackName = "") => {
     id,
     name,
     description: source.description ?? null,
-    topicCount: source.topicCount ?? source.topic_count ?? 0,
     postCount: source.postCount ?? source.post_count ?? 0,
   };
 };
@@ -305,8 +541,16 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
   const entrustMissionId =
     detail?.entrustMissionId ??
     detail?.entrust_mission_id ??
+    detail?.missionId ??
+    detail?.mission_id ??
+    detail?.taskId ??
+    detail?.task_id ??
     mission?.entrustMissionId ??
     mission?.entrust_mission_id ??
+    mission?.missionId ??
+    mission?.mission_id ??
+    mission?.taskId ??
+    mission?.task_id ??
     mission?.id ??
     null;
 
@@ -320,8 +564,18 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
   const missionOwnerUserId =
     mission?.userId ??
     mission?.user_id ??
+    mission?.ownerUserId ??
+    mission?.owner_user_id ??
+    mission?.publisherUserId ??
+    mission?.publisher_user_id ??
+    mission?.creatorUserId ??
+    mission?.creator_user_id ??
     detail?.entrustMissionUserId ??
     detail?.entrust_mission_user_id ??
+    detail?.ownerUserId ??
+    detail?.owner_user_id ??
+    detail?.publisherUserId ??
+    detail?.publisher_user_id ??
     detail?.userId ??
     detail?.user_id ??
     null;
@@ -347,18 +601,35 @@ const normalizeEntrustMissionMeta = (detail = {}) => {
 
 const normalizeEntrustMissionRecord = (item = {}) => ({
   entrustMissionId:
-    item?.entrustMissionId ?? item?.entrust_mission_id ?? item?.id ?? null,
+    item?.entrustMissionId ??
+    item?.entrust_mission_id ??
+    item?.missionId ??
+    item?.mission_id ??
+    item?.taskId ??
+    item?.task_id ??
+    item?.id ??
+    null,
   entrustMissionUserId:
     item?.userId ??
     item?.user_id ??
     item?.ownerUserId ??
     item?.owner_user_id ??
+    item?.publisherUserId ??
+    item?.publisher_user_id ??
+    item?.creatorUserId ??
+    item?.creator_user_id ??
     null,
   rewardPoints: item?.rewardPoints ?? item?.reward_points ?? 0,
   bestAnswerContentId:
     item?.bestAnswerContentId ?? item?.best_answer_content_id ?? null,
 });
 
+/**
+ * 【輔助函數】 依據內容 ID 獲取委託任務資訊
+ *
+ * 異步後調用 /EntrustMissionApi 對接 → 返回任務情報
+ * 然後結合內容資訊（實際上某些特定 API 輸出結構可能包含）
+ */
 const fetchEntrustMissionMetaByContentId = async (contentId) => {
   const targetId = Number(contentId);
   if (!Number.isFinite(targetId)) return null;
@@ -381,14 +652,21 @@ const fetchEntrustMissionMetaByContentId = async (contentId) => {
           : [];
 
       records.forEach((record) => {
-        const linkedContentId = Number(
-          record?.contentId ?? record?.content_id ?? null,
-        );
-        if (!Number.isFinite(linkedContentId)) return;
-        entrustMissionByContentCache.set(
-          linkedContentId,
-          normalizeEntrustMissionRecord(record),
-        );
+        const normalizedRecord = normalizeEntrustMissionRecord(record);
+        const linkedIds = [
+          record?.contentId,
+          record?.content_id,
+          record?.postContentId,
+          record?.post_content_id,
+          record?.parentContentId,
+          record?.parent_content_id,
+        ]
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value));
+
+        linkedIds.forEach((linkedContentId) => {
+          entrustMissionByContentCache.set(linkedContentId, normalizedRecord);
+        });
       });
 
       return entrustMissionByContentCache.get(targetId) ?? null;
@@ -448,7 +726,7 @@ export const useForumStore = defineStore("forum", {
       totalCount: 0,
       totalPages: 0,
     },
-    sortOption: "createdAt_desc",
+    sortOption: "latest",
 
     // ========== 帖文詳情 ==========
     selectedThread: null,
@@ -465,8 +743,8 @@ export const useForumStore = defineStore("forum", {
       categoryName: null,
       parentContentId: null,
       type: null,
-      isPinned: false,
       isHot: false,
+      hasEntrustMission: false,
       likeCount: 0,
       entrustMissionId: null,
       entrustMissionUserId: null,
@@ -623,13 +901,47 @@ export const useForumStore = defineStore("forum", {
 
       return state.categories.map((category) => ({
         ...category,
-        topicCount: category.topicCount ?? 0,
         postCount: category.postCount ?? 0,
       }));
     },
   },
 
   actions: {
+    async resolveUserAvatar(userId, username) {
+      return await fetchUserAvatarFromProfile({ userId, username });
+    },
+
+    async enrichTopicAvatarFields(topics = []) {
+      const items = Array.isArray(topics) ? topics : [];
+      if (items.length === 0) return;
+
+      await Promise.all(
+        items.map(async (topic) => {
+          if (!topic) return;
+
+          if (!topic.authorAvatar && topic.author) {
+            const authorAvatar = await this.resolveUserAvatar(
+              topic.userId,
+              topic.author,
+            );
+            if (authorAvatar) {
+              topic.authorAvatar = authorAvatar;
+            }
+          }
+
+          if (topic.lastReplyUser && !topic.lastReplyUserAvatar) {
+            const replyAvatar = await this.resolveUserAvatar(
+              topic.lastReplyUserId,
+              topic.lastReplyUser,
+            );
+            if (replyAvatar) {
+              topic.lastReplyUserAvatar = replyAvatar;
+            }
+          }
+        }),
+      );
+    },
+
     // ========== 視窗寬度 ==========
     updateWindowWidth(width) {
       this.windowWidth = width;
@@ -686,6 +998,7 @@ export const useForumStore = defineStore("forum", {
         lastReplyTime: lastReply?.createdAt ?? null,
         lastReplyUser: lastReply?.username ?? null,
         lastReplyUserId: lastReply?.userId ?? lastReply?.user_id ?? null,
+        lastReplyUserAvatar: resolveAuthorAvatar(lastReply),
         fetchedAt: Date.now(),
       };
     },
@@ -730,6 +1043,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, CONTENT_TYPES.REPLY)),
         );
+        await this.enrichTopicAvatarFields(mapped);
 
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
@@ -769,6 +1083,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, CONTENT_TYPES.COMMENT)),
         );
+        await this.enrichTopicAvatarFields(mapped);
 
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
@@ -847,6 +1162,7 @@ export const useForumStore = defineStore("forum", {
         const mapped = await Promise.all(
           items.map((item) => buildThreadItem(item, expectedType)),
         );
+        await this.enrichTopicAvatarFields(mapped);
         const totalCount = res?.totalCount ?? mapped.length;
         const totalPages =
           res?.totalPages ??
@@ -1000,7 +1316,10 @@ export const useForumStore = defineStore("forum", {
           page: targetPage,
           pageSize,
           types: `${CONTENT_TYPES.POST},${CONTENT_TYPES.REPLY}`,
-          sortBy: "latest",
+          sortBy:
+            TOPIC_SORT_OPTION_TO_API[
+              normalizeTopicSortOption(this.sortOption)
+            ] ?? "latest",
         };
 
         if (targetCategory) params.categoryId = targetCategory;
@@ -1102,6 +1421,7 @@ export const useForumStore = defineStore("forum", {
                   lastReplyTime: stats.lastReplyTime ?? null,
                   lastReplyUser: stats.lastReplyUser ?? null,
                   lastReplyUserId: stats.lastReplyUserId ?? null,
+                  lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
                   fetchedAt: Date.now(),
                 };
               }
@@ -1120,7 +1440,7 @@ export const useForumStore = defineStore("forum", {
                 contentHtml: bodySanitizedHtml ?? "",
                 imageUrls: bodyImages ?? [],
                 author: item.username,
-                authorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=random`,
+                authorAvatar: resolveAuthorAvatar(item),
                 categoryName: item.categoryName,
                 categoryId: item.categoryId ?? item.category_id ?? null,
                 parentContentId:
@@ -1141,12 +1461,19 @@ export const useForumStore = defineStore("forum", {
                   stats.lastReplyUserId ??
                   fallbackStats.lastReplyUserId ??
                   null,
+                lastReplyUserAvatar:
+                  stats.lastReplyUserAvatar ??
+                  fallbackStats.lastReplyUserAvatar ??
+                  "",
                 viewCount: item.viewCount ?? 0,
-                isPinned: item.isPinned ?? false,
                 isHot: (stats.replyCount ?? fallbackStats.replyCount ?? 0) > 10,
+                hasEntrustMission:
+                  item.hasEntrustMission ?? item.has_entrust_mission ?? false,
               };
             }),
           );
+
+          await this.enrichTopicAvatarFields(topics);
 
           return {
             pagination: {
@@ -1214,8 +1541,27 @@ export const useForumStore = defineStore("forum", {
     },
 
     // ========== 帖文詳情 ==========
+    /**
+     * 【信息流複雜點】取得線程詳情
+     *
+     * 此方法是整個論壇系統中複雜性最高的方法之一。信息流如下：
+     * 1. 調用 contentApi.getContent() 取回線程詳情
+     * 2. 從詳情中萃取 body（原始 HTML）→ 經由 fetchBodyHtmlCached() 取回及轉換
+     * 3. 萃取回覆統計（replyCount、lastReplyTime 等）
+     * 4. 【多來源】萃取「委託任務」資訊：
+     *    - 直接從 api 回應中
+     *    - 或透過 fetchEntrustMissionMetaByContentId() 另行取得
+     * 5. 萃取「最佳解」：
+     *    - 檢查本地快取（localStorage）
+     *    - 調用 contentInteractionApi.getBestAnswerResolution()
+     * 6. 填充 state.threadDetail 物件
+     * 7. 最後，並行取得回覆及留言分頁資訊
+     *
+     * 流程中有 3 個外部 API 調用 + 快取讀取，需特別注意。
+     */
     async fetchThreadDetail(threadId) {
       try {
+        // 新人提醒：每次切 thread 都先重置分頁，避免上一個 thread 的資料殘留。
         this.resetThreadPagingState();
 
         const detailRes = await contentApi.getContent(threadId);
@@ -1250,6 +1596,8 @@ export const useForumStore = defineStore("forum", {
           const fallbackEntrustMeta = await fetchEntrustMissionMetaByContentId(
             detail.contentId ?? threadId,
           );
+          // 這裡是多來源整併：優先用 detail 直接給的欄位，不足再補 fallback API。
+          // 你若要追「委託任務資料怪怪的」，先從這段開始比對來源。
           const entrustMissionMeta = {
             entrustMissionId:
               detailEntrustMeta.entrustMissionId ??
@@ -1275,30 +1623,38 @@ export const useForumStore = defineStore("forum", {
             threadId: threadContentId,
           });
 
-          const resolvedBestAnswerContentId =
-            await contentInteractionApi.getBestAnswerContentId({
+          const resolvedBestAnswer =
+            await contentInteractionApi.getBestAnswerResolution({
               entrustMissionId: entrustMissionMeta.entrustMissionId,
               threadContentId,
               fallbackBestAnswerContentId:
                 entrustMissionMeta.bestAnswerContentId ??
                 cachedBestAnswerContentId,
             });
-          const finalBestAnswerContentId =
-            resolvedBestAnswerContentId ?? cachedBestAnswerContentId;
+          // 新人提醒：最佳解不是只看一個欄位，這裡有 API + localStorage 的容錯鏈。
+          // 目的：避免後端回傳暫時缺漏時，前端整個「掉最佳解狀態」。
 
-          // 從主題列表中查找對應主題以獲取 isPinned、isHot 和 categoryName
-          let isPinned = detail.isPinned ?? false;
+          const resolvedBestAnswerContentId =
+            resolvedBestAnswer?.contentId ?? null;
+          const finalBestAnswerContentId = resolvedBestAnswer?.isExplicit
+            ? resolvedBestAnswerContentId
+            : (resolvedBestAnswerContentId ?? cachedBestAnswerContentId);
+
+          // 從主題列表中查找對應主題以獲取 isHot 和 categoryName
           let isHot = (stats.replyCount ?? 0) > 10;
           let categoryName = detail.categoryName ?? null;
+          let hasEntrustMission =
+            detail.hasEntrustMission ?? detail.has_entrust_mission ?? false;
 
           if (this.topics && this.topics.length > 0) {
             const matchedTopic = this.topics.find(
               (t) => String(t.id) === String(threadId),
             );
             if (matchedTopic) {
-              isPinned = matchedTopic.isPinned ?? isPinned;
               isHot = matchedTopic.isHot ?? isHot;
               categoryName = matchedTopic.categoryName ?? categoryName;
+              hasEntrustMission =
+                matchedTopic.hasEntrustMission ?? hasEntrustMission;
             }
           }
 
@@ -1307,6 +1663,7 @@ export const useForumStore = defineStore("forum", {
             userId: detail.userId ?? detail.user_id ?? null,
             title: detail.title,
             author: detail.username,
+            authorAvatar: resolveAuthorAvatar(detail),
             createdAt: detail.createdAt,
             content: textContent,
             contentHtml: sanitizedHtml,
@@ -1321,14 +1678,15 @@ export const useForumStore = defineStore("forum", {
               detail.parent_id ??
               null,
             type: detail.type,
-            isPinned: isPinned,
             isHot: isHot,
+            hasEntrustMission: Boolean(hasEntrustMission),
             likeCount: extractLikeCount(detail),
             // 添加回覆統計資訊
             replyCount: stats.replyCount ?? 0,
             lastReplyTime: stats.lastReplyTime ?? null,
             lastReplyUser: stats.lastReplyUser ?? null,
             lastReplyUserId: stats.lastReplyUserId ?? null,
+            lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
             entrustMissionId: entrustMissionMeta.entrustMissionId,
             entrustMissionUserId: entrustMissionMeta.entrustMissionUserId,
             rewardPoints: entrustMissionMeta.rewardPoints,
@@ -1336,11 +1694,34 @@ export const useForumStore = defineStore("forum", {
             bestAnswerSelected: Boolean(finalBestAnswerContentId),
           };
 
+          if (!this.threadDetail.authorAvatar && this.threadDetail.author) {
+            this.threadDetail.authorAvatar = await this.resolveUserAvatar(
+              this.threadDetail.userId,
+              this.threadDetail.author,
+            );
+          }
+
+          if (
+            this.threadDetail.lastReplyUser &&
+            !this.threadDetail.lastReplyUserAvatar
+          ) {
+            this.threadDetail.lastReplyUserAvatar =
+              await this.resolveUserAvatar(
+                this.threadDetail.lastReplyUserId,
+                this.threadDetail.lastReplyUser,
+              );
+          }
+
           if (finalBestAnswerContentId) {
             setCachedBestAnswerContentId({
               entrustMissionId: entrustMissionMeta.entrustMissionId,
               threadId: threadContentId,
               bestAnswerContentId: finalBestAnswerContentId,
+            });
+          } else if (resolvedBestAnswer?.isExplicit) {
+            clearCachedBestAnswerContentId({
+              entrustMissionId: entrustMissionMeta.entrustMissionId,
+              threadId: threadContentId,
             });
           }
 
@@ -1351,6 +1732,7 @@ export const useForumStore = defineStore("forum", {
               lastReplyTime: stats.lastReplyTime ?? null,
               lastReplyUser: stats.lastReplyUser ?? null,
               lastReplyUserId: stats.lastReplyUserId ?? null,
+              lastReplyUserAvatar: stats.lastReplyUserAvatar ?? "",
               fetchedAt: Date.now(),
             };
           }
@@ -1365,8 +1747,18 @@ export const useForumStore = defineStore("forum", {
       }
     },
 
+    /**
+     * 【入口點】打開線程詳情
+     *
+     * 此方法由 forum.vue 的 watch(route.params.id) 中調用（見 forum.vue L134）
+     * 流程：
+     * 1. 記錄選中的線程 ID 到 state.selectedThread
+     * 2. 調用 fetchThreadDetail() 取回線程詳情及其回覆列表
+     * 3. TopicListView.vue 會根據 state.threadDetail 的更新自動在詳情視圖中展示內容
+     */
     openThread(topicId) {
       this.selectedThread = topicId;
+      // 這裡不 await 是刻意的：讓 UI 先切到詳情畫面，再由 loading 狀態補資料。
       this.fetchThreadDetail(topicId);
     },
 
@@ -1385,8 +1777,8 @@ export const useForumStore = defineStore("forum", {
         categoryName: null,
         parentContentId: null,
         type: null,
-        isPinned: false,
         isHot: false,
+        hasEntrustMission: false,
         likeCount: 0,
         replyCount: 0,
         lastReplyTime: null,
@@ -1469,8 +1861,16 @@ export const useForumStore = defineStore("forum", {
       if (this.isSubmittingNewTopic) return;
       this.isSubmittingNewTopic = true;
 
+      const authStore = useAuthStore();
+      const currentUserId = Number(authStore.user?.id);
+      if (!Number.isFinite(currentUserId) || currentUserId <= 0) {
+        alert("請先登入後再發表");
+        this.isSubmittingNewTopic = false;
+        return;
+      }
+
       const dto = {
-        userId: 1,
+        userId: currentUserId,
         categoryId: this.newTopic.categoryId,
         parentContentId: this.newTopic.parentContentId,
         title: this.newTopic.title.trim(),
@@ -1633,7 +2033,7 @@ export const useForumStore = defineStore("forum", {
     },
 
     setSortOption(option) {
-      this.sortOption = option === "createdAt_desc" ? option : "createdAt_desc";
+      this.sortOption = normalizeTopicSortOption(option);
       this.pagination.currentPage = 1;
       this.fetchTopics();
     },
@@ -1911,6 +2311,9 @@ export const useForumStore = defineStore("forum", {
 
       if (this.interactionLoadingStates[contentId][categoryId]) return;
 
+      const previousState = Boolean(
+        this.interactionStates[contentId][categoryId],
+      );
       this.interactionLoadingStates[contentId][categoryId] = true;
 
       try {
@@ -1919,39 +2322,49 @@ export const useForumStore = defineStore("forum", {
           contentId: contentId,
         });
 
-        if (response.isRemoved) {
-          this.interactionStates[contentId][categoryId] = false;
-          if (categoryId === 1) {
-            const currentLikeCount = this.getContentLikeCount(contentId);
-            this.setContentLikeCount(contentId, currentLikeCount - 1);
-          }
-          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
-          if (categoryId === 2) {
-            clearTopicPageCache();
-          }
-          return { success: true, isRemoved: true, message: "互動已移除" };
-        } else {
-          this.interactionStates[contentId][categoryId] = true;
-          if (categoryId === 1) {
-            const currentLikeCount = this.getContentLikeCount(contentId);
-            this.setContentLikeCount(contentId, currentLikeCount + 1);
-          }
-          const categoryNames = {
-            1: "讚",
-            2: "隱藏",
-            3: "收藏",
-            4: "檢舉",
-          };
-          // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
-          if (categoryId === 2) {
-            clearTopicPageCache();
-          }
-          return {
-            success: true,
-            isRemoved: false,
-            message: `已${categoryNames[categoryId]}`,
-          };
+        const explicitRemoved =
+          response?.isRemoved ??
+          response?.is_removed ??
+          response?.removed ??
+          response?.isDeleted ??
+          response?.is_deleted;
+
+        const isRemoved =
+          typeof explicitRemoved === "boolean"
+            ? explicitRemoved
+            : previousState;
+
+        this.interactionStates[contentId][categoryId] = !isRemoved;
+
+        if (categoryId === 1) {
+          const currentLikeCount = this.getContentLikeCount(contentId);
+          const nextLikeCount = isRemoved
+            ? currentLikeCount - 1
+            : currentLikeCount + 1;
+          this.setContentLikeCount(contentId, nextLikeCount);
         }
+
+        // 隱藏功能的特殊處理：清除緩存以便立即刷新列表
+        if (categoryId === 2) {
+          clearTopicPageCache();
+        }
+
+        if (isRemoved) {
+          return { success: true, isRemoved: true, message: "互動已移除" };
+        }
+
+        const categoryNames = {
+          1: "讚",
+          2: "隱藏",
+          3: "收藏",
+          4: "檢舉",
+        };
+
+        return {
+          success: true,
+          isRemoved: false,
+          message: `已${categoryNames[categoryId]}`,
+        };
       } catch (error) {
         console.error("互動操作失敗:", error);
         return { success: false, error: error.message };

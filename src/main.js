@@ -44,7 +44,6 @@ axios.interceptors.response.use(
   (error) => {
     // 檢查是否有回傳錯誤，並且狀態碼是 401 (Cookie 過期或未登入)
     if (error.response && error.response.status === 401) {
-
       const authStore = useAuthStore();
 
       // 強制清空 Pinia 裡的登入狀態
@@ -64,7 +63,7 @@ axios.interceptors.response.use(
 
     // 將錯誤繼續往外拋，讓元件自己的 catch 也能抓到 (如果需要的話)
     return Promise.reject(error);
-  }
+  },
 );
 
 const app = createApp(App);

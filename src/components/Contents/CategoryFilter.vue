@@ -14,8 +14,23 @@ const forumStore = useForumStore();
 const route = useRoute();
 const router = useRouter();
 
-// 使用帶實時統計的分類列表
-const categories = computed(() => forumStore.categoriesWithStats);
+const allTopicsCount = computed(() => {
+  return forumStore.categoriesWithStats.reduce((total, category) => {
+    const count = Number(category?.postCount ?? 0);
+    return total + (Number.isFinite(count) ? count : 0);
+  }, 0);
+});
+
+// 使用帶實時統計的分類列表，最前面固定加入「全部」
+const categories = computed(() => [
+  {
+    id: null,
+    name: "全部",
+    description: "顯示所有分類",
+    postCount: allTopicsCount.value,
+  },
+  ...forumStore.categoriesWithStats,
+]);
 
 const handleSelectCategory = (categoryId) => {
   const isDetailPage = Boolean(route.params?.id);
@@ -38,17 +53,19 @@ const handleClearCategory = () => {
 </script>
 
 <template>
-  <div class="card shadow-sm mb-4">
+  <div class="card shadow-sm mb-3">
     <!-- 卡片標題 -->
-    <div class="card-header bg-white py-3 d-flex flex-column gap-2">
-      <div
-        class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2"
-      >
+    <div
+      class="card-header bg-white px-3 py-2 py-md-3 d-flex flex-column gap-2"
+    >
+      <div class="d-flex flex-wrap align-items-center gap-2">
         <h5
           class="mb-0 fs-6 fs-md-5"
-          :class="{ 'clearable-title': forumStore.selectedCategory !== null }"
+          :class="{
+            'category-title-clearable': forumStore.selectedCategory !== null,
+          }"
           @click="forumStore.selectedCategory !== null && handleClearCategory()"
-          role="button"
+          :role="forumStore.selectedCategory !== null ? 'button' : undefined"
           :tabindex="forumStore.selectedCategory !== null ? 0 : -1"
           @keydown.enter="
             forumStore.selectedCategory !== null && handleClearCategory()
@@ -61,7 +78,7 @@ const handleClearCategory = () => {
           <span
             v-if="forumStore.selectedCategory !== null"
             class="clear-indicator ms-2"
-            title="點擊清除分類"
+            title="清除目前分類"
           >
             ✕
           </span>
@@ -70,7 +87,7 @@ const handleClearCategory = () => {
     </div>
 
     <!-- 分類內容 -->
-    <div class="p-2 p-md-3">
+    <div class="px-3 py-2">
       <!-- 載入中提示 -->
       <div
         v-if="forumStore.isLoading && categories.length === 0"
@@ -91,7 +108,11 @@ const handleClearCategory = () => {
           class="d-flex flex-wrap align-content-start p-0 category-container flex-grow-1"
         >
           <!-- 分類卡片 -->
-          <div v-for="category in categories" :key="category.id" class="m-1">
+          <div
+            v-for="category in categories"
+            :key="category.id"
+            class="category-item"
+          >
             <div
               class="category-card p-2 border rounded cursor-pointer"
               :class="{
@@ -116,9 +137,6 @@ const handleClearCategory = () => {
                   'text-primary': forumStore.selectedCategory === category.id,
                 }"
               >
-                <span class="d-inline-block me-2"
-                  >📝 {{ category.topicCount ?? 0 }}</span
-                >
                 <span class="d-inline-block"
                   >💬 {{ category.postCount ?? 0 }}</span
                 >
@@ -152,41 +170,181 @@ const handleClearCategory = () => {
 
 .card-header h5 {
   color: #fff;
+  font-size: 0.95rem;
 }
 
-/* 可點擊的標題樣式 */
-.card-header h5.clearable-title {
+.card-header .badge,
+.card-header .category-input {
+  font-size: 0.95rem;
+}
+
+.card-header .badge.bg-info {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 0.9rem;
+  border-radius: 0.375rem;
+}
+
+.badge.bg-info {
+  background-color: #145369 !important;
+  color: #fff0dd;
+}
+
+.sort-dropdown {
+  display: inline-block;
+  min-width: 0;
+  width: fit-content;
+  position: relative;
+}
+
+.category-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0.25rem 0.5rem;
   border-radius: 4px;
   user-select: none;
 }
 
-.card-header h5.clearable-title:hover {
+.category-input-wrapper:hover {
   background-color: rgba(255, 255, 255, 0.2);
   transform: translateX(2px);
 }
 
-.card-header h5.clearable-title:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 2px;
-}
-
-.card-header h5.clearable-title:active {
+.category-input-wrapper:active {
   background-color: rgba(255, 255, 255, 0.3);
   transform: translateX(0);
 }
 
+.category-input {
+  padding-left: 0.5rem;
+  padding-right: 1.2rem;
+  height: auto;
+  line-height: 1.25;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #e8f1f4;
+  color: #145369;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: var(--sort-control-width, 10em);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.category-input.category-input--expanded {
+  padding-right: 0.9rem;
+}
+
+.category-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  color: #9aa0a6;
+  font-size: 0.8em;
+  pointer-events: auto;
+}
+
+.category-input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.category-input-wrapper:focus-within {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.category-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: auto;
+  width: var(--sort-control-width, 10em);
+  min-width: var(--sort-control-width, 10em);
+  z-index: 20;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #f2f7f9;
+  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
+  border: 1px solid #d1d3d4;
+  border-radius: 4px;
+  padding: 0.35rem;
+}
+
+.sort-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #145369;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.25;
+  transition: all 0.2s ease;
+}
+
+.sort-dropdown-item + .sort-dropdown-item {
+  margin-top: 0.2rem;
+}
+
+.sort-dropdown-item.active,
+.sort-dropdown-item:hover {
+  background: #dceaf0;
+  color: #145369;
+  transform: translateX(2px);
+}
+
+.sort-dropdown-item:active {
+  transform: translateX(0);
+}
+
+.sort-dropdown-item:focus-visible {
+  outline: 2px solid rgba(20, 83, 105, 0.25);
+  outline-offset: 1px;
+}
+
 /* 清除指示器 */
 .clear-indicator {
+  cursor: pointer;
+  user-select: none;
   font-size: 0.8em;
   opacity: 0.8;
   transition: all 0.2s ease;
 }
 
-.card-header h5.clearable-title:hover .clear-indicator {
+.clear-indicator:hover,
+.clear-indicator:focus-visible {
   opacity: 1;
+}
+
+.clear-indicator:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 可清除分類的標題 */
+.card-header h5.category-title-clearable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.card-header h5.category-title-clearable:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* 分類卡片樣式 */
@@ -246,6 +404,10 @@ const handleClearCategory = () => {
   scrollbar-color: #d1d3d4 #f0f0f0;
 }
 
+.category-item {
+  margin: 0.25rem 0.25rem 0.25rem 0;
+}
+
 .category-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -281,6 +443,17 @@ const handleClearCategory = () => {
     max-height: 250px;
   }
 
+  .sort-dropdown {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .category-input-wrapper,
+  .category-input {
+    width: fit-content;
+    max-width: 100%;
+  }
+
   .category-card {
     font-size: 0.7rem;
     min-height: 50px;
@@ -297,6 +470,25 @@ const handleClearCategory = () => {
 }
 
 @media (max-width: 576px) {
+  .sort-dropdown {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .category-dropdown {
+    width: 100%;
+    min-width: 100%;
+    padding: 0.4rem;
+  }
+
+  .sort-dropdown-item {
+    min-height: 44px;
+    padding: 0.55rem 0.65rem;
+    display: flex;
+    align-items: center;
+    line-height: 1.2;
+  }
+
   .category-container {
     max-height: none;
     overflow-x: auto;
@@ -306,7 +498,7 @@ const handleClearCategory = () => {
     padding-bottom: 0.25rem;
   }
 
-  .category-container > .m-1 {
+  .category-container > .category-item {
     flex: 0 0 auto;
     margin: 0 0.35rem 0 0 !important;
   }

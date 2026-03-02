@@ -203,6 +203,7 @@ const resolveThreadIdByContentId = async (contentId) => {
   background: transparent;
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
+  overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: slideUp 0.3s ease-out;
 }
@@ -238,9 +239,14 @@ const resolveThreadIdByContentId = async (contentId) => {
   align-items: center;
   justify-content: center;
   padding: 0.25rem 0.5rem;
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
   border-right: 1px solid #d2d6da;
   font-weight: 600;
   color: #145369;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
   user-select: none;
   cursor: pointer;
 }
@@ -277,7 +283,7 @@ const resolveThreadIdByContentId = async (contentId) => {
 }
 
 .new-topic-banner:hover {
-  background-color: #f0f5f8;
+  background-color: rgba(20, 83, 105, 0.08);
   border-color: #145369;
 }
 
@@ -301,8 +307,12 @@ const resolveThreadIdByContentId = async (contentId) => {
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
-  border-radius: 0;
+  border-radius: 0 0.375rem 0.375rem 0;
   border-left: 1px solid #d2d6da;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .new-topic-banner .banner-close-btn:hover {

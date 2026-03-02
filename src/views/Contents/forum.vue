@@ -1,8 +1,9 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import { useForumPost } from "@/composables/useForumPost";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
 
 // 組件導入
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
@@ -14,13 +15,14 @@ import NewTopicBanners from "@/components/Contents/NewTopicBanners.vue";
 import TopicListView from "@/components/Contents/TopicListView.vue";
 
 // 可以抓到前端userID pinia
-import { useAuthStore } from "@/stores/user/auth.js";
-const authStore = useAuthStore();
-// 可以抓到前端userID pinia
+const { ensureLoggedIn } = useLoginGuardAlert();
 
+// ========== 狀態和路由配置 ==========
 const forumStore = useForumStore();
 const route = useRoute();
 const { hasDraftContent } = useForumPost();
+const isFabPinned = ref(false);
+let navbarObserver = null;
 
 const hasExpandedDraft = computed(() =>
   (forumStore.drafts || []).some((draft) => !draft.isMinimized),
@@ -78,7 +80,10 @@ const resolveThreadId = (rawId) => {
   return Number.isNaN(numericId) ? rawId : numericId;
 };
 
-const openNewTopicModal = () => {
+const openNewTopicModal = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
   forumStore.newTopic.title = "";
   forumStore.newTopic.body = "";
   forumStore.newTopic.categoryId = forumStore.selectedCategory ?? null;
@@ -92,23 +97,52 @@ const openNewTopicModal = () => {
 
 /**
  * 同步視窗寬度到 store (供子組件使用)
+ * 此函數被 resize 事件監聽器調用，確保響應式布局信息同步到全局狀態
  */
 const updateWindowWidth = () => {
   forumStore.updateWindowWidth(window.innerWidth);
 };
 
+const setupNavbarObserver = () => {
+  const navbarEl = document.querySelector("nav.navbar");
+  if (!navbarEl || !("IntersectionObserver" in window)) {
+    isFabPinned.value = window.scrollY > 80;
+    return;
+  }
+
+  navbarObserver = new IntersectionObserver(
+    ([entry]) => {
+      isFabPinned.value = !entry.isIntersecting;
+    },
+    {
+      threshold: 0,
+    },
+  );
+
+  navbarObserver.observe(navbarEl);
+};
+
 /**
  * 初始化與清理
+ * 此處是信息流的起點：
+ * 1. updateWindowWidth() → forumStore.updateWindowWidth() (視窗寬度同步)
+ * 2. fetchCategories() → 調用 API 層 → 獲取分類列表 → 更新 state.categories
+ * 3. fetchTopics() → 調用 API 層 → 獲取主題列表 → 更新 state.topics
  */
 onMounted(() => {
   updateWindowWidth();
   window.addEventListener("resize", updateWindowWidth);
+  setupNavbarObserver();
   forumStore.fetchCategories();
-  forumStore.fetchTopics();
+  forumStore.setSortOption("latest");
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", updateWindowWidth);
+  if (navbarObserver) {
+    navbarObserver.disconnect();
+    navbarObserver = null;
+  }
 });
 
 /**
@@ -121,6 +155,14 @@ watch(
   },
 );
 
+/**
+ * 【主要信息流轉點】 路由參數改變 → 打開線程詳情
+ * 流程：
+ * 1. 用戶點擊主題 → TopicListView.goToThread() → router.push({ params: { id: threadId } })
+ * 2. route.params.id 變化 → 此 watch 被觸發
+ * 3. forumStore.openThread(threadId) → 調用 API 獲取線程詳情 → 並觸發 fetchThreadRepliesPage 等
+ * 4. 線程詳情更新到 state.threadDetail → TopicListView 的對應子組件重新渲染
+ */
 watch(
   () => route.params.id,
   (threadId) => {
@@ -160,7 +202,7 @@ watch(
 <template>
   <DefaultNavbar light />
 
-  <div class="container mt-5 mb-5">
+  <div class="container mt-3 mb-5">
     <div class="row g-3 g-md-4">
       <!-- 主要內容區 -->
       <div
@@ -193,6 +235,7 @@ watch(
 
   <button
     class="btn btn-forum-primary forum-new-topic-fab d-inline-flex align-items-center justify-content-center"
+    :class="{ 'forum-new-topic-fab--pinned': isFabPinned }"
     type="button"
     @click="openNewTopicModal"
     aria-label="發佈新主題"
@@ -320,24 +363,6 @@ watch(
   color: #86b0bd;
 }
 
-/* 分頁樣式 */
-.pagination .page-item.active .page-link {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
-}
-
-.pagination .page-link {
-  color: #145369;
-  border-color: #d1d3d4;
-}
-
-.pagination .page-link:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
-}
-
 /* 載入動畫顏色 */
 .spinner-border {
   color: #145369 !important;
@@ -351,16 +376,25 @@ watch(
 /* 浮動發佈新主題按鈕*/
 .forum-new-topic-fab {
   position: fixed;
+  /* 一般狀態位置（桌機）：調整右側距離 */
   right: 20px;
-  top: 90px;
-  z-index: 1030;
+  /* 一般狀態位置（桌機）：調整上方距離 */
+  top: 96px;
+  z-index: 990;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
+  transition: top 0.2s ease;
+}
+
+.forum-new-topic-fab--pinned {
+  /* 黏在右上角後（桌機）：調整上方距離 */
+  top: 14px;
 }
 
 @media (max-width: 991.98px) {
   .forum-new-topic-fab {
+    /* 一般狀態位置（手機）：原本靠右側中線 */
     top: 50%;
     right: -10px;
     bottom: auto;
@@ -371,6 +405,18 @@ watch(
     padding: 0 15px 0 18px;
     font-size: 0.9rem;
     box-shadow: -4px 0 15px rgba(20, 83, 105, 0.35);
+  }
+
+  .forum-new-topic-fab.forum-new-topic-fab--pinned {
+    /* 黏在右上角後（手機）：調整上方距離 */
+    top: 14px;
+    /* 黏在右上角後（手機）：調整右側距離 */
+    right: 10px;
+    transform: none;
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    height: auto;
+    box-shadow: 0 8px 18px rgba(20, 83, 105, 0.25);
   }
 
   .forum-new-topic-fab span {
