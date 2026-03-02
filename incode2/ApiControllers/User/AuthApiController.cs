@@ -197,12 +197,20 @@ namespace incode2.ApiControllers.user
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            // 清除 Cookie
             await HttpContext.SignOutAsync("MemberAuth");
-            if (Request.Cookies[".AspNetCore.Cookies"] != null)
+            await HttpContext.SignOutAsync("AdminAuth");
+           
+            if (Request.Cookies["Incode.Member"] != null)
             {
-                Response.Cookies.Delete(".AspNetCore.Cookies");
+                Response.Cookies.Delete("Incode.Member", new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,                // 必須與 Program.cs 一致
+                    SameSite = SameSiteMode.None, // 必須與 Program.cs 一致
+                    Path = "/"                    // 必須與 Program.cs 一致
+                });
             }
+
             return Ok(new { message = "已登出" });
         }
 
