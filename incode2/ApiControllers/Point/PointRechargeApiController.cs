@@ -65,97 +65,78 @@ namespace incode2.ApiControllers.Point
             var form = Request.Form;
 
             // 1. 驗證 CheckMacValue
-            bool isValid = _ecpay.ValidateCheckMacValue(form);
-
-            if (!isValid)
+            if (!_ecpay.ValidateCheckMacValue(form))
             {
-                // 記錄失敗原因（方便 debug）
                 Console.WriteLine("CheckMacValue 驗證失敗");
-                Console.WriteLine("收到的 MAC: " + form["CheckMacValue"]);
-                // 為了不讓綠界一直重試，通常仍回 1|OK
-                return Content("1|OK");
+                return Content("0|Fail");
             }
-
-            Console.WriteLine("CheckMacValue 驗證通過");
 
             var rtnCode = form["RtnCode"].ToString();
             var orderNo = form["MerchantTradeNo"].ToString();
             var tradeNo = form["TradeNo"].ToString();
 
-            // 找訂單
+            // 2. 找到對應訂單
             var recharge = await _context.PointRecharge
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.OrderNo == orderNo);
 
             if (recharge == null)
             {
                 Console.WriteLine($"找不到訂單: {orderNo}");
-                return Content("1|OK");  // 綠界建議一律回 1|OK
+                return Content("1|OK");  // 避免綠界一直重試
             }
 
-            // 防重複處理
+            // 3. 防重複處理
             if (recharge.Status == "success")
             {
-                // 額外檢查：是否真的有對應 point_log？
-                var hasLog = await _context.PointLog
-                    .AnyAsync(l => l.SourceType == "point_recharge" && l.SourceId == recharge.PointRechargeId);
-
-                if (hasLog)
-                {
-                    Console.WriteLine($"訂單已處理過且有 log: {orderNo}");
-                    return Content("1|OK");
-                }
-                else
-                {
-                    Console.WriteLine($"訂單顯示 success 但無 log，強制重新加點: {orderNo}");
-                    // 強制重新加點
-                    recharge.Status = "pending";  // 暫時還原
-                }
-            }
-
-            if (recharge.Status == "failed")
-            {
-                Console.WriteLine($"訂單已 failed，不處理: {orderNo}");
+                Console.WriteLine($"訂單已處理過: {orderNo}");
                 return Content("1|OK");
             }
 
-            // 根據 RtnCode 處理
+            // 4. 根據 RtnCode 決定流程
             if (rtnCode == "1")
             {
+                // 付款成功
                 recharge.PaymentTradeNo = tradeNo;
                 recharge.Status = "success";
 
                 try
                 {
-                    Console.WriteLine($"準備呼叫加點 - RechargeId: {recharge.PointRechargeId}");
                     await _pointLogService.AddPointsFromRechargeAsync(recharge);
+                    _context.PointRecharge.Update(recharge);
+                    await _context.SaveChangesAsync();
+
+                    Console.WriteLine($"儲值成功，已加點 - OrderNo: {orderNo}");
                     return Content("1|OK");
                 }
                 catch (Exception ex)
                 {
-                    recharge.Status = "failed";
-                    await _context.SaveChangesAsync(); // 還是存失敗狀態
-                    Console.WriteLine($"加點失敗: {ex.Message}\n{ex.StackTrace}");
-                    return Content("1|OK");
+                    Console.WriteLine($"加點失敗: {ex.Message}");
+                    return Content("0|Fail");  // 讓綠界重試
                 }
             }
             else
             {
-                recharge.Status = "failed";
-                Console.WriteLine($"付款失敗，RtnCode = {rtnCode}");
+                // 付款失敗、取消、ATM 尚未入帳等情況
+                // 這裡建議記錄失敗狀態，方便之後對帳或通知使用者
+                recharge.Status = "failed";  // 或 "cancelled"，看你定義
+                recharge.PaymentTradeNo = tradeNo;  // 保留綠界交易編號
+
+                try
+                {
+                    _context.PointRecharge.Update(recharge);
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine($"付款失敗，已記錄 - OrderNo: {orderNo}, RtnCode: {rtnCode}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"更新失敗狀態失敗: {ex.Message}");
+                    // 這裡可以選擇不拋錯，還是回 1|OK 給綠界
+                }
+
+                // 無論如何都要告訴綠界「我收到通知了」
+                return Content("1|OK");
             }
-
-            // 更新訂單
-            _context.PointRecharge.Update(recharge);
-            await _context.SaveChangesAsync();
-
-            // 記錄完整通知內容（開發時很有用）
-            Console.WriteLine("===== 綠界回呼完成 =====");
-            foreach (var key in form.Keys)
-            {
-                Console.WriteLine($"{key} = {form[key]}");
-            }
-
-            return Content("1|OK");
         }
 
         // GET: api/PointRechargeApi
