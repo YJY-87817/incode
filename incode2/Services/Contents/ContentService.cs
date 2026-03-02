@@ -1,6 +1,7 @@
 using incode2.Dtos;
 using incode2.Models;
 using incode2.Partials;
+using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -12,12 +13,14 @@ namespace incode2.Services.Contents
     private readonly incodedatabaseContext _context;
     private readonly IWebHostEnvironment _environment;
     private readonly IContentInteractionService _contentInteractionService;
+    private readonly IMissionService _missionService;
 
-    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IContentInteractionService contentInteractionService)
+    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IContentInteractionService contentInteractionService, IMissionService missionService)
     {
       _context = context;
       _environment = environment;
       _contentInteractionService = contentInteractionService;
+      _missionService = missionService;
     }
 
     public async Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy)
@@ -421,7 +424,29 @@ namespace incode2.Services.Contents
 
       _context.Content.Add(content);
       await _context.SaveChangesAsync();
-      return content;
+
+            // 任務觸發邏輯───────────────────────────────────────────
+            /// 1. 原創貼文（每天發一篇文章 200 字以上）
+            if (!dto.ParentContentId.HasValue && dto.Type == 1)
+            {
+                var contentLength = dto.Body?.Length ?? 0;
+                if (contentLength >= 200)
+                {
+                    await _missionService.TriggerMissionAsync(dto.UserId, "post", 1);
+                }
+            }
+
+            // 2. 留言 / 回覆（每天留言 10 次）
+            // 條件：有 ParentContentId（不是原創貼文），且 Type 是留言相關類型
+            if (dto.ParentContentId.HasValue && new[] { 2, 3, 4 }.Contains(dto.Type))
+            {
+                // 留言不需要額外字數限制（除非你業務要加）
+                // 若要加最低字數，可在此判斷 dto.Body?.Length >= 某值
+                await _missionService.TriggerMissionAsync(dto.UserId, "comment", 1);
+            }
+            // ───────────────────────────────────────
+
+            return content;
     }
 
     //修改content

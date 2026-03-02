@@ -33,11 +33,19 @@ public partial class EntrustMission
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int? BestContentId { get; set; }
+
+    public int? BestUserId { get; set; }
+
+    public DateTime? SelectedAt { get; set; }
+
+    public virtual Content BestContent { get; set; }
+
+    public virtual User BestUser { get; set; }
+
     public virtual Content Content { get; set; }
 
     public virtual ICollection<EntrustMissionPointReserve> EntrustMissionPointReserve { get; set; } = new List<EntrustMissionPointReserve>();
-
-    public virtual ICollection<EntrustMissionProgress> EntrustMissionProgress { get; set; } = new List<EntrustMissionProgress>();
 
     public virtual User User { get; set; }
 }

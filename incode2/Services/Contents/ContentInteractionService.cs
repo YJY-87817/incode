@@ -11,12 +11,14 @@ namespace incode2.Services.Contents
     private readonly incodedatabaseContext _context;
     private readonly IPointLogService _pointLogService;
     private readonly IPointReserveService _pointReserveService;
+    private readonly IMissionService _missionService;
 
-    public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService)
+        public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService, IMissionService missionService)
         {
             _context = context;
             _pointLogService = pointLogService;
             _pointReserveService = pointReserveService;
+            _missionService = missionService;
         }
 
         // 取得特定內容的所有互動
@@ -98,6 +100,16 @@ namespace incode2.Services.Contents
         CreatedAt = DateTime.Now
       };
       _context.ContentInteraction.Add(newInteraction);
+
+      // qiu 檢查是否為讚的互動分類，如果是，觸發任務
+      bool isLikeCategory = await IsLikeCategoryAsync(dto.InteractionCategoryId);
+
+      if (isLikeCategory)
+      {
+         await _missionService.TriggerMissionAsync(dto.UserId, "like", 1);
+      }
+      //-----------------------------------------------------
+
       await _context.SaveChangesAsync();
 
       return await _context.ContentInteraction
@@ -115,10 +127,16 @@ namespace incode2.Services.Contents
         .FirstAsync();
     }
 
+        private async Task<bool> IsLikeCategoryAsync(int categoryId)
+        {
+            // 方法1：硬編碼 CategoryId（如果你的讚永遠是固定 ID，例如 1）
+             return categoryId == 1;
+        }
 
-    // 移除互動
 
-    public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
+        // 移除互動
+
+        public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
     {
       var interaction = await _context.ContentInteraction
         .FirstOrDefaultAsync(ci => ci.ContentId == contentId 
@@ -226,122 +244,121 @@ namespace incode2.Services.Contents
         var mission = await _context.EntrustMission
           .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
 
-        if (mission == null)
-        {
-          return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
-        }
+                if (mission == null)
+                    return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
 
-        if (mission.UserId != selectorUserId)
-        {
-          return new ResultDTO { Ok = false, Code = 403, Message = "只有委託任務發起者可以選擇最佳解答" };
-        }
+                if (!mission.IsActive)
+                    return new ResultDTO { Ok = false, Code = 410, Message = "該委託任務已下架" };
 
-        var targetContent = await _context.Content
-          .FirstOrDefaultAsync(c => c.ContentId == contentId && c.IsActive == 1);
+                if (mission.Status != "open")
+                    return new ResultDTO { Ok = false, Code = 400, Message = $"任務狀態為 {mission.Status}，無法選擇最佳解答" };
 
-        if (targetContent == null)
-        {
-          return new ResultDTO { Ok = false, Code = 404, Message = "回覆內容不存在" };
-        }
+                if (mission.BestContentId.HasValue)
+                    return new ResultDTO { Ok = false, Code = 409, Message = "最佳解答已經設定過" };
 
-        // 禁止委託人自己領取自己的委託獎勵
-        if (targetContent.UserId == selectorUserId)
-        {
-           return new ResultDTO
-           {
-             Ok = false,
-             Code = 403,
-             Message = "不能選擇自己發表的回覆作為最佳解答"
-           };
-        }
+                if (mission.UserId != selectorUserId)
+                    return new ResultDTO { Ok = false, Code = 403, Message = "只有任務發起者可以選擇最佳解答" };
 
+                // 2. 確認該 content 是否屬於這個委託的討論串
                 var rootContentId = await GetRootContentIdAsync(contentId);
-        if (rootContentId == 0 || rootContentId != mission.ContentId)
-        {
-          return new ResultDTO { Ok = false, Code = 400, Message = "指定內容不屬於此委託任務的貼文" };
+                if (rootContentId == 0 || rootContentId != mission.ContentId)
+                    return new ResultDTO { Ok = false, Code = 400, Message = "指定內容不屬於此委託任務的討論串" };
+
+                // 3. 取得目標回覆內容
+                var targetContent = await _context.Content
+                    .FirstOrDefaultAsync(c => c.ContentId == contentId && c.IsActive == 1);
+
+                if (targetContent == null)
+                    return new ResultDTO { Ok = false, Code = 404, Message = "回覆內容不存在或已被移除" };
+
+                // 4. 禁止委託人選自己的回覆
+                if (targetContent.UserId == selectorUserId)
+                    return new ResultDTO { Ok = false, Code = 403, Message = "不能選擇自己發表的回覆作為最佳解答" };
+
+                // 5. 消耗預扣點數
+                var consumeSuccess = await _pointReserveService.ConsumeAsync(
+                    mission.UserId,
+                    entrustMissionId
+                );
+
+                if (!consumeSuccess)
+                {
+                    await transaction.RollbackAsync();
+                    return new ResultDTO { Ok = false, Code = 400, Message = "預扣點數狀態錯誤或已消耗/退還" };
+                }
+
+                // 6. 發放點數給最佳解答作者
+                string displaySubTitle = $"委託任務 #{entrustMissionId} 最佳解答獎勵";
+                var awardSuccess = await _pointLogService.ChangePointsAsync(
+                    targetContent.UserId,
+                    mission.RewardPoints,
+                    "entrust_mission",
+                    mission.EntrustMissionId,
+                    PointType.IncomeEntrustMission,  // 假設你有定義這個 enum 或常數
+                    displaySource: "委託任務最佳解答",
+                    displaySubTitle: displaySubTitle
+                );
+
+                if (!awardSuccess)
+                {
+                    await transaction.RollbackAsync();
+                    return new ResultDTO { Ok = false, Code = 500, Message = "點數發放失敗" };
+                }
+
+                // 7. 更新 entrust_mission 主表
+                mission.BestContentId = contentId;
+                mission.BestUserId = targetContent.UserId;
+                mission.SelectedAt = DateTime.Now;
+                mission.Status = "completed";
+                mission.UpdatedAt = DateTime.Now;
+
+                // 8. (可選) 記錄「最佳解答」互動分類，方便前端顯示徽章或標記
+                var bestCategoryId = await GetBestAnswerCategoryIdAsync();
+                if (bestCategoryId > 0)
+                {
+                    // 避免重複新增
+                    bool alreadyHasBest = await _context.ContentInteraction
+                        .AnyAsync(ci => ci.ContentId == contentId && ci.CategoryId == bestCategoryId);
+
+                    if (!alreadyHasBest)
+                    {
+                        _context.ContentInteraction.Add(new ContentInteraction
+                        {
+                            ContentId = contentId,
+                            UserId = selectorUserId,
+                            CategoryId = bestCategoryId,
+                            Description = $"entrust_mission:{entrustMissionId}",
+                            CreatedAt = DateTime.Now
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ResultDTO
+                {
+                    Ok = true,
+                    Code = 200,
+                    Message = "最佳解答已選定並完成獎勵發放",
+                    Data = new
+                    {
+                        EntrustMissionId = entrustMissionId,
+                        BestContentId = contentId,
+                        BestUserId = targetContent.UserId,
+                        RewardPoints = mission.RewardPoints,
+                        SelectedAt = mission.SelectedAt
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ResultDTO { Ok = false, Code = 500, Message = "伺服器錯誤，請稍後再試" };
+            }
         }
 
-        var bestCategoryId = await GetBestAnswerCategoryIdAsync();
-        if (bestCategoryId == 0)
-        {
-          return new ResultDTO { Ok = false, Code = 500, Message = "尚未設定最佳解答互動分類" };
-        }
-
-        var bestDescription = $"entrust_mission:{entrustMissionId}";
-        var existingBest = await _context.ContentInteraction
-          .AnyAsync(ci => ci.CategoryId == bestCategoryId
-            && (ci.Description == bestDescription || ci.ContentId == contentId));
-
-        if (existingBest)
-        {
-          return new ResultDTO { Ok = false, Code = 409, Message = "最佳解答已經設定過" };
-        }
-
-        //qiu 扣除發布委託user的預扣點數
-        var consumeSuccess = await _pointReserveService.ConsumeAsync(
-          mission.UserId,
-          mission.EntrustMissionId);
-
-        if (!consumeSuccess)
-          {
-            await transaction.RollbackAsync();
-            return new ResultDTO { Ok = false, Code = 400, Message = "預扣狀態錯誤或不存在" };
-        }
-
-        //qiu 發放點數給最佳解答使用者
-        var awardSuccess = await _pointLogService.ChangePointsAsync(
-          targetContent.UserId,
-          mission.RewardPoints,
-          "entrust_mission",
-          mission.EntrustMissionId,
-          PointType.IncomeEntrustMission
-          );
-
-        if (!awardSuccess)
-        {
-           await transaction.RollbackAsync();
-           return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
-        }
-
-        //新增：更新任務狀態為關閉
-        mission.Status = "completed"; 
-        mission.IsActive = true;  // 想在列表看到，可以設為 true
-        mission.UpdatedAt = DateTime.Now;
-
-        _context.ContentInteraction.Add(new ContentInteraction
-        {
-          ContentId = contentId,
-          UserId = selectorUserId,
-          CategoryId = bestCategoryId,
-          Description = bestDescription,
-          CreatedAt = DateTime.Now
-        });
-
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        return new ResultDTO
-        {
-          Ok = true,
-          Code = 200,
-          Message = "最佳解答已選定",
-          Data = new
-          {
-            EntrustMissionId = entrustMissionId,
-            BestAnswerContentId = contentId,
-            RewardPoints = mission.RewardPoints,
-            RewardedUserId = targetContent.UserId
-          }
-        };
-      }
-      catch (Exception ex)
-      {
-        await transaction.RollbackAsync();
-        return new ResultDTO { Ok = false, Code = 500, Message = ex.Message };
-      }
-    }
-
-    private async Task<int> GetRootContentIdAsync(int contentId)
+        private async Task<int> GetRootContentIdAsync(int contentId)
     {
       var currentId = contentId;
 

@@ -18,13 +18,13 @@ namespace incode2.Controllers.Point
             _context = context;
         }
 
-        // GET: Mission
+        // GET: MissionTest
         public async Task<IActionResult> Index()
         {
             return View(await _context.Mission.ToListAsync());
         }
 
-        // GET: Mission/Details/5
+        // GET: MissionTest/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -42,28 +42,18 @@ namespace incode2.Controllers.Point
             return View(mission);
         }
 
-        // 重複的 ResetType 選項（直接用字串）
-        private readonly List<SelectListItem> ResetType = new()
-        {
-           new SelectListItem { Value = "none", Text = "不重置" },
-           new SelectListItem { Value = "daily", Text = "每日重置" },
-           new SelectListItem { Value = "weekly", Text = "每週重置" },
-           new SelectListItem { Value = "monthly", Text = "每月重置" }
-        };
-
-        // GET: Mission/Create
+        // GET: MissionTest/Create
         public IActionResult Create()
         {
-            ViewBag.ResetType = ResetType;
             return View();
         }
 
-        // POST: Mission/Create
+        // POST: MissionTest/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,ResetType,CreatedAt")] Mission mission)
+        public async Task<IActionResult> Create([Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,Category,Difficulty,EstimatedDuration,ResetType,ParticipantCount,IsFeatured,LastResetAt,IsActive,CreatedAt,UpdatedAt")] Mission mission)
         {
             if (ModelState.IsValid)
             {
@@ -71,11 +61,10 @@ namespace incode2.Controllers.Point
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.ResetType = ResetType;
             return View(mission);
         }
 
-        // GET: Mission/Edit/5
+        // GET: MissionTest/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -83,21 +72,22 @@ namespace incode2.Controllers.Point
                 return NotFound();
             }
 
-            var mission = await _context.Mission.FindAsync(id);
+            var mission = await _context.Mission
+                .Include(m => m.MissionProgress)
+                .FirstOrDefaultAsync(m => m.MissionId == id);
             if (mission == null)
             {
                 return NotFound();
             }
-            ViewBag.ResetType = ResetType;
             return View(mission);
         }
 
-        // POST: Mission/Edit/5
+        // POST: MissionTest/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,ResetType,CreatedAt")] Mission mission)
+        public async Task<IActionResult> Edit(int id, [Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,Category,Difficulty,EstimatedDuration,ResetType,ParticipantCount,IsFeatured,LastResetAt,IsActive,CreatedAt,UpdatedAt")] Mission mission)
         {
             if (id != mission.MissionId)
             {
@@ -124,11 +114,10 @@ namespace incode2.Controllers.Point
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.ResetType = ResetType;
             return View(mission);
         }
 
-        // GET: Mission/Delete/5
+        // GET: MissionTest/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -146,7 +135,7 @@ namespace incode2.Controllers.Point
             return View(mission);
         }
 
-        // POST: Mission/Delete/5
+        // POST: MissionTest/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

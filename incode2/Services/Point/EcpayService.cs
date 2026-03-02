@@ -30,8 +30,8 @@ namespace incode2.Services.Point
             { "MerchantTradeDate", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") },
             { "PaymentType", "aio" },
             { "TotalAmount", ((int)order.CashAmount).ToString() },
-            { "TradeDesc", "PointRecharge" },
-            { "ItemName", $"Point {order.PointsGranted}" },
+            { "TradeDesc", "平台點數儲值" },
+            { "ItemName", $"儲值 {order.CashAmount} 元 獲得 {order.PointsGranted} 點" },
             { "ReturnURL", ReturnUrl },
             { "ClientBackURL", "https://localhost:5173/recharge-result" },
             { "ChoosePayment", "ALL" },
@@ -44,14 +44,29 @@ namespace incode2.Services.Point
 
         public string GenerateCheckMacValue(Dictionary<string, string> data)
         {
+            // 1. 排序：按鍵名字典序排序（忽略大小寫）
             var ordered = data.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
                               .Select(x => $"{x.Key}={x.Value}");
-            var raw = $"HashKey={HashKey}&{string.Join("&", ordered)}&HashIV={HashIV}";
-            var encoded = System.Web.HttpUtility.UrlEncode(raw).ToLower()
-                .Replace("%21", "!").Replace("%2a", "*")
-                .Replace("%28", "(").Replace("%29", ")")
-                .Replace("%20", "+");
 
+            // 2. 串接：HashKey + 參數 + HashIV
+            var raw = $"HashKey={HashKey}&{string.Join("&", ordered)}&HashIV={HashIV}";
+
+            // 3. URL Encode
+            var encoded = System.Web.HttpUtility.UrlEncode(raw);
+
+            // 4. 特殊字元替換（綠界文件要求）
+            // 請確保替換順序和方式與綠界一致
+            encoded = encoded.ToLower()
+                .Replace("%2d", "-")
+                .Replace("%5f", "_")
+                .Replace("%2e", ".")
+                .Replace("%21", "!")
+                .Replace("%2a", "*")
+                .Replace("%28", "(")
+                .Replace("%29", ")")
+                .Replace("%20", "+"); // 注意：有些版本不需替換 %20，這裡以綠界文件為主
+
+            // 5. SHA256
             using var sha = SHA256.Create();
             var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(encoded));
             return BitConverter.ToString(hash).Replace("-", "").ToUpper();

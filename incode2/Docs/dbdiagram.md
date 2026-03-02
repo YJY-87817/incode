@@ -224,52 +224,45 @@ Table mission {
   updated_at datetime
 }
 
-
 Table mission_progress {
   mission_progress_id int [pk, increment, note: '用戶任務進度主鍵']
   user_id int [not null, ref: > user.user_id, note: '用戶 ID']
   mission_id int [not null, ref: > mission.mission_id, note: '所屬平台任務']
   current_count int [not null, check: `[current_count] >= 0`, note: '目前已完成次數']
-  status nvarchar(50) [not null, check: `[status] IN ('ongoing','completed','rewarded','falsed','cancelled')`, default: 'ongoing', note: 'ongoing=進行中, completed=已完成, rewarded=已領獎']
+  status nvarchar(50) [not null, check: `[status] IN ('ongoing','completed','rewarded','failed','cancelled')`, default: 'ongoing', note: 'ongoing=進行中, completed=已完成, rewarded=已領獎']
   accepted_at datetime [default: `CURRENT_TIMESTAMP`, note: '開始計算進度的時間']
   completed_at datetime [note: '實際完成時間']
   rewarded_at datetime [note: '實際撥款的時間(點選領取按鈕)']
   cycle_start_at datetime [note: '循環開始時間']
   cycle_end_at datetime [note: '循環結束時間']
+
+Indexes {
+    (user_id, mission_id, cycle_start_at) [unique, name: "UX_User_Mission_Cycle"]
+  }
 }
 
-
 //========= 委託任務 ===========
-
 
 Table entrust_mission {
   entrust_mission_id int [pk, increment, note: '委託任務主鍵']
   user_id int [not null, ref: > user.user_id, note: '發布者 ID']
-  content_id int [not null, ref: > content.content_id, note: '發文 ID']
-  title nvarchar(150) [not null, note: '委託任務標題']
-  detail nvarchar(500) [not null, note: '委託任務詳細內容']
-  reward_points int [not null, check: `[reward_points] >= 0`, note: '完成可得點數']
-  category nvarchar(50) [not null, note: '任務類別，例如：字幕、尋片、資源、解析、票務、社交']
-  deadline datetime [note: '預計完成期限，可為 null 表示無期限']
-  status nvarchar(50) [not null, check: `[status] IN ('open','in_progress','completed','cancelled','expired')`, default: 'open', note: '任務狀態']
-  is_urgent bit [default: 0,note: '是否標記為急件，由發布者主動設定']
+  content_id int [not null, ref: > content.content_id, note: '發文 ID（討論串根節點）']
+  title nvarchar(150) [not null, note: '委託標題']
+  detail nvarchar(500) [not null, note: '詳細說明']
+  reward_points int [not null, check: `[reward_points] >= 0`]
+  category nvarchar(50) [not null]
+  deadline datetime [null]
+  status nvarchar(50) [not null, check: `[status] IN ('open','completed','cancelled','expired')`, default: 'open']
+  is_urgent bit [default: 0]
   is_active bit [not null, default: 1]
-  created_at datetime [default: `CURRENT_TIMESTAMP`, note: '發布時間']
-  updated_at datetime [note: '最後更新時間，可用 trigger 自動更新']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime
+
+  // === 最佳解答相關（核心新增） ===
+  best_content_id     int [null, ref: > content.content_id, note: '被選為最佳解答的回覆 content_id']
+  best_user_id        int [null, ref: > user.user_id, note: '最佳解答作者（獲得獎勵者）']
+  selected_at         datetime [null, note: '選定最佳解答時間']
 }
-
-
-Table entrust_mission_progress {
-  entrust_mission_progress_id int [pk, increment, note: '委託任務進度主鍵']
-  user_id int [not null, ref: > user.user_id, note: '接任務者 ID']
-  entrust_mission_id int [not null, ref: > entrust_mission.entrust_mission_id, note: '所屬委託任務']
-  status nvarchar(50) [check: `[status] IN ('ongoing','submitted','approved','rejected','rewarded','falsed','cancelled')`, default: 'ongoing', note: '進度狀態流轉']
-  accepted_at datetime [default: `CURRENT_TIMESTAMP`,note: '接任務時間']
-  submitted_at datetime [note: '提交時間']
-  approved_at datetime [note: '發布者選中時間']
-  rewarded_at datetime [note: '發獎時間']
-}
-
 
 Table entrust_mission_point_reserve {
   entrust_mission_point_reserve_id int [pk, increment, note: '委託點數預扣主鍵']
@@ -281,9 +274,7 @@ Table entrust_mission_point_reserve {
   released_at datetime
 }
 
-
 //========= 金流儲值 ===========
-
 
 Table point_recharge {
   point_recharge_id int [pk, increment, note: '儲值成功紀錄主鍵']
@@ -299,7 +290,6 @@ Table point_recharge {
     (user_id, created_at)
   }}
 
-
   Table point_tip {
   point_tip_id int [pk, increment]
   from_user_id int [not null, ref: > user.user_id]
@@ -308,7 +298,6 @@ Table point_recharge {
   amount int [not null]
   created_at datetime [default: `CURRENT_TIMESTAMP`]
 }
-
 
 // ================系統通知表 (單表架構)====================
 Table notifications {
@@ -428,8 +417,6 @@ Table chat_session {
   ishumanmode bit [not null, default: 0] // 0: AI模式, 1: 真人模式
   note { "聊天室列表與狀態紀錄" }
 }
-
-
 
 
 // 對話訊息內容
