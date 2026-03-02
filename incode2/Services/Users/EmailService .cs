@@ -18,7 +18,7 @@ namespace incode2.Services
 
             var client = new SmtpClient(settings["MailServer"], int.Parse(settings["MailPort"]))
             {
-                Credentials = new NetworkCredential(settings["SenderEmail"], settings["Password"]),
+Credentials = new NetworkCredential(settings["SenderEmail"], settings["Password"]), //570錯誤檢查 直接打密碼
                 EnableSsl = true
             };
 
