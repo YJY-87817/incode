@@ -822,6 +822,8 @@ export const useForumStore = defineStore("forum", {
     interactionLoadingStates: {}, // { contentId: { 1: false, 2: false, 3: false, 4: false } }
     interactionStateInitialized: {}, // { contentId: true/false }
     interactionInitBatchSize: 5,
+    interactionStateInitialized: {}, // { contentId: true/false }
+    interactionInitBatchSize: 5,
 
     // ========== 快速回覆相關 ==========
     quickReplies: {}, // { contentId: { content: "", isSubmitting: false, show: false } }
@@ -1452,6 +1454,7 @@ export const useForumStore = defineStore("forum", {
                 createdAt: item.createdAt,
                 type: item.type,
                 likeCount: extractLikeCount(item),
+                likeCount: extractLikeCount(item),
                 replyCount: stats.replyCount ?? fallbackStats.replyCount ?? 0,
                 lastReplyTime:
                   stats.lastReplyTime ?? fallbackStats.lastReplyTime ?? null,
@@ -1789,6 +1792,11 @@ export const useForumStore = defineStore("forum", {
         rewardPoints: 0,
         bestAnswerContentId: null,
         bestAnswerSelected: false,
+        entrustMissionId: null,
+        entrustMissionUserId: null,
+        rewardPoints: 0,
+        bestAnswerContentId: null,
+        bestAnswerSelected: false,
       };
       this.threadPosts = [];
       this.threadComments = [];
@@ -1810,6 +1818,18 @@ export const useForumStore = defineStore("forum", {
       };
       this.childRepliesByParentId = {};
       this.childRepliesCountByParentId = {};
+    },
+
+    cacheBestAnswerSelection({
+      entrustMissionId = null,
+      threadId = null,
+      bestAnswerContentId = null,
+    } = {}) {
+      setCachedBestAnswerContentId({
+        entrustMissionId,
+        threadId,
+        bestAnswerContentId,
+      });
     },
 
     cacheBestAnswerSelection({
@@ -2017,6 +2037,8 @@ export const useForumStore = defineStore("forum", {
       contentBodyPending.clear();
       entrustMissionByContentCache.clear();
       entrustMissionByContentPending.clear();
+      entrustMissionByContentCache.clear();
+      entrustMissionByContentPending.clear();
     },
 
     // ========== 搜尋功能 ==========
@@ -2092,6 +2114,211 @@ export const useForumStore = defineStore("forum", {
           4: false,
         };
       }
+    },
+
+    async initializeUserInteractionState(contentId, { force = false } = {}) {
+      const targetContentId = Number(contentId);
+      if (!Number.isFinite(targetContentId) || targetContentId <= 0) return;
+
+      this.setCurrentInteractionContent(targetContentId, null);
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        this.interactionStates[targetContentId] = {
+          1: false,
+          2: false,
+          3: false,
+          4: false,
+        };
+        this.interactionStateInitialized[targetContentId] = false;
+        return;
+      }
+
+      if (!force && this.interactionStateInitialized[targetContentId]) {
+        return;
+      }
+
+      if (interactionInitPending.has(targetContentId)) {
+        await interactionInitPending.get(targetContentId);
+        return;
+      }
+
+      const request = (async () => {
+        try {
+          const response =
+            await contentInteractionApi.getUserInteraction(targetContentId);
+          const interactions = extractUserInteractions(response);
+          const activeCategories = new Set(
+            interactions.map(toInteractionCategoryId).filter(Boolean),
+          );
+
+          this.interactionStates[targetContentId] = {
+            1: activeCategories.has(1),
+            2: activeCategories.has(2),
+            3: activeCategories.has(3),
+            4: activeCategories.has(4),
+          };
+          this.interactionStateInitialized[targetContentId] = true;
+        } catch (error) {
+          if (error?.response?.status === 401) {
+            this.interactionStates[targetContentId] = {
+              1: false,
+              2: false,
+              3: false,
+              4: false,
+            };
+            this.interactionStateInitialized[targetContentId] = false;
+            return;
+          }
+
+          console.error("初始化使用者互動狀態失敗:", error);
+        } finally {
+          interactionInitPending.delete(targetContentId);
+        }
+      })();
+
+      interactionInitPending.set(targetContentId, request);
+      await request;
+    },
+
+    async initializeUserInteractionStates(
+      contentIds,
+      { force = false, batchSize = null } = {},
+    ) {
+      const normalizedIds = Array.from(
+        new Set(
+          (Array.isArray(contentIds) ? contentIds : [])
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id) && id > 0),
+        ),
+      );
+
+      if (!normalizedIds.length) return;
+
+      const authStore = useAuthStore();
+      const isLoggedIn = Boolean(
+        authStore.isAuthenticated && authStore.user?.id,
+      );
+
+      if (!isLoggedIn) {
+        normalizedIds.forEach((id) => {
+          this.setCurrentInteractionContent(id, null);
+          this.interactionStates[id] = {
+            1: false,
+            2: false,
+            3: false,
+            4: false,
+          };
+          this.interactionStateInitialized[id] = false;
+        });
+        return;
+      }
+
+      const targetIds = force
+        ? normalizedIds
+        : normalizedIds.filter((id) => !this.interactionStateInitialized[id]);
+
+      if (!targetIds.length) return;
+
+      const defaultBatchSize = Math.max(
+        1,
+        Number(this.interactionInitBatchSize) || 1,
+      );
+      const resolvedBatchSize = Math.max(
+        1,
+        Number(batchSize ?? defaultBatchSize) || defaultBatchSize,
+      );
+
+      for (
+        let index = 0;
+        index < targetIds.length;
+        index += resolvedBatchSize
+      ) {
+        const chunk = targetIds.slice(index, index + resolvedBatchSize);
+        await Promise.all(
+          chunk.map((id) => this.initializeUserInteractionState(id, { force })),
+        );
+      }
+    },
+
+    setInteractionInitBatchSize(size) {
+      const nextSize = Number(size);
+      if (!Number.isFinite(nextSize)) return;
+
+      this.interactionInitBatchSize = Math.min(20, Math.max(1, nextSize));
+    },
+
+    getContentLikeCount(contentId) {
+      const targetId = Number(contentId);
+      if (!Number.isFinite(targetId) || targetId <= 0) return 0;
+
+      const findCount = (items = []) => {
+        const matched = items.find((item) => Number(item?.id) === targetId);
+        if (!matched) return null;
+        const count = Number(matched?.likeCount);
+        return Number.isFinite(count) ? Math.max(0, count) : 0;
+      };
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        const detailCount = Number(this.threadDetail?.likeCount ?? 0);
+        if (Number.isFinite(detailCount)) return Math.max(0, detailCount);
+      }
+
+      const topicCount = findCount(this.topics);
+      if (topicCount !== null) return topicCount;
+
+      const postCount = findCount(this.threadPosts);
+      if (postCount !== null) return postCount;
+
+      const commentCount = findCount(this.threadComments);
+      if (commentCount !== null) return commentCount;
+
+      const childReplyCollections = Object.values(this.childRepliesByParentId);
+      for (const payload of childReplyCollections) {
+        const childCount = findCount(payload?.items || []);
+        if (childCount !== null) return childCount;
+      }
+
+      return 0;
+    },
+
+    setContentLikeCount(contentId, likeCount) {
+      const targetId = Number(contentId);
+      const nextCount = Number(likeCount);
+      if (!Number.isFinite(targetId) || targetId <= 0) return;
+      if (!Number.isFinite(nextCount)) return;
+
+      const normalizedCount = Math.max(0, nextCount);
+      const updateCollection = (items = []) =>
+        items.map((item) =>
+          Number(item?.id) === targetId
+            ? { ...item, likeCount: normalizedCount }
+            : item,
+        );
+
+      this.topics = updateCollection(this.topics);
+      this.threadPosts = updateCollection(this.threadPosts);
+      this.threadComments = updateCollection(this.threadComments);
+
+      if (Number(this.threadDetail?.id) === targetId) {
+        this.threadDetail = {
+          ...this.threadDetail,
+          likeCount: normalizedCount,
+        };
+      }
+
+      Object.entries(this.childRepliesByParentId || {}).forEach(
+        ([parentId, payload]) => {
+          this.childRepliesByParentId[parentId] = {
+            ...payload,
+            items: updateCollection(payload?.items || []),
+          };
+        },
+      );
     },
 
     async initializeUserInteractionState(contentId, { force = false } = {}) {

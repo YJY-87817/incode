@@ -8,6 +8,8 @@ import "@fortawesome/fontawesome-free/css/all.css";
 import router from "./router";
 
 //owen
+import { useAuthStore } from "@/stores/user/auth.js";
+import Swal from "sweetalert2";
 import "vuetify/styles";
 import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";

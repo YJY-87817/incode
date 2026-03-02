@@ -242,6 +242,7 @@ watch(
   >
     <i class="fas fa-plus"></i>
     <span class="ms-2 d-none d-sm-inline">發佈新主題</span>
+    <span class="ms-2 d-none d-sm-inline">發佈新主題</span>
   </button>
 </template>
 

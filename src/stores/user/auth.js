@@ -99,14 +99,29 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function logout() {
     try {
-      await axios.post("/AuthApi/Logout");
+      // 確保 Axios 有帶上 credentials，讓後端能正確識別並清除 Session/Cookie
+      await axios.post("/AuthApi/Logout", {}, { withCredentials: true });
     } catch (e) {
       console.error("登出 API 錯誤", e);
     } finally {
+      // 1. 清空 Pinia 狀態
       user.value = null;
       isAuthenticated.value = false;
+
+      // 2. 強制手動清除 localStorage (雙重保險)
+      // 注意：這裡的 'auth' 是你在 defineStore 第一個參數定義的 ID
+      localStorage.removeItem('auth');
+      sessionStorage.removeItem('auth'); // 如果你是存在 sessionStorage 的話
+
       console.log("正在執行跳轉...");
-      window.location.href = '/'; //router.push('/');
+
+      // 3. 使用 setTimeout 給予瀏覽器一點時間完成 localStorage 的寫入
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+
+      // 或者，如果你有獨立的 router 實例 (例如從 @/router 引入)，強烈建議改成：
+      // router.push('/');
     }
   }
 

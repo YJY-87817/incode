@@ -1540,6 +1540,36 @@ async function handleDeleteContent(contentId) {
     min-width: 0;
   }
 
+  .thread-reply-btn,
+  .nested-toggle-btn {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    padding: 4px;
+  }
+
+  .reply-mode-tabs .nav-link {
+    min-height: 32px;
+    flex: 1 1 auto;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .quick-reply-actions .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 40px;
+    min-width: 0;
+  }
+
   .preview-row {
     flex-direction: column;
   }
@@ -1550,6 +1580,10 @@ async function handleDeleteContent(contentId) {
 
   .preview-images-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nested-replies-section {
+    margin-left: 0 !important;
   }
 
   .nested-replies-section {

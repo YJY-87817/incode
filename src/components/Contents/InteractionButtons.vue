@@ -41,6 +41,26 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  enableBestAnswer: {
+    type: Boolean,
+    default: false,
+  },
+  entrustMissionId: {
+    type: Number,
+    default: null,
+  },
+  missionOwnerUserId: {
+    type: Number,
+    default: null,
+  },
+  bestAnswerContentId: {
+    type: Number,
+    default: null,
+  },
+  rewardPoints: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const authStore = useAuthStore();
@@ -86,9 +106,38 @@ watch(
       if (!isBatchManagedContent.value) {
         await forumStore.initializeUserInteractionState(newId);
       }
+      if (!isBatchManagedContent.value) {
+        await forumStore.initializeUserInteractionState(newId);
+      }
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => [authStore.isAuthenticated, authStore.user?.id],
+  async ([isAuthenticated]) => {
+    if (!props.contentId) return;
+
+    if (isBatchManagedContent.value) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      forumStore.interactionStates[props.contentId] = {
+        1: false,
+        2: false,
+        3: false,
+        4: false,
+      };
+      forumStore.interactionStateInitialized[props.contentId] = false;
+      return;
+    }
+
+    await forumStore.initializeUserInteractionState(props.contentId, {
+      force: true,
+    });
+  },
 );
 
 watch(
@@ -584,6 +633,18 @@ onMounted(() => {
   color: #fff;
 }
 
+.btn-best-answer {
+  background-color: #145369;
+  border: 1px solid #145369;
+  color: #fff0dd;
+}
+
+.btn-best-answer:hover:not(:disabled) {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
+}
+
 /* 更多選單容器 */
 .more-menu-container {
   position: relative;
@@ -639,6 +700,24 @@ onMounted(() => {
 .more-menu-item i {
   width: 1rem;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .btn-interaction-button {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-interaction-button i {
+    font-size: 0.9rem;
+  }
+
+  .more-menu-item {
+    min-height: 40px;
+    padding: 0.45rem 0.9rem;
+  }
 }
 
 @media (max-width: 768px) {

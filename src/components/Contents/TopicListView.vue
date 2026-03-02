@@ -2711,7 +2711,38 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
+  .reply-mode-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    justify-content: space-between;
+    height: auto;
+    min-height: 42px;
+  }
+
+  .reply-mode-tabs .nav-link,
+  .reply-standalone-btn {
+    flex: 1 1 auto;
+    min-height: 34px;
+  }
+
+  .reply-standalone-btn {
+    width: 100%;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+  }
+
   .quick-reply-actions .btn {
+    min-width: 0;
+    min-height: 40px;
+    flex: 1 1 calc(50% - 0.25rem);
     min-width: 0;
     min-height: 40px;
     flex: 1 1 calc(50% - 0.25rem);
