@@ -1,24 +1,23 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
 import axios from "axios";
 import Swal from "sweetalert2";
 
-// 2. 儲值方案設定
+// 儲值方案設定
 const plans = ref([
   { id: 1, points: 500, price: 50, popular: false, bonus: 0 },
   { id: 2, points: 1000, price: 95, popular: true, bonus: 50 },
   { id: 3, points: 3000, price: 270, popular: false, bonus: 300 },
 ]);
 
-// 3. 狀態控制
+// 狀態控制
 const selectedPlan = ref(2); // 預設選中熱門方案
-// const selectedPayment = ref("credit-card"); // 預設支付方式
 const customAmount = ref(null);
 const isLoading = ref(false);
 const exchangeRate = 10;
 
-// 5. 計算屬性
+// 計算屬性
 const finalDetails = computed(() => {
   if (selectedPlan.value === "custom") {
     const amt = customAmount.value || 0;
@@ -41,15 +40,13 @@ const isSubmitDisabled = computed(() => {
   return false;
 });
 
-// 6. 方法
+// 方法
 const selectPlan = (id) => {
   selectedPlan.value = id;
   customAmount.value = null;
 };
 
 // 點確認付款 → 呼叫後端生成訂單 → 自動導到綠界
-// 6. 方法 (優化後的 handleCheckout)
-// 修改後的 handleCheckout 方法
 const handleCheckout = async () => {
   if (isSubmitDisabled.value) return;
 
@@ -122,18 +119,6 @@ const handleCheckout = async () => {
     }
   }
 };
-
-onMounted(async () => {
-  try {
-    // 這裡很重要！因為 ReturnURL 是背景執行的，
-    // 使用者跳回來時，可能 ReturnURL 還沒跑完。
-    // 你可以延遲 1-2 秒再重新獲取餘額，或者提供一個「重新整理」按鈕。
-    await userStore.fetchUserInfo();
-    statusMessage.value = "感謝您的儲值！點數處理中，請稍候。";
-  } catch (err) {
-    console.error(err);
-  }
-});
 </script>
 
 <template>
@@ -142,7 +127,6 @@ onMounted(async () => {
     <div class="container-fluid mt-n6">
       <div class="row">
         <div class="col-lg-10 mx-auto">
-          <!-- 選擇方案區 -->
           <div class="container mt-4">
             <h4 class="mb-3 ps-2 font-weight-bolder">選擇方案</h4>
             <div class="row">
@@ -181,7 +165,6 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
-              <!-- 自定義方案 -->
               <div class="col-12 mb-4">
                 <div
                   @click="selectedPlan = 'custom'"
@@ -230,7 +213,6 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- 支付方式 & 總金額 -->
           <h4 class="mb-3 ps-2 font-weight-bolder">支付金額</h4>
           <div class="card shadow-sm mb-4 border-0">
             <div class="card-body p-4">
@@ -283,77 +265,24 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-
-  <!-- <form
-    method="post"
-    action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"
-  >
-    <input type="hidden" name="MerchantID" value="3002599" />
-    <input type="hidden" name="MerchantTradeNo" value="PR639063232747464280" />
-    <input type="hidden" name="MerchantTradeDate" value="2026/02/10 12:27:56" />
-    <input type="hidden" name="PaymentType" value="aio" />
-    <input type="hidden" name="TotalAmount" value="122" />
-    <input type="hidden" name="TradeDesc" value="PointRecharge" />
-    <input type="hidden" name="ItemName" value="Point 1220" />
-
-     ✅ 新增 ClientBackURL -->
-  <!-- <input
-      type="hidden"
-      name="ClientBackURL"
-      value="https://你的前端網址/point/recharge/result"
-    /> -->
-
-  <!-- 後端用的回呼 -->
-  <!-- <input
-      type="hidden"
-      name="ReturnURL"
-      value="https://separative-learnable-immanuel.ngrok-free.dev/api/PointRechargeApi/ecpay/return"
-    /> -->
-
-  <!-- <input type="hidden" name="ChoosePayment" value="ALL" />
-    <input type="hidden" name="EncryptType" value="1" />
-    <input
-      type="hidden"
-      name="CheckMacValue"
-      value="5E8B1F4320B1559A808E49E728777AACAD991AB7C3B8DA3803E630DC81561C91"
-    />
-    <button type="submit">前往付款</button>
-  </form>  -->
 </template>
 
 <style scoped>
 .transition-all {
   transition: all 0.25s ease-in-out;
 }
-
 .plan-card:hover {
   transform: translateY(-5px);
 }
-
 .ring-active {
-  box-shadow: 0 0 15px rgba(233, 30, 99, 0.1); /* Soft UI Primary Color Glow */
+  box-shadow: 0 0 15px rgba(233, 30, 99, 0.1);
   background-color: rgba(233, 30, 99, 0.02);
 }
-
-.pay-btn.active {
-  background-color: rgba(233, 30, 99, 0.05) !important;
-  border-width: 2px !important;
-}
-
 .cursor-pointer {
   cursor: pointer;
 }
-
 .text-transparent {
   color: transparent;
   user-select: none;
-}
-
-.shadow-blur {
-  backdrop-filter: saturate(200%) blur(30px);
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  box-shadow:
-    inset 0 0 2px #fefefe,
-    0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
 }
 </style>
