@@ -34,6 +34,7 @@ namespace incode2.Services.Contents
         Type = dto.Type
       };
 
+      // 先透過 ContentService 建立貼文，再回查完整 DTO
       var content = await _contentService.CreateContent(contentDto);
       var contentResult = await _contentService.GetContent(content.ContentId, userId);
       if (contentResult == null)
@@ -49,6 +50,7 @@ namespace incode2.Services.Contents
       ResultDTO? entrustResult = null;
       if (dto.EntrustMission != null)
       {
+        // 建立委託任務交由 EntrustMissionService 處理
         var entrustDto = new EntrustMissionDTO
         {
           UserId = userId,

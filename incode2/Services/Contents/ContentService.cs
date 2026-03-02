@@ -11,11 +11,13 @@ namespace incode2.Services.Contents
   {
     private readonly incodedatabaseContext _context;
     private readonly IWebHostEnvironment _environment;
+    private readonly IContentInteractionService _contentInteractionService;
 
-    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment)
+    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IContentInteractionService contentInteractionService)
     {
       _context = context;
       _environment = environment;
+      _contentInteractionService = contentInteractionService;
     }
 
     public async Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy)
@@ -62,9 +64,31 @@ namespace incode2.Services.Contents
           || (!c.Body.StartsWith("/contents/") && c.Body.Contains(normalizedKeyword)));
       }
 
-      query = string.Equals(sortBy, "latest", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(sortBy)
-        ? query.OrderByDescending(c => c.CreatedAt)
-        : query.OrderByDescending(c => c.CreatedAt);
+      var normalizedSortBy = sortBy?.Trim().ToLowerInvariant();
+      var replyTypes = new[] { 2, 3, 4 };
+
+      query = normalizedSortBy switch
+      {
+        "latest-reply" or "latest_reply" or "reply-latest" => query
+          .OrderByDescending(c => _context.Content
+            .Where(r => r.IsActive == 1
+              && r.ParentContentId == c.ContentId
+              && replyTypes.Contains(r.Type))
+            .Max(r => (DateTime?)r.CreatedAt))
+          .ThenByDescending(c => c.CreatedAt),
+        "most-replies" or "most_replies" or "reply-count" => query
+          .OrderByDescending(c => _context.Content
+            .Count(r => r.IsActive == 1
+              && r.ParentContentId == c.ContentId
+              && replyTypes.Contains(r.Type)))
+          .ThenByDescending(c => c.CreatedAt),
+        "most-likes" or "most_likes" or "like-count" => query
+          .OrderByDescending(c => _context.ContentInteraction
+            .Count(ci => ci.ContentId == c.ContentId && ci.CategoryId == 1))
+          .ThenByDescending(c => c.CreatedAt),
+        "latest" or null or "" => query.OrderByDescending(c => c.CreatedAt),
+        _ => query.OrderByDescending(c => c.CreatedAt)
+      };
 
       var totalCount = await query.CountAsync();
       var pageItems = await query
@@ -88,6 +112,7 @@ namespace incode2.Services.Contents
       var contentIds = pageItems.Select(c => c.ContentId).ToList();
       var replyStats = new List<(int ContentId, int ReplyCount, DateTime? LastReplyTime, string LastReplyUser, int? LastReplyUserId)>();
       var likeCounts = new Dictionary<int, int>();
+      var entrustMissionContentIds = new HashSet<int>();
       if (contentIds.Count > 0)
       {
         var replyStatsRaw = await _context.Content
@@ -136,15 +161,22 @@ namespace incode2.Services.Contents
             x.LastReply != null ? (int?)x.LastReply.UserId : null);
         }).ToList();
 
-        likeCounts = await _context.ContentInteraction
+        likeCounts = await _contentInteractionService.GetLikeCountsAsync(contentIds);
+
+        var now = DateTime.Now;
+        entrustMissionContentIds = await _context.EntrustMission
           .AsNoTracking()
-          .Where(ci => ci.CategoryId == 1 && contentIds.Contains(ci.ContentId))
-          .GroupBy(ci => ci.ContentId)
-          .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
-          .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
+          .Where(em => em.IsActive
+            && (em.Status == "open" || em.Status == "in_progress")
+            && (!em.Deadline.HasValue || em.Deadline.Value >= now)
+            && contentIds.Contains(em.ContentId))
+          .Select(em => em.ContentId)
+          .Distinct()
+          .ToHashSetAsync();
       }
 
       var replyLookup = replyStats.ToDictionary(x => x.ContentId, x => x);
+      // 將查詢結果轉成 API 回傳用的 ContentListItemDto
       var items = pageItems.Select(c =>
       {
         replyLookup.TryGetValue(c.ContentId, out var stats);
@@ -168,7 +200,8 @@ namespace incode2.Services.Contents
           LastReplyUserId = stats.ContentId == 0 ? null : stats.LastReplyUserId,
           PreviewText = BuildPreviewText(c.Title, c.Body, 120),
           PreviewImages = BuildPreviewImages(c.Body, 3),
-          PreviewHtml = null
+          PreviewHtml = null,
+          HasEntrustMission = entrustMissionContentIds.Contains(c.ContentId)
         };
       }).ToList();
 
@@ -239,13 +272,11 @@ namespace incode2.Services.Contents
         lastReplyUser = lastReplyUserData;
       }
 
-      var interactionLookup = await GetUserInteractionLookupAsync(new[] { id }, userId);
+      // 互動資訊從 ContentInteraction 資料表彙整
+      var interactionLookup = await _contentInteractionService.GetUserInteractionLookupAsync(new[] { id }, userId);
       interactionLookup.TryGetValue(id, out var categories);
       var myInteractions = BuildMyInteractions(categories);
-      var likeCount = await _context.ContentInteraction
-        .AsNoTracking()
-        .Where(ci => ci.ContentId == id && ci.CategoryId == 1)
-        .CountAsync();
+      var likeCount = await _contentInteractionService.GetLikeCountAsync(id);
 
       return new ContentDto
       {
@@ -302,6 +333,7 @@ namespace incode2.Services.Contents
         .OrderByDescending(c => c.CreatedAt)
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
+        // 將子回覆資料投影成 ContentDto
         .Select(c => new ContentDto
         {
           ContentId = c.ContentId,
@@ -319,7 +351,23 @@ namespace incode2.Services.Contents
         })
         .ToListAsync();
 
-      var interactionLookup = await GetUserInteractionLookupAsync(items.Select(item => item.ContentId).ToList(), userId);
+      var contentIds = items.Select(item => item.ContentId).ToList();
+
+      // Calculate like counts for each child content
+      var likeCounts = new Dictionary<int, int>();
+      if (contentIds.Count > 0)
+      {
+        likeCounts = await _contentInteractionService.GetLikeCountsAsync(contentIds);
+      }
+
+      // Populate like counts
+      foreach (var item in items)
+      {
+        likeCounts.TryGetValue(item.ContentId, out var likeCount);
+        item.LikeCount = likeCount;
+      }
+
+      var interactionLookup = await _contentInteractionService.GetUserInteractionLookupAsync(contentIds, userId);
       foreach (var item in items)
       {
         interactionLookup.TryGetValue(item.ContentId, out var categories);
@@ -355,6 +403,7 @@ namespace incode2.Services.Contents
         }
       }
 
+      // 內文寫入檔案後，Body 僅保存檔案路徑
       var bodyUri = await SaveContentBodyAsync(dto.Body);
 
       var content = new Content
@@ -397,6 +446,7 @@ namespace incode2.Services.Contents
       };
       _context.ContentHistory.Add(history);
 
+      // 更新內容時同步覆寫檔案內容
       var bodyUri = await SaveContentBodyAsync(dto.Body);
 
       content.Title = dto.Title;
@@ -432,33 +482,14 @@ namespace incode2.Services.Contents
 
     public async Task<List<ContentDto>> GetCommentsByContentId(int contentId)
     {
-      return await _context.Content
-      .Include(c => c.User)
-      .Include(c => c.Category)
-      .Where(c => c.ParentContentId == contentId && c.IsActive == 1)
-      .OrderByDescending(c => c.CreatedAt)
-      .Select(c => new ContentDto
-      {
-        ContentId = c.ContentId,
-        ParentContentId = c.ParentContentId,
-        UserId = c.UserId,
-        Username = c.User.Username,
-        CategoryId = c.CategoryId,
-        CategoryName = c.Category != null ? c.Category.CategoryName : null,
-        Title = c.Title,
-        Body = c.Body,
-        Type = c.Type,
-        CreatedAt = (DateTime)c.CreatedAt,
-        UpdatedAt = (DateTime)c.UpdatedAt,
-        Ishidden = c.IsActive == 2 ? true : false
-      })
-      .ToListAsync();
+      var result = await GetChildrenByContentId(contentId, null, 1, int.MaxValue, null);
+      return result.Items;
     }
 
-    public async Task<object> GetUserContentsByTypes(int userId, IEnumerable<int> types, int page, int pageSize)
+    public async Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize)
     {
-      var typeList = types?.Distinct().ToList() ?? new List<int>();
-      if (typeList.Count == 0)
+      var typeList = types?.Distinct().ToList();
+      if (types != null && (typeList == null || typeList.Count == 0))
       {
         return new
         {
@@ -473,8 +504,14 @@ namespace incode2.Services.Contents
       var query = _context.Content
         .Include(c => c.User)
         .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive == 1 && typeList.Contains(c.Type))
-        .OrderByDescending(c => c.CreatedAt);
+        .Where(c => c.UserId == userId && c.IsActive == 1)
+        .OrderByDescending(c => c.CreatedAt)
+        .AsQueryable();
+
+      if (typeList != null && typeList.Count > 0)
+      {
+        query = query.Where(c => typeList.Contains(c.Type));
+      }
 
       var totalCount = await query.CountAsync();
 
@@ -506,31 +543,6 @@ namespace incode2.Services.Contents
         pageSize,
         totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
       };
-    }
-
-    public async Task<List<ContentDto>> GetUserContents(int userId)
-    {
-      return await _context.Content
-        .Include(c => c.User)
-        .Include(c => c.Category)
-        .Where(c => c.UserId == userId && c.IsActive == 1)
-        .OrderByDescending(c => c.CreatedAt)
-        .Select(c => new ContentDto
-        {
-          ContentId = c.ContentId,
-          ParentContentId = c.ParentContentId,
-          UserId = c.UserId,
-          Username = c.User.Username,
-          CategoryId = c.CategoryId,
-          CategoryName = c.Category != null ? c.Category.CategoryName : null,
-          Title = c.Title,
-          Body = c.Body,
-          Type = c.Type,
-          CreatedAt = (DateTime)c.CreatedAt,
-          UpdatedAt = (DateTime)c.UpdatedAt,
-          Ishidden = c.IsActive == 2 ? true : false
-        })
-        .ToListAsync();
     }
 
     public async Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize)
@@ -672,30 +684,6 @@ namespace incode2.Services.Contents
         .Distinct()
         .Take(maxImages)
         .ToList();
-    }
-
-    private async Task<Dictionary<int, HashSet<int>>> GetUserInteractionLookupAsync(IEnumerable<int> contentIds, int? userId)
-    {
-      if (!userId.HasValue || userId.Value <= 0)
-      {
-        return new Dictionary<int, HashSet<int>>();
-      }
-
-      var contentIdList = contentIds?.Distinct().ToList() ?? new List<int>();
-      if (contentIdList.Count == 0)
-      {
-        return new Dictionary<int, HashSet<int>>();
-      }
-
-      var interactions = await _context.ContentInteraction
-        .AsNoTracking()
-        .Where(ci => ci.UserId == userId.Value && contentIdList.Contains(ci.ContentId))
-        .Select(ci => new { ci.ContentId, ci.CategoryId })
-        .ToListAsync();
-
-      return interactions
-        .GroupBy(ci => ci.ContentId)
-        .ToDictionary(g => g.Key, g => g.Select(ci => ci.CategoryId).ToHashSet());
     }
 
     private static MyInteractionsDto BuildMyInteractions(IReadOnlyCollection<int> categories)

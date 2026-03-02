@@ -32,6 +32,7 @@ namespace incode2.ApiControllers.Content
     public async Task<IActionResult> GetContents([FromQuery] int? categoryId, [FromQuery] string? keyword, [FromQuery] string? types, [FromQuery] string? sortBy, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
       var userId = User.GetId();
+      // 查詢條件與分頁交給 ContentService 統一處理
       var result = await _contentService.GetContents(categoryId, page, pageSize, userId > 0 ? userId : null, keyword, types, sortBy);
       return Ok(result);
     }
@@ -42,6 +43,7 @@ namespace incode2.ApiControllers.Content
     public async Task<IActionResult> GetContent(int id)
     {
       var userId = User.GetId();
+      // 從 ContentService 取得完整內容與互動資料
       var content = await _contentService.GetContent(id, userId > 0 ? userId : null);
       if (content == null) return NotFound(new { message = "找不到此內容" });
       return Ok(content);
@@ -59,6 +61,7 @@ namespace incode2.ApiControllers.Content
       dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
+      // 建立貼文資料交由 ContentService 處理寫入
       var content = await _contentService.CreateContent(dto);
       return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
     }
@@ -77,6 +80,7 @@ namespace incode2.ApiControllers.Content
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
 
+      // 同步建立貼文與委託任務，由 ContentEntrustMissionService 負責流程
       var result = await _contentEntrustMissionService.CreateContentWithEntrustMissionAsync(dto, userId);
       if (!result.Ok)
       {
@@ -97,6 +101,7 @@ namespace incode2.ApiControllers.Content
       var currentUserId = User.GetId();
       //int.Parse(User.Claims.FirstOrDefault().Value);
 
+      // 更新流程交給 ContentService 做權限與歷史紀錄處理
       var updated = await _contentService.UpdateContent(id, dto, currentUserId);
       if (updated == null) return NotFound(new { message = "找不到此內容" });
       return Ok(updated);
@@ -114,6 +119,7 @@ namespace incode2.ApiControllers.Content
         return Unauthorized(new { message = "請先登入" });
       }
 
+      // 由 ContentService 執行軟刪除與權限檢查
       var success = await _contentService.DeleteContent(id, currentUserId);
       if (!success) return NotFound(new { message = "找不到此內容或無權限刪除" });
       return Ok(new { message = "刪除成功" });
@@ -139,6 +145,7 @@ namespace incode2.ApiControllers.Content
     public async Task<IActionResult> GetChildrenByContentId(int id, [FromQuery] string? types, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
       var userId = User.GetId();
+      // 子回覆分頁與互動資料由 ContentService 組合
       var result = await _contentService.GetChildrenByContentId(id, types, page, pageSize, userId > 0 ? userId : null);
       return Ok(result);
     }
@@ -152,7 +159,8 @@ namespace incode2.ApiControllers.Content
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 1 }, page, pageSize);
+      // 交由 ContentService 依 type 篩選使用者貼文
+      var result = await _contentService.GetUserContents(userId, new[] { 1 }, page, pageSize);
       
       // 轉換為包含舊欄位的格式以保持向下相容
       var resultObj = result as dynamic;
@@ -178,7 +186,8 @@ namespace incode2.ApiControllers.Content
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 2 }, page, pageSize);
+      // 交由 ContentService 依 type 篩選使用者回覆
+      var result = await _contentService.GetUserContents(userId, new[] { 2 }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
@@ -203,7 +212,8 @@ namespace incode2.ApiControllers.Content
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
-      var result = await _contentService.GetUserContentsByTypes(userId, new[] { 3, 4 }, page, pageSize);
+      // 交由 ContentService 依 type 篩選使用者評論
+      var result = await _contentService.GetUserContents(userId, new[] { 3, 4 }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
@@ -228,6 +238,7 @@ namespace incode2.ApiControllers.Content
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
+      // 交由 ContentService 查詢互動類別為 like 的內容
       var result = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" }, page, pageSize);
       
       var resultObj = result as dynamic;
@@ -253,6 +264,7 @@ namespace incode2.ApiControllers.Content
       var userId = User.GetId();
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
+      // 交由 ContentService 查詢互動類別為 bookmark 的內容
       var result = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" }, page, pageSize);
       
       var resultObj = result as dynamic;
@@ -286,6 +298,7 @@ namespace incode2.ApiControllers.Content
         return BadRequest(new { message = "點數必須大於 0" });
       }
 
+      // 先查內容，確認打賞目標存在
       var content = await _contentService.GetContent(id, fromUserId);
       if (content == null)
       {
@@ -294,6 +307,7 @@ namespace incode2.ApiControllers.Content
 
       try
       {
+        // 點數轉移交由 PointLogService 處理
         await _pointLogService.TipAsync(fromUserId, content.UserId, id, dto.Amount);
       }
       catch (Exception ex)

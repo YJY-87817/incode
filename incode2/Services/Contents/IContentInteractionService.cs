@@ -38,6 +38,23 @@ namespace incode2.Services.Contents
     /// </summary>
     Task<object> GetInteractionStats(int contentId);
 
+    Task<Dictionary<int, HashSet<int>>> GetUserInteractionLookupAsync(IEnumerable<int> contentIds, int? userId);
+
+    Task<Dictionary<int, int>> GetLikeCountsAsync(IEnumerable<int> contentIds);
+
+    Task<int> GetLikeCountAsync(int contentId);
+
     Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId);
+
+    /// <summary>
+    /// 查詢委託任務的最佳解答 ContentId
+    /// </summary>
+    Task<int?> GetBestAnswerContentId(int entrustMissionId);
+
+    Task<List<ContentInteractionDto>> GetInteractions(
+      int? contentId,
+      int? userId,
+      int? interactionCategoryId,
+      int? entrustMissionId);
   }
 }
