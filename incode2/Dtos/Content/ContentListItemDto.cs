@@ -20,6 +20,7 @@ namespace incode2.Dtos
     public string PreviewText { get; set; }
     public List<string> PreviewImages { get; set; } = new();
     public string PreviewHtml { get; set; }
+    public bool HasEntrustMission { get; set; }
     public MyInteractionsDto MyInteractions { get; set; } = new();
   }
 }
