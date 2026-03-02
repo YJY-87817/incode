@@ -180,6 +180,7 @@ namespace incode2.ApiControllers.Chat
         // 取得或建立唯一對話
         [HttpPost]
         [Route("api/ChatMessages/GetOrCreateSession")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> GetOrCreateSession()
         {
             int userId = GetCurrentUserId();
@@ -445,6 +446,8 @@ namespace incode2.ApiControllers.Chat
         // 切換模式 (呼叫客服)
         [HttpPost]
         [Route("api/ChatMessages/SwitchMode")]
+        [IgnoreAntiforgeryToken] // 因為採用前後端分離 (Vue + Axios)，前端不會自動攜帶傳統 MVC 的防偽造權杖(CSRF Token)。
+                                 // 為了避免 API 請求被安全機制誤擋，在此加上[IgnoreAntiforgeryToken]予以豁免。
         public async Task<IActionResult> SwitchMode([FromBody] SwitchModeDto request)
         {
             int userId = GetCurrentUserId();
@@ -679,7 +682,7 @@ namespace incode2.ApiControllers.Chat
                       ChatMessageId = m.ChatMessageId,
                       SessionId = m.SessionId,
                       Role = m.Role,
-                      Body = m.Body,
+                      Body = m.Body, 
                       CreatedAt = m.CreatedAt.HasValue ? m.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""
                   })
                   .ToListAsync();
