@@ -37,47 +37,6 @@ namespace incode2.ApiControllers.Point
             return entrustmission;
         }
 
-        // POST: api/EntrustMissionApi/{id}/claim  - 接取委託任務（重點新增）
-        [HttpPost("{id}/entrustMissionClaim")]
-        [Authorize]
-        public async Task<ActionResult<ResultDTO>> ClaimEntrustMission(int id)
-        {
-            int userId = User.GetId();
-
-            // 額外防呆：確保 userId 是正數
-            if (userId <= 0)
-            {
-                return Unauthorized(new ResultDTO
-                {
-                    Ok = false,
-                    Code = 401,
-                    Message = "使用者 ID 無效"
-                });
-            }
-
-            var result = await _entrustMissionService.ClaimEntrustMissionAsync(id, userId);
-
-            if (!result.Ok)
-            {
-                return result.Code switch
-                {
-                    400 => BadRequest(result),
-                    401 => Unauthorized(result),
-                    404 => NotFound(result),
-                    409 => Conflict(result),
-                    410 => StatusCode(410, result),   // Gone - 任務已下架或過期
-                    _ => StatusCode(500, new ResultDTO
-                    {
-                        Ok = false,
-                        Code = 500,
-                        Message = result.Message ?? "伺服器內部錯誤，請稍後再試"
-                    })
-                };
-            }
-
-            return Ok(result);
-        }
-
         // GET: api/EntrustMissionApi/5
         [HttpGet("{id}")]
         public async Task<EntrustMissionDTO> GetEntrustMission(int id)
@@ -100,6 +59,23 @@ namespace incode2.ApiControllers.Point
             }).FirstOrDefaultAsync(em => em.EntrustMissionId == id);
 
             return EmDTO;
+        }
+
+        // 在 EntrustMissionApiController.cs 裡新增這個 endpoint
+        [HttpGet("my-entrusts")]
+        [Authorize]  // 需要登入
+        public async Task<ActionResult<IEnumerable<EntrustMissionDTO>>> GetMyEntrustMissions()
+        {
+            int userId = User.GetId();  // 從 Claims 取得當前使用者 ID
+
+            if (userId <= 0)
+            {
+                return Unauthorized(new { message = "無法取得使用者 ID" });
+            }
+
+            var missions = await _entrustMissionService.GetMyEntrustMissionsAsync(userId);
+
+            return Ok(missions);
         }
 
         //tim修改內容
@@ -160,16 +136,6 @@ namespace incode2.ApiControllers.Point
             return CreatedAtAction(nameof(GetEntrustMission), new { id = result.Data }, result);
         }
 
-        //完成「提交成果」
-        [HttpPost("{id}/submit")]
-        [Authorize]
-        public async Task<IActionResult> SubmitMission(int id)
-        {
-            int userId = User.GetId();
-            var result = await _entrustMissionService.SubmitEntrustMissionAsync(id, userId);
-
-            return StatusCode(result.Code, result);
-        }
 
         // DELETE: api/EntrustMissionApi/5
         [HttpDelete("{id}")]

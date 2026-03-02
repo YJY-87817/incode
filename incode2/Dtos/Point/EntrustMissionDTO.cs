@@ -1,3 +1,4 @@
+using incode2.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace incode2.DTO
@@ -40,9 +41,33 @@ namespace incode2.DTO
 
         public DateTime? UpdatedAt { get; set; }
 
-        public string Username { get; set; }
+        public int? BestContentId { get; set; }
 
-        public string ImageUrl { get; set; }
+        public int? BestUserId { get; set; }
+
+        public DateTime? SelectedAt { get; set; }
+
+        // === 前端顯示輔助欄位（後端 Select 時填充） ===
+        public bool HasBestAnswer => BestContentId.HasValue;  // 方便前端判斷是否已結案
+
+        public bool IsOwner { get; set; }                     // 是否為當前使用者發起的（後端比對 userId）
+
+        public bool IsBestAnswerWinner { get; set; }
+
+        // 發布者資訊（常用於列表顯示）
+        public string? Username { get; set; }
+
+        public string? ImageUrl { get; set; }
+
+        // 最佳解答簡要資訊（可選，視前端需求決定是否回傳完整內容）
+        public string? BestUsername { get; set; }             // 最佳解答作者暱稱
+
+        public string? BestContentPreview { get; set; }       // 最佳解答前 N 字預覽（後端可截取）
+
+        // 討論串相關（列表時可帶一點資訊）
+        public string? RootContentTitle { get; set; }         // 討論串主標題（可選）
+
+        public int? ReplyCount { get; set; }
 
     }
 }

@@ -15,11 +15,13 @@ namespace incode2.Services.Point
     {
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
+        private readonly IMissionService _missionService;
 
-        public MissionProgressService(incodedatabaseContext context, IPointLogService pointLogService)
+        public MissionProgressService(incodedatabaseContext context, IPointLogService pointLogService, IMissionService missionService)
         {
             _context = context;
             _pointLogService = pointLogService;
+            _missionService = missionService;
         }
 
         public async Task<IEnumerable<MissionProgressDTO>> GetAllProgressAsync()
@@ -173,7 +175,12 @@ namespace incode2.Services.Point
                     return new ResultDTO { Ok = false, Code = 400, Message = "任務已停用" };
 
                 if (progress.CurrentCount < mission.TargetCount)
-                    return new ResultDTO { Ok = false, Code = 400, Message = $"進度未達標 ({progress.CurrentCount}/{mission.TargetCount})" };
+                    return new ResultDTO
+                    {
+                        Ok = false,
+                        Code = 400,
+                        Message = $"進度未達標 ({progress.CurrentCount}/{mission.TargetCount})"
+                    };
 
                 if (progress.RewardedAt.HasValue)
                 {
@@ -181,10 +188,10 @@ namespace incode2.Services.Point
                     var last = progress.RewardedAt.Value;
                     bool sameCycle = resetType switch
                     {
-                        "daily" => last.Date == DateTime.UtcNow.Date,
-                        "weekly" => IsSameWeek(last, DateTime.UtcNow),
-                        "monthly" => last.Year == DateTime.UtcNow.Year && last.Month == DateTime.UtcNow.Month,
-                        "yearly" => last.Year == DateTime.UtcNow.Year,
+                        "daily" => last.Date == DateTime.Now.Date,
+                        "weekly" => IsSameWeek(last, DateTime.Now),
+                        "monthly" => last.Year == DateTime.Now.Year && last.Month == DateTime.Now.Month,
+                        "yearly" => last.Year == DateTime.Now.Year,
                         "once" or "none" => true,
                         _ => false
                     };
@@ -193,15 +200,20 @@ namespace incode2.Services.Point
                         return new ResultDTO { Ok = false, Code = 400, Message = "本週期已領取過獎勵" };
                 }
 
-                progress.RewardedAt = DateTime.UtcNow;
+                progress.RewardedAt = DateTime.Now;
                 progress.Status = "rewarded";
+
+                // 建議補上顯示資訊（可選）
+                string subTitle = $"任務：{mission.MissionName ?? $"Mission #{mission.MissionId}"}";
 
                 var success = await _pointLogService.ChangePointsAsync(
                     userId,
                     mission.RewardPoints,
                     "mission",
                     mission.MissionId,
-                    PointType.IncomeMission
+                    PointType.IncomeMission,
+                    displaySource: "任務獎勵",           // 建議加上
+                    displaySubTitle: subTitle            // 建議加上
                 );
 
                 if (!success)
@@ -210,6 +222,7 @@ namespace incode2.Services.Point
                     return new ResultDTO { Ok = false, Code = 400, Message = "點數發放失敗" };
                 }
 
+                await _missionService.TriggerMissionAsync(userId, "mission_complete", 1);
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
 
