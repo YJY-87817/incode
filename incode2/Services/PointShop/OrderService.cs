@@ -4,6 +4,7 @@ using incode2.Dtos.PointShop;
 using incode2.Models;
 using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
 
 
 namespace incode2.Services.PointShop
@@ -206,26 +207,10 @@ namespace incode2.Services.PointShop
                     }
                 }
                 _context.Orders.Add(newOrder);
+                await _context.SaveChangesAsync();
 
                 //qiu以下 準備顯示用的 subtitle（只用第一個商品名稱）
-                string displaySubTitle = "商品兌換";
-
-                if (order.Items.Any())
-                {
-                    var firstItem = order.Items.First();  // 取第一個購買項目
-
-                    if (productDict.TryGetValue(firstItem.ProductId, out var firstProd)
-                        && !string.IsNullOrWhiteSpace(firstProd.Name))  // 假設 Product 有 Name 屬性
-                    {
-                        displaySubTitle = $"兌換 {firstProd.Name.Trim()}";
-
-                        if (firstItem.Quantity > 1)
-                        {
-                            displaySubTitle += $" x{firstItem.Quantity}";
-                        }
-                    }
-                    // 如果沒有 Name，就保持預設 "商品兌換"
-                }
+                var neworderid = newOrder.OrderId;
 
                 var result = await _pointlogService.ChangePointsAsync(
                     userId: newOrder.UserId,
@@ -234,7 +219,7 @@ namespace incode2.Services.PointShop
                     sourceId: newOrder.OrderId,
                     type: PointType.ExpenseOrders,
                     displaySource: "商品兌換",
-                    displaySubTitle: displaySubTitle   // ← 改用動態文字
+                    displaySubTitle: $"訂單編號: {neworderid}"   // ← 改用動態文字
                 );
                 //qiu以上
 
