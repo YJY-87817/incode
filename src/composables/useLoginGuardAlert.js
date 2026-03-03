@@ -1,10 +1,13 @@
 import Swal from "sweetalert2";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/user/auth";
+
+const LOGIN_SCROLL_STORAGE_KEY_PREFIX = "login-redirect-scroll:";
 
 export function useLoginGuardAlert() {
   const authStore = useAuthStore();
   const router = useRouter();
+  const route = useRoute();
 
   const getCurrentUserId = () => {
     const numericUserId = Number(authStore.user?.id);
@@ -29,7 +32,21 @@ export function useLoginGuardAlert() {
     });
 
     if (result.isConfirmed) {
-      router.push("/auth");
+      const redirectPath = route.fullPath || "/";
+      const scrollY =
+        typeof window !== "undefined"
+          ? Math.max(window.scrollY || window.pageYOffset || 0, 0)
+          : 0;
+
+      sessionStorage.setItem(
+        `${LOGIN_SCROLL_STORAGE_KEY_PREFIX}${redirectPath}`,
+        String(scrollY),
+      );
+
+      router.push({
+        name: "Auth",
+        query: { redirect: redirectPath },
+      });
     }
   };
 

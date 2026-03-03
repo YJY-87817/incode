@@ -31,6 +31,35 @@ import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
 import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
 // yjy 以上
 
+const LOGIN_SCROLL_STORAGE_KEY_PREFIX = "login-redirect-scroll:";
+
+const waitAndRestoreScroll = (targetTop) => {
+  const startTime = Date.now();
+  const timeoutMs = 2000;
+  const checkIntervalMs = 50;
+
+  return new Promise((resolve) => {
+    const tryResolve = () => {
+      const docHeight =
+        document.documentElement?.scrollHeight ||
+        document.body?.scrollHeight ||
+        0;
+      const viewportHeight = window.innerHeight || 0;
+      const canReachTarget = docHeight >= targetTop + viewportHeight;
+      const isTimedOut = Date.now() - startTime >= timeoutMs;
+
+      if (canReachTarget || isTimedOut) {
+        resolve({ left: 0, top: targetTop });
+        return;
+      }
+
+      window.setTimeout(tryResolve, checkIntervalMs);
+    };
+
+    tryResolve();
+  });
+};
+
 // const router = createRouter({
 //   history: createWebHistory(import.meta.env.BASE_URL),
 //   /**
@@ -139,7 +168,7 @@ const routes = [
         path: "usermission",
         name: "UserMission",
         component: UserMission,
-      }
+      },
     ],
   },
   // owen
@@ -221,6 +250,16 @@ const router = createRouter({
     // A. 按上一頁/下一頁時，保持位置
     if (savedPosition) {
       return savedPosition;
+    }
+
+    const restoreKey = `${LOGIN_SCROLL_STORAGE_KEY_PREFIX}${to.fullPath}`;
+    const storedScrollY = sessionStorage.getItem(restoreKey);
+    if (storedScrollY !== null) {
+      sessionStorage.removeItem(restoreKey);
+      const top = Number(storedScrollY);
+      if (Number.isFinite(top) && top >= 0) {
+        return waitAndRestoreScroll(top);
+      }
     }
 
     // B. 定義切換 Tab 時不捲動的頁面
