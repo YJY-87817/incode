@@ -420,7 +420,7 @@ watch(
           <!-- owen -->
           <li class="nav-item" v-if="!authStore.isAuthenticated">
             <RouterLink
-              :to="{ name: 'Auth' }"
+              :to="{ name: 'Login', query: { redirect: route.fullPath } }"
               class="btn btn-sm mb-0 nav-login-btn"
             >
               登入
