@@ -1,8 +1,10 @@
 import Swal from "sweetalert2";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/user/auth";
 
 export function useLoginGuardAlert() {
   const authStore = useAuthStore();
+  const router = useRouter();
 
   const getCurrentUserId = () => {
     const numericUserId = Number(authStore.user?.id);
@@ -17,7 +19,7 @@ export function useLoginGuardAlert() {
   };
 
   const showLoginRequiredAlert = async (message = "請先登入後操作") => {
-    await Swal.fire({
+    const result = await Swal.fire({
       icon: "warning",
       title: "請先登入",
       text: message,
@@ -25,6 +27,10 @@ export function useLoginGuardAlert() {
       showCloseButton: true,
       confirmButtonColor: "#145369",
     });
+
+    if (result.isConfirmed) {
+      router.push("/auth");
+    }
   };
 
   const ensureLoggedIn = async (message = "請先登入後操作") => {
