@@ -115,7 +115,9 @@ const routes = [
   {
     path: "/login",
     name: "Login",
-    redirect: "/auth",
+    redirect: (to) => {
+      return { path: "/auth", query: to.query };
+    },
   },
   {
     path: "/reset-password",

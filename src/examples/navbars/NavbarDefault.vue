@@ -1,5 +1,5 @@
 <script setup>
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { ref, computed, watch } from "vue";
 import { useWindowsWidth } from "@/assets/js/useWindowsWidth";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
@@ -12,8 +12,10 @@ import mysweet from "sweetalert2";
 // 取得購物車狀態
 const CartNow = useCartStore();
 const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
 //導覽列會員
-const BACKEND_BASE_URL = import.meta.env.VITE_BASE_URL ;
+const BACKEND_BASE_URL = import.meta.env.VITE_BASE_URL;
 const userAvatarUrl = computed(() => {
   const path = authStore.user?.avatar;
   if (!path) return null; // 如果沒圖，回傳 null
@@ -52,7 +54,7 @@ const menuItems = computed(() => [
     icon: "mdi-cash-plus",
     to: { name: "recharge" },
   },
-    {
+  {
     title: "我的訂單",
     icon: "mdi-cart-outline",
     to: { name: "Order" },
@@ -61,7 +63,17 @@ const menuItems = computed(() => [
 
 const handleLogout = async () => {
   await authStore.logout();
-  router.push("/login");
+
+  const isProtectedPage = route.matched.some(
+    (record) => record.meta?.requiresAuth,
+  );
+
+  if (isProtectedPage) {
+    await router.push({
+      name: "Login",
+      query: { redirect: route.fullPath },
+    });
+  }
 };
 
 const props = defineProps({
@@ -169,7 +181,7 @@ watch(
       <button
         class="navbar-toggler shadow-none"
         type="button"
-        data-bs-toggle="collapse" 
+        data-bs-toggle="collapse"
         data-bs-target="#navigation"
         aria-controls="navigation"
         aria-expanded="false"
