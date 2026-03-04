@@ -654,7 +654,7 @@ onMounted(() => {
 /* 下拉選單 */
 .more-menu-dropdown {
   position: absolute;
-  top: calc(100% - 0.7rem);
+  top: calc(100% + 0.35rem);
   right: 0;
   margin-top: 0;
   background-color: #fff;
