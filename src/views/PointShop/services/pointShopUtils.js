@@ -53,9 +53,20 @@ export const ensureOk = (res) => {
   return res.data;
 };
 
-// 業務失敗顯示後端訊息，其他錯誤 (網路 / 500) 顯示通用訊息
-export const errorText = (error, fallback = "請稍後再試") =>
-  error instanceof ApiFailError ? error.message : fallback;
+// 業務失敗 (庫存 / 點數不足、訂單狀態已變更等)：
+// 後端以 4xx + { ok:false, message } 回應，或舊版的 200 + ok:false
+export const isBusinessError = (error) => {
+  if (error instanceof ApiFailError) return true;
+  const status = error?.response?.status;
+  return status >= 400 && status < 500 && status !== 401;
+};
+
+// 有後端訊息就顯示後端訊息，否則 (網路錯誤等) 顯示通用訊息
+export const errorText = (error, fallback = "請稍後再試") => {
+  if (error instanceof ApiFailError) return error.message;
+  const message = error?.response?.data?.message;
+  return typeof message === "string" && message ? message : fallback;
+};
 
 // 寄送資料驗證 (結帳、修改寄送資料共用)，回傳錯誤訊息，通過則回傳 null
 export const validateShipping = ({ name = "", phone = "", address = "" }) => {

@@ -13,8 +13,8 @@ import {
 } from "@/views/PointShop/services/pointShopSwal";
 import {
   ORDER_STATUS,
-  ApiFailError,
   ensureOk,
+  isBusinessError,
   errorText,
   escapeHtml,
   formatDate,
@@ -131,7 +131,7 @@ const cancelOrder = async () => {
     console.error("取消失敗:", error);
     await alertError("取消失敗!", errorText(error));
     // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
-    if (error instanceof ApiFailError) emit("refresh");
+    if (isBusinessError(error)) emit("refresh");
   }
 };
 
@@ -197,7 +197,7 @@ const editShipping = async () => {
         return form;
       } catch (error) {
         console.error("修改失敗:", error);
-        businessFailed = error instanceof ApiFailError;
+        businessFailed = isBusinessError(error);
         shopSwal.showValidationMessage(`修改失敗：${errorText(error)}`);
         return false;
       }
