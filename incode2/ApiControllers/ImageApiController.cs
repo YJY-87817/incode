@@ -1,17 +1,21 @@
 ﻿using incode2.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.ApiControllers
 {
   [ApiController]
+  [Authorize] // 需登入才能上傳，避免匿名大量上傳檔案
   [Route("/api/images")]
   public class MediaController : ControllerBase
   {
     private readonly IImageService _imageService;
+    private readonly ILogger<MediaController> _logger;
 
-    public MediaController(IImageService imageService)
+    public MediaController(IImageService imageService, ILogger<MediaController> logger)
     {
       _imageService = imageService;
+      _logger = logger;
     }
 
     // 上傳單個或多個圖片文件
@@ -36,9 +40,15 @@ namespace incode2.ApiControllers
         var urls = await _imageService.UploadImagesAsync(files);
         return Ok(new { urls });
       }
+      catch (ArgumentException ex)
+      {
+        // 檔案格式 / 大小 / 數量不符：回傳檢查訊息
+        return BadRequest(new { message = ex.Message });
+      }
       catch (Exception ex)
       {
-        return BadRequest(new { message = ex.Message });
+        _logger.LogError(ex, "圖片上傳失敗");
+        return StatusCode(500, new { message = "圖片上傳失敗，請稍後再試" });
       }
     }
 
@@ -47,7 +57,9 @@ namespace incode2.ApiControllers
     // Query Parameters:
     //   - path (string): 要刪除的圖片路徑
     // Response: { message: "刪除成功" }
+    // 無法得知圖片屬於哪位會員，僅限後台管理員刪除
     [HttpDelete("delete")]
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public async Task<IActionResult> Delete([FromQuery] string path)
     {
       try
@@ -55,9 +67,18 @@ namespace incode2.ApiControllers
         await _imageService.DeleteImageAsync(path);
         return Ok(new { message = "刪除成功" });
       }
-      catch (Exception ex)
+      catch (ArgumentException ex)
       {
         return BadRequest(new { message = ex.Message });
+      }
+      catch (FileNotFoundException)
+      {
+        return NotFound(new { message = "檔案不存在" });
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "刪除圖片失敗 {Path}", path);
+        return StatusCode(500, new { message = "刪除失敗，請稍後再試" });
       }
     }
   }

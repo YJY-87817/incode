@@ -4,24 +4,37 @@ using incode2.Dtos.PointShop;
 using incode2.Models;
 using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.Internal;
-
 
 namespace incode2.Services.PointShop
 {
     public class OrderService : IOrderService
     {
+        private const string ServerErrorMessage = "伺服器內部錯誤，請稍後再試";
+
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointlogService;
         private readonly IMissionService _missionService;
+        private readonly ILogger<OrderService> _logger;
 
-
-        public OrderService(incodedatabaseContext context, IPointLogService pointLogService, IMissionService missionService)
+        public OrderService(incodedatabaseContext context, IPointLogService pointLogService,
+            IMissionService missionService, ILogger<OrderService> logger)
         {
             _context = context;
             _pointlogService = pointLogService;
             _missionService = missionService;
+            _logger = logger;
         }
+
+        // 交易內的業務失敗 (庫存 / 點數不足等)，丟出後整筆 rollback 並回傳訊息給呼叫端
+        private sealed class OrderFailure : Exception
+        {
+            public int Code { get; }
+            public OrderFailure(string message, int code = 400) : base(message) => Code = code;
+        }
+
+        // ======================================================================
+        // 查詢
+        // ======================================================================
 
         // 取得UserId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrderAsync(int userId)
@@ -45,7 +58,8 @@ namespace incode2.Services.PointShop
             }
             catch (Exception ex)
             {
-                return ResultDTO<IEnumerable<OrderDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+                _logger.LogError(ex, "取得會員 {UserId} 訂單失敗", userId);
+                return ResultDTO<IEnumerable<OrderDTO>>.Failure(ServerErrorMessage, 500);
             }
         }
 
@@ -70,13 +84,14 @@ namespace incode2.Services.PointShop
                     .ToListAsync();
 
                 if (!details.Any())
-                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details, $"找不到訂單編號為 {orderId} 的資料明細", 204);
+                    return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details, $"找不到訂單編號為 {orderId} 的資料明細");
 
                 return ResultDTO<IEnumerable<OrderDetailDTO>>.Success(details);
             }
             catch (Exception ex)
             {
-                return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+                _logger.LogError(ex, "取得訂單 {OrderId} 明細失敗", orderId);
+                return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure(ServerErrorMessage, 500);
             }
         }
 
@@ -103,13 +118,14 @@ namespace incode2.Services.PointShop
                     .ToListAsync();
 
                 if (!results.Any())
-                    return ResultDTO<IEnumerable<ShippedDTO>>.Success(results, $"找不到訂單編號為{orderId}的寄送資料", 204);
+                    return ResultDTO<IEnumerable<ShippedDTO>>.Success(results, $"找不到訂單編號為{orderId}的寄送資料");
 
                 return ResultDTO<IEnumerable<ShippedDTO>>.Success(results);
             }
             catch (Exception ex)
             {
-                return ResultDTO<IEnumerable<ShippedDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+                _logger.LogError(ex, "取得訂單 {OrderId} 寄送資料失敗", orderId);
+                return ResultDTO<IEnumerable<ShippedDTO>>.Failure(ServerErrorMessage, 500);
             }
         }
 
@@ -132,247 +148,422 @@ namespace incode2.Services.PointShop
             }
             catch (Exception ex)
             {
-                return ResultDTO<IEnumerable<ShipAddressDTO>>.Failure($"伺服器內部錯誤: {ex.Message}", 500);
+                _logger.LogError(ex, "取得會員 {UserId} 寄送地址失敗", userId);
+                return ResultDTO<IEnumerable<ShipAddressDTO>>.Failure(ServerErrorMessage, 500);
             }
         }
+
+        // ======================================================================
+        // 異動
+        // ======================================================================
 
         // 新增訂單
-        public async Task<ResultDTO<int>> CreateOrderAsync(OrderRequest order, int totalPoints, Dictionary<int, Product> productDict)
+        public async Task<ResultDTO<int>> CreateOrderAsync(int userId, IEnumerable<OrderItemRequest>? items,
+            NewShippedRequest? recipient, string? remark, bool requireRecipient, string status = OrderStatus.Pending)
         {
-            try
+            var (quantities, itemError) = NormalizeItems(items);
+            if (itemError != null)
+                return ResultDTO<int>.Failure(itemError);
+
+            if (!OrderStatus.IsValid(status) || status == OrderStatus.Canceled)
+                return ResultDTO<int>.Failure("訂單狀態錯誤");
+
+            var products = await LoadProductsAsync(quantities.Keys);
+            var productError = CheckProducts(quantities.Keys, products, mustBeOnSale: quantities.Keys);
+            if (productError != null)
+                return productError;
+
+            var needsShipping = quantities.Keys.Any(id => products[id].IsPhysical);
+            var hasRecipient = recipient != null
+                && !string.IsNullOrWhiteSpace(recipient.RecipientName)
+                && !string.IsNullOrWhiteSpace(recipient.RecipientPhone)
+                && !string.IsNullOrWhiteSpace(recipient.RecipientAddress);
+
+            if (needsShipping && requireRecipient && !hasRecipient)
+                return ResultDTO<int>.Failure("訂單含實體商品，請填寫完整寄送資料");
+
+            var result = await RunInTransactionAsync(userId, "新增訂單", async () =>
             {
-                // 建立訂單主檔
-                var newOrder = new Orders
+                // 1. 原子扣庫存 (UPDATE ... WHERE Stock >= 數量)，避免同時下單超賣
+                foreach (var (productId, qty) in quantities)
+                    await DecreaseStockAsync(products[productId], qty);
+
+                // 2. 建立訂單與明細 (價格以資料庫為準)
+                var order = new Orders
                 {
-                    UserId = order.UserId,
-                    Remark = order.Remark ?? "",
-                    Status = "待處理",
+                    UserId = userId,
+                    Remark = remark ?? "",
+                    Status = status,
                     OrderDate = DateTime.Now,
-                    TotalPoint = totalPoints,
                 };
 
-                // 處理明細與庫存扣除
-                foreach (var item in order.Items)
+                foreach (var (productId, qty) in quantities)
                 {
-                    var prod = productDict[item.ProductId];
-
-                    // 建立明細
-                    var detail = new Orderdetail
+                    var product = products[productId];
+                    order.Orderdetail.Add(new Orderdetail
                     {
-                        ProductId = prod.ProductId,
-                        Quantity = item.Quantity,
-                        UnitPointAtPurchase = prod.Point,
-                        RequiresShipping = prod.IsPhysical
-                    };
-
-                    newOrder.Orderdetail.Add(detail);
-
-                    // 扣除庫存
-                    prod.Stock -= item.Quantity;
+                        ProductId = productId,
+                        Quantity = qty,
+                        UnitPointAtPurchase = product.Point,
+                        RequiresShipping = product.IsPhysical
+                    });
+                    order.TotalPoint += qty * product.Point;
                 }
 
-                if (newOrder.Orderdetail.Any(e => e.RequiresShipping))
+                // 3. 寄送資料
+                if (needsShipping && hasRecipient)
                 {
-                    // 建立寄送資料
-                    var recipient = new ShippedDetail
+                    var name = recipient!.RecipientName.Trim();
+                    var phone = recipient.RecipientPhone.Trim();
+                    var address = recipient.RecipientAddress.Trim();
+
+                    order.ShippedDetail.Add(new ShippedDetail
                     {
-                        RecipientName = order.Recipient.RecipientName,
-                        RecipientPhone = order.Recipient.RecipientPhone,
-                        RecipientAddress = order.Recipient.RecipientAddress,
+                        RecipientName = name,
+                        RecipientPhone = phone,
+                        RecipientAddress = address,
                         IsFailed = false,
                         IsCompleted = false,
-                        Remark = order.Remark ?? ""
-                    };
-                    newOrder.ShippedDetail.Add(recipient);
+                        Remark = remark ?? ""
+                    });
 
-                    // 檢查是否已存在完全相同的寄送地址
-                    var existingAddress = await _context.Shipaddress
-                        .FirstOrDefaultAsync(s =>
-                            s.UserId == order.UserId &&
-                            s.RecipientName == order.Recipient.RecipientName &&
-                            s.RecipientPhone == order.Recipient.RecipientPhone &&
-                            s.RecipientAddress == order.Recipient.RecipientAddress);
-
-                    // 只有在不存在相同資料時才新增
-                    if (existingAddress == null)
+                    // 記住寄送地址 (相同資料不重複新增)
+                    var exists = await _context.Shipaddress.AnyAsync(s =>
+                        s.UserId == userId &&
+                        s.RecipientName == name &&
+                        s.RecipientPhone == phone &&
+                        s.RecipientAddress == address);
+                    if (!exists)
                     {
-                        var rec = new Shipaddress
+                        _context.Shipaddress.Add(new Shipaddress
                         {
-                            UserId = order.UserId,
-                            RecipientName = order.Recipient.RecipientName,
-                            RecipientPhone = order.Recipient.RecipientPhone,
-                            RecipientAddress = order.Recipient.RecipientAddress,
-                        };
-                        _context.Shipaddress.Add(rec);
+                            UserId = userId,
+                            RecipientName = name,
+                            RecipientPhone = phone,
+                            RecipientAddress = address,
+                        });
                     }
                 }
-                _context.Orders.Add(newOrder);
-                await _context.SaveChangesAsync();
 
-                //qiu以下 準備顯示用的 subtitle（只用第一個商品名稱）
-                var neworderid = newOrder.OrderId;
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync(); // 取得 OrderId
 
-                var result = await _pointlogService.ChangePointsAsync(
-                    userId: newOrder.UserId,
-                    changeAmount: -totalPoints,
-                    sourceType: "order",
-                    sourceId: newOrder.OrderId,
-                    type: PointType.ExpenseOrders,
-                    displaySource: "商品兌換",
-                    displaySubTitle: $"訂單編號: {neworderid}"   // ← 改用動態文字
-                );
-                //qiu以上
-
-                await _context.SaveChangesAsync();
-
-                //平台任務觸發：購買任務
-                await _missionService.TriggerMissionAsync(order.UserId, "purchase", 1);
-
-                return result
-                    ? ResultDTO<int>.Success(newOrder.OrderId, "訂單建立成功")
-                    : ResultDTO<int>.Failure("您的點數不足");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
-        }
-
-        // 修改寄送資料
-        public async Task<ResultDTO<int>> EditShippedAsync(ShippedDetail existingShipped, NewShippedRequest shipped)
-        {
-            try
-            {
-                existingShipped.RecipientName = shipped.RecipientName;
-                existingShipped.RecipientPhone = shipped.RecipientPhone;
-                existingShipped.RecipientAddress = shipped.RecipientAddress;
-                existingShipped.Remark = shipped.Remark ?? existingShipped.Remark;
-
-                await _context.SaveChangesAsync();
-
-                return ResultDTO<int>.Success(existingShipped.ShippedDetailId, "寄送資料修改成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
-        }
-
-        // 修改訂單資料
-        public async Task<ResultDTO<int>> EditOrderAsync(Orders oldOrder, OrderRequest order, Dictionary<int, Product> productDict)
-        {
-            try
-            {
-                // 更新備註
-                oldOrder.Remark = order.Remark ?? "";
-
-                // 處理明細同步
-                var productsdto = order.Items.Select(i => i.ProductId).ToList();
-
-                // A. 刪除：找出資料庫有但前端沒傳過來的項目
-                var itemsToRemove = oldOrder.Orderdetail
-                    .Where(d => !productsdto.Contains(d.ProductId)).ToList();
-
-                foreach (var removeItem in itemsToRemove)
+                // 4. 扣點數
+                if (order.TotalPoint > 0)
                 {
-                    // 歸還庫存
-                    if (productDict.TryGetValue(removeItem.ProductId, out var prod))
-                    {
-                        prod.Stock += removeItem.Quantity;
-                    }
-
-                    _context.Orderdetail.Remove(removeItem);
+                    var ok = await _pointlogService.ChangePointsAsync(
+                        userId: userId,
+                        changeAmount: -order.TotalPoint,
+                        sourceType: "order",
+                        sourceId: order.OrderId,
+                        type: PointType.ExpenseOrders,
+                        displaySource: "商品兌換",
+                        displaySubTitle: $"訂單編號: {order.OrderId}");
+                    if (!ok)
+                        throw new OrderFailure("您的點數不足", 409);
                 }
 
-                // B. 更新與新增
-                int totalPoints = 0;
-                foreach (var itemDto in order.Items)
+                await _context.SaveChangesAsync();
+                return order.OrderId;
+            }, "訂單建立成功");
+
+            // 平台任務觸發：購買任務 (在交易外執行，任務失敗不影響已成立的訂單)
+            if (result.Ok)
+            {
+                try
                 {
-                    var prod = productDict[itemDto.ProductId];
+                    await _missionService.TriggerMissionAsync(userId, "purchase", 1);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "訂單 {OrderId} 觸發購買任務失敗", result.Data);
+                }
+            }
 
-                    var oldDetail = oldOrder.Orderdetail
-                        .FirstOrDefault(d => d.ProductId == itemDto.ProductId);
+            return result;
+        }
 
-                    if (oldDetail != null)
+        // 修改訂單明細
+        public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark)
+        {
+            var (newQty, itemError) = NormalizeItems(items);
+            if (itemError != null)
+                return ResultDTO<int>.Failure(itemError);
+
+            var order = await _context.Orders
+                .Include(o => o.Orderdetail)
+                .Include(o => o.ShippedDetail)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return ResultDTO<int>.Failure("找不到該訂單", 404);
+
+            if (order.Status == OrderStatus.Canceled)
+                return ResultDTO<int>.Failure("訂單已取消，不能修改", 409);
+
+            // 舊明細依商品加總 (舊資料可能有同商品多筆)
+            var oldQty = order.Orderdetail
+                .GroupBy(d => d.ProductId)
+                .ToDictionary(g => g.Key, g => g.Sum(d => d.Quantity));
+
+            var allIds = newQty.Keys.Union(oldQty.Keys).ToList();
+            var products = await LoadProductsAsync(allIds);
+
+            // 新加入的商品必須存在且上架中；原本就有的商品即使下架也可調整數量
+            var addedIds = newQty.Keys.Where(id => !oldQty.ContainsKey(id)).ToList();
+            var productError = CheckProducts(newQty.Keys, products, mustBeOnSale: addedIds);
+            if (productError != null)
+                return productError;
+
+            if (addedIds.Any(id => products[id].IsPhysical) && !order.ShippedDetail.Any())
+                return ResultDTO<int>.Failure("此訂單沒有寄送資料，無法加入實體商品，請另外下單");
+
+            return await RunInTransactionAsync(order.UserId, $"修改訂單 {orderId}", async () =>
+            {
+                // 1. 庫存：增加的數量原子扣減，減少的數量歸還
+                foreach (var productId in allIds)
+                {
+                    var delta = newQty.GetValueOrDefault(productId) - oldQty.GetValueOrDefault(productId);
+                    if (delta > 0)
+                        await DecreaseStockAsync(products[productId], delta);
+                    else if (delta < 0)
+                        await IncreaseStockAsync(productId, -delta);
+                }
+
+                // 2. 同步明細：原有商品保留原購買單價，新商品使用目前價格
+                var totalPoints = 0;
+                foreach (var productId in allIds)
+                {
+                    var lines = order.Orderdetail.Where(d => d.ProductId == productId).ToList();
+                    var qty = newQty.GetValueOrDefault(productId);
+
+                    if (qty == 0)
                     {
-                        // 更新舊項目
-                        int diff = itemDto.Quantity - oldDetail.Quantity;
-                        prod.Stock -= diff;
-                        oldDetail.Quantity = itemDto.Quantity;
-                        oldDetail.UnitPointAtPurchase = prod.Point;
+                        _context.Orderdetail.RemoveRange(lines);
+                        continue;
+                    }
+
+                    if (lines.Count > 0)
+                    {
+                        var keep = lines[0];
+                        keep.Quantity = qty;
+                        _context.Orderdetail.RemoveRange(lines.Skip(1));
+                        totalPoints += qty * keep.UnitPointAtPurchase;
                     }
                     else
                     {
-                        // 新增項目
-                        prod.Stock -= itemDto.Quantity;
-                        oldOrder.Orderdetail.Add(new Orderdetail
+                        var product = products[productId];
+                        order.Orderdetail.Add(new Orderdetail
                         {
-                            ProductId = itemDto.ProductId,
-                            Quantity = itemDto.Quantity,
-                            UnitPointAtPurchase = prod.Point,
-                            RequiresShipping = prod.IsPhysical
+                            ProductId = productId,
+                            Quantity = qty,
+                            UnitPointAtPurchase = product.Point,
+                            RequiresShipping = product.IsPhysical
                         });
+                        totalPoints += qty * product.Point;
                     }
-                    totalPoints += itemDto.Quantity * prod.Point;
                 }
 
-                // C. 點數差額處理：新總點數 > 舊總點數 → 補扣；反之 → 退還
-                int pointDiff = totalPoints - oldOrder.TotalPoint;
+                // 3. 點數差額：新總點數 > 舊總點數 → 補扣；反之 → 退還
+                var pointDiff = totalPoints - order.TotalPoint;
                 if (pointDiff != 0)
                 {
-                    var pointResult = await _pointlogService.ChangePointsAsync(
-                        userId: oldOrder.UserId,
+                    var ok = await _pointlogService.ChangePointsAsync(
+                        userId: order.UserId,
                         changeAmount: -pointDiff,
                         sourceType: "order",
-                        sourceId: oldOrder.OrderId,
+                        sourceId: order.OrderId,
                         type: pointDiff > 0 ? PointType.ExpenseOrders : PointType.IncomeOrdersRefund,
                         displaySource: pointDiff > 0 ? "訂單修改補扣" : "訂單修改退款",
-                        displaySubTitle: $"訂單編號: {oldOrder.OrderId}"
-                    );
-
-                    // 點數不足：回傳失敗，由呼叫端 Rollback
-                    if (!pointResult)
-                        return ResultDTO<int>.Failure("您的點數不足，無法修改訂單");
+                        displaySubTitle: $"訂單編號: {order.OrderId}");
+                    if (!ok)
+                        throw new OrderFailure("點數不足，無法修改訂單", 409);
                 }
 
-                oldOrder.TotalPoint = totalPoints;
-                await _context.SaveChangesAsync();
+                order.TotalPoint = totalPoints;
+                if (remark != null)
+                    order.Remark = remark;
 
-                return ResultDTO<int>.Success(oldOrder.OrderId, "訂單更新成功");
-            }
-            catch (Exception ex)
-            {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
-            }
+                await _context.SaveChangesAsync();
+                return order.OrderId;
+            }, "訂單更新成功");
         }
 
         // 取消訂單
-        public async Task<ResultDTO<int>> CancelOrderAsync(Orders oldOrder, Dictionary<int, Product> productDict)
+        public async Task<ResultDTO<int>> CancelOrderAsync(int orderId)
         {
-            try
+            var order = await _context.Orders
+                .Include(o => o.Orderdetail)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return ResultDTO<int>.Failure("找不到該訂單", 404);
+
+            if (order.Status == OrderStatus.Canceled)
+                return ResultDTO<int>.Failure("訂單已取消", 409);
+
+            return await RunInTransactionAsync(order.UserId, $"取消訂單 {orderId}", async () =>
             {
                 // 回復庫存
-                foreach (var detail in oldOrder.Orderdetail)
+                foreach (var group in order.Orderdetail.GroupBy(d => d.ProductId))
+                    await IncreaseStockAsync(group.Key, group.Sum(d => d.Quantity));
+
+                order.Status = OrderStatus.Canceled;
+                order.CanceledAt = DateTime.Now;
+
+                // 退還點數
+                if (order.TotalPoint > 0)
                 {
-                    if (productDict.TryGetValue(detail.ProductId, out var prod))
-                    {
-                        prod.Stock += detail.Quantity;
-                    }
+                    await _pointlogService.ChangePointsAsync(
+                        userId: order.UserId,
+                        changeAmount: order.TotalPoint,
+                        sourceType: "order",
+                        sourceId: order.OrderId,
+                        type: PointType.IncomeOrdersRefund,
+                        displaySource: "訂單取消退款",
+                        displaySubTitle: $"訂單編號：{order.OrderId}");
                 }
 
-                oldOrder.Status = "已取消";
-                oldOrder.CanceledAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+                return order.OrderId;
+            }, "訂單取消並回復庫存/點數成功");
+        }
 
-                var result = await _pointlogService.ChangePointsAsync(userId: oldOrder.UserId,changeAmount: oldOrder.TotalPoint,sourceType: "order",sourceId: oldOrder.OrderId,type: PointType.IncomeOrdersRefund,displaySource: "訂單取消退款",displaySubTitle: $"訂單編號：{oldOrder.OrderId}" );
+        // 修改寄送資料
+        public async Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped)
+        {
+            if (shipped == null
+                || string.IsNullOrWhiteSpace(shipped.RecipientName)
+                || string.IsNullOrWhiteSpace(shipped.RecipientPhone)
+                || string.IsNullOrWhiteSpace(shipped.RecipientAddress))
+                return ResultDTO<int>.Failure("請填寫完整寄送資料");
+
+            var existing = await _context.ShippedDetail.FindAsync(shippedDetailId);
+            if (existing == null)
+                return ResultDTO<int>.Failure($"找不到編號為 {shippedDetailId} 的寄送資料", 404);
+
+            if (existing.IsCompleted)
+                return ResultDTO<int>.Failure("已完成的寄送資料不可修改", 409);
+
+            try
+            {
+                existing.RecipientName = shipped.RecipientName.Trim();
+                existing.RecipientPhone = shipped.RecipientPhone.Trim();
+                existing.RecipientAddress = shipped.RecipientAddress.Trim();
+                existing.Remark = shipped.Remark ?? existing.Remark;
 
                 await _context.SaveChangesAsync();
-                return result
-                    ? ResultDTO<int>.Success(oldOrder.OrderId, "訂單取消並回復庫存/點數成功")
-                    : ResultDTO<int>.Failure($"訂單取消失敗:點數回復出錯");
+                return ResultDTO<int>.Success(existing.ShippedDetailId, "寄送資料修改成功");
             }
             catch (Exception ex)
             {
-                return ResultDTO<int>.Failure($"伺服器內部錯誤:{ex.Message}", 500);
+                _logger.LogError(ex, "修改寄送資料 {ShippedDetailId} 失敗", shippedDetailId);
+                return ResultDTO<int>.Failure(ServerErrorMessage, 500);
+            }
+        }
+
+        // ======================================================================
+        // 共用
+        // ======================================================================
+
+        // 驗證並合併明細：數量必須 > 0，同商品多筆合併為一筆
+        private static (Dictionary<int, int> quantities, string? error) NormalizeItems(IEnumerable<OrderItemRequest>? items)
+        {
+            var list = items?.Where(i => i != null).ToList();
+            if (list == null || list.Count == 0)
+                return (new(), "訂單資料有誤");
+
+            if (list.Any(i => i.Quantity <= 0))
+                return (new(), "商品數量必須大於 0");
+
+            var quantities = list
+                .GroupBy(i => i.ProductId)
+                .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
+            return (quantities, null);
+        }
+
+        // 讀取商品 (不追蹤：庫存一律以 ExecuteUpdate 原子更新，避免 SaveChanges 以舊值覆蓋)
+        private Task<Dictionary<int, Product>> LoadProductsAsync(IEnumerable<int> productIds)
+        {
+            var ids = productIds.Distinct().ToList();
+            return _context.Product
+                .AsNoTracking()
+                .Where(p => ids.Contains(p.ProductId))
+                .ToDictionaryAsync(p => p.ProductId);
+        }
+
+        // 檢查商品存在、指定的商品需上架中
+        private static ResultDTO<int>? CheckProducts(IEnumerable<int> requiredIds,
+            Dictionary<int, Product> products, IEnumerable<int> mustBeOnSale)
+        {
+            foreach (var id in requiredIds)
+            {
+                if (!products.ContainsKey(id))
+                    return ResultDTO<int>.Failure($"無此商品 {id}", 404);
+            }
+            foreach (var id in mustBeOnSale)
+            {
+                if (!products[id].OnSale)
+                    return ResultDTO<int>.Failure($"商品 {products[id].Name} 已下架");
+            }
+            return null;
+        }
+
+        private async Task DecreaseStockAsync(Product product, int quantity)
+        {
+            var affected = await _context.Product
+                .Where(p => p.ProductId == product.ProductId && p.Stock >= quantity)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock - quantity));
+
+            if (affected == 0)
+                throw new OrderFailure($"商品 {product.Name} 庫存不足", 409);
+        }
+
+        private Task IncreaseStockAsync(int productId, int quantity)
+        {
+            return _context.Product
+                .Where(p => p.ProductId == productId)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock + quantity));
+        }
+
+        // 同一會員的點數異動排隊執行，避免同時下單 / 修改時以相同餘額重複扣點
+        // (SQL Server application lock，交易結束自動釋放)
+        private async Task LockUserPointsAsync(int userId)
+        {
+            if (!_context.Database.IsSqlServer()) return; // sp_getapplock 為 SQL Server 專用
+
+            var resource = $"point-user-{userId}";
+            await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                DECLARE @result int;
+                EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive',
+                    @LockOwner = 'Transaction', @LockTimeout = 10000;
+                IF @result < 0 THROW 50001, 'point lock timeout', 1;");
+        }
+
+        // 在交易內執行異動：業務失敗 (OrderFailure) 回傳訊息，其他例外記錄 log 並回傳通用訊息
+        private async Task<ResultDTO<int>> RunInTransactionAsync(int userId, string operation,
+            Func<Task<int>> work, string successMessage)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await LockUserPointsAsync(userId);
+                var id = await work();
+                await transaction.CommitAsync();
+                return ResultDTO<int>.Success(id, successMessage);
+            }
+            catch (OrderFailure failure)
+            {
+                await transaction.RollbackAsync();
+                _context.ChangeTracker.Clear();
+                return ResultDTO<int>.Failure(failure.Message, failure.Code);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _context.ChangeTracker.Clear();
+                _logger.LogError(ex, "{Operation} 失敗 (UserId: {UserId})", operation, userId);
+                return ResultDTO<int>.Failure(ServerErrorMessage, 500);
             }
         }
     }
