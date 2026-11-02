@@ -1,19 +1,16 @@
 <script setup>
 import { useCartStore } from "@/views/PointShop/services/cartStore";
-
-const baseUrl = import.meta.env.VITE_BASE_URL;
+import { productImageUrl } from "@/views/PointShop/services/pointShopUtils";
 
 // 取得購物車狀態
 const CartNow = useCartStore();
 // 增加、減少、移除商品
 const increase = (item) => {
-  item.quantity += 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  CartNow.updateQuantity(item.productId, item.quantity + 1);
 };
 
 const decrease = (item) => {
-  if (item.quantity > 1) item.quantity -= 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  if (item.quantity > 1) CartNow.updateQuantity(item.productId, item.quantity - 1);
 };
 
 </script>
@@ -34,7 +31,7 @@ const decrease = (item) => {
             class="d-flex align-items-center p-3 border rounded-3 bg-light-hover transition-all">
 
             <div class="d-flex align-items-center flex-grow-1">
-              <img :src="`${baseUrl}/img/product/${item.imageName || 'NoImage.png'}`"
+              <img :src="productImageUrl(item.imageName)"
                 class="rounded flex-shrink-0 object-fit-cover border" style="width: 65px; height: 65px;" />
               <div class="ms-3">
                 <h6 class="fw-bold mb-0 text-dark">{{ item.name }}</h6>
@@ -55,7 +52,7 @@ const decrease = (item) => {
             <div class="ms-2 ms-md-3 border-start ps-2 ps-md-3 py-1">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-2">
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
-                  @click="increase(item)">+</button>
+                  :disabled="item.quantity >= item.stock" @click="increase(item)">+</button>
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
                   @click="decrease(item)">−</button>
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
@@ -103,15 +100,4 @@ const decrease = (item) => {
   object-fit: cover;
 }
 
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
 </style>

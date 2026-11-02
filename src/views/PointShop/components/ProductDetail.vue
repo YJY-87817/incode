@@ -1,17 +1,21 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
-import { useCartStore } from "@/views/PointShop/services/cartStore";
-import CartSwal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.min.css';
+import { computed, ref, onMounted, watch } from 'vue';
+import { useAddToCart } from "@/views/PointShop/services/useAddToCart";
+import { productImageUrl } from "@/views/PointShop/services/pointShopUtils";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
+// ProductView 透過 router-view 傳入的其他屬性 (filteredProducts 等) 不要落到根元素上
+defineOptions({ inheritAttrs: false });
 
 // 直接接收路由參數作為 props
 const props = defineProps({
     id: String,
     products: {
-        type: Object,
+        type: Array,
         required: true,
+    },
+    loading: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -28,26 +32,24 @@ const changeQty = (num) => {
     }
 };
 
-const cartStore = useCartStore();
+// 手動輸入數量時限制在 1 ~ 庫存 之間的整數
+const normalizeQty = () => {
+    const max = Math.max(product.value?.stock ?? 1, 1);
+    const qty = Math.floor(Number(quantity.value));
+    quantity.value = Number.isFinite(qty) ? Math.min(Math.max(qty, 1), max) : 1;
+};
+
+const { addToCartWithAlert } = useAddToCart();
 
 const handleAddToCart = () => {
-    var count = 0
-    for (let i = 0; i < quantity.value; i++) {
-        cartStore.addToCart(product.value);
-        count++;
-    }
-    // 可以在這裡添加提示訊息
-    CartSwal.fire({
-        title: '成功！',
-        text: `${count}件${product.value.name}已成功加入購物車`,
-        icon: 'success',
-        confirmButtonText: '確定',
-        confirmButtonColor: '#145369',
-        didOpen: (modal) => {
-          modal.querySelector('.swal2-confirm').style.color = '#fff';
-        }
-    });
+    normalizeQty();
+    addToCartWithAlert(product.value, quantity.value);
 };
+
+// 切換到其他商品時數量重設為 1
+watch(() => props.id, () => {
+    quantity.value = 1;
+});
 
 // 頁面掛載時滾動到上方
 onMounted(() => {
@@ -63,7 +65,7 @@ onMounted(() => {
                 <div class="col-12 col-md-6">
                     <div class="d-flex align-items-center justify-content-center border border-translucent rounded-3 mb-3 bg-light"
                         style="aspect-ratio: 1/1;">
-                        <img :src="`${baseUrl}/img/product/${product.imageName}`" :alt="product.name"
+                        <img :src="productImageUrl(product.imageName)" :alt="product.name"
                             class="img-fluid product-image" />
                     </div>
                 </div>
@@ -99,7 +101,7 @@ onMounted(() => {
                                 <i class=" bi bi-dash-lg"></i>
                             </button>
                             <input type="number" class="form-control border-0 text-center bg-white fw-bold"
-                                v-model.number="quantity" min="1" :max="product?.stock">
+                                v-model.number="quantity" min="1" :max="product?.stock" @change="normalizeQty">
                             <button class="btn btn-light border-0 px-3 transition m-0" type="button"
                                 @click="changeQty(1)">
                                 <i class="bi bi-plus-lg"></i>
@@ -128,9 +130,14 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div v-else class="text-center p-5">
+        <div v-else-if="loading" class="text-center p-5">
             <div class="spinner-border" style="color: #86B0BD;" role="status"></div>
             <p class="mt-2">正在讀取商品資訊，請稍候...</p>
+        </div>
+        <div v-else class="text-center p-5">
+            <h4 class="fw-bold">找不到此商品</h4>
+            <p class="text-muted">商品可能已下架</p>
+            <router-link :to="{ name: 'PointShop' }" class="btn btn-custom-primary">返回商城</router-link>
         </div>
     </div>
 </template>
@@ -142,15 +149,4 @@ onMounted(() => {
     object-fit: contain;
 }
 
-.btn-custom-primary {
-    color: #145369;
-    background-color: transparent;
-    border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-    color: #fff;
-    background-color: #145369;
-    border-color: #145369;
-}
 </style>

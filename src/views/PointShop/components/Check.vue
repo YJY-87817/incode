@@ -4,259 +4,139 @@ import { useRouter } from "vue-router";
 import { useCartStore } from "@/views/PointShop/services/cartStore";
 import {
   postCreateOrder,
-  getUserInfo,
+  getShipAddresses,
 } from "@/views/PointShop/services/PointShopApi";
-import checkoutSwal from "sweetalert2";
+import {
+  shopSwal,
+  alertError,
+  alertWarning,
+} from "@/views/PointShop/services/pointShopSwal";
+import {
+  ensureOk,
+  errorText,
+  normalizePhone,
+  validateShipping,
+} from "@/views/PointShop/services/pointShopUtils";
 import { useAuthStore } from "@/stores/user/auth.js";
 
 const authStore = useAuthStore();
-const Islogin = authStore.isAuthenticated;
+// 用 computed 保持響應式，登入狀態改變 (例如 checkAuth 完成) 時才會跟著更新
+const Islogin = computed(() => authStore.isAuthenticated);
 const router = useRouter();
 const CartNow = useCartStore();
+
 // 寄送資訊欄位
 const name = ref("");
 const phone = ref("");
 const address = ref("");
 const remark = ref("");
-const userid = ref(0);
-// 儲存使用者過去填寫的寄送資訊
+// 送出中，避免重複點擊建立多張訂單
+const submitting = ref(false);
+// 過去填寫的寄送資訊 (null 表示尚未載入)
 const userInfo = ref(null);
-// 選擇的過去寄送資訊
 const selectedShippingRecord = ref(null);
 
-// 檢查是否有實體商品（isPhysical: true）
-const hasPhysicalProducts = computed(() => {
-  return CartNow.cartItems.some((item) => item.isPhysical === true);
-});
+// 是否有實體商品（需要寄送資訊）
+const hasPhysicalProducts = computed(() =>
+  CartNow.cartItems.some((item) => item.isPhysical === true),
+);
 
-// 驗證寄送資訊
-const validateShippingInfo = () => {
-  if (!hasPhysicalProducts.value) {
-    return true; // 沒有實體商品，不需要驗證
+// 取得過去填過的寄送資訊 (只載入一次)
+const loadShipAddresses = async () => {
+  if (!Islogin.value || userInfo.value !== null) return;
+  try {
+    const res = await getShipAddresses();
+    userInfo.value = res.data.ok ? res.data.data || [] : [];
+  } catch (error) {
+    console.error("取得寄送資訊失敗:", error);
   }
-
-  // 檢查必填欄位
-  if (!name.value.trim()) {
-    checkoutSwal.fire({
-      title: "必填欄位未完成",
-      text: "請填寫收件人姓名",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  if (!phone.value.trim()) {
-    checkoutSwal.fire({
-      title: "必填欄位未完成",
-      text: "請填寫聯絡電話",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  if (!address.value.trim()) {
-    checkoutSwal.fire({
-      title: "必填欄位未完成",
-      text: "請填寫寄送地址",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  // 驗證姓名格式（2-10個中文或英文字符）
-  const nameRegex = /^[\u4e00-\u9fa5a-zA-Z\s]{2,10}$/;
-  if (!nameRegex.test(name.value.trim())) {
-    checkoutSwal.fire({
-      title: "姓名格式錯誤",
-      text: "姓名請輸入2-10個中文或英文字元",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  // 驗證電話格式（台灣手機號碼：09開頭共10碼）
-  const cleanPhone = phone.value.trim().replace(/[- ]/g, "");
-  const phoneRegex = /^09\d{8}$/;
-  if (!phoneRegex.test(cleanPhone)) {
-    checkoutSwal.fire({
-      title: "電話格式錯誤",
-      text: "請輸入正確的手機號碼格式（09xxxxxxxx）",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  // 驗證地址格式（至少5個字符）
-  if (address.value.trim().length < 5) {
-    checkoutSwal.fire({
-      title: "地址格式錯誤",
-      text: "地址至少需要5個字元",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return false;
-  }
-
-  return true;
 };
 
-// 取得過去填過的寄送資訊
-function checkUserInfo() {
-  if (Islogin) {
-    getUserInfo()
-      .then((response) => {
-        if (response.data.ok) {
-          userInfo.value = response.data.data;
-        }
-      })
-      .catch((error) => {
-        console.error("取得使用者資訊失敗:", error);
-      });
-  }
-}
-
-// 選擇過去的寄送資訊
+// 選擇過去的寄送資訊後自動帶入
 const handleFastFill = () => {
-  if (selectedShippingRecord.value) {
-    const data = selectedShippingRecord.value;
-    name.value = data.recipientName;
-    phone.value = data.recipientPhone;
-    address.value = data.recipientAddress;
+  const data = selectedShippingRecord.value;
+  if (!data) return;
+  name.value = data.recipientName;
+  phone.value = data.recipientPhone;
+  address.value = data.recipientAddress;
+};
+
+// 建立訂單失敗：點數不足時提供前往點數明細
+const showCreateFailed = async (message) => {
+  // 後端訊息可能是「您的點數不足」或「會員點數不足」
+  if (message?.includes("點數不足")) {
+    const result = await shopSwal.fire({
+      title: "訂單新增失敗!",
+      text: message,
+      icon: "error",
+      showDenyButton: true,
+      confirmButtonText: "前往點數明細",
+      denyButtonText: "返回",
+    });
+    if (result.isConfirmed) router.push("/point-log");
+    return;
   }
+  await alertError("訂單新增失敗!", message);
 };
 
 // 結帳流程
 const checkout = async () => {
-  // 檢查是否登入
-  if (Islogin === false) {
-    checkoutSwal.fire({
-      title: "請先登入會員!",
-      text: "結帳前請先登入會員以建立訂單!",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
+  if (submitting.value) return;
+
+  if (!Islogin.value) {
+    alertWarning("請先登入會員!", "結帳前請先登入會員以建立訂單!");
     return;
   }
 
-  // 檢查購物車是否為空
-  if (CartNow.cartItems.length == 0) {
-    checkoutSwal.fire({
-      title: "購物車為空!",
-      text: "請先加入商品至購物車!",
-      icon: "warning",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
+  if (CartNow.cartItems.length === 0) {
+    alertWarning("購物車為空!", "請先加入商品至購物車!");
     return;
   }
 
-  const Neworder = {
-    userId: userid.value,
+  if (hasPhysicalProducts.value) {
+    const invalid = validateShipping({
+      name: name.value,
+      phone: phone.value,
+      address: address.value,
+    });
+    if (invalid) {
+      alertWarning("寄送資訊有誤", invalid);
+      return;
+    }
+  }
+
+  // userId 由後端從登入 Cookie 取得，不需由前端傳送
+  const newOrder = {
     remark: remark.value,
-    items: [],
+    items: CartNow.cartItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    })),
     recipient: {
       orderId: 0,
-      recipientName: name.value,
-      recipientAddress: address.value,
-      recipientPhone: phone.value,
+      recipientName: name.value.trim(),
+      recipientAddress: address.value.trim(),
+      recipientPhone: normalizePhone(phone.value),
       remark: remark.value,
     },
   };
 
-  // 將購物車中的商品加入訂單
-  for (const item of CartNow.cartItems) {
-    Neworder.items.push({
-      productId: item.productId,
-      quantity: item.quantity,
+  submitting.value = true;
+  try {
+    ensureOk(await postCreateOrder(newOrder));
+    CartNow.clearCart();
+    await shopSwal.fire({
+      title: "訂單新增成功!",
+      text: "您的訂單已成立將盡快為您處理!",
+      icon: "success",
     });
+    router.push("/PointShop/Order");
+  } catch (error) {
+    console.error("訂單建立失敗:", error);
+    await showCreateFailed(errorText(error, "訂單建立失敗，請稍後再試"));
+  } finally {
+    submitting.value = false;
   }
-  // 驗證寄送資訊
-  if (!validateShippingInfo()) {
-    return;
-  }
-
-  // 呼叫api建立訂單
-  await postCreateOrder(Neworder)
-    .then((result) => {
-      if (result.data.ok) {
-        CartNow.clearCart();
-        checkoutSwal
-          .fire({
-            title: "訂單新增成功!",
-            text: "您的訂單已成立將盡快為您處理!",
-            icon: "success",
-            didOpen: (modal) => {
-              modal.querySelector(".swal2-confirm").style.color = "#fff";
-            },
-          })
-          .then(() => {
-            router.push("/PointShop/Order");
-          });
-      } else {
-        if (result.data.message === "您的點數不足") {
-          checkoutSwal
-            .fire({
-              title: "訂單新增失敗!",
-              text:
-                result.data.message || "您的點數不足，請重新選擇商品或增加點數",
-              icon: "error",
-              didOpen: (modal) => {
-                modal.querySelector(".swal2-confirm").style.color = "#fff";
-              },
-              showDenyButton: true,
-              confirmButtonText: "前往點數明細",
-              denyButtonText: "返回",
-            })
-            .then((result) => {
-              if (result.isConfirmed) {
-                router.push("/point-log"); // 根據你的儲值頁面路由調整
-              }
-            });
-          return;
-        }
-        checkoutSwal.fire({
-          title: "訂單新增失敗!",
-          text: result.data.message || "訂單建立失敗，請稍後再試",
-          icon: "error",
-          didOpen: (modal) => {
-            modal.querySelector(".swal2-confirm").style.color = "#fff";
-          },
-        });
-        return;
-      }
-    })
-    .catch((error) => {
-      console.error("訂單建立失敗:", error);
-      checkoutSwal.fire({
-        title: "訂單建立失敗!",
-        text: "訂單建立失敗，請稍後再試",
-        icon: "error",
-        didOpen: (modal) => {
-          modal.querySelector(".swal2-confirm").style.color = "#fff";
-        },
-      });
-    })
-    .finally();
 };
 </script>
 
@@ -298,38 +178,26 @@ const checkout = async () => {
     </div>
 
     <div class="card-footer bg-white border-top-0 pb-4 px-4">
-      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mb-2" @click="checkUserInfo"
-        data-bs-toggle="collapse" data-bs-target="#collapseExample">
+      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mb-2" @click="loadShipAddresses"
+        data-bs-toggle="collapse" data-bs-target="#shipAddressCollapse">
         取得過去填過的寄送資訊
       </button>
-      <div class="collapse" id="collapseExample">
+      <div class="collapse" id="shipAddressCollapse">
         <div>
           <select class="form-select border" v-model="selectedShippingRecord" @change="handleFastFill">
-            <option :value="null">請選擇過去的寄送資訊</option>
-            <option v-for="info in userInfo" :key="info.id" :value="info">
+            <option :value="null">
+              {{ userInfo && userInfo.length === 0 ? "尚無寄送紀錄" : "請選擇過去的寄送資訊" }}
+            </option>
+            <option v-for="(info, index) in userInfo" :key="index" :value="info">
               {{ info.recipientName }}/{{ info.recipientPhone }}/
               {{ info.recipientAddress }}
             </option>
           </select>
         </div>
       </div>
-      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mt-2" @click="checkout">
-        確認結帳
+      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mt-2" :disabled="submitting" @click="checkout">
+        {{ submitting ? "處理中..." : "確認結帳" }}
       </button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
-</style>
