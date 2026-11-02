@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { useDesktopExpand } from "@/views/PointShop/services/useDesktopExpand";
 
 const props = defineProps({
   filters: {
@@ -51,33 +51,14 @@ const handleResetFilters = () => {
   emit("reset-filters");
 };
 
-const filterCollapseRef = ref(null);
-const filterHeaderRef = ref(null);
-
-onMounted(() => {
-  // 設定斷點，768px 對應 Bootstrap 的 md
-  const mdBreakpoint = 768;
-
-  // 檢查目前視窗寬度是否大於等於 md
-  if (window.innerWidth >= mdBreakpoint) {
-    // 情境 A：單純操作 Class (最簡單，不需引入 Bootstrap JS 物件)
-    if (filterCollapseRef.value && filterHeaderRef.value) {
-      // 1. 內容區塊加上 'show' 讓它顯示
-      filterCollapseRef.value.classList.add("show");
-
-      // 2. Header 去除 'collapsed' (這是 Bootstrap 控制箭頭旋轉的 class)
-      filterHeaderRef.value.classList.remove("collapsed");
-
-      // 3. 更新無障礙屬性
-      filterHeaderRef.value.setAttribute("aria-expanded", "true");
-    }
-  }
-});
+// 桌面版預設展開篩選面板
+const { collapseRef: filterCollapseRef, headerRef: filterHeaderRef } =
+  useDesktopExpand();
 </script>
 
 <template>
   <div
-    class="card shadow-sm border-0 mb-3 rounded sticky-top"
+    class="card shadow-sm border-0 mb-3 rounded sticky-top shop-filter-card"
     style="top: 80px"
   >
     <div
@@ -230,36 +211,3 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.sticky-top {
-  z-index: 10;
-}
-
-/* 當 header 沒有 .collapsed class 時 (代表展開中)，箭頭旋轉 180度 */
-.card-header:not(.collapsed) .bi-chevron-down {
-  transform: rotate(180deg);
-}
-
-/* 加上過渡動畫效果 */
-.bi-chevron-down {
-  transition: transform 0.3s ease;
-}
-
-/* 修正收合時底部圓角消失的問題 */
-.card-header.collapsed {
-  border-bottom-left-radius: 0.375rem;
-  border-bottom-right-radius: 0.375rem;
-}
-
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
-</style>

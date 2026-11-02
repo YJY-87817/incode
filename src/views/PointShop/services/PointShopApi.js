@@ -1,6 +1,13 @@
 import axios from "axios";
 
-export const getOrdersByUser = () => axios.get(`/OrderApi/order`);
+// ===== 商品 =====
+export const getProducts = () => axios.get("/ProductApi");
+
+export const getProductSearch = (keyword) =>
+  axios.get("/ProductApi/search", { params: { keyword } });
+
+// ===== 訂單 (需登入) =====
+export const getOrdersByUser = () => axios.get("/OrderApi/order");
 
 export const getOrderDetails = (orderId) =>
   axios.get(`/OrderApi/orderdetail/${orderId}`);
@@ -8,22 +15,14 @@ export const getOrderDetails = (orderId) =>
 export const getShippedDetails = (orderId) =>
   axios.get(`/OrderApi/shippeddetail/${orderId}`);
 
+export const postCreateOrder = (newOrder) =>
+  axios.post("/OrderApi/OrderPost", newOrder);
+
 export const putCancelOrder = (orderId) =>
   axios.put(`/OrderApi/CancelOrder/${orderId}`);
 
-export const getProducts = () => axios.get("/ProductApi");
+export const putShippedOrder = (shippedDetail, shippedId) =>
+  axios.put(`/OrderApi/ShippedPut/${shippedId}`, shippedDetail);
 
-export const getProductSearch = (keyword) => axios.get(`/ProductApi/search?keyword=${keyword}`);
-
-export const postCreateOrder = (neworder) =>
-  axios.post(`/OrderApi/OrderPost`, neworder, {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
-  );
-
-export const putShippedOrder = (shippeddetail, shippedId) =>
-  axios.put(`/OrderApi/ShippedPut/${shippedId}`, shippeddetail);
-
-export const getUserInfo = () => axios.get(`/OrderApi/shipaddress`);
+// 取得會員曾填寫過的寄送資料
+export const getShipAddresses = () => axios.get("/OrderApi/shipaddress");

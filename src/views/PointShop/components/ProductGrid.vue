@@ -164,7 +164,7 @@ const changePage = (page) => {
       <h3>找不到符合條件的商品</h3>
       <button
         class="btn btn-custom-primary mt-3"
-        @click="$emit('reset-filters')"
+        @click="handleResetFilters"
       >
         清除篩選條件
       </button>
@@ -173,17 +173,6 @@ const changePage = (page) => {
 </template>
 
 <style scoped>
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
 
 /* 1. 基礎樣式：讓所有分頁按鈕符合你的自定義風格 */
 :deep(.pagination .page-link) {
@@ -217,10 +206,4 @@ const changePage = (page) => {
   border-color: #dee2e6;
 }
 
-/* 原有的動畫 */
-@keyframes spinner {
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>
