@@ -12,7 +12,8 @@ import DefaultFooter from "@/examples/footers/FooterCentered.vue";
 
 const products = ref([]);
 const loading = ref(true);
-const keyword = ref("");
+// 目前商品的最高點數，重設篩選時用來還原價格上限
+const maxProductPrice = ref(10000);
 
 // 篩選狀態
 const filters = ref({
@@ -28,9 +29,13 @@ const filters = ref({
 const categories = ref([]);
 const series = ref([]);
 
+// 請求序號：連續搜尋時只採用最後一次請求的結果，避免較慢的舊回應覆蓋新結果
+let requestSeq = 0;
+
 // 抓取商品資料
 const fetchProducts = (keyword = "") => {
   loading.value = true;
+  const seq = ++requestSeq;
 
   const searchRequest =
     keyword && keyword.trim()
@@ -39,11 +44,13 @@ const fetchProducts = (keyword = "") => {
 
   searchRequest
     .then((response) => {
-      products.value = response.data.data;
+      if (seq !== requestSeq) return;
+      const data = response.data.data || [];
+      products.value = data;
       // 從產品資料動態提取類別
       const uniqueCategories = new Set();
       const uniqueSeries = new Set();
-      response.data.data.forEach((product) => {
+      data.forEach((product) => {
         if (product.type) {
           uniqueCategories.add(product.type);
         }
@@ -64,16 +71,18 @@ const fetchProducts = (keyword = "") => {
       }));
 
       // 設定最大價格
-      const priceValues = response.data.data.map((p) => p.point || 0);
+      const priceValues = data.map((p) => p.point || 0);
       const maxPrice =
         priceValues.length > 0 ? Math.max(...priceValues) : 10000;
+      maxProductPrice.value = maxPrice;
       filters.value.maxPrice = maxPrice;
     })
     .catch((error) => {
+      if (seq !== requestSeq) return;
       console.error("抓取商品失敗:", error);
     })
     .finally(() => {
-      loading.value = false;
+      if (seq === requestSeq) loading.value = false;
     });
 };
 
@@ -118,28 +127,30 @@ const toggleSeries = (seriesName) => {
 };
 
 const resetFilters = () => {
+  // 有搜尋關鍵字時，清空 search 會觸發下方 watch 重新載入全部商品；
+  // 沒有關鍵字時目前清單就是全部商品，不需要重抓
   filters.value = {
     minPrice: 0,
-    maxPrice: 10000,
+    maxPrice: maxProductPrice.value,
     categories: [],
     series: [],
     inStock: false,
     search: "",
   };
-  fetchProducts(""); // 重設篩選時，清空搜尋並重新載入所有商品
 };
 
 const handleFilterUpdate = (newFilters) => {
   filters.value = newFilters;
 };
 
-// 監聽搜尋字段變化，自動觸發搜尋
+// 監聽搜尋字段變化，停止輸入 300ms 後才觸發搜尋 (避免每打一個字就打一次 API)
+let searchTimer = null;
 watch(
   () => filters.value.search,
   (newSearch) => {
-    fetchProducts(newSearch);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => fetchProducts(newSearch), 300);
   },
-  { immediate: false },
 );
 
 onMounted(() => {

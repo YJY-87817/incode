@@ -13,7 +13,8 @@ export const putCancelOrder = (orderId) =>
 
 export const getProducts = () => axios.get("/ProductApi");
 
-export const getProductSearch = (keyword) => axios.get(`/ProductApi/search?keyword=${keyword}`);
+export const getProductSearch = (keyword) =>
+  axios.get(`/ProductApi/search`, { params: { keyword } });
 
 export const postCreateOrder = (neworder) =>
   axios.post(`/OrderApi/OrderPost`, neworder, {

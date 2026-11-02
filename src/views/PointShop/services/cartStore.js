@@ -7,22 +7,26 @@ export const useCartStore = defineStore(
     // 購物車商品列表
     const cartItems = ref([]);
 
-    // 新增商品到購物車
-    const addToCart = (product) => {
+    // 新增商品到購物車（數量不可超過庫存），回傳實際加入的數量
+    const addToCart = (product, quantity = 1) => {
       const existingItem = cartItems.value.find(
         (item) => item.productId === product.productId,
       );
+      const current = existingItem ? existingItem.quantity : 0;
+      const added = Math.max(0, Math.min(quantity, (product.stock ?? Infinity) - current));
+      if (added === 0) return 0;
 
       if (existingItem) {
         // 如果商品已存在，增加數量
-        existingItem.quantity += 1;
+        existingItem.quantity += added;
       } else {
         // 新增商品
         cartItems.value.push({
           ...product,
-          quantity: 1,
+          quantity: added,
         });
       }
+      return added;
     };
 
     // 移除購物車商品
@@ -39,7 +43,7 @@ export const useCartStore = defineStore(
         if (quantity <= 0) {
           removeFromCart(productId);
         } else {
-          item.quantity = quantity;
+          item.quantity = Math.min(quantity, item.stock ?? Infinity);
         }
       }
     };

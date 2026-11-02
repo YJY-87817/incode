@@ -7,13 +7,11 @@ const baseUrl = import.meta.env.VITE_BASE_URL;
 const CartNow = useCartStore();
 // 增加、減少、移除商品
 const increase = (item) => {
-  item.quantity += 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  CartNow.updateQuantity(item.productId, item.quantity + 1);
 };
 
 const decrease = (item) => {
-  if (item.quantity > 1) item.quantity -= 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  if (item.quantity > 1) CartNow.updateQuantity(item.productId, item.quantity - 1);
 };
 
 </script>
@@ -55,7 +53,7 @@ const decrease = (item) => {
             <div class="ms-2 ms-md-3 border-start ps-2 ps-md-3 py-1">
               <div class="d-flex flex-column flex-md-row align-items-center gap-1 gap-md-2">
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
-                  @click="increase(item)">+</button>
+                  :disabled="item.quantity >= item.stock" @click="increase(item)">+</button>
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"
                   @click="decrease(item)">−</button>
                 <button class="btn btn-sm btn-custom-primary" style="font-size: 0.75rem;"

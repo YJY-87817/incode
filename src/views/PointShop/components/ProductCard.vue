@@ -15,7 +15,19 @@ const props = defineProps({
 const cartStore = useCartStore();
 
 const handleAddToCart = () => {
-  cartStore.addToCart(props.product);
+  if (cartStore.addToCart(props.product) === 0) {
+    CartSwal.fire({
+      title: "無法加入",
+      text: `${props.product.name}已達庫存上限`,
+      icon: "warning",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+      didOpen: (modal) => {
+        modal.querySelector(".swal2-confirm").style.color = "#fff";
+      },
+    });
+    return;
+  }
 
   CartSwal.fire({
     title: "成功！",
@@ -131,16 +143,6 @@ const handleAddToCart = () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 3em;
-}
-
-/* 確保圖片填滿容器 */
-.object-fit-cover {
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.product-hover-effect:hover .object-fit-cover {
-  transform: scale(1.05);
 }
 
 /* 圖片容器固定高度 */

@@ -5,7 +5,8 @@ import OrderItem from "@/views/PointShop/components/OrderItem.vue";
 import { useAuthStore } from "@/stores/user/auth.js";
 
 const authStore = useAuthStore();
-const Islogin = authStore.isAuthenticated;
+// 用 computed 保持響應式，登入狀態改變時才會跟著更新 (template 會自動解包)
+const Islogin = computed(() => authStore.isAuthenticated);
 const orders = ref([]);
 const loading = ref(true);
 
@@ -26,7 +27,7 @@ const filteredOrders = computed(() => {
 
 // 取得使用者訂單資料
 const getordernew = async () => {
-  if (!Islogin) {
+  if (!Islogin.value) {
     orders.value = [];
     loading.value = false;
     return;

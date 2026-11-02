@@ -6,12 +6,19 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 
 const baseUrl = import.meta.env.VITE_BASE_URL;
 
+// ProductView 透過 router-view 傳入的其他屬性 (filteredProducts 等) 不要落到根元素上
+defineOptions({ inheritAttrs: false });
+
 // 直接接收路由參數作為 props
 const props = defineProps({
     id: String,
     products: {
-        type: Object,
+        type: Array,
         required: true,
+    },
+    loading: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -28,18 +35,36 @@ const changeQty = (num) => {
     }
 };
 
+// 手動輸入數量時限制在 1 ~ 庫存 之間的整數
+const normalizeQty = () => {
+    const max = Math.max(product.value?.stock ?? 1, 1);
+    const qty = Math.floor(Number(quantity.value));
+    quantity.value = Number.isFinite(qty) ? Math.min(Math.max(qty, 1), max) : 1;
+};
+
 const cartStore = useCartStore();
 
 const handleAddToCart = () => {
-    var count = 0
-    for (let i = 0; i < quantity.value; i++) {
-        cartStore.addToCart(product.value);
-        count++;
+    normalizeQty();
+    const count = cartStore.addToCart(product.value, quantity.value);
+    if (count === 0) {
+        CartSwal.fire({
+            title: '無法加入',
+            text: `${product.value.name}已達庫存上限`,
+            icon: 'warning',
+            confirmButtonText: '確定',
+            confirmButtonColor: '#145369',
+            didOpen: (modal) => {
+              modal.querySelector('.swal2-confirm').style.color = '#fff';
+            }
+        });
+        return;
     }
-    // 可以在這裡添加提示訊息
     CartSwal.fire({
         title: '成功！',
-        text: `${count}件${product.value.name}已成功加入購物車`,
+        text: count < quantity.value
+            ? `已達庫存上限，${count}件${product.value.name}已加入購物車`
+            : `${count}件${product.value.name}已成功加入購物車`,
         icon: 'success',
         confirmButtonText: '確定',
         confirmButtonColor: '#145369',
@@ -99,7 +124,7 @@ onMounted(() => {
                                 <i class=" bi bi-dash-lg"></i>
                             </button>
                             <input type="number" class="form-control border-0 text-center bg-white fw-bold"
-                                v-model.number="quantity" min="1" :max="product?.stock">
+                                v-model.number="quantity" min="1" :max="product?.stock" @change="normalizeQty">
                             <button class="btn btn-light border-0 px-3 transition m-0" type="button"
                                 @click="changeQty(1)">
                                 <i class="bi bi-plus-lg"></i>
@@ -128,9 +153,14 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div v-else class="text-center p-5">
+        <div v-else-if="loading" class="text-center p-5">
             <div class="spinner-border" style="color: #86B0BD;" role="status"></div>
             <p class="mt-2">正在讀取商品資訊，請稍候...</p>
+        </div>
+        <div v-else class="text-center p-5">
+            <h4 class="fw-bold">找不到此商品</h4>
+            <p class="text-muted">商品可能已下架</p>
+            <router-link :to="{ name: 'PointShop' }" class="btn btn-custom-primary">返回商城</router-link>
         </div>
     </div>
 </template>
