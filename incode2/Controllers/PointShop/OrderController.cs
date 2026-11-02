@@ -1,6 +1,7 @@
 ﻿using incode2.Constants;
+using incode2.Dtos.PointShop;
 using incode2.Models;
-using incode2.Services.Point;
+using incode2.Services.PointShop;
 using incode2.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -14,20 +15,19 @@ namespace incode2.Controllers
     public class OrderController : Controller
     {
         private readonly incodedatabaseContext _context;
-        private readonly IPointLogService _pointlogService;
+        private readonly IOrderService _orderService;
 
-
-        public OrderController(incodedatabaseContext context, IPointLogService pointLogService)
+        public OrderController(incodedatabaseContext context, IOrderService orderService)
         {
             _context = context;
-            _pointlogService = pointLogService;
+            _orderService = orderService;
         }
 
         // GET: Order
         [HttpGet]
         public ActionResult Index()
         {
-            return View(_context.Orders);
+            return View(_context.Orders.AsNoTracking());
         }
 
         // GET: Order/Create 顯示頁面
@@ -41,75 +41,42 @@ namespace incode2.Controllers
         }
 
         // POST: Order/Create 新增訂單
+        // 總點數、單價、是否需寄送一律由後端依商品資料計算，不採用表單傳入的值
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderViewModel NewOrder)
         {
-            // 檢查用戶當前點數餘額
-            var currentBalance = await _pointlogService.GetCurrentBalanceAsync(NewOrder.UserId);
-            
-            // 檢查點數是否足夠
-            if (currentBalance < NewOrder.TotalPoint)
-            {
-                // 點數不足，返回錯誤訊息
-                TempData["ErrorMessage"] = $"點數不足！您目前擁有 {currentBalance} 點，但需要 {NewOrder.TotalPoint} 點。";
-                
-                // 重新載入商品資料以便返回 View
-                var products = _context.Product.OrderBy(p => p.Name).ToList();
-                ViewBag.Products = products;
-                return View(NewOrder);
-            }
+            var userExists = await _context.User.AnyAsync(u => u.UserId == NewOrder.UserId);
+            if (!userExists)
+                return CreateFailed(NewOrder, $"找不到會員 {NewOrder.UserId}");
 
-            //if (ModelState.IsValid)
-            //{
-            var orders = new Orders();
-            orders.OrderId = 0;
-            orders.UserId = NewOrder.UserId;
-            orders.TotalPoint = NewOrder.TotalPoint;
-            orders.Status = NewOrder.Status;
-            orders.Remark = NewOrder.Remark;
-            orders.OrderDate = DateTime.Now;
-            _context.Add(orders);
-            await _context.SaveChangesAsync();
-            foreach (var item in NewOrder.orderdetails)
-            {
-                //orderdetai
-                var orderdetail = new Orderdetail();
-                orderdetail.OrderId = orders.OrderId;
-                orderdetail.ProductId = item.ProductId;
-                orderdetail.Quantity = item.Quantity;
-                orderdetail.UnitPointAtPurchase = item.UnitPointAtPurchase;
-                orderdetail.RequiresShipping = item.RequiresShipping;
-                _context.Add(orderdetail);
+            var result = await _orderService.CreateOrderAsync(
+                NewOrder.UserId,
+                ToItems(NewOrder.orderdetails),
+                recipient: null,               // 寄送資料由出貨管理另外建立
+                remark: NewOrder.Remark,
+                requireRecipient: false,
+                status: NewOrder.Status ?? OrderStatus.Pending);
 
-                // 扣除庫存
-                var product = await _context.Product.FindAsync(item.ProductId);
-                if (product != null)
-                {
-                    product.Stock -= item.Quantity;
-                    _context.Update(product);
-                }
-            }
-            // 扣除會員點數（寫入點數紀錄）
-            var result = await _pointlogService.ChangePointsAsync(NewOrder.UserId, -NewOrder.TotalPoint, "order", orders.OrderId, PointType.ExpenseOrders);
-            
-            // 檢查點數扣除是否成功
-            if (!result)
-            {
-                TempData["ErrorMessage"] = "點數扣除失敗，訂單建立失敗！";
-                return RedirectToAction(nameof(Index));
-            }
+            if (!result.Ok)
+                return CreateFailed(NewOrder, result.Message);
 
-            await _context.SaveChangesAsync();
-            
             TempData["SuccessMessage"] = "訂單建立成功！";
             return RedirectToAction(nameof(Index));
-            //}
-            //else 
-            //{
-            //    return View(NewOrder);
-            //}
         }
+
+        private IActionResult CreateFailed(OrderViewModel model, string? message)
+        {
+            TempData["ErrorMessage"] = message ?? "訂單建立失敗！";
+            ViewBag.Products = _context.Product.OrderBy(p => p.Name).ToList();
+            return View(nameof(Create), model);
+        }
+
+        // 表單明細只取商品與數量
+        private static List<OrderItemRequest> ToItems(IEnumerable<Orderdetail>? details)
+            => (details ?? Enumerable.Empty<Orderdetail>())
+                .Select(d => new OrderItemRequest { ProductId = d.ProductId, Quantity = d.Quantity })
+                .ToList();
 
         // GET: Order/Edit/5 顯示頁面
         [Route("/Order/Edit/{OrderId}")]
@@ -144,253 +111,62 @@ namespace incode2.Controllers
         public async Task<IActionResult> Edit(OrderViewModel EditOrder, int OrderId)
         {
             if (OrderId != EditOrder.OrderId)
-            {
                 return NotFound();
-            }
 
-            // 先從 DB 讀出原本的訂單，保留 OrderDate（避免 DateTime.MinValue 寫入）
-            var orders = await _context.Orders.FindAsync(OrderId);
-            if (orders == null)
-            {
+            var order = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == OrderId);
+            if (order == null)
                 return NotFound();
-            }
 
-            if (orders.Status == "已取消" && EditOrder.Status != "已取消")
+            if (!OrderStatus.IsValid(EditOrder.Status))
+                return EditFailed(EditOrder, "訂單狀態錯誤");
+
+            // 已取消的訂單庫存與點數都已退還，不可改回其他狀態 (否則等於免費取得商品)
+            if (order.Status == OrderStatus.Canceled)
             {
-                // 從已取消改回其他狀態，清除取消時間
-                orders.CanceledAt = null;
-            }
+                if (EditOrder.Status != OrderStatus.Canceled)
+                    return EditFailed(EditOrder, "已取消的訂單不能恢復，請重新建立訂單");
 
-            orders.UserId = EditOrder.UserId;
-            orders.TotalPoint = EditOrder.TotalPoint;
-            orders.Status = EditOrder.Status;
-            orders.Remark = EditOrder.Remark;
-
-            // 若狀態為取消，設定取消時間；否則清除（或保留原值視需求）
-            if (orders.Status == "已取消")
-            {
-                // 只有當原本不是取消狀態（CanceledAt 為 null）時才執行退貨邏輯
-                // 這樣可以避免重複操作導致庫存重複增加
-                if (orders.CanceledAt == null)
-                {
-                    orders.CanceledAt = DateTime.Now;
-
-                    // 取出目前資料庫中的明細，不管前端傳來的修改，直接將原單庫存全數退還
-                    var currentDetails = await _context.Orderdetail
-                        .Where(od => od.OrderId == OrderId)
-                        .ToListAsync();
-
-                    foreach (var detail in currentDetails)
-                    {
-                        var product = await _context.Product.FindAsync(detail.ProductId);
-                        if (product != null)
-                        {
-                            product.Stock += detail.Quantity;
-                        }
-                    }
-                    
-                    // 退還點數：將原始訂單的總點數全額退還
-                    var cancelOriginalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
-                    await _pointlogService.ChangePointsAsync(orders.UserId, cancelOriginalTotalPoint, "order", orders.OrderId, PointType.IncomeOrdersRefund);
-                }
-                _context.Orders.Update(orders);
-                await _context.SaveChangesAsync();
-                
-                TempData["SuccessMessage"] = "訂單已取消，點數已退還！";
+                await UpdateRemarkAsync(OrderId, EditOrder.Remark);
+                TempData["SuccessMessage"] = "訂單備註已更新！";
                 return RedirectToAction(nameof(Index));
             }
-            else
+
+            // 改為取消：退還庫存與點數 (會員 / 明細不允許在此同時修改)
+            if (EditOrder.Status == OrderStatus.Canceled)
             {
-                orders.CanceledAt = null;
+                var cancel = await _orderService.CancelOrderAsync(OrderId);
+                if (!cancel.Ok)
+                    return EditFailed(EditOrder, cancel.Message);
+
+                await UpdateRemarkAsync(OrderId, EditOrder.Remark);
+                TempData["SuccessMessage"] = "訂單已取消，庫存與點數已退還！";
+                return RedirectToAction(nameof(Index));
             }
 
-            _context.Orders.Update(orders);
-            // 這裡可以先不SaveChanges，等明細處理完一次Save
+            // 修改明細：庫存、總點數、點數差額由 Service 在交易內處理 (會員不可變更)
+            var result = await _orderService.UpdateOrderItemsAsync(
+                OrderId, ToItems(EditOrder.orderdetails), EditOrder.Remark ?? "");
+            if (!result.Ok)
+                return EditFailed(EditOrder, result.Message);
 
-            // ===== 同步 OrderDetail（比較並執行 CRUD）=====
-            // 取得 DB 的原始明細（tracked entities）
-            var existingDetails = await _context.Orderdetail
-                .Where(od => od.OrderId == OrderId)
-                .ToListAsync();
-
-            var submitted = EditOrder.orderdetails ?? new List<Orderdetail>();
-
-            // 記錄已處理的 existing id（用於找出要刪除的）
-            var processedIds = new HashSet<int>();
-
-            foreach (var item in submitted)
-            {
-                // 若有帶 ID（編輯現有明細）
-                if (item.OrderdetailId > 0)
-                {
-                    var exist = existingDetails.FirstOrDefault(e => e.OrderdetailId == item.OrderdetailId);
-                    if (exist != null)
-                    {
-                        // --- 庫存處理邏輯 (Edit) ---
-                        if (exist.ProductId != item.ProductId)
-                        {
-                            // 情境A：商品換了 (例如從 A商品 換成 B商品)
-                            // 1. 把舊商品的庫存補回來
-                            var oldProduct = await _context.Product.FindAsync(exist.ProductId);
-                            if (oldProduct != null)
-                            {
-                                oldProduct.Stock += exist.Quantity;
-                            }
-
-                            // 2. 扣除新商品的庫存
-                            var newProduct = await _context.Product.FindAsync(item.ProductId);
-                            if (newProduct != null)
-                            {
-                                newProduct.Stock -= item.Quantity;
-                            }
-                        }
-                        else
-                        {
-                            // 情境B：商品沒變，只改數量
-                            var diff = item.Quantity - exist.Quantity; // 差異量 (例如原本 2 改成 5，diff = 3)
-
-                            if (diff != 0)
-                            {
-                                var product = await _context.Product.FindAsync(exist.ProductId);
-                                if (product != null)
-                                {
-                                    product.Stock -= diff; // 扣除差異 (若 diff 為負，即代表退回庫存)
-                                }
-                            }
-                        }
-                        // -------------------------
-
-                        // 更新欄位（entity 已被 context 追蹤）
-                        exist.ProductId = item.ProductId;
-                        exist.Quantity = item.Quantity;
-                        exist.UnitPointAtPurchase = item.UnitPointAtPurchase;
-                        exist.RequiresShipping = item.RequiresShipping;
-
-                        processedIds.Add(exist.OrderdetailId);
-                    }
-                    else
-                    {
-                        // 傳來 ID 但 DB 找不到，視為新增（容錯）
-                        // --- 庫存處理 (Add) ---
-                        var product = await _context.Product.FindAsync(item.ProductId);
-                        if (product != null)
-                        {
-                            product.Stock -= item.Quantity;
-                        }
-                        // ---------------------
-
-                        var newDetail = new Orderdetail
-                        {
-                            OrderId = OrderId,
-                            ProductId = item.ProductId,
-                            Quantity = item.Quantity,
-                            UnitPointAtPurchase = item.UnitPointAtPurchase,
-                            RequiresShipping = item.RequiresShipping
-                        };
-                        _context.Orderdetail.Add(newDetail);
-                        // 無法直接加入 processedIds（新增後才有 Id）
-                    }
-                }
-                else
-                {
-                    // 新增明細
-                    // --- 庫存處理 (Add) ---
-                    var product = await _context.Product.FindAsync(item.ProductId);
-                    if (product != null)
-                    {
-                        product.Stock -= item.Quantity;
-                    }
-                    // ---------------------
-
-                    var newDetail = new Orderdetail
-                    {
-                        OrderId = OrderId,
-                        ProductId = item.ProductId,
-                        Quantity = item.Quantity,
-                        UnitPointAtPurchase = item.UnitPointAtPurchase,
-                        RequiresShipping = item.RequiresShipping
-                    };
-                    _context.Orderdetail.Add(newDetail);
-                }
-            }
-
-            // 刪除 DB 中但未被 submitted 處理到的明細
-            var toDelete = existingDetails
-                .Where(e => !processedIds.Contains(e.OrderdetailId))
-                .ToList();
-
-            if (toDelete.Any())
-            {
-                // --- 庫存處理 (Delete) ---
-                foreach (var del in toDelete)
-                {
-                    // 刪除訂單明細，需把庫存加回去
-                    var product = await _context.Product.FindAsync(del.ProductId);
-                    if (product != null)
-                    {
-                        product.Stock += del.Quantity;
-                    }
-                }
-                // -------------------------
-
-                _context.Orderdetail.RemoveRange(toDelete);
-            }
-            // ===============================================
-            // 處理點數變更：計算差額並進行多退少補
-            // 因為 orders 物件的 TotalPoint 已經被更新為新值，
-            // 這裡利用 EF Core 的 Entry().OriginalValue 取得修改前的原始點數
-            var originalTotalPoint = (int)_context.Entry(orders).Property(o => o.TotalPoint).OriginalValue;
-            var pointDifference = originalTotalPoint - orders.TotalPoint; // 差異 = 舊消費 - 新消費
-
-            // 只有當點數金額有變動時才呼叫 Service
-            if (pointDifference != 0)
-            {
-                // pointDifference > 0 : 原本買比較多，現在買比較少 -> 退還點數 (增加)
-                // pointDifference < 0 : 原本買比較少，現在買比較多 -> 補扣點數 (減少)
-                
-                // 如果需要補扣點數（pointDifference < 0），先檢查用戶點數是否足夠
-                if (pointDifference < 0)
-                {
-                    var currentBalance = await _pointlogService.GetCurrentBalanceAsync(orders.UserId);
-                    var requiredPoints = Math.Abs(pointDifference);
-                    
-                    if (currentBalance < requiredPoints)
-                    {
-                        TempData["ErrorMessage"] = $"點數不足！需要補扣 {requiredPoints} 點，但用戶目前僅有 {currentBalance} 點。";
-                        
-                        // 重新載入資料以便返回 View
-                        var orderdetail = new OrderViewModel
-                        {
-                            OrderId = orders.OrderId,
-                            UserId = orders.UserId,
-                            TotalPoint = orders.TotalPoint,
-                            Status = orders.Status,
-                            Remark = orders.Remark,
-                            orderdetails = EditOrder.orderdetails
-                        };
-                        
-                        var products = _context.Product.OrderBy(p => p.Name).ToList();
-                        ViewBag.Products = products;
-                        return View(orderdetail);
-                    }
-                }
-                
-                // 執行點數變更
-                // diff < 0 : 補扣點數 (使用 Order 類型)
-                var pointType = pointDifference > 0 ? PointType.ExpenseOrders : PointType.IncomeOrdersRefund;
-                var result = await _pointlogService.ChangePointsAsync(orders.UserId, pointDifference, "order", orders.OrderId, pointType);
-                
-                if (!result)
-                {
-                    TempData["ErrorMessage"] = "點數變更失敗，訂單修改失敗！";
-                    return RedirectToAction(nameof(Index));
-                }
-            }
-            
-            await _context.SaveChangesAsync();
+            await _context.Orders
+                .Where(o => o.OrderId == OrderId)
+                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, EditOrder.Status));
 
             TempData["SuccessMessage"] = "訂單修改成功！";
             return RedirectToAction(nameof(Index));
+        }
+
+        private Task UpdateRemarkAsync(int orderId, string? remark)
+            => _context.Orders
+                .Where(o => o.OrderId == orderId)
+                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Remark, remark ?? ""));
+
+        private IActionResult EditFailed(OrderViewModel model, string? message)
+        {
+            TempData["ErrorMessage"] = message ?? "訂單修改失敗！";
+            ViewBag.Products = _context.Product.OrderBy(p => p.Name).ToList();
+            return View(nameof(Edit), model);
         }
 
         // GET: Order/GetShippedData - 提供寄送資料的 API
