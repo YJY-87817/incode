@@ -167,4 +167,3 @@
 - `Program.cs`：`UseRouting` / `UseCors` / `MapControllers` 重複呼叫，CORS 允許來源寫了兩份且不一致（ngrok 網址只在一份）。
 - 專案同時參考 EF Core Sqlite 與 SqlServer，只用到 SqlServer。
 - `wwwroot/img/` 下的使用者上傳圖片被提交進 git，建議加入 `.gitignore`。
-- 前端 `src/views/point/Task.vue` 匯入路徑大小寫錯誤，Linux 上 build 失敗（見前端 CLAUDE.md）。
