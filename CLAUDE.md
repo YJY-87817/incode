@@ -85,35 +85,86 @@
    後台商品圖片路徑穿越刪檔、寄送資料刪除表單缺 `method="post"`
 3. 前端點數商城（`incode_Vue`）：錯誤修正與重構（見前端 repo 的 CLAUDE.md）
 
-## 全專案檢查（進行中）
+## 全專案檢查結果（2026-11 完成，尚未修正）
 
-點數商城以外的模組正在逐一檢查，以下為**已確認、尚未修正**的問題（依嚴重度）：
+點數商城以外的前後端模組已全部檢查過，以下問題**都還沒修**，之後有空依序處理。
+程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
+建議修正順序：先處理 🔴 的 1～4（加 `[Authorize]` / 擁有者檢查，改動小、效果大），再處理金鑰外洩與 XSS。
 
-### 嚴重
+### 🔴 嚴重
 
-- **後台點數相關 Controller 完全沒有 `[Authorize]`**：`Controllers/Point/` 下的
-  `PointLogController`、`PointRechargeController`、`MissionController`、`MissionProgressController`、`EntrustMissionController`。
-  匿名使用者可直接進入後台頁面，例如在 `PointLog/Create` 新增任意點數紀錄（等於無限加點）。
-  `Controllers/Users/CommunityController.cs` 也沒有（會列出所有會員）。
-- **`PointRechargeApiController` 的 GET / PUT / DELETE 沒有登入檢查**：任何人可列出、修改、刪除所有人的儲值紀錄（只有 `recharge` 有 `[Authorize]`）。
-- **`ChatSessionsApiController` 沒有登入與擁有者檢查**：`User/{userId}` 可讀任何人的對話列表，`Create` 可替任意 userId 建立，`Delete/{id}` 可刪任何人的對話與訊息。
-- **`ContentNotificationApiController` 沒有登入檢查**：可匿名讀取 / 修改 / 新增 / 刪除所有通知紀錄。
-- **`CategoryApiController`** 沒有 `[Authorize]`，POST 新增分類可匿名呼叫。
+1. **任何會員都能替自己加任意點數**：`ApiControllers/Point/PointLogApiController.cs` 的 `POST add-reward`，
+   `changeAmount` 由前端表單決定，直接寫入點數紀錄。
+   → 刪除此 API，委託任務獎勵只能由 `ContentInteractionService.SelectBestAnswerAsync` 發放。
+2. **後台點數相關頁面沒有登入檢查**：`Controllers/Point/` 的 `PointLogController`、`PointRechargeController`、
+   `MissionController`、`MissionProgressController`、`EntrustMissionController` 都沒有 `[Authorize]`。
+   匿名使用者可以進後台，例如 `PointLog/Create` 新增任意點數紀錄。`Controllers/Users/CommunityController.cs` 也沒有（會列出所有會員）。
+   → class 加上 `[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`。
+3. **會員 API 的 `[Authorize]` 被註解掉**（`ApiControllers/User/UserApiController.cs`，路由 `api/User`）：
+   - `DELETE api/User/{id}`：**匿名就能刪除任何會員**（權限檢查也被註解掉）
+   - `GET api/User`：匿名取得所有會員的 Email
+   - `POST api/User/images`：匿名上傳任意檔案到 `wwwroot/img/user`，沒有檢查格式（可上傳 .html 造成 XSS）
+   - `PUT api/User/profile` 回傳整個 `User` 實體，包含密碼雜湊與 `ResetToken`
+   → 恢復 `[Authorize]`；刪除限管理員或本人；`GET` 全部會員限管理員；上傳改用 `ImageFileValidator`；回傳改用 DTO。
+4. **客服聊天沒有權限與擁有者檢查**：
+   - `hubs/ChatHub.cs` 完全沒有驗證：匿名連線就能 `JoinSupportGroup`（收到所有客服通知）、`JoinSessionGroup` 任意對話（竊聽），
+     `SendMessage` 可自訂發送者名稱（冒充客服）
+   - `ApiControllers/Chat/ChatMessagesApiController.cs`：`GetActiveSupportSessions`（所有人的客服對話與最後訊息）、
+     `AdminReply`（以客服身分回覆任何對話）只檢查有登入，任何會員都能用；`GetHistory/{sessionId}` 可讀任何人的對話
+   - `ApiControllers/Chat/ChatSessionsApiController.cs` 沒有 `[Authorize]`：`User/{userId}` 讀任何人的對話列表、
+     `Create` 替任何人建立、`Delete/{id}` 刪除任何人的對話、`AutoTitle` 可匿名一直呼叫 Gemini（費用）
+   → Hub 加 `[Authorize]`，加入群組前檢查對話屬於本人，客服群組 / AdminReply / 客服列表限管理員；API 一律用登入者 ID 檢查擁有者。
+5. **其他沒有登入檢查的 API**：
+   - `PointRechargeApiController`：`GET` / `GET {id}` / `PUT {id}` / `DELETE {id}` 可匿名列出、修改、刪除所有人的儲值紀錄
+   - `ContentNotificationApiController`：整個 controller 可匿名讀取 / 新增 / 修改 / 刪除所有通知
+   - `CategoryApiController`：`POST` 可匿名新增論壇分類
+   - `EntrustMissionApiController`：`DELETE {id}` 可匿名刪除任何委託任務（已預扣的點數不會退）
+   - `PointLogApiController` `GET`、`EntrustMissionProgressApiController` `GET`：匿名取得所有人的點數紀錄 / 任務進度
+   → 不需要的 CRUD 直接刪除；需要的加 `[Authorize]` 與擁有者 / 管理員檢查。
 
-### 中
+### 🟠 高
 
-- **ECPay 回呼冪等性**（`PointRechargeApiController.EcpayReturn`）：「檢查是否已成功 → 加點 → 更新狀態」沒有鎖，
-  綠界重送或同時回呼可能重複加點；`AddPointsFromRechargeAsync` 先 commit 加點，之後更新儲值狀態失敗時，重試會再加一次。
-- 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
+6. **API 金鑰提交進 git 歷史**：`incode2/appsettings.json` 的歷史版本中有 `GeminiApiKey`、`TmdbApiKey` 的真實值
+   （目前檔案已清空，但歷史仍可取得）。→ 到 Google / TMDB 後台**撤銷並重新產生金鑰**，改用 user-secrets 或環境變數。
+   ECPay 目前放的是綠界公開的測試帳號（`3002607`），正式上線時正式金鑰不可放進 repo。
+7. **任務進度可以自己增加**：`MissionProgressApiController` 的 `POST {missionId}/increment` 讓會員自訂增量，
+   可以直接把任何任務（登入、購買、按讚…）刷到完成再領獎。→ 刪除此 API，進度只由伺服器端 `TriggerMissionAsync` 觸發。
+8. **點數併發問題**：`PointLogService.ChangePointsAsync` 以「讀取最後餘額 + 變動」計算，打賞（`TipAsync`）、
+   任務領獎（`MissionProgressService.ClaimRewardAsync`，先檢查 `RewardedAt` 再寫入）、委託任務沒有鎖，
+   同時送出多個請求可以重複扣款 / 重複領獎、餘額扣成負數。點數商城已用 `sp_getapplock` 處理。
+   → 把 `OrderService.LockUserPointsAsync` 的做法抽到 `PointLogService`，所有點數異動都在交易內先鎖定會員。
+9. **ECPay 回呼冪等性**（`PointRechargeApiController.EcpayReturn`）：「檢查是否已成功 → 加點 → 更新狀態」沒有鎖，
+   綠界重送或同時回呼可能重複加點；`AddPointsFromRechargeAsync` 先 commit 加點，之後更新儲值狀態失敗時，重試會再加一次。
+   → 同一交易內以條件更新 `UPDATE ... SET Status='success' WHERE OrderNo=@no AND Status<>'success'`，影響 1 筆才加點。
+10. **聊天室 XSS**（前端 `src/components/ChatWidget.vue`）：訊息以 `v-html` 顯示，客服 / SignalR 收到的訊息、使用者輸入、
+    `marked.parse` 的結果都沒有經過 DOMPurify。配合第 4 點（任何人都能以客服身分發訊息），可以對其他會員執行腳本。
+    → `v-html` 前一律用 `utils/sanitizeHtml.js`（DOMPurify）處理。
+11. **聊天圖片上傳**（`ChatMessagesApiController` UploadImage）：檔名直接使用原始 `FileName`（`Guid + "_" + FileName`），
+    在 Windows 上可用 `..\` 路徑寫到其他目錄；也沒有檢查格式。→ 改用 `ImageFileValidator` 與 Guid 檔名。
 
-### 低 / 程式品質
+### 🟡 中
 
-- 誤加的 `using`：`ViewModels/Users/CommunityViewModel.cs`（`Microsoft.Build.Framework`，目前未造成錯誤）、
+12. **CSRF**：會員 Cookie 設定 `SameSite=None`，接受 `[FromForm]` / multipart 的 API（例如上面的 `add-reward`、各圖片上傳）
+    可以被其他網站以表單直接送出。→ 會員 Cookie 改 `SameSite=Lax`（前後端同站時）或對表單 API 加 AntiForgery。
+13. **論壇互動可以送出任意分類**：`ContentInteractionApiController` `POST` 接受任何 `InteractionCategoryId`，
+    會員可以自己替回覆加上「最佳解答」等系統分類（假徽章）；按讚可反覆取消 / 重按，每次都觸發按讚任務。
+    → 限制會員可用的分類；任務改為同一內容只計一次。
+14. **委託任務可匿名刪除後點數不退**（見第 5 點），刪除流程應該走釋放預扣點數。
+15. **沒有登入嘗試次數限制**：會員 / 後台登入、忘記密碼寄信都沒有 rate limit 或鎖定。→ 使用 ASP.NET Core Rate Limiting middleware。
+16. 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
+17. `InventoryController` `POST add`：會員可以替自己加任意道具與數量（目前前端沒有使用這個功能）。
+
+### ⚪ 低 / 程式品質
+
+- 重設密碼：`ResetPasswordAsync` 沒有檢查 `ResetToken` 是否為 null（目前靠 `[ApiController]` 隱含的必填驗證擋住），
+  新密碼沒有長度規則；信件連結中的 email 沒有 URL encode；前端網址寫死 `https://localhost:5173`（Google 登入導回也是）。
+- `CreateContent` 的 `[Authorize]` 被註解掉，未登入時會以 UserId 0 寫入而失敗（500）。
+- 論壇內容在前端以 `HtmlIframe` 顯示，`allow-scripts` + `allow-same-origin` 時會移除 sandbox；內容已用 DOMPurify 過濾，
+  但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
+- 錯誤訊息直接回傳 `ex.Message`：聊天、打賞、會員上傳等多處。
+- 誤加的 `using`：`ViewModels/Users/CommunityViewModel.cs`（`Microsoft.Build.Framework`）、
   `Services/Point/PointLogService.cs`（`NuGet.Protocol.Plugins`）、`Partials/ContentCategory.cs`（`Microsoft.Build.Evaluation`）。
-- `Program.cs`：`UseRouting` / `UseCors` / `MapControllers` 重複呼叫，CORS 允許來源寫了兩份且不一致。
+- `Program.cs`：`UseRouting` / `UseCors` / `MapControllers` 重複呼叫，CORS 允許來源寫了兩份且不一致（ngrok 網址只在一份）。
 - 專案同時參考 EF Core Sqlite 與 SqlServer，只用到 SqlServer。
-
-### 尚未檢查
-
-會員 Auth（註冊、登入、Google 登入、忘記 / 重設密碼）、`UserApiController`、論壇內容與互動（打賞點數轉移、委託任務最佳解）、
-`ChatMessagesApiController`（圖片上傳、AdminReply）、`ChatHub` 群組授權、點數任務領獎流程。
+- `wwwroot/img/` 下的使用者上傳圖片被提交進 git，建議加入 `.gitignore`。
+- 前端 `src/views/point/Task.vue` 匯入路徑大小寫錯誤，Linux 上 build 失敗（見前端 CLAUDE.md）。
