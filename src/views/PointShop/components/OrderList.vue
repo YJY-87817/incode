@@ -1,14 +1,8 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { getOrdersByUser } from "@/views/PointShop/services/PointShopApi";
 import OrderItem from "@/views/PointShop/components/OrderItem.vue";
 import { useAuthStore } from "@/stores/user/auth.js";
-
-const authStore = useAuthStore();
-// 用 computed 保持響應式，登入狀態改變時才會跟著更新 (template 會自動解包)
-const Islogin = computed(() => authStore.isAuthenticated);
-const orders = ref([]);
-const loading = ref(true);
 
 const props = defineProps({
   status: {
@@ -17,39 +11,44 @@ const props = defineProps({
   },
 });
 
-// 篩選訂單
-const filteredOrders = computed(() => {
-  if (!props.status) {
-    return orders.value; // 空字串表示顯示全部
-  }
-  return orders.value.filter((order) => order.status === props.status);
-});
+const authStore = useAuthStore();
+// 用 computed 保持響應式，登入狀態改變時才會跟著更新 (template 會自動解包)
+const Islogin = computed(() => authStore.isAuthenticated);
+const orders = ref([]);
+const loading = ref(true);
+const loadError = ref(false);
+
+// 依狀態篩選，空字串表示全部
+const filteredOrders = computed(() =>
+  props.status
+    ? orders.value.filter((order) => order.status === props.status)
+    : orders.value,
+);
 
 // 取得使用者訂單資料
-const getordernew = async () => {
+const loadOrders = async () => {
+  loadError.value = false;
   if (!Islogin.value) {
     orders.value = [];
     loading.value = false;
     return;
   }
-  await getOrdersByUser()
-    .then((res) => {
-      orders.value = res.data.data;
-      loading.value = false;
-    })
-    .catch((error) => {
-      loading.value = false;
-      if (error.response && error.response.status === 401) {
-        orders.value = [];
-      } else {
-        // console.log("取得訂單資料失敗:", error);
-      }
-    });
+  // 只有清單為空 (首次載入) 時才顯示載入中，重新整理時保留畫面與展開狀態
+  if (orders.value.length === 0) loading.value = true;
+  try {
+    const res = await getOrdersByUser();
+    orders.value = res.data.ok ? res.data.data || [] : [];
+  } catch (error) {
+    orders.value = [];
+    // 401 代表未登入，其餘顯示錯誤訊息
+    if (error.response?.status !== 401) loadError.value = true;
+  } finally {
+    loading.value = false;
+  }
 };
 
-onMounted(() => {
-  getordernew();
-});
+// 首次載入，以及登入狀態變更 (例如 checkAuth 完成) 時重新載入
+watch(Islogin, loadOrders, { immediate: true });
 </script>
 
 <template>
@@ -86,6 +85,13 @@ onMounted(() => {
         </router-link>
       </div>
 
+      <!-- Load Error -->
+      <div v-else-if="loadError" class="text-center bg-light card-body px-4">
+        <i class="bi bi-exclamation-triangle fs-1 text-secondary mb-3 d-block"></i>
+        <h4 class="fw-bold">訂單載入失敗</h4>
+        <button class="btn btn-custom-primary mt-2" @click="loadOrders">重新載入</button>
+      </div>
+
       <!-- Empty State -->
       <div
         v-else-if="orders.length === 0"
@@ -118,23 +124,10 @@ onMounted(() => {
           v-for="order in filteredOrders"
           :key="order.orderId"
           :order="order"
-          @refresh="getordernew"
+          @refresh="loadOrders"
         />
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
-</style>
