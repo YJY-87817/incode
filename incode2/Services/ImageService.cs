@@ -11,42 +11,43 @@
       if (!Directory.Exists(_storagePath)) Directory.CreateDirectory(_storagePath);
     }
 
+    public const int MaxFilesPerUpload = 20;
+
     public async Task<List<string>> UploadImagesAsync(IEnumerable<IFormFile> files)
     {
-      if (files == null) throw new Exception("未提供檔案");
+      var list = files?.Where(f => f != null && f.Length > 0).ToList();
+      if (list == null || list.Count == 0) throw new ArgumentException("沒有有效的檔案");
+      if (list.Count > MaxFilesPerUpload) throw new ArgumentException($"一次最多上傳 {MaxFilesPerUpload} 個檔案");
+
+      // 先全部檢查通過才寫入，避免部分檔案已存入
+      foreach (var file in list)
+      {
+        var error = ImageFileValidator.Validate(file);
+        if (error != null) throw new ArgumentException(error);
+      }
 
       var urls = new List<string>();
-      foreach (var file in files)
+      foreach (var file in list)
       {
-        if (file == null || file.Length == 0) continue;
-
-        // 作用：基本的防呆檢查，確保有接收到檔案
-        if (file.Length == 0) throw new Exception("檔案無效");
-
-        // [可自訂]：產生新檔名。Guid 確保檔名不重複；Path.GetExtension 取得原始副檔名 (如 .jpg)
-        // 建議不要用原始檔名，避免安全性問題（如檔名包含路徑符號）或檔名重複被覆蓋
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-
-        // 作用：合成完整的伺服器實體路徑
+        // 不使用原始檔名 (避免路徑符號或覆蓋)，Guid + 正規化後的副檔名
+        var fileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(file)}";
         var filePath = Path.Combine(_storagePath, fileName);
 
-        // 作用：開啟檔案串流，並將檔案寫入硬碟
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        using (var stream = new FileStream(filePath, FileMode.CreateNew))
         {
           await file.CopyToAsync(stream);
         }
 
-        // [可自訂]：回傳給前端的 URL 路徑。這裡回傳的是網址路徑，不是硬碟路徑
+        // 回傳給前端的網址路徑
         urls.Add($"/img/fromApi/{fileName}");
       }
 
-      if (urls.Count == 0) throw new Exception("沒有有效的檔案");
       return urls;
     }
 
     public async Task DeleteImageAsync(string fileNameOrUrl)
     {
-      if (string.IsNullOrWhiteSpace(fileNameOrUrl)) throw new Exception("檔名無效");
+      if (string.IsNullOrWhiteSpace(fileNameOrUrl)) throw new ArgumentException("檔名無效");
 
       // 僅保留檔名避免路徑穿越
       var fileName = Path.GetFileName(fileNameOrUrl);
