@@ -316,6 +316,25 @@ namespace incode2.Services.PointShop
                     totalPoints += itemDto.Quantity * prod.Point;
                 }
 
+                // C. 點數差額處理：新總點數 > 舊總點數 → 補扣；反之 → 退還
+                int pointDiff = totalPoints - oldOrder.TotalPoint;
+                if (pointDiff != 0)
+                {
+                    var pointResult = await _pointlogService.ChangePointsAsync(
+                        userId: oldOrder.UserId,
+                        changeAmount: -pointDiff,
+                        sourceType: "order",
+                        sourceId: oldOrder.OrderId,
+                        type: pointDiff > 0 ? PointType.ExpenseOrders : PointType.IncomeOrdersRefund,
+                        displaySource: pointDiff > 0 ? "訂單修改補扣" : "訂單修改退款",
+                        displaySubTitle: $"訂單編號: {oldOrder.OrderId}"
+                    );
+
+                    // 點數不足：回傳失敗，由呼叫端 Rollback
+                    if (!pointResult)
+                        return ResultDTO<int>.Failure("您的點數不足，無法修改訂單");
+                }
+
                 oldOrder.TotalPoint = totalPoints;
                 await _context.SaveChangesAsync();
 

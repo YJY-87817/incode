@@ -29,6 +29,18 @@ namespace incode2.ApiControllers
 
         private int userId => HttpContext.User.GetId();
 
+        // 會員端只有「待處理」的訂單可以修改 / 取消 / 改寄送資料
+        // (後台狀態有：待處理、已出貨、已完成、已取消、其他)
+        private const string EditableStatus = "待處理";
+
+        // 檢查訂單是否屬於目前登入會員
+        private Task<bool> IsOwnOrderAsync(int orderId)
+            => _context.Orders.AnyAsync(o => o.OrderId == orderId && o.UserId == userId);
+
+        // 檢查訂單明細數量皆為正數
+        private static bool HasInvalidQuantity(OrderRequest order)
+            => order.Items.Any(i => i == null || i.Quantity <= 0);
+
         // 取得UserId的訂單資料
         // GET: api/OrderApi/order
         [HttpGet("order")]
@@ -44,6 +56,9 @@ namespace incode2.ApiControllers
         [HttpGet("orderdetail/{OrderId}")]
         public async Task<ResultDTO<IEnumerable<OrderDetailDTO>>> GetOrderDetail(int orderId)
         {
+            if (!await IsOwnOrderAsync(orderId))
+                return ResultDTO<IEnumerable<OrderDetailDTO>>.Failure("找不到該訂單", 404);
+
             var result = await _orderService.GetOrderDetailAsync(orderId);
             return result;
         }
@@ -54,6 +69,9 @@ namespace incode2.ApiControllers
         [HttpGet("shippeddetail/{OrderId}")]
         public async Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetail(int OrderId)
         {
+            if (!await IsOwnOrderAsync(OrderId))
+                return ResultDTO<IEnumerable<ShippedDTO>>.Failure("找不到該訂單", 404);
+
             var result = await _orderService.GetShippedDetailAsync(OrderId);
             return result;
         }
@@ -73,11 +91,14 @@ namespace incode2.ApiControllers
         [HttpPost("OrderPost")]
         public async Task<ResultDTO<int>> CreateOrder([FromBody] OrderRequest order)
         {
-            order.UserId = userId;
-            
             // 驗證訂單資料
             if (order == null || order.Items == null || !order.Items.Any())
                 return ResultDTO<int>.Failure("訂單資料有誤");
+
+            if (HasInvalidQuantity(order))
+                return ResultDTO<int>.Failure("商品數量必須大於 0");
+
+            order.UserId = userId;
 
             // 檢查 user 是否存在
             var user = await _context.User.FindAsync(order.UserId);
@@ -140,9 +161,18 @@ namespace incode2.ApiControllers
             if (existingShipped == null)
                 return ResultDTO<int>.Failure($"找不到編號為 {ShippedDetailId} 的寄送資料");
 
+            // 只能修改自己訂單的寄送資料
+            var shippedOrder = await _context.Orders
+                .FirstOrDefaultAsync(o => o.OrderId == existingShipped.OrderId && o.UserId == userId);
+            if (shippedOrder == null)
+                return ResultDTO<int>.Failure($"找不到編號為 {ShippedDetailId} 的寄送資料");
+
             // 檢查邏輯
             if (existingShipped.IsCompleted)
                 return ResultDTO<int>.Failure("已完成的寄送資料不可修改");
+
+            if (shippedOrder.Status != EditableStatus)
+                return ResultDTO<int>.Failure($"訂單狀態為「{shippedOrder.Status}」，不能修改寄送資料");
 
             return await _orderService.EditShippedAsync(existingShipped, shipped);
         }
@@ -157,17 +187,22 @@ namespace incode2.ApiControllers
             if (order == null || order.Items == null || !order.Items.Any())
                 return ResultDTO<int>.Failure("訂單資料有誤");
 
-            // 取得修改前訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
+            if (HasInvalidQuantity(order))
+                return ResultDTO<int>.Failure("商品數量必須大於 0");
+
+            // 同一商品不可重複出現 (避免庫存 / 點數計算錯誤)
+            if (order.Items.Select(i => i.ProductId).Distinct().Count() != order.Items.Count)
+                return ResultDTO<int>.Failure("訂單明細有重複的商品");
+
+            // 取得修改前訂單資料 (只能取自己的訂單)
+            var oldOrder = await _context.Orders.Include(o => o.Orderdetail)
+                .FirstOrDefaultAsync(o => o.OrderId == OrderId && o.UserId == userId);
 
             if (oldOrder == null)
                 return ResultDTO<int>.Failure("找不到該訂單");
 
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能修改");
-
-            if (oldOrder.Status == "已寄送")
-                return ResultDTO<int>.Failure("訂單已寄送不能修改");
+            if (oldOrder.Status != EditableStatus)
+                return ResultDTO<int>.Failure($"訂單狀態為「{oldOrder.Status}」，不能修改");
 
             // 取得所有相關商品 (包含新舊商品)
             var productIds = order.Items.Select(i => i.ProductId)
@@ -219,17 +254,19 @@ namespace incode2.ApiControllers
         [HttpPut("CancelOrder/{OrderId}")]
         public async Task<ResultDTO<int>> CancelOrder(int OrderId)
         {
-            // 取得訂單資料
-            var oldOrder = await _context.Orders.Include(o => o.Orderdetail).FirstOrDefaultAsync(o => o.OrderId == OrderId);
+            // 取得訂單資料 (只能取自己的訂單)
+            var oldOrder = await _context.Orders.Include(o => o.Orderdetail)
+                .FirstOrDefaultAsync(o => o.OrderId == OrderId && o.UserId == userId);
 
             if (oldOrder == null)
                 return ResultDTO<int>.Failure("找不到該訂單");
 
-            if (oldOrder.Status == "已完成")
-                return ResultDTO<int>.Failure("訂單已完成不能取消");
-
             if (oldOrder.Status == "已取消")
                 return ResultDTO<int>.Failure("訂單已取消");
+
+            // 已出貨 / 已完成 / 其他 狀態都不可由會員取消 (避免出貨後仍退點)
+            if (oldOrder.Status != EditableStatus)
+                return ResultDTO<int>.Failure($"訂單狀態為「{oldOrder.Status}」，不能取消");
 
             // 取得相關商品
             var productIds = oldOrder.Orderdetail.Select(d => d.ProductId).Distinct().ToList();
