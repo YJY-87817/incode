@@ -1,5 +1,7 @@
 <script setup>
 import { useCartStore } from "@/views/PointShop/services/cartStore";
+import { confirmDialog } from "@/views/PointShop/services/pointShopSwal";
+import "@/views/PointShop/styles/pointshop.css";
 
 // 取得購物車狀態
 const CartNow = useCartStore();
@@ -10,6 +12,16 @@ const increase = (item) => {
 
 const decrease = (item) => {
   if (item.quantity > 1) CartNow.updateQuantity(item.productId, item.quantity - 1);
+};
+
+// 清空前先確認，避免誤按
+const clearCart = async () => {
+  if (CartNow.cartItems.length === 0) return;
+  const confirmed = await confirmDialog({
+    title: "確定要清空購物車嗎?",
+    confirmText: "清空",
+  });
+  if (confirmed) CartNow.clearCart();
 };
 </script>
 
@@ -31,7 +43,6 @@ const decrease = (item) => {
           {{ CartNow.totalItems > 99 ? "99+" : CartNow.totalItems }}
         </span>
       </div>
-      <span class="btn-text"></span>
     </button>
 
     <!-- 左側購物車 -->
@@ -48,7 +59,8 @@ const decrease = (item) => {
         <button
           type="button"
           class="btn btn-custom-primary"
-          @click="CartNow.clearCart()"
+          :disabled="CartNow.cartItems.length === 0"
+          @click="clearCart"
         >
           清空購物車
         </button>
@@ -102,13 +114,12 @@ const decrease = (item) => {
         >
           目前沒有任何商品在購物車
           <br />
-          <router-link :to="{ name: 'PointShop' }">
-            <button
-              class="btn btn-custom-primary mt-3"
-              data-bs-dismiss="offcanvas"
-            >
-              繼續逛逛
-            </button>
+          <router-link
+            :to="{ name: 'PointShop' }"
+            class="btn btn-custom-primary mt-3"
+            data-bs-dismiss="offcanvas"
+          >
+            繼續逛逛
           </router-link>
         </div>
 
@@ -124,14 +135,11 @@ const decrease = (item) => {
           </div>
           <router-link
             :to="{ name: 'Checkout' }"
-            class="dropdown-item border-radius-md"
+            class="btn btn-custom-primary w-100 mt-3"
+            :class="{ disabled: CartNow.cartItems.length === 0 }"
+            data-bs-dismiss="offcanvas"
           >
-            <button
-              class="btn btn-custom-primary w-100 mt-3"
-              data-bs-dismiss="offcanvas"
-            >
-              前往結帳
-            </button>
+            前往結帳
           </router-link>
         </div>
       </div>
@@ -140,17 +148,6 @@ const decrease = (item) => {
 </template>
 
 <style scoped>
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
 
 /* 手機版側邊購物車按鈕樣式 */
 .cart-side-btn {
@@ -181,10 +178,4 @@ const decrease = (item) => {
   box-shadow: -6px 0 20px rgba(20, 83, 105, 0.6);
 }
 
-.btn-text {
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-  white-space: nowrap;
-}
 </style>

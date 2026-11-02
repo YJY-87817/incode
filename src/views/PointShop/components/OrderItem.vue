@@ -1,61 +1,85 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, ref } from "vue";
 import {
   getOrderDetails,
   getShippedDetails,
   putCancelOrder,
   putShippedOrder,
 } from "@/views/PointShop/services/PointShopApi";
+import {
+  shopSwal,
+  alertError,
+  confirmDialog,
+} from "@/views/PointShop/services/pointShopSwal";
+import {
+  ORDER_STATUS,
+  ApiFailError,
+  ensureOk,
+  errorText,
+  escapeHtml,
+  formatDate,
+  formatDateTime,
+  normalizePhone,
+  productImageUrl,
+  validateShipping,
+} from "@/views/PointShop/services/pointShopUtils";
 
-// 引入 SweetAlert2 美化提示框套件
-import CartSwal from "sweetalert2";
-import "sweetalert2/dist/sweetalert2.min.css";
-
-// 定義事件發射和組件傳入的屬性
 const emit = defineEmits(["refresh"]);
 const props = defineProps({
-  order: { type: Object, required: true }, // 訂單對象
+  order: { type: Object, required: true },
 });
 
-// ============ 狀態變數定義 ============
-const details = ref([]); // 訂單明細列表
-const loading = ref(true); // 訂單明細載入狀態
-const shippedId = ref(0); // 出貨單 ID
-const shipped = ref([]); // 出貨對象列表
-const shippedLoading = ref(false); // 出貨資訊載入狀態
-const shippedError = ref(null); // 出貨資訊錯誤訊息
-const baseUrl = import.meta.env.VITE_BASE_URL; // 基礎 URL
+// ============ 狀態 ============
+const expanded = ref(false); // 是否展開
+const loaded = ref(false); // 明細是否已載入 (展開時才載入，避免列表一次打大量 API)
+const details = ref([]); // 訂單明細
+const loading = ref(false); // 明細載入中
+const shipped = ref([]); // 出貨資料
+const shippedLoading = ref(false);
+const shippedError = ref(null);
 
-// 將使用者輸入插入 SweetAlert html 前先跳脫，避免 HTML 注入
-const escapeHtml = (str = "") =>
-  String(str).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[c]);
+const shippedId = computed(() => shipped.value[0]?.shippedDetailId ?? 0);
+const isPending = computed(() => props.order.status === ORDER_STATUS.PENDING);
+const canEditShipping = computed(
+  () =>
+    isPending.value &&
+    shippedId.value > 0 &&
+    details.value.some((detail) => detail.requiresShipping),
+);
 
-// 後端業務失敗時回傳 HTTP 200 + ok:false，需要自行判斷
-class ApiFailError extends Error {}
-const ensureOk = (res) => {
-  if (!res.data.ok) throw new ApiFailError(res.data.message || "操作失敗");
-  return res;
+// 非待處理訂單的按鈕文字
+const statusButtonText = computed(() => {
+  switch (props.order.status) {
+    case ORDER_STATUS.CANCELED:
+      return "訂單已取消";
+    case ORDER_STATUS.SHIPPED:
+      return "訂單已出貨";
+    case ORDER_STATUS.COMPLETED:
+      return "訂單已完成";
+    default:
+      return `訂單${props.order.status}`;
+  }
+});
+
+// ============ 載入資料 ============
+const loadDetails = async () => {
+  loading.value = true;
+  try {
+    const res = await getOrderDetails(props.order.orderId);
+    details.value = res.data.ok ? res.data.data || [] : [];
+  } catch (err) {
+    details.value = [];
+  } finally {
+    loading.value = false;
+  }
 };
-// 業務失敗顯示後端訊息，其他錯誤 (網路 / 500) 顯示通用訊息
-const errorText = (error) =>
-  error instanceof ApiFailError ? error.message : "請稍後再試";
 
-// ============ 載入出貨詳情 ============
-// 非同步獲取出貨資料，設置載入狀態和錯誤處理
 const loadShippedDetails = async () => {
   shippedLoading.value = true;
   shippedError.value = null;
   try {
     const res = await getShippedDetails(props.order.orderId);
-    if (res.data.ok) {
-      shipped.value = res.data.data || [];
-      // 取得第一筆出貨單 ID，如果沒有則為 0
-      const newShippedId =
-        shipped.value.length > 0 ? shipped.value[0].shippedDetailId : 0;
-      shippedId.value = newShippedId;
-    }
+    shipped.value = res.data.ok ? res.data.data || [] : [];
   } catch (err) {
     shippedError.value = "載入出貨資料失敗，請稍後重試";
     shipped.value = [];
@@ -64,108 +88,73 @@ const loadShippedDetails = async () => {
   }
 };
 
-// ============ 生命週期鉤子 ============
-// 組件掛載時同時載入訂單明細和出貨資訊
-onMounted(async () => {
-  try {
-    const res = await getOrderDetails(props.order.orderId);
-    details.value = res.data.ok ? res.data.data || [] : [];
-  } finally {
-    loading.value = false;
+// 展開 / 收合，第一次展開時才載入明細與出貨資料
+const toggle = async () => {
+  expanded.value = !expanded.value;
+  if (expanded.value && !loaded.value) {
+    loaded.value = true;
+    await Promise.all([loadDetails(), loadShippedDetails()]);
   }
+};
 
-  // 載入出貨詳情
-  await loadShippedDetails();
-});
-
-// ============ 訂單狀態標籤樣式 ============
-// 根據訂單狀態返回對應的 Bootstrap 樣式類名
-const getStatusBadgeClass = (status) => {
-  switch (status) {
-    case "已完成":
+// ============ 狀態標籤樣式 ============
+const statusBadgeClass = computed(() => {
+  switch (props.order.status) {
+    case ORDER_STATUS.COMPLETED:
       return "bg-success-subtle text-success border border-success-subtle";
-    case "待處理":
+    case ORDER_STATUS.PENDING:
       return "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
-    case "已出貨":
+    case ORDER_STATUS.SHIPPED:
       return "bg-info-subtle text-info-emphasis border border-info-subtle";
-    case "已取消":
+    case ORDER_STATUS.CANCELED:
       return "bg-danger-subtle text-danger border border-danger-subtle";
     default:
       return "bg-secondary-subtle text-secondary border border-secondary-subtle";
   }
-};
+});
 
 // ============ 取消訂單 ============
-// 顯示確認對話框，確認後調用取消 API 並更新狀態
-const cancelOrder = (orderId) => {
-  CartSwal.fire({
+const cancelOrder = async () => {
+  const confirmed = await confirmDialog({
     title: "確定要取消嗎?",
     text: "取消後商品須重新以點數兌換!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "是, 我要取消!",
-    cancelButtonText: "返回",
-    didOpen: (modal) => {
-      // 設置按鈕文字顏色為白色
-      modal.querySelector(".swal2-confirm").style.color = "#fff";
-      modal.querySelector(".swal2-cancel").style.color = "#fff";
-    },
-  }).then(async (result) => {
-    // 只有在點擊「確認」按鈕時才呼叫 API
-    if (result.isConfirmed) {
-      try {
-        ensureOk(await putCancelOrder(orderId)); // 呼叫取消 API
-
-        // 顯示成功提示訊息
-        await CartSwal.fire({
-          title: "取消成功!",
-          text: "您的訂單已取消",
-          icon: "success",
-          didOpen: (modal) => {
-            modal.querySelector(".swal2-confirm").style.color = "#fff";
-          },
-        });
-
-        emit("refresh"); // 通知父元件重新刷新列表
-      } catch (error) {
-        console.error("取消失敗:", error);
-        // 顯示失敗提示訊息
-        await CartSwal.fire({
-          title: "取消失敗!",
-          text: errorText(error),
-          icon: "error",
-          didOpen: (modal) => {
-            modal.querySelector(".swal2-confirm").style.color = "#fff";
-          },
-        });
-        // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
-        if (error instanceof ApiFailError) emit("refresh");
-      }
-    }
+    confirmText: "是, 我要取消!",
+    cancelText: "返回",
   });
+  if (!confirmed) return;
+
+  try {
+    ensureOk(await putCancelOrder(props.order.orderId));
+    await shopSwal.fire({ title: "取消成功!", text: "您的訂單已取消", icon: "success" });
+    emit("refresh");
+  } catch (error) {
+    console.error("取消失敗:", error);
+    await alertError("取消失敗!", errorText(error));
+    // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
+    if (error instanceof ApiFailError) emit("refresh");
+  }
 };
 
-// ============ 修改出貨資料 ============
-// 顯示對話框讓用戶修改收件人信息，包括驗證和 API 調用
-const shippedchange = () => {
-  CartSwal.fire({
+// ============ 修改寄送資料 ============
+const editShipping = async () => {
+  let businessFailed = false;
+
+  const result = await shopSwal.fire({
     title: "修改寄送資料",
     html: `
-      <div class="mb-3">
+      <div class="mb-3 text-start">
         <label for="swal-name" class="form-label">收件人姓名</label>
         <input type="text" id="swal-name" class="form-control" placeholder="請輸入收件人姓名">
       </div>
-      <div class="mb-3">
+      <div class="mb-3 text-start">
         <label for="swal-phone" class="form-label">收件人電話</label>
-        <input type="tel" id="swal-phone" class="form-control" placeholder="請輸入收件人電話">
+        <input type="tel" id="swal-phone" class="form-control" placeholder="09xxxxxxxx">
       </div>
-      <div class="mb-3">
+      <div class="mb-3 text-start">
         <label for="swal-address" class="form-label">收件地址</label>
         <input type="text" id="swal-address" class="form-control" placeholder="請輸入收件地址">
       </div>
-      <div class="mb-3">
+      <div class="mb-3 text-start">
         <label for="swal-remark" class="form-label">備註</label>
         <input type="text" id="swal-remark" class="form-control" placeholder="請輸入備註（可選）">
       </div>
@@ -175,203 +164,149 @@ const shippedchange = () => {
     cancelButtonText: "取消",
     showLoaderOnConfirm: true,
     focusConfirm: false,
-    preConfirm: () => {
-      // 取得表單輸入的值
-      const name = document.getElementById("swal-name").value.trim();
-      const phone = document
-        .getElementById("swal-phone")
-        .value.trim()
-        .replace(/[- ]/g, "");
-      const address = document.getElementById("swal-address").value.trim();
-      const remark = document.getElementById("swal-remark").value.trim();
+    allowOutsideClick: () => !shopSwal.isLoading(),
+    // 驗證後直接呼叫 API，失敗時把訊息顯示在對話框內，使用者不必重填
+    preConfirm: async () => {
+      const value = (id) => document.getElementById(id).value.trim();
+      const form = {
+        name: value("swal-name"),
+        phone: value("swal-phone"),
+        address: value("swal-address"),
+        remark: value("swal-remark"),
+      };
 
-      // 檢查必填欄位
-      if (!name || !phone || !address) {
-        CartSwal.showValidationMessage("請填寫姓名、電話和地址");
+      const invalid = validateShipping(form);
+      if (invalid) {
+        shopSwal.showValidationMessage(invalid);
         return false;
       }
 
-      // 驗證電話格式（台灣手機號碼：09 開頭，後接 8 位數字）
-      const phoneRegex = /^09\d{8}$/;
-      if (!phoneRegex.test(phone)) {
-        CartSwal.showValidationMessage(
-          "請輸入正確的手機號碼格式（09xxxxxxxx）",
-        );
-        return false;
-      }
-
-      return { name, phone, address, remark };
-    },
-    allowOutsideClick: () => !CartSwal.isLoading(),
-    didOpen: (modal) => {
-      // 設置按鈕文字顏色為白色
-      modal.querySelector(".swal2-confirm").style.color = "#fff";
-      modal.querySelector(".swal2-cancel").style.color = "#fff";
-    },
-  }).then(async (result) => {
-    // 檢查是否點擊了確認按鈕
-    if (result.isConfirmed) {
+      form.phone = normalizePhone(form.phone);
       try {
-        // 組織出貨詳情數據
-        const shippedDetail = {
-          RecipientName: result.value.name,
-          RecipientAddress: result.value.address,
-          RecipientPhone: result.value.phone,
-          Remark: result.value.remark || "",
-        };
-
-        // 呼叫 API 更新出貨資料
-        ensureOk(await putShippedOrder(shippedDetail, shippedId.value));
-
-        // 顯示修改成功訊息
-        await CartSwal.fire({
-          title: "修改成功!",
-          html: `
-            <div class="text-start">
-              <p><strong>姓名：</strong>${escapeHtml(result.value.name)}</p>
-              <p><strong>電話：</strong>${escapeHtml(result.value.phone)}</p>
-              <p><strong>地址：</strong>${escapeHtml(result.value.address)}</p>
-              ${result.value.remark ? `<p><strong>備註：</strong>${escapeHtml(result.value.remark)}</p>` : ""}
-            </div>
-          `,
-          icon: "success",
-          didOpen: (modal) => {
-            modal.querySelector(".swal2-confirm").style.color = "#fff";
-          },
-        });
-
-        // 重新載入出貨資料
-        await loadShippedDetails();
-
-        emit("refresh"); // 通知父元件重新刷新列表
+        ensureOk(
+          await putShippedOrder(
+            {
+              RecipientName: form.name,
+              RecipientAddress: form.address,
+              RecipientPhone: form.phone,
+              Remark: form.remark,
+            },
+            shippedId.value,
+          ),
+        );
+        return form;
       } catch (error) {
         console.error("修改失敗:", error);
-        // 顯示修改失敗訊息
-        await CartSwal.fire({
-          title: "修改失敗!",
-          text: errorText(error),
-          icon: "error",
-          didOpen: (modal) => {
-            modal.querySelector(".swal2-confirm").style.color = "#fff";
-          },
-        });
-        // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
-        if (error instanceof ApiFailError) emit("refresh");
+        businessFailed = error instanceof ApiFailError;
+        shopSwal.showValidationMessage(`修改失敗：${errorText(error)}`);
+        return false;
       }
-    }
+    },
   });
+
+  if (result.isConfirmed) {
+    const form = result.value;
+    await shopSwal.fire({
+      title: "修改成功!",
+      icon: "success",
+      html: `
+        <div class="text-start">
+          <p><strong>姓名：</strong>${escapeHtml(form.name)}</p>
+          <p><strong>電話：</strong>${escapeHtml(form.phone)}</p>
+          <p><strong>地址：</strong>${escapeHtml(form.address)}</p>
+          ${form.remark ? `<p><strong>備註：</strong>${escapeHtml(form.remark)}</p>` : ""}
+        </div>
+      `,
+    });
+    await loadShippedDetails();
+  } else if (businessFailed) {
+    // 曾因訂單狀態變更被拒絕，關閉對話框後重新整理顯示最新狀態
+    emit("refresh");
+  }
 };
 </script>
 
 <template>
   <div class="card mb-3">
-    <!-- ========== 卡片標題欄：顯示訂單基本信息，點擊可展開 ========== -->
+    <!-- ========== 標題列：訂單基本資訊，點擊展開 ========== -->
     <div
       class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center"
-      data-bs-toggle="collapse"
-      :data-bs-target="'#collapseOrder-' + order.orderId"
-      aria-expanded="false"
+      role="button"
+      :aria-expanded="expanded"
       :aria-controls="'collapseOrder-' + order.orderId"
-      style="cursor: pointer"
+      @click="toggle"
     >
-      <!-- 左側：訂單編號和日期 -->
       <div class="d-flex align-items-center gap-4">
         <div class="d-flex align-items-center gap-2">
-          <!-- 可點擊展開/收合的箭頭圖標 -->
           <i class="bi bi-chevron-right text-secondary transition-icon"></i>
-          <!-- 訂單編號 -->
-          <span class="fw-bold fs-5 text-dark"
-            >訂單編號#{{ order.orderId }}</span
-          >
+          <span class="fw-bold fs-5 text-dark">訂單編號#{{ order.orderId }}</span>
         </div>
         <!-- 訂單日期（平板以上尺寸顯示） -->
         <span class="text-secondary small d-none d-md-inline">
-          <i class="bi bi-calendar3 me-1"></i>
-          {{ new Date(order.orderDate).toLocaleDateString("zh-TW") }}
+          <i class="bi bi-calendar3 me-1"></i>{{ formatDate(order.orderDate) }}
         </span>
       </div>
-      <!-- 右側：訂單金額和狀態標籤 -->
       <div class="d-flex align-items-center gap-3">
-        <!-- 訂單總點數 -->
         <span class="fw-bold text-dark">
           {{ order.totalPoint }}
           <span class="small text-muted fw-normal">點</span>
         </span>
-        <!-- 訂單狀態標籤 -->
-        <span
-          class="badge rounded-pill"
-          :class="getStatusBadgeClass(order.status)"
-        >
+        <span class="badge rounded-pill" :class="statusBadgeClass">
           {{ order.status }}
         </span>
       </div>
     </div>
 
-    <!-- ========== 可收合的卡片內容區 ========== -->
-    <div :id="'collapseOrder-' + order.orderId" class="collapse">
+    <!-- ========== 展開內容 (第一次展開才載入) ========== -->
+    <div
+      v-if="loaded"
+      v-show="expanded"
+      :id="'collapseOrder-' + order.orderId"
+    >
       <div class="card-body bg-light-subtle border-top">
-        <!-- 載入狀態：顯示加載動畫 -->
         <div v-if="loading" class="text-center py-4 text-muted">
-          <div
-            class="spinner-border spinner-border-sm me-2"
-            role="status"
-          ></div>
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
           <span>載入訂單明細...</span>
         </div>
 
-        <!-- 主要內容：分為左側商品列表和右側配送信息 -->
         <div v-else class="row g-4">
-          <!-- ========== 左側區：訂購商品清單 ========== -->
+          <!-- ========== 左側：訂購商品 ========== -->
           <div class="col-lg-7 border-end-lg">
             <h6 class="card-title fw-bold mb-3 text-secondary">
               <i class="bi bi-box-seam me-2"></i>訂購商品
             </h6>
-            <!-- 商品表格 -->
             <div class="table-responsive">
               <table class="table table-borderless align-middle mb-0">
-                <!-- 表頭 -->
                 <thead class="table-light small text-secondary">
                   <tr>
                     <th scope="col">商品資訊</th>
-                    <th scope="col" class="text-center" style="width: 80px">
-                      數量
-                    </th>
-                    <th scope="col" class="text-end" style="width: 100px">
-                      小計
-                    </th>
+                    <th scope="col" class="text-center" style="width: 80px">數量</th>
+                    <th scope="col" class="text-end" style="width: 100px">小計</th>
                   </tr>
                 </thead>
-                <!-- 表格主體：迴圈顯示每個商品 -->
                 <tbody>
                   <tr
                     v-for="detail in details"
                     :key="detail.orderdetailId"
                     class="border-bottom"
                   >
-                    <!-- 商品列：包含圖片、名稱和單價 -->
                     <td>
                       <div class="d-flex align-items-center">
-                        <!-- 商品圖片 -->
                         <img
-                          :src="`${baseUrl}/img/product/${detail.imageName}`"
+                          :src="productImageUrl(detail.imageName)"
                           class="border rounded me-3"
                           style="width: 50px; height: 50px; object-fit: cover"
                           :alt="detail.productName"
                         />
-                        <!-- 商品名稱和單價 -->
                         <div>
-                          <div class="fw-medium text-dark">
-                            {{ detail.productName }}
-                          </div>
+                          <div class="fw-medium text-dark">{{ detail.productName }}</div>
                           <div class="small text-muted">
                             單價: {{ detail.unitPointAtPurchase }} 點
                           </div>
                         </div>
                       </div>
                     </td>
-                    <!-- 數量列 -->
                     <td class="text-center">{{ detail.quantity }}</td>
-                    <!-- 小計列：單價 × 數量 -->
                     <td class="text-end fw-bold">
                       {{ detail.unitPointAtPurchase * detail.quantity }}
                     </td>
@@ -380,8 +315,8 @@ const shippedchange = () => {
               </table>
             </div>
 
-            <!-- 訂單備註 -->
             <div
+              v-if="order.remark"
               class="alert alert-light mt-3 mb-0 border d-flex align-items-start small"
             >
               <i class="bi bi-chat-text-fill me-2 text-secondary"></i>
@@ -392,26 +327,20 @@ const shippedchange = () => {
             </div>
           </div>
 
-          <!-- ========== 右側區：配送狀態和操作按鈕 ========== -->
+          <!-- ========== 右側：配送狀態與操作 ========== -->
           <div class="col-lg-5 d-flex flex-column">
-            <!-- 配送狀態區塊 -->
             <div class="mb-4 flex-grow-1">
               <h6 class="card-title fw-bold mb-3 text-secondary">
                 <i class="bi bi-truck me-2"></i>配送狀態
               </h6>
 
-              <!-- 載入狀態：顯示加載動畫 -->
               <div v-if="shippedLoading" class="text-center py-3 text-muted">
-                <div
-                  class="spinner-border spinner-border-sm me-2"
-                  role="status"
-                >
+                <div class="spinner-border spinner-border-sm me-2" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
                 <span>載入出貨資訊...</span>
               </div>
 
-              <!-- 錯誤狀態：顯示錯誤訊息 -->
               <div
                 v-else-if="shippedError"
                 class="alert alert-warning d-flex align-items-center mb-0"
@@ -421,26 +350,18 @@ const shippedchange = () => {
                 <div>{{ shippedError }}</div>
               </div>
 
-              <!-- 空狀態：沒有出貨記錄 -->
               <div v-else-if="shipped.length === 0" class="my-5 text-center">
-                <i class="bi bi-box-seam me-2"></i>
-                尚無出貨資料
+                <i class="bi bi-box-seam me-2"></i>尚無出貨資料
               </div>
 
-              <!-- 出貨資料清單 -->
               <div v-else class="list-group">
-                <!-- 迴圈顯示每個出貨單 -->
                 <div
                   v-for="ship in shipped"
-                  :key="ship.shippedDate"
+                  :key="ship.shippedDetailId"
                   class="list-group-item"
                 >
-                  <!-- 出貨標題和狀態 -->
-                  <div
-                    class="d-flex justify-content-between align-items-center mb-2"
-                  >
+                  <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="mb-0 fw-bold">出貨單</h6>
-                    <!-- 根據出貨狀態顯示對應的標籤 -->
                     <span v-if="ship.isCompleted" class="badge bg-success">
                       <i class="bi bi-check-circle me-1"></i>已完成
                     </span>
@@ -452,131 +373,58 @@ const shippedchange = () => {
                     </span>
                   </div>
 
-                  <!-- 出貨日期和預計到貨日期 -->
                   <div class="row g-2 small text-secondary">
                     <div class="col-6">
                       <span class="d-block text-muted">出貨日期</span>
                       <span class="text-dark">
-                        {{
-                          ship.shippedDate
-                            ? new Date(ship.shippedDate).toLocaleString(
-                                "zh-TW",
-                                {
-                                  year: "numeric",
-                                  day: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                                  month: "2-digit",
-                                },
-                              )
-                            : "尚未出貨"
-                        }}
+                        {{ formatDateTime(ship.shippedDate) || "尚未出貨" }}
                       </span>
                     </div>
                     <div class="col-6">
                       <span class="d-block text-muted">預計到貨</span>
                       <span class="text-dark">
-                        {{
-                          ship.arrivalDate
-                            ? new Date(ship.arrivalDate).toLocaleString(
-                                "zh-TW",
-                                {
-                                  year: "numeric",
-                                  day: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: false,
-                                  month: "2-digit",
-                                },
-                              )
-                            : "未定"
-                        }}
+                        {{ formatDateTime(ship.arrivalDate) || "未定" }}
                       </span>
                     </div>
                   </div>
-                  <!-- 出貨收件人詳情 -->
-                  <div>
-                    <div
-                      class="alert alert-light mt-2 mb-0 p-2 small text-muted border"
-                    >
-                      <i class="bi bi-geo-alt me-1"></i>收件人姓名：
-                      {{ ship.maskedName }} <br />
-                      <i class="bi bi-telephone me-1"></i>收件人電話：
-                      {{ ship.maskedPhone }} <br />
-                      <i class="bi bi-house-door me-1"></i>收件地址：
-                      {{ ship.maskedAddress }} <br />
-                      <i class="bi bi-info-circle me-1"></i>備註：
-                      {{ ship.remark }}
-                    </div>
+
+                  <div class="alert alert-light mt-2 mb-0 p-2 small text-muted border">
+                    <i class="bi bi-geo-alt me-1"></i>收件人姓名：{{ ship.maskedName }}<br />
+                    <i class="bi bi-telephone me-1"></i>收件人電話：{{ ship.maskedPhone }}<br />
+                    <i class="bi bi-house-door me-1"></i>收件地址：{{ ship.maskedAddress }}<br />
+                    <i class="bi bi-info-circle me-1"></i>備註：{{ ship.remark }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- ========== 操作按鈕區底部 ========== -->
+            <!-- ========== 操作按鈕 ========== -->
             <div class="mt-auto pt-3 border-top">
-              <!-- 按鈕組容器 -->
               <div class="d-flex gap-2">
-                <!-- 訂單修改按鈕：只有待處理且需要配送的訂單才可修改 -->
+                <!-- 只有待處理且含實體商品的訂單可修改寄送資料 -->
                 <button
-                  v-if="
-                    order.status == '待處理' &&
-                    details.some((detail) => detail.requiresShipping)
-                  "
-                  class="btn btn-outline-danger flex-fill"
-                  @click="shippedchange"
+                  class="btn flex-fill"
+                  :class="canEditShipping ? 'btn-outline-danger' : 'btn-secondary'"
+                  :disabled="!canEditShipping"
+                  @click="editShipping"
                 >
-                  訂單修改
-                </button>
-                <!-- 訂單修改按鈕禁用狀態 -->
-                <button
-                  v-else
-                  class="btn btn-secondary disabled flex-fill"
-                  disabled
-                >
-                  訂單修改
+                  修改寄送資料
                 </button>
 
-                <!-- 已取消訂單：按鈕禁用 -->
                 <button
-                  v-if="order.status == '已取消'"
-                  class="btn btn-secondary disabled flex-fill"
-                  disabled
-                >
-                  訂單已取消
-                </button>
-                <!-- 待處理訂單：可取消 -->
-                <button
-                  v-else-if="order.status == '待處理'"
+                  v-if="isPending"
                   class="btn btn-outline-danger flex-fill"
-                  @click="cancelOrder(order.orderId)"
+                  @click="cancelOrder"
                 >
                   取消訂單
                 </button>
-                <!-- 已出貨訂單：按鈕禁用 -->
-                <button
-                  v-else-if="order.status == '已出貨'"
-                  class="btn btn-secondary disabled flex-fill"
-                  disabled
-                >
-                  訂單已出貨
-                </button>
-                <!-- 已完成訂單：按鈕禁用 -->
-                <button
-                  v-else-if="order.status == '已完成'"
-                  class="btn btn-success disabled flex-fill"
-                  disabled
-                >
-                  訂單已完成
-                </button>
-                <!-- 其他狀態：按鈕禁用並顯示實際狀態 -->
                 <button
                   v-else
-                  class="btn btn-secondary disabled flex-fill"
+                  class="btn flex-fill"
+                  :class="order.status === ORDER_STATUS.COMPLETED ? 'btn-success' : 'btn-secondary'"
                   disabled
                 >
-                  訂單{{ order.status }}
+                  {{ statusButtonText }}
                 </button>
               </div>
             </div>
@@ -587,9 +435,7 @@ const shippedchange = () => {
   </div>
 </template>
 
-<!-- ========== 元件樣式 ========== -->
 <style scoped>
-/* 箭頭圖標過渡動畫 */
 .transition-icon {
   transition: transform 0.3s ease;
 }
@@ -599,12 +445,11 @@ const shippedchange = () => {
   transform: rotate(90deg);
 }
 
-/* 響應式設計：桌面設備才顯示右邊框 */
+/* 桌面尺寸才顯示右邊框 */
 .border-end-lg {
   border-right: 0;
 }
 
-/* 平板以上尺寸：顯示右邊框 */
 @media (min-width: 992px) {
   .border-end-lg {
     border-right: 1px solid #dee2e6;

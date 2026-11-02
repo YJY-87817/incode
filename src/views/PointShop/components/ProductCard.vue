@@ -1,10 +1,7 @@
 <script setup>
-import { useCartStore } from "@/views/PointShop/services/cartStore";
-// 引入 SweetAlert2 的套件
-import CartSwal from "sweetalert2";
-import "sweetalert2/dist/sweetalert2.min.css";
+import { useAddToCart } from "@/views/PointShop/services/useAddToCart";
+import { productImageUrl } from "@/views/PointShop/services/pointShopUtils";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
 const props = defineProps({
   product: {
     type: Object,
@@ -12,34 +9,8 @@ const props = defineProps({
   },
 });
 
-const cartStore = useCartStore();
-
-const handleAddToCart = () => {
-  if (cartStore.addToCart(props.product) === 0) {
-    CartSwal.fire({
-      title: "無法加入",
-      text: `${props.product.name}已達庫存上限`,
-      icon: "warning",
-      confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
-      didOpen: (modal) => {
-        modal.querySelector(".swal2-confirm").style.color = "#fff";
-      },
-    });
-    return;
-  }
-
-  CartSwal.fire({
-    title: "成功！",
-    text: `${props.product.name}已成功加入購物車`,
-    icon: "success",
-    confirmButtonText: "確定",
-    confirmButtonColor: "#145369",
-    didOpen: (modal) => {
-      modal.querySelector(".swal2-confirm").style.color = "#fff";
-    },
-  });
-};
+const { addToCartWithAlert } = useAddToCart();
+const handleAddToCart = () => addToCartWithAlert(props.product);
 </script>
 
 <template>
@@ -54,7 +25,7 @@ const handleAddToCart = () => {
             class="product-image-container position-relative bg-light overflow-hidden"
           >
             <img
-              :src="`${baseUrl}/img/product/${product.imageName}`"
+              :src="productImageUrl(product.imageName)"
               :alt="product.name"
               class="img-fluid product-image"
             />
@@ -110,17 +81,6 @@ const handleAddToCart = () => {
 </template>
 
 <style scoped>
-.btn-custom-primary {
-  color: #145369;
-  background-color: transparent;
-  border: 1px solid #145369 !important;
-}
-
-.btn-custom-primary:hover {
-  color: #fff;
-  background-color: #145369;
-  border-color: #145369;
-}
 
 /* 讓卡片滑過時有微小的浮起效果 */
 .product-hover-effect {
