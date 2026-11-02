@@ -6,7 +6,7 @@
 
 ### 1. **forum.vue** - 路由到 store 的連接點
 
-檔案：[src/views/Contents/forum.vue](src/views/Contents/forum.vue)
+檔案：[src/views/Contents/forum.vue](../src/views/Contents/forum.vue)
 
 #### 信息流說明
 
@@ -25,7 +25,7 @@
 
 ### 2. **forumStore.js** - 複雜數據轉換與緩存層
 
-檔案：[src/stores/forumStore.js](src/stores/forumStore.js)
+檔案：[src/stores/forumStore.js](../src/stores/forumStore.js)
 
 #### 數據轉換函數（信息流跳轉）
 
@@ -65,7 +65,7 @@
 
 ### 3. **TopicListView.vue** - 列表雙視圖組件
 
-檔案：[src/components/Contents/TopicListView.vue](src/components/Contents/TopicListView.vue)
+檔案：[src/components/Contents/TopicListView.vue](../src/components/Contents/TopicListView.vue)
 
 添加的註解：
 
@@ -76,7 +76,7 @@
 
 ### 4. **ThreadPost.vue** - 巢狀回覆加載邏輯
 
-檔案：[src/components/Contents/ThreadPost.vue](src/components/Contents/ThreadPost.vue)
+檔案：[src/components/Contents/ThreadPost.vue](../src/components/Contents/ThreadPost.vue)
 
 添加的註解：
 

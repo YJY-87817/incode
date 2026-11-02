@@ -61,8 +61,6 @@ PointShop/
 
 ## 已知問題
 
-- **Linux 上 build 失敗**：`src/views/point/Task.vue` 從 `@/components/Task/` 匯入，實際資料夾是 `src/components/task/`（大小寫不符）。
-  Windows / macOS 不區分大小寫所以本機正常，部署到 Linux 會失敗。
 - `src/api/imageapi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
 - 匯入路徑請與實際檔名大小寫一致（例如 `components/filterorder.vue`）。
 - **聊天室 XSS**：`src/components/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
@@ -77,3 +75,8 @@ PointShop/
 1. 點數商城錯誤修正：檔名大小寫、取消 / 改寄送資料沒檢查 `ok`、購物車可超過庫存、重複結帳、搜尋未編碼與競態、HTML 注入等
 2. 點數商城重構：共用模組（Swal、utils、composables、共用 CSS）、訂單明細延遲載入、購物車價格同步、Cart.vue 巢狀互動元素
 3. 配合後端 HTTP 狀態碼調整錯誤處理；`request.js` 加上 `withCredentials`
+4. 清理模板殘留：刪除 Vue Material Kit 範例圖片 / JS / CSS / 字型、未使用的元件與 store、Visual Studio 快取 `.vs/`、
+   模板的 CHANGELOG / ISSUE_TEMPLATE / genezio.yaml，移除 17 個未使用的 npm 套件；
+   修正 `Task.vue` 匯入路徑大小寫（Linux build 失敗）；`FORUM_COMMENTS_SUMMARY.md` 移到 `docs/`。
+   `src/assets/scss/` 為 `material-kit.scss` 的 sass partial，雖不會出現在模組清單中但有被使用，請勿刪除；
+   `LICENSE` 為模板（Creative Tim, MIT）授權聲明，需保留
