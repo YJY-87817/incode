@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Build.Tasks.Deployment.Bootstrapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Controllers
@@ -90,6 +89,7 @@ namespace incode2.Controllers
         // POST: Shipped/Delete/5
         [Route("/Shipped/Delete/{ShippedDetailId}")]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int ShippedDetailId)
         {
             var ShippedDetail = await _context.ShippedDetail.FindAsync(ShippedDetailId);

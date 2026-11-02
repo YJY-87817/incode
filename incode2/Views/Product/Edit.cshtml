@@ -94,7 +94,8 @@
                                 </div>
                                 <div class=" mb-3">
                                     <label class="form-label fw-bold text-primary">更換圖片</label>
-                                    <input name="imageFile" type="file" class="form-control" accept="image/*" onchange="previewImage(this)" />
+                                    <input name="imageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="previewImage(this)" />
+                                    @Html.ValidationMessage("imageFile", null, new { @class = "text-danger small" })
                                     <small class="text-muted">若不更換請留空</small>
                                 </div>
 

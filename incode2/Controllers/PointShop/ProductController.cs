@@ -1,4 +1,5 @@
-﻿using incode2.Models;
+﻿using incode2.Services;
+using incode2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,7 @@ namespace incode2.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product, IFormFile imageFile)
         {
+            ValidateImage(imageFile);
             if (ModelState.IsValid)
             {
                 // --- 圖片處理開始 ---
@@ -54,7 +56,7 @@ namespace incode2.Controllers
 
                     // 2. 產生唯一檔名 (避免使用者上傳同名檔案導致覆蓋)
                     //  取得副檔名 (例如 .jpg)
-                    string extension = Path.GetExtension(imageFile.FileName);
+                    string extension = ImageFileValidator.NormalizedExtension(imageFile);
 
                     // 產生精簡檔名 (總長度約 20~30 字元，遠低於 50)
                     // 使用時間戳記 + 4位隨機數
@@ -111,8 +113,9 @@ namespace incode2.Controllers
         {
             //  先從資料庫抓取原始資料（不追蹤，避免與後續 Update 衝突）
             var originalProduct = await _context.Product.AsNoTracking().FirstOrDefaultAsync(p => p.ProductId == ProductId);
-            if (ProductId != product.ProductId) return NotFound();
+            if (ProductId != product.ProductId || originalProduct == null) return NotFound();
 
+            ValidateImage(imageFile);
             if (ModelState.IsValid)
             {
                 try
@@ -122,10 +125,13 @@ namespace incode2.Controllers
                     {
                         string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img/product");
 
-                        // 1. 刪除舊圖片 (如果有舊圖的話)
-                        if (!string.IsNullOrEmpty(product.ImageName))
+                        // 1. 刪除舊圖片：以資料庫內的檔名為準 (不信任表單傳入的 ImageName，避免路徑穿越刪除任意檔案)，
+                        //    且不刪除共用的預設圖
+                        var oldImageName = Path.GetFileName(originalProduct.ImageName ?? "");
+                        if (!string.IsNullOrEmpty(oldImageName) &&
+                            !oldImageName.Equals(DefaultImageName, StringComparison.OrdinalIgnoreCase))
                         {
-                            string oldPath = Path.Combine(uploadsFolder, product.ImageName);
+                            string oldPath = Path.Combine(uploadsFolder, oldImageName);
                             if (System.IO.File.Exists(oldPath))
                             {
                                 System.IO.File.Delete(oldPath);
@@ -133,7 +139,7 @@ namespace incode2.Controllers
                         }
 
                         // 2. 儲存新圖片 (同樣限制在 50 字元內)
-                        string extension = Path.GetExtension(imageFile.FileName);
+                        string extension = ImageFileValidator.NormalizedExtension(imageFile);
                         string newFileName = $"{DateTime.Now:yyyyMMddHHss}{Guid.NewGuid().ToString().Substring(0, 4)}{extension}";
                         string newPath = Path.Combine(uploadsFolder, newFileName);
 
@@ -145,6 +151,13 @@ namespace incode2.Controllers
                         // 3. 更新 Model 中的檔名
                         product.ImageName = newFileName;
                     }
+                    else
+                    {
+                        // 沒有上傳新圖時沿用資料庫內的檔名
+                        product.ImageName = originalProduct.ImageName;
+                    }
+
+                    product.CreatedAt = originalProduct.CreatedAt; // 建立時間不可由表單修改
 
                     product.UpdatedAt = DateTime.Now; // 更新修改時間
 
@@ -159,6 +172,16 @@ namespace incode2.Controllers
                 return RedirectToAction(nameof(Index));
             }
             return View(product);
+        }
+
+        private const string DefaultImageName = "NoImage.png";
+
+        // 有上傳圖片時檢查格式與檔頭，不通過則加入 ModelState 錯誤
+        private void ValidateImage(IFormFile? imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0) return;
+            var error = ImageFileValidator.Validate(imageFile);
+            if (error != null) ModelState.AddModelError("imageFile", error);
         }
 
         private bool ProductExists(int ProductId)

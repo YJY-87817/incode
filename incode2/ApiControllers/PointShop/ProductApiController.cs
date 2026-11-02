@@ -1,11 +1,9 @@
 ﻿using incode2.Dtos;
 using incode2.Dtos.PointShop;
-using incode2.Models;
+using incode2.Extensions;
 using incode2.Services.PointShop;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using static NuGet.Packaging.PackagingConstants;
 
 namespace incode2.ApiControllers
 {
@@ -21,22 +19,16 @@ namespace incode2.ApiControllers
             _productService = productService;
         }
 
-        // 取得全部商品
+        // 取得全部上架商品
         // GET: api/ProductApi
         [HttpGet]
-        public async Task<ResultDTO<IEnumerable<ProductDTO>>> GetProduct()
-        {
-            var result = await _productService.GetProductAsync();
-            return result;
-        }
+        public async Task<ActionResult<ResultDTO<IEnumerable<ProductDTO>>>> GetProduct()
+            => this.ToActionResult(await _productService.GetProductAsync());
 
         // 搜尋商品
         // GET: api/ProductApi/search?keyword=xxx
         [HttpGet("search")]
-        public async Task<ResultDTO<IEnumerable<ProductDTO>>> SearchProduct([FromQuery] string keyword)
-        {
-            var result = await _productService.SearchProductAsync(keyword);
-            return result;
-        }
+        public async Task<ActionResult<ResultDTO<IEnumerable<ProductDTO>>>> SearchProduct([FromQuery] string? keyword)
+            => this.ToActionResult(await _productService.SearchProductAsync(keyword ?? ""));
     }
 }
