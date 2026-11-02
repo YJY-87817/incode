@@ -10,7 +10,8 @@ import checkoutSwal from "sweetalert2";
 import { useAuthStore } from "@/stores/user/auth.js";
 
 const authStore = useAuthStore();
-const Islogin = authStore.isAuthenticated;
+// 用 computed 保持響應式，登入狀態改變 (例如 checkAuth 完成) 時才會跟著更新
+const Islogin = computed(() => authStore.isAuthenticated);
 const router = useRouter();
 const CartNow = useCartStore();
 // 寄送資訊欄位
@@ -18,7 +19,8 @@ const name = ref("");
 const phone = ref("");
 const address = ref("");
 const remark = ref("");
-const userid = ref(0);
+// 送出中，避免重複點擊建立多張訂單
+const submitting = ref(false);
 // 儲存使用者過去填寫的寄送資訊
 const userInfo = ref(null);
 // 選擇的過去寄送資訊
@@ -119,7 +121,7 @@ const validateShippingInfo = () => {
 
 // 取得過去填過的寄送資訊
 function checkUserInfo() {
-  if (Islogin) {
+  if (Islogin.value) {
     getUserInfo()
       .then((response) => {
         if (response.data.ok) {
@@ -145,7 +147,7 @@ const handleFastFill = () => {
 // 結帳流程
 const checkout = async () => {
   // 檢查是否登入
-  if (Islogin === false) {
+  if (!Islogin.value) {
     checkoutSwal.fire({
       title: "請先登入會員!",
       text: "結帳前請先登入會員以建立訂單!",
@@ -170,15 +172,18 @@ const checkout = async () => {
     return;
   }
 
+  if (submitting.value) return;
+
+  // userId 由後端從登入 Cookie 取得，不需由前端傳送
   const Neworder = {
-    userId: userid.value,
     remark: remark.value,
     items: [],
     recipient: {
       orderId: 0,
-      recipientName: name.value,
-      recipientAddress: address.value,
-      recipientPhone: phone.value,
+      recipientName: name.value.trim(),
+      recipientAddress: address.value.trim(),
+      // 與驗證規則一致，存入去除 - 與空白的手機號碼
+      recipientPhone: phone.value.trim().replace(/[- ]/g, ""),
       remark: remark.value,
     },
   };
@@ -196,6 +201,7 @@ const checkout = async () => {
   }
 
   // 呼叫api建立訂單
+  submitting.value = true;
   await postCreateOrder(Neworder)
     .then((result) => {
       if (result.data.ok) {
@@ -213,7 +219,8 @@ const checkout = async () => {
             router.push("/PointShop/Order");
           });
       } else {
-        if (result.data.message === "您的點數不足") {
+        // 後端訊息可能是「您的點數不足」或「會員點數不足」
+        if (result.data.message?.includes("點數不足")) {
           checkoutSwal
             .fire({
               title: "訂單新增失敗!",
@@ -256,7 +263,9 @@ const checkout = async () => {
         },
       });
     })
-    .finally();
+    .finally(() => {
+      submitting.value = false;
+    });
 };
 </script>
 
@@ -306,15 +315,15 @@ const checkout = async () => {
         <div>
           <select class="form-select border" v-model="selectedShippingRecord" @change="handleFastFill">
             <option :value="null">請選擇過去的寄送資訊</option>
-            <option v-for="info in userInfo" :key="info.id" :value="info">
+            <option v-for="(info, index) in userInfo" :key="index" :value="info">
               {{ info.recipientName }}/{{ info.recipientPhone }}/
               {{ info.recipientAddress }}
             </option>
           </select>
         </div>
       </div>
-      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mt-2" @click="checkout">
-        確認結帳
+      <button class="btn btn-custom-primary w-100 py-2 fw-bold shadow-sm mt-2" :disabled="submitting" @click="checkout">
+        {{ submitting ? "處理中..." : "確認結帳" }}
       </button>
     </div>
   </div>

@@ -26,6 +26,22 @@ const shippedLoading = ref(false); // 出貨資訊載入狀態
 const shippedError = ref(null); // 出貨資訊錯誤訊息
 const baseUrl = import.meta.env.VITE_BASE_URL; // 基礎 URL
 
+// 將使用者輸入插入 SweetAlert html 前先跳脫，避免 HTML 注入
+const escapeHtml = (str = "") =>
+  String(str).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[c]);
+
+// 後端業務失敗時回傳 HTTP 200 + ok:false，需要自行判斷
+class ApiFailError extends Error {}
+const ensureOk = (res) => {
+  if (!res.data.ok) throw new ApiFailError(res.data.message || "操作失敗");
+  return res;
+};
+// 業務失敗顯示後端訊息，其他錯誤 (網路 / 500) 顯示通用訊息
+const errorText = (error) =>
+  error instanceof ApiFailError ? error.message : "請稍後再試";
+
 // ============ 載入出貨詳情 ============
 // 非同步獲取出貨資料，設置載入狀態和錯誤處理
 const loadShippedDetails = async () => {
@@ -53,7 +69,7 @@ const loadShippedDetails = async () => {
 onMounted(async () => {
   try {
     const res = await getOrderDetails(props.order.orderId);
-    details.value = res.data.data;
+    details.value = res.data.ok ? res.data.data || [] : [];
   } finally {
     loading.value = false;
   }
@@ -68,7 +84,7 @@ const getStatusBadgeClass = (status) => {
   switch (status) {
     case "已完成":
       return "bg-success-subtle text-success border border-success-subtle";
-    case "待出貨":
+    case "待處理":
       return "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
     case "已出貨":
       return "bg-info-subtle text-info-emphasis border border-info-subtle";
@@ -100,7 +116,7 @@ const cancelOrder = (orderId) => {
     // 只有在點擊「確認」按鈕時才呼叫 API
     if (result.isConfirmed) {
       try {
-        await putCancelOrder(orderId); // 呼叫取消 API
+        ensureOk(await putCancelOrder(orderId)); // 呼叫取消 API
 
         // 顯示成功提示訊息
         await CartSwal.fire({
@@ -118,12 +134,14 @@ const cancelOrder = (orderId) => {
         // 顯示失敗提示訊息
         await CartSwal.fire({
           title: "取消失敗!",
-          text: "請稍後再試",
+          text: errorText(error),
           icon: "error",
           didOpen: (modal) => {
             modal.querySelector(".swal2-confirm").style.color = "#fff";
           },
         });
+        // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
+        if (error instanceof ApiFailError) emit("refresh");
       }
     }
   });
@@ -131,8 +149,7 @@ const cancelOrder = (orderId) => {
 
 // ============ 修改出貨資料 ============
 // 顯示對話框讓用戶修改收件人信息，包括驗證和 API 調用
-const shippedchange = (shippedid) => {
-  console.log("出貨單 ID:", shippedId.value);
+const shippedchange = () => {
   CartSwal.fire({
     title: "修改寄送資料",
     html: `
@@ -160,10 +177,13 @@ const shippedchange = (shippedid) => {
     focusConfirm: false,
     preConfirm: () => {
       // 取得表單輸入的值
-      const name = document.getElementById("swal-name").value;
-      const phone = document.getElementById("swal-phone").value;
-      const address = document.getElementById("swal-address").value;
-      const remark = document.getElementById("swal-remark").value;
+      const name = document.getElementById("swal-name").value.trim();
+      const phone = document
+        .getElementById("swal-phone")
+        .value.trim()
+        .replace(/[- ]/g, "");
+      const address = document.getElementById("swal-address").value.trim();
+      const remark = document.getElementById("swal-remark").value.trim();
 
       // 檢查必填欄位
       if (!name || !phone || !address) {
@@ -201,17 +221,17 @@ const shippedchange = (shippedid) => {
         };
 
         // 呼叫 API 更新出貨資料
-        await putShippedOrder(shippedDetail, shippedId.value);
+        ensureOk(await putShippedOrder(shippedDetail, shippedId.value));
 
         // 顯示修改成功訊息
         await CartSwal.fire({
           title: "修改成功!",
           html: `
             <div class="text-start">
-              <p><strong>姓名：</strong>${result.value.name}</p>
-              <p><strong>電話：</strong>${result.value.phone}</p>
-              <p><strong>地址：</strong>${result.value.address}</p>
-              ${result.value.remark ? `<p><strong>備註：</strong>${result.value.remark}</p>` : ""}
+              <p><strong>姓名：</strong>${escapeHtml(result.value.name)}</p>
+              <p><strong>電話：</strong>${escapeHtml(result.value.phone)}</p>
+              <p><strong>地址：</strong>${escapeHtml(result.value.address)}</p>
+              ${result.value.remark ? `<p><strong>備註：</strong>${escapeHtml(result.value.remark)}</p>` : ""}
             </div>
           `,
           icon: "success",
@@ -229,12 +249,14 @@ const shippedchange = (shippedid) => {
         // 顯示修改失敗訊息
         await CartSwal.fire({
           title: "修改失敗!",
-          text: "請稍後再試",
+          text: errorText(error),
           icon: "error",
           didOpen: (modal) => {
             modal.querySelector(".swal2-confirm").style.color = "#fff";
           },
         });
+        // 業務失敗多半是訂單狀態已變更 (例如已出貨)，重新整理顯示最新狀態
+        if (error instanceof ApiFailError) emit("refresh");
       }
     }
   });
@@ -503,7 +525,7 @@ const shippedchange = (shippedid) => {
                     details.some((detail) => detail.requiresShipping)
                   "
                   class="btn btn-outline-danger flex-fill"
-                  @click="shippedchange(shippedId)"
+                  @click="shippedchange"
                 >
                   訂單修改
                 </button>
@@ -542,11 +564,19 @@ const shippedchange = (shippedid) => {
                 </button>
                 <!-- 已完成訂單：按鈕禁用 -->
                 <button
-                  v-else
+                  v-else-if="order.status == '已完成'"
                   class="btn btn-success disabled flex-fill"
                   disabled
                 >
                   訂單已完成
+                </button>
+                <!-- 其他狀態：按鈕禁用並顯示實際狀態 -->
+                <button
+                  v-else
+                  class="btn btn-secondary disabled flex-fill"
+                  disabled
+                >
+                  訂單{{ order.status }}
                 </button>
               </div>
             </div>

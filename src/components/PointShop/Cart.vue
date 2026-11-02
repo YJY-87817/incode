@@ -5,13 +5,11 @@ import { useCartStore } from "@/views/PointShop/services/cartStore";
 const CartNow = useCartStore();
 // 增加、減少、移除商品
 const increase = (item) => {
-  item.quantity += 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  CartNow.updateQuantity(item.productId, item.quantity + 1);
 };
 
 const decrease = (item) => {
-  if (item.quantity > 1) item.quantity -= 1;
-  CartNow.updateQuantity(item.productId, item.quantity);
+  if (item.quantity > 1) CartNow.updateQuantity(item.productId, item.quantity - 1);
 };
 </script>
 
@@ -75,6 +73,7 @@ const decrease = (item) => {
               <button
                 class="btn btn-sm btn-custom-primary"
                 style="font-size: 0.875rem"
+                :disabled="item.quantity >= item.stock"
                 @click="increase(item)"
               >
                 +
