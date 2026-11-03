@@ -1,14 +1,14 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import App from "./App.vue";
+import App from "@/App.vue";
 
 import "@fortawesome/fontawesome-free/css/all.css";
 
-import router from "./router";
+import router from "@/router";
 
 //owen
-import { useAuthStore } from "@/stores/user/auth.js";
+import { useAuthStore } from "@/stores/users/auth.js";
 import Swal from "sweetalert2";
 import "vuetify/styles";
 import { createVuetify } from "vuetify";
@@ -22,8 +22,8 @@ const vuetify = createVuetify({
 });
 
 // Nucleo Icons
-import "./assets/css/nucleo-icons.css";
-import "./assets/css/nucleo-svg.css";
+import "@/assets/css/nucleo-icons.css";
+import "@/assets/css/nucleo-svg.css";
 
 //Bootstrap
 import { createBootstrap } from "bootstrap-vue-next";
@@ -32,7 +32,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-import materialKit from "./material-kit";
+import materialKit from "@/material-kit";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;

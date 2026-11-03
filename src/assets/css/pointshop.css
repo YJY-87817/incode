@@ -1,0 +1,33 @@
+/* 點數商城共用樣式 (由 views/pointshop/* 與 components/pointshop/Cart.vue 匯入) */
+
+.btn-custom-primary {
+  color: #145369;
+  background-color: transparent;
+  border: 1px solid #145369 !important;
+}
+
+.btn-custom-primary:hover {
+  color: #fff;
+  background-color: #145369;
+  border-color: #145369;
+}
+
+/* 篩選面板 (FilterPanel / FilterOrder) 共用 */
+.shop-filter-card.sticky-top {
+  z-index: 10;
+}
+
+/* header 沒有 .collapsed (展開中) 時，箭頭旋轉 180 度 */
+.shop-filter-card .card-header:not(.collapsed) .bi-chevron-down {
+  transform: rotate(180deg);
+}
+
+.shop-filter-card .bi-chevron-down {
+  transition: transform 0.3s ease;
+}
+
+/* 修正收合時底部圓角消失的問題 */
+.shop-filter-card .card-header.collapsed {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}

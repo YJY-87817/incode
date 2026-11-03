@@ -6,39 +6,59 @@
 ## 專案概觀
 
 - Vue 3（`<script setup>`）+ Vite + Pinia（`pinia-plugin-persistedstate`）+ Vue Router
-- UI：Bootstrap 5（含 `bootstrap-vue-next`）、Vuetify、SweetAlert2、Material Kit 套版（`src/examples/`）
+- UI：Bootstrap 5（含 `bootstrap-vue-next`）、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
 - 後端 API：`VITE_API_BASE_URL`（開發為 `https://localhost:7190/api`），圖片等靜態檔：`VITE_BASE_URL`
 - 登入：後端 Cookie 驗證，axios 必須帶 `withCredentials: true`
   - 全域 `axios`：`main.js` 設定 `axios.defaults.withCredentials` / `baseURL`，並有 401 攔截器（清除登入狀態、導向登入頁）
   - `src/api/request.js` 的 `apiClient`：`axios.create` 建立時就複製預設值，所以自己設定了 `withCredentials: true`
-- 登入狀態：`src/stores/user/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
+- 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
   元件中請用 `computed(() => authStore.isAuthenticated)`，**不要**存成常數（會失去響應式）
 
 ## 目錄
 
-| 路徑 | 內容 |
+依「類型分層 + 模組子資料夾」組織，模組名稱與後端一致：`chat`、`contents`（論壇）、`point`（點數 / 任務 / 儲值）、`pointshop`、`users`。
+資料夾一律小寫，元件 / 頁面檔名 PascalCase，import 一律使用 `@/` 絕對路徑。
+
+```
+src/
+├── main.js / App.vue / material-kit.js
+├── router/index.js
+├── api/                    後端 API 呼叫
+│   ├── request.js          共用 axios (apiClient，baseURL = VITE_API_BASE_URL)
+│   ├── pointClient.js      點數模組用的 axios (baseURL 寫死 https://localhost:7190)
+│   └── contentApi.js / contentInteractionApi.js / imageApi.js / pointShopApi.js
+├── stores/                 Pinia
+│   ├── chatStore.js / forumStore.js
+│   ├── point/              missionStore / pointStore / taskStore
+│   ├── pointshop/          cartStore (persist)
+│   └── users/              auth / user
+├── views/                  路由頁面
+│   ├── HomeView.vue / NotFoundView.vue
+│   ├── contents/ForumView.vue
+│   ├── point/  pointshop/  users/
+├── components/
+│   ├── layout/             NavbarDefault / FooterCentered (套版)
+│   ├── common/             HtmlIframe
+│   ├── chat/               ChatWidget (全站客服)
+│   ├── contents/  point/  users/
+│   └── pointshop/          Cart (全站購物車側欄，掛在 App.vue) 與商城元件
+├── composables/            useForumPost / useLoginGuardAlert / useWindowsWidth / useAddToCart / useDesktopExpand
+├── utils/                  contentBody / sanitizeHtml / pointShopUtils / pointShopSwal
+└── assets/                 css (含 pointshop.css) / scss (Material Kit) / js (Material Kit 外掛) / fonts / img
+```
+
+## 點數商城
+
+| 位置 | 內容 |
 |---|---|
-| `src/views/` | 各模組頁面（`PointShop/`、`point/`、論壇等） |
-| `src/components/` | 共用元件（`PointShop/Cart.vue` 為全站購物車側欄，掛在 `App.vue`） |
-| `src/api/` | 各模組 API 呼叫 |
-| `src/stores/` | Pinia store |
-| `src/router/index.js` | 路由 |
-
-## 點數商城（`src/views/PointShop/`）
-
-```
-PointShop/
-├── ProductView.vue / OrderView.vue / CheckoutView.vue   頁面（匯入 styles/pointshop.css）
-├── components/                                          元件
-├── services/
-│   ├── PointShopApi.js       API 呼叫
-│   ├── cartStore.js          購物車 (persist)；addToCart / updateQuantity 會限制不超過庫存；syncWithProducts 以最新商品資料同步
-│   ├── pointShopSwal.js      SweetAlert 共用設定與 alertSuccess / alertError / alertWarning / confirmDialog
-│   ├── pointShopUtils.js     productImageUrl、ORDER_STATUS、validateShipping、日期格式、ensureOk / errorText / isBusinessError
-│   ├── useAddToCart.js       加入購物車 + 提示
-│   └── useDesktopExpand.js   篩選面板桌面版預設展開
-└── styles/pointshop.css      .btn-custom-primary 與篩選面板共用樣式
-```
+| `views/pointshop/` | `ProductView`（商品列表 / 詳情的父頁）、`OrderView`、`CheckoutView` |
+| `components/pointshop/` | `Cart`、`ProductGrid`、`ProductCard`、`ProductDetail`、`FilterPanel`、`OrderList`、`OrderItem`、`FilterOrder`、`CheckoutCart`、`CheckoutForm` |
+| `api/pointShopApi.js` | API 呼叫 |
+| `stores/pointshop/cartStore.js` | 購物車 (persist)；`addToCart` / `updateQuantity` 不超過庫存；`syncWithProducts` 以最新商品資料同步 |
+| `utils/pointShopSwal.js` | SweetAlert 共用設定與 `alertSuccess` / `alertError` / `alertWarning` / `confirmDialog` |
+| `utils/pointShopUtils.js` | `productImageUrl`、`ORDER_STATUS`、`validateShipping`、日期格式、`ensureOk` / `errorText` / `isBusinessError` |
+| `composables/useAddToCart.js`、`useDesktopExpand.js` | 加入購物車 + 提示、篩選面板桌面版預設展開 |
+| `assets/css/pointshop.css` | `.btn-custom-primary` 與篩選面板共用樣式（由商城頁面與 Cart 匯入） |
 
 ### 慣例
 
@@ -61,11 +81,11 @@ PointShop/
 
 ## 已知問題
 
-- `src/api/imageapi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
-- 匯入路徑請與實際檔名大小寫一致（例如 `components/filterorder.vue`）。
-- **聊天室 XSS**：`src/components/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
+- `src/api/imageApi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
+- 匯入路徑請與實際檔名大小寫一致（Windows / macOS 不分大小寫，但 Linux build 會失敗）。
+- **聊天室 XSS**：`src/components/chat/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
   後端聊天權限問題又讓任何人能以客服身分發訊息。修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
-- `src/components/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
+- `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
 - 後端還有多項權限問題（點數、會員、聊天 API），完整清單與修正建議見後端 repo CLAUDE.md 的「全專案檢查結果」。
 
 ## 修正紀錄
@@ -80,3 +100,10 @@ PointShop/
    修正 `Task.vue` 匯入路徑大小寫（Linux build 失敗）；`FORUM_COMMENTS_SUMMARY.md` 移到 `docs/`。
    `src/assets/scss/` 為 `material-kit.scss` 的 sass partial，雖不會出現在模組清單中但有被使用，請勿刪除；
    `LICENSE` 為模板（Creative Tim, MIT）授權聲明，需保留
+5. 資料夾整理：PointShop 原本的功能資料夾（`views/PointShop/components|services|styles`）拆回 `components/`、`api/`、`stores/`、
+   `utils/`、`composables/`；`examples/` 的版面元件移到 `components/layout/`；資料夾統一小寫並與後端模組同名
+   （`Contents`→`contents`、`user`→`users`、`task` 併入 `point`）；檔名統一 PascalCase / camelCase
+   （`forum.vue`→`ForumView.vue`、`error404.vue`→`NotFoundView.vue`、`FirstView.vue`→`HomeView.vue`、`userindex.vue`→`UserIndex.vue`、
+   `Mytask.vue`→`MyTask.vue`、`chatmessagestores.js`→`chatStore.js`、`UseXxxStore.js`→`xxxStore.js`、`imageapi.js`→`imageApi.js`、
+   `api/point/axios.js`→`api/pointClient.js`、`Check.vue`→`CheckoutForm.vue`、`Checkitem.vue`→`CheckoutCart.vue`）；
+   import 全部改為 `@/` 絕對路徑。若在 Windows 上 pull 後資料夾大小寫沒有跟著變，重新 clone 即可
