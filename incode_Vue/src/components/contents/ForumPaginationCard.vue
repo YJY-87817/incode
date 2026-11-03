@@ -1,0 +1,313 @@
+<script setup>
+import { computed, ref, watch } from "vue";
+
+const props = defineProps({
+  currentPage: {
+    type: Number,
+    required: true,
+  },
+  totalPages: {
+    type: Number,
+    required: true,
+  },
+  pages: {
+    type: Array,
+    default: () => [],
+  },
+  showEdgeButtons: {
+    type: Boolean,
+    default: false,
+  },
+  showJump: {
+    type: Boolean,
+    default: false,
+  },
+  showDirectionButtons: {
+    type: Boolean,
+    default: true,
+  },
+  paginationClass: {
+    type: String,
+    default:
+      "pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1",
+  },
+  linkPaddingClass: {
+    type: String,
+    default: "",
+  },
+});
+
+const emit = defineEmits(["page-change"]);
+
+const normalizedTotalPages = computed(() =>
+  Math.max(Number(props.totalPages || 1), 1),
+);
+
+const displayPages = computed(() => {
+  if (Array.isArray(props.pages) && props.pages.length > 0) {
+    return props.pages;
+  }
+  return Array.from(
+    { length: normalizedTotalPages.value },
+    (_, index) => index + 1,
+  );
+});
+
+const pageInput = ref(String(props.currentPage || 1));
+
+watch(
+  () => props.currentPage,
+  (currentPage) => {
+    pageInput.value = String(currentPage || 1);
+  },
+  { immediate: true },
+);
+
+const clampPage = (value) => {
+  const parsedPage = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsedPage)) {
+    return Math.min(
+      Math.max(Number(props.currentPage || 1), 1),
+      normalizedTotalPages.value,
+    );
+  }
+  return Math.min(Math.max(parsedPage, 1), normalizedTotalPages.value);
+};
+
+const changePage = (page) => {
+  const targetPage = clampPage(page);
+  emit("page-change", targetPage);
+  if (props.showJump) {
+    pageInput.value = String(targetPage);
+  }
+};
+
+const prevPage = () => {
+  if (props.currentPage > 1) {
+    changePage(props.currentPage - 1);
+  }
+};
+
+const nextPage = () => {
+  if (props.currentPage < normalizedTotalPages.value) {
+    changePage(props.currentPage + 1);
+  }
+};
+
+const jumpToPageInput = () => {
+  const targetPage = clampPage(pageInput.value);
+  changePage(targetPage);
+};
+
+const handleJumpInputWheel = (event) => {
+  if (event.deltaY === 0) {
+    return;
+  }
+  const step = event.deltaY < 0 ? 1 : -1;
+  const currentValue = clampPage(pageInput.value);
+  const nextValue = clampPage(currentValue + step);
+  pageInput.value = String(nextValue);
+};
+
+const jumpInputWidth = computed(() => {
+  const digits = String(pageInput.value || "1").length;
+  return `calc(${Math.max(digits, 1)}ch + 1.8em)`;
+});
+</script>
+
+<template>
+  <nav
+    class="d-flex justify-content-center align-items-center flex-wrap gap-0 pagination-nav-wrapper"
+  >
+    <ul :class="paginationClass">
+      <li
+        v-if="showEdgeButtons"
+        class="page-item"
+        :class="{ disabled: currentPage === 1 }"
+      >
+        <a
+          class="page-link edge-page-link"
+          href="#"
+          aria-label="最前頁"
+          @click.prevent="changePage(1)"
+        >
+          <i class="fa-solid fa-backward-step"></i>
+        </a>
+      </li>
+
+      <li
+        v-if="showDirectionButtons"
+        class="page-item"
+        :class="{ disabled: currentPage === 1 }"
+      >
+        <a
+          class="page-link"
+          :class="linkPaddingClass"
+          href="#"
+          @click.prevent="prevPage"
+        >
+          <i class="fa-solid fa-caret-left"></i>
+        </a>
+      </li>
+
+      <li
+        v-for="page in displayPages"
+        :key="page"
+        class="page-item"
+        :class="{ active: currentPage === page }"
+      >
+        <a
+          class="page-link"
+          :class="linkPaddingClass"
+          href="#"
+          @click.prevent="changePage(page)"
+        >
+          {{ page }}
+        </a>
+      </li>
+
+      <li
+        v-if="showDirectionButtons"
+        class="page-item"
+        :class="{ disabled: currentPage === normalizedTotalPages }"
+      >
+        <a
+          class="page-link"
+          :class="linkPaddingClass"
+          href="#"
+          @click.prevent="nextPage"
+        >
+          <i class="fa-solid fa-caret-right"></i>
+        </a>
+      </li>
+
+      <li
+        v-if="showEdgeButtons"
+        class="page-item"
+        :class="{ disabled: currentPage === normalizedTotalPages }"
+      >
+        <a
+          class="page-link edge-page-link"
+          href="#"
+          aria-label="最後頁"
+          @click.prevent="changePage(normalizedTotalPages)"
+        >
+          <i class="fa-solid fa-forward-step"></i>
+        </a>
+      </li>
+    </ul>
+
+    <div
+      v-if="showJump"
+      class="d-flex align-items-center pagination-jump-shell"
+    >
+      <div class="d-flex align-items-center gap-2 pagination-jump-wrap">
+        <input
+          v-model="pageInput"
+          type="number"
+          min="1"
+          :max="normalizedTotalPages"
+          class="form-control form-control-sm pagination-jump-input"
+          :style="{ width: jumpInputWidth }"
+          @keyup.enter="jumpToPageInput"
+          @wheel.prevent="handleJumpInputWheel"
+        />
+        <span class="small text-muted pagination-total-pages">
+          / {{ normalizedTotalPages }}
+        </span>
+        <button
+          class="btn btn-sm btn-outline-secondary mb-0 pagination-jump-button"
+          type="button"
+          @click="jumpToPageInput"
+        >
+          前往
+        </button>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<style scoped>
+.pagination-nav-wrapper {
+  flex-direction: column;
+}
+
+@media (min-width: 576px) {
+  .pagination-nav-wrapper {
+    flex-direction: row;
+    flex-wrap: nowrap !important;
+    gap: 1rem;
+  }
+
+  .pagination-jump-shell {
+    margin-left: 0;
+  }
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #145369;
+  border-color: #145369;
+  color: #fff0dd;
+}
+
+.pagination .page-link {
+  color: #145369;
+  border-color: #d1d3d4;
+}
+
+.pagination .page-link:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #145369;
+}
+
+.pagination .edge-page-link {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.pagination .edge-page-link i {
+  font-size: 0.6em;
+}
+
+.pagination-jump-input {
+  width: auto;
+  min-width: calc(1ch + 1.8em);
+  box-sizing: content-box;
+  direction: rtl;
+  font-size: 0.82em;
+  font-weight: 400;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  text-align: right;
+}
+
+.pagination-jump-button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.82em;
+  font-weight: 400;
+  color: #145369;
+  border-color: #d1d3d4;
+  background-color: transparent;
+  transition:
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.pagination-jump-button:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #145369;
+}
+
+.pagination-jump-button:focus,
+.pagination-jump-button:active,
+.pagination-jump-button.active {
+  background-color: transparent;
+  border-color: #d1d3d4;
+  color: #145369;
+  outline: none;
+  box-shadow: none;
+}
+</style>
