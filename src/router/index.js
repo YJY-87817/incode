@@ -1,34 +1,34 @@
 import { createRouter, createWebHistory } from "vue-router";
 // tim 以下
-import FirstView from "@/views/FirstView.vue";
+import HomeView from "@/views/HomeView.vue";
 // tim 以上
 // owen
-import { useAuthStore } from "@/stores/user/auth";
+import { useAuthStore } from "@/stores/users/auth";
 import Swal from "sweetalert2";
-import AuthView from "@/views/user/AuthView.vue";
-import ResetPasswordView from "@/views/user/ResetPasswordView.vue";
-import UserIndex from "@/views/user/userindex.vue";
-import UserSettings from "@/views/user/UserSettings.vue";
-import UserProfile from "@/views/user/UserProfile.vue";
-import UserCollections from "@/views/user/UserCollections.vue";
-import UserPost from "@/views/user/UserPost.vue";
-import UserLike from "@/views/user/UserLike.vue";
-import UserSave from "@/views/user/UserSave.vue";
-import UserMission from "@/views/user/UserMission.vue";
+import AuthView from "@/views/users/AuthView.vue";
+import ResetPasswordView from "@/views/users/ResetPasswordView.vue";
+import UserIndex from "@/views/users/UserIndex.vue";
+import UserSettings from "@/views/users/UserSettings.vue";
+import UserProfile from "@/views/users/UserProfile.vue";
+import UserCollections from "@/views/users/UserCollections.vue";
+import UserPost from "@/views/users/UserPost.vue";
+import UserLike from "@/views/users/UserLike.vue";
+import UserSave from "@/views/users/UserSave.vue";
+import UserMission from "@/views/users/UserMission.vue";
 // owen
 // qiu以下
-import Task from "../views/point/Task.vue";
-import Mytask from "../views/point/Mytask.vue";
-import Recharge from "../views/point/Recharge.vue";
-import PointLog from "../views/point/PointLog.vue";
-import RechargeResult from "../views/point/RechargeResult.vue";
+import Task from "@/views/point/Task.vue";
+import Mytask from "@/views/point/MyTask.vue";
+import Recharge from "@/views/point/Recharge.vue";
+import PointLog from "@/views/point/PointLog.vue";
+import RechargeResult from "@/views/point/RechargeResult.vue";
 // qiu以上
 // yjy 以下
-import ProductView from "@/views/PointShop/ProductView.vue";
-import OrderView from "@/views/PointShop/OrderView.vue";
-import Checkout from "@/views/PointShop/CheckoutView.vue";
-import ProductGrid from "@/views/PointShop/components/ProductGrid.vue";
-import ProductDetail from "@/views/PointShop/components/ProductDetail.vue";
+import ProductView from "@/views/pointshop/ProductView.vue";
+import OrderView from "@/views/pointshop/OrderView.vue";
+import Checkout from "@/views/pointshop/CheckoutView.vue";
+import ProductGrid from "@/components/pointshop/ProductGrid.vue";
+import ProductDetail from "@/components/pointshop/ProductDetail.vue";
 // yjy 以上
 
 const LOGIN_SCROLL_STORAGE_KEY_PREFIX = "login-redirect-scroll:";
@@ -82,7 +82,7 @@ const routes = [
     // 首頁改成這個_tim
     path: "/",
     name: "firstview",
-    component: FirstView,
+    component: HomeView,
   },
   // 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由// 以下是大家的路由
 
@@ -90,13 +90,13 @@ const routes = [
   {
     path: "/forum",
     name: "forum",
-    component: () => import("@/views/Contents/forum.vue"),
+    component: () => import("@/views/contents/ForumView.vue"),
   },
   // 單一content的路由
   {
     path: "/forum/:id",
     name: "forum-thread",
-    component: () => import("@/views/Contents/forum.vue"),
+    component: () => import("@/views/contents/ForumView.vue"),
   },
   // 以上是tim的路由
 
@@ -241,7 +241,7 @@ const routes = [
   {
     path: "/:pathMatch(.*)*",
     name: "notFound",
-    component: () => import("@/views/error404.vue"),
+    component: () => import("@/views/NotFoundView.vue"),
   },
 ];
 //owen
