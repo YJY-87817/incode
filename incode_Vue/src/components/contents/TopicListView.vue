@@ -1,0 +1,2758 @@
+<!-- TopicListView.vue -->
+<!-- 
+  主題列表視圖組件 (含列表/詳情雙視圖)
+  職責: 管理主題列表顯示、詳情頁切換、分頁、回覆功能
+  使用 Pinia Store，不使用 props/emit
+-->
+
+<script setup>
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
+import { useRouter } from "vue-router";
+import apiClient from "@/api/request.js";
+import ThreadPost from "@/components/contents/ThreadPost.vue";
+import QuickReplyBox from "@/components/contents/QuickReplyBox.vue";
+import InteractionButtons from "@/components/contents/InteractionButtons.vue";
+import ForumPaginationCard from "@/components/contents/ForumPaginationCard.vue";
+import HtmlIframe from "@/components/common/HtmlIframe.vue";
+import UserPreview from "@/components/users/UserPreview.vue";
+import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore.js";
+import { useLoginGuardAlert } from "@/composables/useLoginGuardAlert";
+import { formatDate, formatTimeAgo } from "@/utils/contentBody.js";
+import Swal from "sweetalert2";
+
+const forumStore = useForumStore();
+const { ensureLoggedIn, getCurrentUserId, isLoggedIn } = useLoginGuardAlert();
+const router = useRouter();
+
+const getAvatarUrl = (name, explicitUrl = "") => {
+  if (explicitUrl) return explicitUrl;
+  const safeName = String(name || "User").trim() || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=random`;
+};
+
+const basePreviewCss = `
+  body {
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  p, div, br {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+  }
+  br {
+    display: none;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 2px 0;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+`;
+
+const getTopicPreviewCss = (topic) => {
+  const hasImages = Array.isArray(topic?.imageUrls) && topic.imageUrls.length;
+  if (hasImages) return `${basePreviewCss} img { display: none; }`;
+  return basePreviewCss;
+};
+
+/**
+ * 【信息流跳轉點】從主題列表打開詳情視圖
+ *
+ * 流程（詳見 ForumView.vue L134）：
+ * 1. 用戶點擊主題 → 此函數被調用→ router.push({ name: 'forum-thread', params: { id: threadId } })
+ * 2. route.params.id 改變 → ForumView.vue 中的 watch 被觸發
+ * 3. watch 調用 forumStore.openThread(threadId)
+ * 4. openThread() 呼叫 fetchThreadDetail() → 向後端取得線程詳情及回覆列表
+ * 5. threadDetail 及 threadPosts/threadComments 更新 → 此組件（TopicListView）偵測到更新 → 自動渲染詳情視圖
+ *
+ * 注意：此組件無 props，完全依賴 forumStore 進行通訊，所有狀態變化都在 store 中同步。
+ */
+const goToThread = (threadId) => {
+  if (!threadId) return;
+  router.push({ name: "forum-thread", params: { id: threadId } });
+};
+
+const goToList = () => {
+  router.push({ name: "forum" });
+};
+
+const threadHasInlineImages = computed(() => {
+  const html = forumStore.threadDetail?.contentHtml || "";
+  return /<img\b/i.test(html);
+});
+
+// ========== 留言/回文輸入狀態 ==========
+const showQuickReply = ref(false);
+const replyTab = ref(null);
+const optimisticBestAnswerContentId = ref(null);
+
+const activeEntrustMissionId = computed(() => {
+  return forumStore.threadDetail?.entrustMissionId ?? null;
+});
+
+const activeMissionOwnerUserId = computed(() => {
+  return (
+    forumStore.threadDetail?.entrustMissionUserId ??
+    forumStore.threadDetail?.userId ??
+    null
+  );
+});
+
+const activeRewardPoints = computed(() => {
+  return Number(forumStore.threadDetail?.rewardPoints || 0);
+});
+
+const activeBestAnswerContentId = computed(() => {
+  if (optimisticBestAnswerContentId.value) {
+    return optimisticBestAnswerContentId.value;
+  }
+  return forumStore.threadDetail?.bestAnswerContentId ?? null;
+});
+
+const canEnableBestAnswer = computed(() => {
+  return Boolean(activeEntrustMissionId.value);
+});
+
+const handleBestAnswerSelected = async (payload) => {
+  const selectedContentId =
+    payload?.bestAnswerContentId ?? payload?.contentId ?? null;
+  if (!selectedContentId) return;
+
+  optimisticBestAnswerContentId.value = Number(selectedContentId);
+
+  forumStore.threadDetail = {
+    ...forumStore.threadDetail,
+    bestAnswerContentId: Number(selectedContentId),
+    bestAnswerSelected: true,
+  };
+
+  forumStore.cacheBestAnswerSelection({
+    entrustMissionId:
+      payload?.entrustMissionId ?? forumStore.threadDetail?.entrustMissionId,
+    threadId: forumStore.threadDetail?.id,
+    bestAnswerContentId: Number(selectedContentId),
+  });
+
+  await Swal.fire({
+    icon: "success",
+    title: "最佳解答已選定",
+    text: `已發放 ${Number(payload?.rewardPoints || activeRewardPoints.value || 0)} 點給回覆作者`,
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
+};
+
+/**
+ * 處理主題互動成功
+ */
+const handleTopicInteractionSuccess = async (data) => {
+  // 隱藏功能的特殊處理
+  if (data.categoryId === 2 && data.categoryName === "hide") {
+    // 立即從列表中移除隱藏的主題
+    forumStore.topics = forumStore.topics.filter(
+      (topic) => topic.id !== data.contentId,
+    );
+
+    // 隱藏或解除隱藏後，重新載入主題列表以反映後端狀態
+    // fetchTopics 會更新分類統計
+    await forumStore.fetchTopics();
+
+    if (forumStore.selectedThread) {
+      // 在詳情視圖中，隱藏後返回列表
+      goToList();
+    }
+  }
+};
+
+/**
+ * 處理主題互動錯誤
+ */
+const handleTopicInteractionError = async (data) => {
+  console.error("主題互動失敗:", data);
+  await Swal.fire({
+    icon: "error",
+    title: "互動失敗",
+    text: data.error || "操作失敗，請稍後再試",
+    confirmButtonText: "確定",
+    confirmButtonColor: "#145369",
+  });
+};
+
+/**
+ * 處理主題編輯操作
+ */
+const handleTopicEditContent = (contentId) => {
+  // 尋找對應的主題或回文進行編輯
+  const targetContent =
+    forumStore.threadDetail?.id === contentId
+      ? forumStore.threadDetail
+      : forumStore.topics.find((t) => t.id === contentId);
+
+  if (targetContent) {
+    forumStore.openEditMode(contentId, targetContent);
+  }
+};
+
+/**
+ * 處理主題刪除操作
+ */
+const handleTopicDeleteContent = async (contentId) => {
+  // 刪除成功後重新載入數據
+  // fetchTopics 會更新分類統計
+  await forumStore.fetchTopics();
+
+  if (forumStore.threadDetail?.id === contentId) {
+    // 如果刪除的是當前詳情中的主題，返回列表
+    goToList();
+  } else if (forumStore.threadDetail?.id) {
+    // 否則重新載入詳情
+    forumStore.fetchThreadDetail(forumStore.threadDetail.id);
+  }
+};
+
+/**
+ * 分頁相關計算
+ */
+const displayPages = computed(() => forumStore.displayPages);
+
+const mobileDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
+const desktopHeaderDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    3,
+  ),
+);
+
+const TOPIC_LIST_MOBILE_BREAKPOINT = 768;
+const TOPIC_LIST_DENSE_BREAKPOINT = 992;
+const TOPIC_LIST_COMPACT_BREAKPOINT = 1200;
+const HEADER_COMPACT_BREAKPOINT = 878;
+const HEADER_DENSE_BREAKPOINT = 1200;
+const viewportWidth = ref(
+  typeof window !== "undefined" ? window.innerWidth : Number.MAX_SAFE_INTEGER,
+);
+const topicListCardRef = ref(null);
+const topicListCardWidth = ref(Number.MAX_SAFE_INTEGER);
+let topicListResizeObserver = null;
+
+const effectiveTopicListWidth = computed(() => {
+  const measuredWidth = Number(topicListCardWidth.value || 0);
+  if (Number.isFinite(measuredWidth) && measuredWidth > 0) {
+    return measuredWidth;
+  }
+  return viewportWidth.value;
+});
+
+const isMobileTopicListWidth = computed(
+  () => effectiveTopicListWidth.value < TOPIC_LIST_MOBILE_BREAKPOINT,
+);
+
+const isDenseTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_DENSE_BREAKPOINT,
+);
+
+const isCompactTopicListWidth = computed(
+  () =>
+    !isMobileTopicListWidth.value &&
+    effectiveTopicListWidth.value < TOPIC_LIST_COMPACT_BREAKPOINT,
+);
+
+const showMobileTopicList = computed(() => isMobileTopicListWidth.value);
+
+const topicListResponsiveClasses = computed(() => ({
+  "topic-list--container-max-1200": isCompactTopicListWidth.value,
+  "topic-list--container-max-992": isDenseTopicListWidth.value,
+  "topic-list--container-max-768": isMobileTopicListWidth.value,
+}));
+
+const isCompactDesktopHeaderPagination = computed(
+  () => effectiveTopicListWidth.value <= HEADER_COMPACT_BREAKPOINT,
+);
+
+const isDenseDesktopHeaderPagination = computed(
+  () => effectiveTopicListWidth.value <= HEADER_DENSE_BREAKPOINT,
+);
+
+const desktopHeaderPages = computed(() =>
+  buildDisplayPages(
+    forumStore.pagination.currentPage,
+    forumStore.pagination.totalPages,
+    isDenseDesktopHeaderPagination.value ? 3 : 5,
+  ),
+);
+
+const desktopHeaderPaginationClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+    : undefined,
+);
+
+const desktopHeaderLinkPaddingClass = computed(() =>
+  isDenseDesktopHeaderPagination.value
+    ? "topic-header-pagination-link"
+    : undefined,
+);
+
+const sortOption = computed({
+  get: () => forumStore.sortOption,
+  set: (value) => forumStore.setSortOption(value),
+});
+
+const sortOptions = [
+  { value: "latest", label: "最新發佈時間" },
+  { value: "latest-reply", label: "最新回應時間" },
+  { value: "most-replies", label: "最多回應數量" },
+  { value: "most-likes", label: "最多按讚數量" },
+];
+
+const showSortDropdown = ref(false);
+const desktopSortDropdownRef = ref(null);
+const mobileSortDropdownRef = ref(null);
+const hasSelectedSortOption = ref(false);
+const shouldHideSortIcon = ref(false);
+const isSortControlCompact = ref(false);
+const SORT_CONTROL_ANIMATION_MS = 160;
+let restoreSortIconTimer = null;
+
+const sortLabel = computed(() => {
+  const match = sortOptions.find((option) => option.value === sortOption.value);
+  return match?.label || "";
+});
+
+const sortInputLabel = computed(() => {
+  return hasSelectedSortOption.value ? sortLabel.value : "主題排序依據";
+});
+
+const sortControlWidth = computed(() => {
+  const longestLabelLength = sortOptions.reduce(
+    (maxLength, option) =>
+      Math.max(maxLength, String(option?.label || "").length),
+    0,
+  );
+  const iconReservedWidth = isSortControlCompact.value ? 1.3 : 2.3;
+  return `${longestLabelLength + iconReservedWidth}em`;
+});
+
+const clearRestoreSortIconTimer = () => {
+  if (restoreSortIconTimer) {
+    clearTimeout(restoreSortIconTimer);
+    restoreSortIconTimer = null;
+  }
+};
+
+const closeSortDropdown = () => {
+  if (!showSortDropdown.value && !isSortControlCompact.value) return;
+
+  clearRestoreSortIconTimer();
+  showSortDropdown.value = false;
+  isSortControlCompact.value = false;
+  restoreSortIconTimer = setTimeout(() => {
+    shouldHideSortIcon.value = false;
+    restoreSortIconTimer = null;
+  }, SORT_CONTROL_ANIMATION_MS);
+};
+
+const openSortDropdown = () => {
+  if (showSortDropdown.value) return;
+
+  clearRestoreSortIconTimer();
+  shouldHideSortIcon.value = true;
+
+  const runOpenTransition = () => {
+    isSortControlCompact.value = true;
+    showSortDropdown.value = true;
+  };
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestAnimationFrame === "function"
+  ) {
+    window.requestAnimationFrame(runOpenTransition);
+    return;
+  }
+
+  setTimeout(runOpenTransition, 0);
+};
+
+const selectSortOption = (option) => {
+  if (!option) return;
+  sortOption.value = option.value;
+  hasSelectedSortOption.value = true;
+  closeSortDropdown();
+};
+
+const toggleSortDropdown = () => {
+  if (showSortDropdown.value) {
+    closeSortDropdown();
+    return;
+  }
+  openSortDropdown();
+};
+
+const handleDocumentClick = (event) => {
+  if (!showSortDropdown.value) return;
+  const isClickInsideSortControls = [
+    desktopSortDropdownRef.value,
+    mobileSortDropdownRef.value,
+  ].some((container) => container && container.contains(event.target));
+
+  if (!isClickInsideSortControls) {
+    closeSortDropdown();
+  }
+};
+
+const handleDocumentKeydown = (event) => {
+  if (event.key !== "Escape") return;
+  if (showSortDropdown.value) {
+    closeSortDropdown();
+  }
+};
+
+const handleWindowResize = () => {
+  if (typeof window === "undefined") return;
+  viewportWidth.value = window.innerWidth;
+
+  const cardEl = topicListCardRef.value;
+  if (!cardEl) return;
+
+  const nextWidth = Math.round(cardEl.getBoundingClientRect().width || 0);
+  if (Number.isFinite(nextWidth) && nextWidth > 0) {
+    topicListCardWidth.value = nextWidth;
+  }
+};
+
+/**
+ * 執行線程分頁
+ */
+const threadTotalPages = computed(() => forumStore.threadTotalPages);
+
+const paginatedThreadPosts = computed(() => forumStore.paginatedThreadPosts);
+
+const threadCommentsTotalPages = computed(
+  () => forumStore.threadCommentsTotalPages,
+);
+
+const paginatedThreadComments = computed(
+  () => forumStore.paginatedThreadComments,
+);
+
+const buildDisplayPages = (currentPage, totalPages, maxDisplay = 5) => {
+  const pages = [];
+  if (totalPages <= 1) return pages;
+
+  let start = Math.max(1, currentPage - Math.floor(maxDisplay / 2));
+  let end = Math.min(totalPages, start + maxDisplay - 1);
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1);
+  }
+
+  for (let index = start; index <= end; index += 1) {
+    pages.push(index);
+  }
+
+  return pages;
+};
+
+const threadDisplayPages = computed(() =>
+  buildDisplayPages(forumStore.threadCurrentPage, threadTotalPages.value),
+);
+
+const threadCommentsDisplayPages = computed(() =>
+  buildDisplayPages(
+    forumStore.threadCommentsCurrentPage,
+    threadCommentsTotalPages.value,
+  ),
+);
+
+/**
+ * 頁面導航
+ */
+const goToPage = (page) => {
+  forumStore.changePage(page);
+};
+
+const goToThreadPage = (page) => {
+  forumStore.changeThreadPage(page);
+};
+
+const goToCommentPage = (page) => {
+  forumStore.changeThreadCommentsPage(page);
+};
+
+/**
+ * 留言/回文輸入框相關
+ */
+const selectQuickReply = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
+  // Toggle功能：如果已經是簡易留言模式，則切換展開/縮合狀態
+  if (replyTab.value === "quick" && showQuickReply.value) {
+    showQuickReply.value = false;
+    replyTab.value = null;
+  } else {
+    replyTab.value = "quick";
+    showQuickReply.value = true;
+  }
+};
+
+const selectDetailedComment = async () => {
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+
+  replyTab.value = "detailed";
+  if (showQuickReply.value && forumStore.threadDetail?.id) {
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
+  }
+  showQuickReply.value = false;
+  openDetailedComment();
+};
+
+const closeQuickReply = () => {
+  showQuickReply.value = false;
+  replyTab.value = null;
+  if (forumStore.threadDetail?.id) {
+    forumStore.cancelQuickReply(forumStore.threadDetail.id);
+  }
+};
+
+const submitQuickReply = async () => {
+  if (!forumStore.threadDetail?.id) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "未找到對應的主題，請重新嘗試",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return;
+  }
+
+  const quickReplyContent = forumStore.getQuickReplyContent(
+    forumStore.threadDetail.id,
+  );
+
+  if (!quickReplyContent.trim()) {
+    await Swal.fire({
+      icon: "warning",
+      title: "提醒",
+      text: "請輸入內容",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+    return;
+  }
+
+  const isSubmitting = forumStore.getQuickReplySubmitting(
+    forumStore.threadDetail.id,
+  );
+  if (isSubmitting) return;
+
+  const canContinue = await ensureLoggedIn("請先登入後操作");
+  if (!canContinue) return;
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId) return;
+
+  forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, true);
+
+  const dto = {
+    userId: currentUserId,
+    categoryId: forumStore.threadDetail.categoryId,
+    parentContentId: forumStore.threadDetail.id,
+    title: buildReplyTitle(forumStore.threadDetail.title),
+    body: quickReplyContent.trim(),
+    type: CONTENT_TYPES.COMMENT,
+  };
+
+  try {
+    await apiClient.post("/ContentApi", dto);
+    await Swal.fire({
+      icon: "success",
+      title: "已送出！",
+      text: "簡易留言已成功送出",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    // 直接调用 store 重新获取详情
+    if (forumStore.selectedThread) {
+      await forumStore.fetchThreadDetail(forumStore.selectedThread);
+    }
+
+    forumStore.clearQuickReply(forumStore.threadDetail.id);
+    showQuickReply.value = false;
+    replyTab.value = null;
+  } catch (error) {
+    console.error("送出留言/回文失敗:", error);
+    await Swal.fire({
+      icon: "error",
+      title: "送出失敗",
+      text: "送出失敗，請稍後再試",
+      confirmButtonText: "確定",
+      confirmButtonColor: "#145369",
+    });
+  } finally {
+    forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, false);
+  }
+};
+
+function autoResizeTextarea(event) {
+  const textarea = event?.target;
+  if (!textarea) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+const getCategoryIdValue = (cat) =>
+  cat?.id ??
+  cat?.content_category_id ??
+  cat?.categoryId ??
+  cat?.category_id ??
+  null;
+
+const getParentCategoryIdValue = (cat) =>
+  cat?.parentCategoryId ??
+  cat?.parent_category_id ??
+  cat?.parentCategoryID ??
+  cat?.parent_id ??
+  null;
+
+const getCategoryName = (cat) =>
+  cat?.name ?? cat?.categoryName ?? cat?.category_name ?? "";
+
+const buildReplyTitle = (parentTitle) => {
+  const base = String(parentTitle ?? "").trim();
+  return base ? `Re: ${base}` : "Re:";
+};
+
+const openDetailedComment = () => {
+  if (!forumStore.threadDetail?.id) {
+    console.error("[openDetailedComment] No threadDetail.id found");
+    return;
+  }
+
+  // 檢查是否已經有針對這個主文的詳細留言草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) =>
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "comment",
+  );
+
+  if (existingDraft) {
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
+  } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+
+    const categories = forumStore.categories || [];
+
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
+    );
+
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
+
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
+        )
+      : null;
+
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: buildReplyTitle(forumStore.threadDetail.title),
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "comment",
+      contentType: CONTENT_TYPES.COMMENT,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
+};
+
+const openDetailedReply = () => {
+  if (!forumStore.threadDetail?.id) {
+    console.error("[openDetailedReply] No threadDetail.id found");
+    return;
+  }
+
+  // 檢查是否已經有針對這個主文的詳細回文草稿
+  const existingDraft = forumStore.drafts.find(
+    (draft) =>
+      draft.replyingToContentId === forumStore.threadDetail.id &&
+      draft.mode === "reply",
+  );
+
+  if (existingDraft) {
+    // 如果已存在草稿，先最小化其他所有的draft
+    forumStore.drafts.forEach((draft) => {
+      if (draft.id !== existingDraft.id && !draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+    // 再展開這個草稿
+    forumStore.toggleDraftMinimize(existingDraft.id, false);
+  } else {
+    // 如果不存在草稿，先最小化所有已展開的draft
+    forumStore.drafts.forEach((draft) => {
+      if (!draft.isMinimized) {
+        forumStore.toggleDraftMinimize(draft.id, true);
+      }
+    });
+
+    // 如果不存在草稿，創建新的草稿
+    const threadCategoryId = forumStore.threadDetail.categoryId ?? null;
+    const categories = forumStore.categories || [];
+
+    const matchedCategory = categories.find(
+      (cat) => String(getCategoryIdValue(cat)) === String(threadCategoryId),
+    );
+
+    const parentCategoryId = matchedCategory
+      ? getParentCategoryIdValue(matchedCategory)
+      : null;
+
+    const parentCategory = parentCategoryId
+      ? categories.find(
+          (cat) => String(getCategoryIdValue(cat)) === String(parentCategoryId),
+        )
+      : null;
+
+    const categorySearchName = parentCategory
+      ? getCategoryName(parentCategory)
+      : matchedCategory
+        ? getCategoryName(matchedCategory)
+        : "";
+
+    forumStore.selectedCategory = threadCategoryId;
+
+    // 創建新的草稿
+    forumStore.createDraft({
+      title: "",
+      body: "",
+      categoryId: threadCategoryId,
+      parentContentId: forumStore.threadDetail.id,
+      categorySearch: categorySearchName,
+      mode: "reply",
+      contentType: CONTENT_TYPES.REPLY,
+      replyingToContentId: forumStore.threadDetail.id,
+      replyingToContentData: {
+        id: forumStore.threadDetail.id,
+        title: forumStore.threadDetail.title,
+        author: forumStore.threadDetail.author,
+        createdAt: forumStore.threadDetail.createdAt,
+        contentText: forumStore.threadDetail.contentText,
+      },
+      replyingToThreadId: forumStore.threadDetail.id,
+    });
+  }
+};
+
+// 主文是否為正在回覆的目標（檢查所有草稿）
+const isThreadReplyingTarget = computed(() => {
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return false;
+  return forumStore.drafts.some(
+    (draft) => draft.replyingToContentId === targetId,
+  );
+});
+
+/**
+ * 過濾掉已隱藏的主題
+ */
+// 點擊高亮的"正在回覆此內容"切換對應草稿的展開/最小化狀態
+function handleThreadReplyingTargetClick() {
+  if (!isThreadReplyingTarget.value) return;
+
+  const targetId = forumStore.threadDetail?.id;
+  if (!targetId) return;
+
+  const targetDraft = forumStore.drafts.find(
+    (draft) => draft.replyingToContentId === targetId,
+  );
+
+  if (targetDraft) {
+    forumStore.toggleDraftMinimize(targetDraft.id, !targetDraft.isMinimized);
+  }
+}
+
+watch(
+  () => forumStore.threadDetail?.id,
+  () => {
+    optimisticBestAnswerContentId.value = null;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => forumStore.topics.map((topic) => Number(topic?.id)).join(","),
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    await forumStore.initializeUserInteractionStates(topicContentIds);
+  },
+  { immediate: true },
+);
+
+const collectThreadInteractionContentIds = () => {
+  const ids = [
+    Number(forumStore.threadDetail?.id),
+    ...paginatedThreadPosts.value.map((item) => Number(item?.id)),
+    ...paginatedThreadComments.value.map((item) => Number(item?.id)),
+  ].filter((id) => Number.isFinite(id) && id > 0);
+
+  // 收集所有巢狀回覆（留言和回覆）的 ID
+  const nestedRepliesIds = [];
+  Object.values(forumStore.childRepliesByParentId || {}).forEach((payload) => {
+    const items = payload?.items || [];
+    items.forEach((item) => {
+      const itemId = Number(item?.id);
+      if (Number.isFinite(itemId) && itemId > 0) {
+        nestedRepliesIds.push(itemId);
+      }
+    });
+  });
+
+  return Array.from(new Set([...ids, ...nestedRepliesIds]));
+};
+
+watch(
+  () => [
+    forumStore.selectedThread,
+    Number(forumStore.threadDetail?.id || 0),
+    paginatedThreadPosts.value.map((item) => Number(item?.id || 0)).join(","),
+    paginatedThreadComments.value
+      .map((item) => Number(item?.id || 0))
+      .join(","),
+    // 監聽巢狀回覆的變化
+    JSON.stringify(
+      Object.entries(forumStore.childRepliesByParentId || {}).map(
+        ([parentId, payload]) => [
+          parentId,
+          (payload?.items || []).map((item) => Number(item?.id || 0)),
+        ],
+      ),
+    ),
+  ],
+  async ([selectedThread]) => {
+    if (!selectedThread) return;
+    const threadContentIds = collectThreadInteractionContentIds();
+    await forumStore.initializeUserInteractionStates(threadContentIds);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [isLoggedIn(), getCurrentUserId()],
+  async () => {
+    const topicContentIds = forumStore.topics
+      .map((topic) => Number(topic?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    const threadContentIds = collectThreadInteractionContentIds();
+
+    await Promise.all([
+      forumStore.initializeUserInteractionStates(topicContentIds, {
+        force: true,
+      }),
+      forumStore.initializeUserInteractionStates(threadContentIds, {
+        force: true,
+      }),
+    ]);
+  },
+);
+
+onMounted(async () => {
+  await nextTick();
+  handleWindowResize();
+
+  if (
+    typeof window !== "undefined" &&
+    typeof ResizeObserver !== "undefined" &&
+    topicListCardRef.value
+  ) {
+    topicListResizeObserver = new ResizeObserver((entries) => {
+      const [entry] = entries;
+      const width = Math.round(entry?.contentRect?.width || 0);
+      if (Number.isFinite(width) && width > 0) {
+        topicListCardWidth.value = width;
+      }
+    });
+    topicListResizeObserver.observe(topicListCardRef.value);
+  }
+
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+  window.addEventListener("resize", handleWindowResize);
+});
+
+onBeforeUnmount(() => {
+  clearRestoreSortIconTimer();
+
+  if (topicListResizeObserver) {
+    topicListResizeObserver.disconnect();
+    topicListResizeObserver = null;
+  }
+
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+  window.removeEventListener("resize", handleWindowResize);
+});
+</script>
+
+<template>
+  <div
+    ref="topicListCardRef"
+    class="card shadow-sm"
+    :class="topicListResponsiveClasses"
+  >
+    <!-- 卡片內容 -->
+    <div class="card-body p-0">
+      <!-- 詳情視圖 -->
+      <div v-if="forumStore.selectedThread">
+        <!-- 返回按鈕 -->
+        <div class="p-3 border-bottom">
+          <button class="btn btn-sm btn-forum-secondary mb-0" @click="goToList">
+            <i class="fas fa-arrow-left me-2"></i>
+            返回列表
+          </button>
+        </div>
+
+        <!-- 帖文內容 -->
+        <div
+          class="card-body thread-detail-card"
+          :class="{
+            'replying-target': isThreadReplyingTarget,
+            'cursor-pointer': isThreadReplyingTarget,
+          }"
+          :id="
+            forumStore.threadDetail?.id != null
+              ? `content-${forumStore.threadDetail.id}`
+              : null
+          "
+          @click="handleThreadReplyingTargetClick"
+        >
+          <!-- 主題徽章 + 互動按鈕 -->
+          <div class="d-flex flex-wrap gap-1 align-items-center">
+            <span
+              v-if="forumStore.threadDetail?.categoryName"
+              class="badge bg-secondary-light text-dark interaction-aligned-badge"
+            >
+              {{ forumStore.threadDetail.categoryName }}
+            </span>
+            <button
+              v-if="
+                forumStore.threadDetail?.type === CONTENT_TYPES.REPLY &&
+                forumStore.threadDetail?.parentContentId
+              "
+              class="badge interaction-aligned-badge parent-link-btn"
+              type="button"
+              @click.stop="goToThread(forumStore.threadDetail.parentContentId)"
+            >
+              <i class="fa-solid fa-people-pulling"></i>
+              主文
+            </button>
+            <span
+              v-if="forumStore.threadDetail?.hasEntrustMission"
+              class="badge bg-secondary interaction-aligned-badge"
+            >
+              委託任務
+            </span>
+            <span
+              v-if="forumStore.threadDetail?.isHot"
+              class="badge bg-warning text-dark interaction-aligned-badge"
+            >
+              熱門
+            </span>
+            <div class="interaction-container ms-auto" @click.stop>
+              <InteractionButtons
+                v-if="forumStore.threadDetail?.id != null"
+                :key="`thread-detail-interactions-${forumStore.threadDetail.id}`"
+                :contentId="Number(forumStore.threadDetail.id)"
+                :authorUserId="forumStore.threadDetail.userId"
+                @interaction-success="handleTopicInteractionSuccess"
+                @interaction-error="handleTopicInteractionError"
+                @edit-content="handleTopicEditContent"
+                @delete-content="handleTopicDeleteContent"
+              />
+            </div>
+          </div>
+
+          <div
+            class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
+          >
+            <h3
+              class="card-title thread-detail-title fs-4 fs-md-3 text-break mb-0 mt-0"
+            >
+              {{ forumStore.threadDetail.title }}
+            </h3>
+          </div>
+          <p
+            class="text-muted mb-2 small d-flex flex-wrap gap-2 align-items-center"
+          >
+            <span>by</span>
+            <UserPreview
+              :user-id="forumStore.threadDetail.userId"
+              :username="forumStore.threadDetail.author"
+              :avatar-url="
+                getAvatarUrl(
+                  forumStore.threadDetail.author,
+                  forumStore.threadDetail.authorAvatar,
+                )
+              "
+              :size="26"
+            />
+            <span>·</span>
+            <span>{{ formatDate(forumStore.threadDetail.createdAt) }}</span>
+          </p>
+
+          <!-- 主題互動按鈕已移到分類徽章同列 -->
+
+          <HtmlIframe
+            class="card-text rich-content"
+            :html="
+              forumStore.threadDetail.contentHtml ||
+              forumStore.threadDetail.content
+            "
+            :min-height="120"
+            text-color="#432f28"
+            :allow-scripts="true"
+            :extra-css="`body { white-space: pre-wrap; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; height: auto; object-fit: contain; }`"
+          />
+          <!-- 改圖片大小在上面這裡 -->
+
+          <!-- 帖文圖片 -->
+          <div
+            v-if="
+              !threadHasInlineImages &&
+              forumStore.threadDetail.imageUrls &&
+              forumStore.threadDetail.imageUrls.length
+            "
+            class="d-flex flex-wrap gap-2 mt-2 topic-image-list"
+          >
+            <img
+              v-for="(url, idx) in forumStore.threadDetail.imageUrls"
+              :key="url + idx"
+              :src="url"
+              alt="貼文圖片"
+              class="topic-image-thumb thread-detail-image"
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        <!-- 回覆區域 -->
+        <div class="pl-3 pb-3 pr-3">
+          <div class="">
+            <div
+              class="d-flex flex-wrap gap-2 align-items-center quick-reply-toggle border-bottom pb-3"
+            >
+              <div class="reply-mode-actions">
+                <div class="reply-mode-tabs">
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'quick' }"
+                    @click="selectQuickReply"
+                  >
+                    留言
+                  </button>
+                  <button
+                    class="nav-link"
+                    type="button"
+                    :class="{ active: replyTab === 'detailed' }"
+                    @click="selectDetailedComment"
+                  >
+                    <i class="fas fa-pen me-1"></i>
+                    詳細留言
+                  </button>
+                </div>
+                <button
+                  class="nav-link reply-standalone-btn"
+                  type="button"
+                  @click="openDetailedReply"
+                >
+                  <i class="fas fa-solid fa-retweet me-1"></i>
+                  回文
+                </button>
+              </div>
+            </div>
+
+            <QuickReplyBox
+              v-if="showQuickReply"
+              :content-id="forumStore.threadDetail.id"
+              @submit="submitQuickReply"
+              @cancel="closeQuickReply"
+              @textarea-input="autoResizeTextarea"
+            />
+
+            <!-- 所有留言 (type=3) -->
+            <div
+              v-if="forumStore.threadComments.length > 0"
+              class="mb-4 comment-list"
+            >
+              <ThreadPost
+                v-for="comment in paginatedThreadComments"
+                :key="'comment-' + comment.id"
+                :post="comment"
+                :category-id="forumStore.threadDetail.categoryId"
+                :hide-nested-replies="false"
+                :preview-only="true"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
+              />
+              <ForumPaginationCard
+                v-if="threadCommentsTotalPages > 1"
+                class="mt-3"
+                :current-page="forumStore.threadCommentsCurrentPage"
+                :total-pages="threadCommentsTotalPages"
+                :pages="threadCommentsDisplayPages"
+                :show-edge-buttons="true"
+                :show-jump="true"
+                @page-change="goToCommentPage"
+              />
+            </div>
+
+            <!-- 回文分頁 (type=2) -->
+            <div v-if="paginatedThreadPosts.length > 0" class="mb-4 reply-list">
+              <ThreadPost
+                v-for="post in paginatedThreadPosts"
+                :key="'reply-' + post.id"
+                :post="post"
+                :category-id="forumStore.threadDetail.categoryId"
+                :hide-nested-replies="false"
+                :preview-only="true"
+                :show-parent-link="false"
+                :enable-best-answer="canEnableBestAnswer"
+                :entrust-mission-id="activeEntrustMissionId"
+                :mission-owner-user-id="activeMissionOwnerUserId"
+                :best-answer-content-id="activeBestAnswerContentId"
+                :reward-points="activeRewardPoints"
+                @best-answer-selected="handleBestAnswerSelected"
+              />
+            </div>
+
+            <!-- 分頁導航 -->
+            <ForumPaginationCard
+              v-if="threadTotalPages > 1"
+              class="mt-3 mt-md-4"
+              :current-page="forumStore.threadCurrentPage"
+              :total-pages="threadTotalPages"
+              :pages="threadDisplayPages"
+              :show-edge-buttons="true"
+              :show-jump="true"
+              @page-change="goToThreadPage"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表視圖 -->
+      <div v-else>
+        <!-- 載入中 -->
+        <div
+          v-if="forumStore.isLoading && forumStore.topics.length === 0"
+          class="text-center py-5"
+        >
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">載入中...</span>
+          </div>
+        </div>
+
+        <!-- 空狀態 -->
+        <div
+          v-else-if="forumStore.topics.length === 0"
+          class="text-center py-5 text-muted"
+        >
+          <p>此分類目前沒有主題</p>
+        </div>
+
+        <div
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pt-2 pb-1"
+        >
+          <div class="topic-mobile-toolbar">
+            <div
+              ref="mobileSortDropdownRef"
+              class="topic-sort-dropdown topic-mobile-sort-dropdown"
+              :style="{ '--sort-control-width': sortControlWidth }"
+            >
+              <div
+                class="topic-sort-input-wrapper"
+                @click.stop="toggleSortDropdown"
+              >
+                <input
+                  :value="sortInputLabel"
+                  class="form-control topic-sort-input"
+                  :class="{
+                    'topic-sort-input--expanded': isSortControlCompact,
+                  }"
+                  readonly
+                  aria-label="主題排序"
+                  @click.stop="toggleSortDropdown"
+                />
+                <span
+                  v-if="!shouldHideSortIcon"
+                  class="topic-sort-input-dropdown"
+                  aria-hidden="true"
+                  @click.stop="toggleSortDropdown"
+                >
+                  ▾
+                </span>
+              </div>
+              <div v-if="showSortDropdown" class="topic-sort-menu">
+                <button
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  type="button"
+                  class="topic-sort-item"
+                  :class="{
+                    active: option.value === sortOption.value,
+                  }"
+                  @mousedown.prevent="selectSortOption(option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+
+            <div
+              v-if="forumStore.pagination.totalPages > 1"
+              class="topic-mobile-pagination"
+            >
+              <ForumPaginationCard
+                :current-page="forumStore.pagination.currentPage"
+                :total-pages="forumStore.pagination.totalPages"
+                :pages="mobileDisplayPages"
+                :show-edge-buttons="false"
+                :show-jump="true"
+                pagination-class="pagination pagination-sm mb-0 justify-content-center gap-0 topic-header-pagination-list"
+                link-padding-class="topic-header-pagination-link"
+                @page-change="goToPage"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 手機卡片列表 -->
+        <div
+          v-if="forumStore.topics.length > 0 && showMobileTopicList"
+          class="px-2 pb-2"
+        >
+          <div
+            v-for="topic in forumStore.topics"
+            :key="`mobile-topic-${topic.id}`"
+            class="card topic-mobile-card mb-2"
+            @click="goToThread(topic.id)"
+          >
+            <div class="card-body pt-2 pb-0 px-2">
+              <div
+                class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap"
+              >
+                <div class="d-flex flex-wrap gap-1 align-items-center">
+                  <span
+                    v-if="topic.categoryName"
+                    class="badge bg-secondary-light text-dark interaction-aligned-badge"
+                  >
+                    {{ topic.categoryName }}
+                  </span>
+                  <span
+                    v-if="topic.hasEntrustMission"
+                    class="badge bg-secondary interaction-aligned-badge"
+                    >委託任務</span
+                  >
+                  <span
+                    v-if="topic.isHot"
+                    class="badge bg-warning text-dark interaction-aligned-badge"
+                    >熱門</span
+                  >
+                  <div class="interaction-container" @click.stop>
+                    <InteractionButtons
+                      :key="`topic-mobile-interactions-${topic.id}`"
+                      :contentId="topic.id"
+                      :authorUserId="topic.userId"
+                      @interaction-success="handleTopicInteractionSuccess"
+                      @interaction-error="handleTopicInteractionError"
+                      @edit-content="handleTopicEditContent"
+                      @delete-content="handleTopicDeleteContent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
+              >
+                <h6 class="mb-0 fs-6 fw-bold flex-grow-1">
+                  <a
+                    href="javascript:void(0)"
+                    class="topic-title-link text-break"
+                  >
+                    {{ topic.title }}
+                  </a>
+                </h6>
+              </div>
+
+              <div class="topic-preview-body topic-preview-collapsed mt-2 mb-2">
+                <div
+                  v-if="topic.imageUrls && topic.imageUrls.length"
+                  class="topic-preview-images-col"
+                >
+                  <div class="topic-preview-images-grid">
+                    <img
+                      v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
+                      :key="url + idx"
+                      :src="url"
+                      alt="貼文圖片"
+                      class="topic-preview-image-thumb"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+                <div class="topic-preview-text-col">
+                  <HtmlIframe
+                    class="topic-preview-iframe"
+                    :html="topic.contentHtml || topic.content"
+                    :min-height="0"
+                    text-color="#145369"
+                    :allow-scripts="true"
+                    :extra-css="getTopicPreviewCss(topic)"
+                  />
+                </div>
+                <div
+                  class="topic-preview-click-layer"
+                  @click="goToThread(topic.id)"
+                ></div>
+              </div>
+
+              <div
+                class="d-flex justify-content-between align-items-center small text-muted"
+              >
+                <UserPreview
+                  :user-id="topic.userId"
+                  :username="topic.author"
+                  :avatar-url="getAvatarUrl(topic.author, topic.authorAvatar)"
+                  :size="22"
+                />
+                <span>{{ formatDate(topic.createdAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌機表格列表 -->
+        <div
+          v-if="forumStore.topics.length > 0 && !showMobileTopicList"
+          class="table-responsive"
+        >
+          <table class="table table-hover mb-0 topic-list-table">
+            <thead class="topic-table-header">
+              <tr>
+                <th class="px-3 py-2 py-md-3 topic-col">
+                  <div
+                    class="d-flex align-items-center flex-nowrap gap-2 gap-lg-4 w-100 topic-header-main-row"
+                  >
+                    <span class="topic-table-header-label"> 📝 主題 </span>
+                    <div
+                      ref="desktopSortDropdownRef"
+                      class="topic-sort-dropdown"
+                      :style="{ '--sort-control-width': sortControlWidth }"
+                    >
+                      <div
+                        class="topic-sort-input-wrapper"
+                        @click.stop="toggleSortDropdown"
+                      >
+                        <input
+                          :value="sortInputLabel"
+                          class="form-control topic-sort-input"
+                          :class="{
+                            'topic-sort-input--expanded': isSortControlCompact,
+                          }"
+                          readonly
+                          aria-label="主題排序"
+                          @click.stop="toggleSortDropdown"
+                        />
+                        <span
+                          v-if="!shouldHideSortIcon"
+                          class="topic-sort-input-dropdown"
+                          aria-hidden="true"
+                          @click.stop="toggleSortDropdown"
+                        >
+                          ▾
+                        </span>
+                      </div>
+                      <div v-if="showSortDropdown" class="topic-sort-menu">
+                        <button
+                          v-for="option in sortOptions"
+                          :key="option.value"
+                          type="button"
+                          class="topic-sort-item"
+                          :class="{
+                            active: option.value === sortOption.value,
+                          }"
+                          @mousedown.prevent="selectSortOption(option)"
+                        >
+                          {{ option.label }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      v-if="forumStore.pagination.totalPages > 1"
+                      class="ms-auto topic-header-pagination"
+                    >
+                      <ForumPaginationCard
+                        :current-page="forumStore.pagination.currentPage"
+                        :total-pages="forumStore.pagination.totalPages"
+                        :pages="desktopHeaderPages"
+                        :show-edge-buttons="!isCompactDesktopHeaderPagination"
+                        :show-jump="true"
+                        :show-direction-buttons="
+                          !isCompactDesktopHeaderPagination
+                        "
+                        :pagination-class="desktopHeaderPaginationClass"
+                        :link-padding-class="desktopHeaderLinkPaddingClass"
+                        @page-change="goToPage"
+                      />
+                    </div>
+                  </div>
+                </th>
+                <th class="d-none d-md-table-cell created-col">
+                  <span class="topic-table-header-label"> 🗓️ 發佈 </span>
+                </th>
+                <th class="d-none d-md-table-cell last-reply-col">
+                  <span class="topic-table-header-label"> 🕒 回應 </span>
+                </th>
+                <th class="reply-col">
+                  <span class="topic-table-header-label"> 回應數 </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="topic in forumStore.topics"
+                :key="topic.id"
+                class="forum-row"
+                @click="goToThread(topic.id)"
+              >
+                <!-- 主題欄 -->
+                <td class="px-3 pt-2 pb-0 pt-md-2 pb-md-0 topic-col">
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="flex-grow-1 min-width-0">
+                      <!-- 主題徽章 -->
+                      <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <span
+                          v-if="topic.categoryName"
+                          class="badge bg-secondary-light text-dark interaction-aligned-badge"
+                        >
+                          {{ topic.categoryName }}
+                        </span>
+                        <button
+                          v-if="
+                            topic.type === CONTENT_TYPES.REPLY &&
+                            topic.parentContentId
+                          "
+                          class="badge interaction-aligned-badge parent-link-btn"
+                          type="button"
+                          @click.stop="goToThread(topic.parentContentId)"
+                        >
+                          <i class="fa-solid fa-people-pulling"></i>
+                          主文
+                        </button>
+                        <span
+                          v-if="topic.hasEntrustMission"
+                          class="badge bg-secondary interaction-aligned-badge"
+                        >
+                          委託任務
+                        </span>
+                        <span
+                          v-if="topic.isHot"
+                          class="badge bg-warning text-dark interaction-aligned-badge"
+                        >
+                          熱門
+                        </span>
+                        <div class="interaction-container ms-auto" @click.stop>
+                          <InteractionButtons
+                            :key="`topic-interactions-${topic.id}`"
+                            :contentId="topic.id"
+                            :authorUserId="topic.userId"
+                            @interaction-success="handleTopicInteractionSuccess"
+                            @interaction-error="handleTopicInteractionError"
+                            @edit-content="handleTopicEditContent"
+                            @delete-content="handleTopicDeleteContent"
+                          />
+                        </div>
+                      </div>
+
+                      <!-- 主題標題 + 互動按鈕 (同一行) -->
+                      <div
+                        class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-1"
+                      >
+                        <h6 class="mb-0 fs-6 fw-bold">
+                          <a
+                            href="javascript:void(0)"
+                            class="topic-title-link text-break"
+                          >
+                            {{ topic.title }}
+                          </a>
+                        </h6>
+                      </div>
+
+                      <div
+                        class="topic-preview-body topic-preview-collapsed mb-2"
+                      >
+                        <div
+                          v-if="topic.imageUrls && topic.imageUrls.length"
+                          class="topic-preview-images-col"
+                        >
+                          <div class="topic-preview-images-grid">
+                            <img
+                              v-for="(url, idx) in topic.imageUrls.slice(0, 1)"
+                              :key="url + idx"
+                              :src="url"
+                              alt="貼文圖片"
+                              class="topic-preview-image-thumb"
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+                        <div class="topic-preview-text-col">
+                          <HtmlIframe
+                            class="topic-preview-iframe"
+                            :html="topic.contentHtml || topic.content"
+                            :min-height="0"
+                            text-color="#145369"
+                            :allow-scripts="true"
+                            :extra-css="getTopicPreviewCss(topic)"
+                          />
+                        </div>
+                        <div
+                          class="topic-preview-click-layer"
+                          @click="goToThread(topic.id)"
+                        ></div>
+                      </div>
+
+                      <!-- 互動按鈕已移到分類徽章同列 -->
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 發佈時間欄 -->
+                <td class="d-none d-md-table-cell text-muted small created-col">
+                  <div class="meta-cell-stack">
+                    <div class="meta-content-group">
+                      <div class="meta-date-text">
+                        {{ formatDate(topic.createdAt) }}
+                      </div>
+                      <div class="meta-user-row text-muted">
+                        <UserPreview
+                          :user-id="topic.userId"
+                          :username="topic.author"
+                          :avatar-url="
+                            getAvatarUrl(topic.author, topic.authorAvatar)
+                          "
+                          :size="24"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 最後回應時間欄 -->
+                <td
+                  class="d-none d-md-table-cell text-muted small last-reply-col"
+                >
+                  <div class="meta-cell-stack">
+                    <div class="meta-content-group">
+                      <div v-if="topic.lastReplyTime" class="meta-date-text">
+                        {{ formatDate(topic.lastReplyTime) }}
+                      </div>
+                      <div v-else class="meta-date-text text-muted">
+                        尚無回應
+                      </div>
+                      <div
+                        v-if="topic.lastReplyUser"
+                        class="meta-user-row text-muted"
+                      >
+                        <UserPreview
+                          :user-id="topic.lastReplyUserId"
+                          :username="topic.lastReplyUser"
+                          :avatar-url="
+                            getAvatarUrl(
+                              topic.lastReplyUser,
+                              topic.lastReplyUserAvatar,
+                            )
+                          "
+                          :size="24"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 回應數欄 -->
+                <td class="reply-col">
+                  <div class="meta-cell-center">
+                    <div class="reply-count-badge badge bg-primary">
+                      {{ topic.replyCount }}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分頁導航 (列表視圖) -->
+    <div
+      v-if="!forumStore.selectedThread && forumStore.pagination.totalPages > 1"
+      class="card-footer bg-white pt-0 pb-2 pb-md-3 px-0"
+    >
+      <ForumPaginationCard
+        :current-page="forumStore.pagination.currentPage"
+        :total-pages="forumStore.pagination.totalPages"
+        :pages="displayPages"
+        :show-edge-buttons="true"
+        :show-jump="true"
+        @page-change="goToPage"
+      />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* 卡片樣式 */
+.card {
+  border-color: #d1d3d4;
+}
+
+.card-header {
+  background-color: #86b0bd !important;
+  border-bottom-color: #d1d3d4;
+}
+
+.card-header h5 {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.card-footer {
+  border-top-color: #d1d3d4;
+}
+
+.card-body {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.topic-preview-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.topic-preview-collapsed {
+  max-height: 65px;
+  overflow: hidden;
+  position: relative;
+}
+
+.topic-preview-images-col {
+  flex: 0 0 auto;
+}
+
+.topic-preview-images-grid {
+  display: grid;
+  grid-template-columns: 56px;
+  gap: 8px;
+}
+
+.topic-preview-image-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
+.topic-preview-text-col {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topic-preview-iframe {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-preview-click-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+/* 按鈕樣式 */
+.btn-forum-secondary {
+  background-color: transparent;
+  border: 1px solid #d1d3d4;
+  color: #145369;
+  transition: all 0.3s ease;
+}
+
+.btn-forum-secondary:hover {
+  background-color: #fff0dd;
+  border-color: #86b0bd;
+  color: #145369;
+}
+
+/* 表格樣式 */
+.table-light {
+  background-color: #fff0dd !important;
+  color: #145369;
+}
+
+.topic-table-header {
+  background-color: #86b0bd;
+  color: #fff;
+}
+
+.topic-table-header th {
+  color: #fff;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  border-bottom-color: #d1d3d4;
+}
+
+.topic-table-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.topic-table-header-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.topic-sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  width: var(--sort-control-width, auto);
+  max-width: 100%;
+  color: #145369;
+  transition: width 0.16s ease;
+}
+
+.topic-header-pagination {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.topic-header-main-row {
+  flex-wrap: nowrap !important;
+  min-width: 0;
+}
+
+.topic-mobile-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  background-color: #86b0bd;
+  position: relative;
+}
+
+.topic-mobile-sort-dropdown {
+  flex: 0 0 auto;
+  max-width: 48%;
+}
+
+.topic-mobile-pagination {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.topic-mobile-pagination :deep(nav),
+.topic-mobile-pagination :deep(.pagination),
+.topic-mobile-pagination :deep(.pagination-jump-shell),
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-shell) {
+  background-color: #fff;
+  margin-left: 0;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.25rem !important;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-input) {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.15rem;
+  min-width: calc(1ch + 1em);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: transparent;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-outer-spin-button),
+.topic-mobile-pagination
+  :deep(.pagination-jump-input::-webkit-inner-spin-button) {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  margin: 0;
+}
+
+.topic-mobile-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.2rem;
+  font-size: 0.7rem;
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
+}
+
+.topic-mobile-pagination :deep(.pagination-total-pages) {
+  font-size: 0.7rem;
+  color: #145369 !important;
+}
+
+.topic-mobile-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.5rem;
+}
+
+.topic-header-pagination :deep(nav),
+.topic-header-pagination :deep(.pagination),
+.topic-header-pagination :deep(.pagination-jump-shell),
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  flex-wrap: nowrap !important;
+}
+
+.topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  min-width: 1.65rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-shell) {
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.3rem;
+  border: 1px solid #d1d3d4;
+  border-radius: 0.35rem;
+  background-color: #fff;
+  font-size: 0.75rem;
+}
+
+.topic-header-pagination :deep(.pagination-jump-wrap) {
+  gap: 0.35rem !important;
+}
+
+.topic-header-pagination :deep(.pagination-jump-input) {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.05rem 0.2rem;
+  min-width: calc(1ch + 1.3em);
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: transparent;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+
+.topic-header-pagination
+  :deep(.pagination-jump-input::-webkit-outer-spin-button),
+.topic-header-pagination
+  :deep(.pagination-jump-input::-webkit-inner-spin-button) {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  margin: 0;
+}
+
+.topic-header-pagination :deep(.pagination-total-pages) {
+  font-size: 0.75rem;
+  color: #145369 !important;
+}
+
+.topic-header-pagination :deep(.pagination-jump-button) {
+  padding: 0.05rem 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.1;
+  color: #145369;
+  border-color: #86b0bd;
+  background-color: #fff;
+}
+
+.topic-header-pagination :deep(.pagination-jump-button:hover) {
+  color: #145369;
+  border-color: #145369;
+  background-color: #fff0dd;
+}
+
+.topic-sort-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.topic-sort-input {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid #145369;
+  border-radius: 999px;
+  background: #145369;
+  color: #fff;
+  padding: 0 1.45rem 0 0.7rem;
+  line-height: 28px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: padding-right 0.16s ease;
+}
+
+.topic-sort-input.topic-sort-input--expanded {
+  padding-right: 0.7rem;
+}
+
+.topic-sort-input-dropdown {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+  font-size: 0.82rem;
+  color: #fff;
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.topic-sort-menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid #d1d3d4;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.12);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.topic-sort-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #145369;
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.topic-sort-item + .topic-sort-item {
+  border-top: 1px solid rgba(209, 211, 212, 0.8);
+}
+
+.topic-sort-item.active,
+.topic-sort-item:hover {
+  background: #fff0dd;
+}
+
+.topic-table-header th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+
+.topic-table-header th:last-child {
+  border-top-right-radius: 0.5rem;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 240, 221, 0.5) !important;
+}
+
+.forum-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table-responsive {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.table thead {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.topic-list-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.topic-col {
+  width: 71.5%;
+}
+
+.created-col,
+.last-reply-col {
+  width: 12%;
+}
+
+.reply-col {
+  width: 5.5%;
+  min-width: 4.6rem;
+  white-space: nowrap;
+}
+
+.topic-list-table th.created-col,
+.topic-list-table th.last-reply-col,
+.topic-list-table th.reply-col,
+.topic-list-table td.created-col,
+.topic-list-table td.last-reply-col,
+.topic-list-table td.reply-col {
+  padding: 0 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.topic-list--container-max-1200 .topic-col {
+  width: 66.5%;
+}
+
+.topic-list--container-max-1200 .created-col,
+.topic-list--container-max-1200 .last-reply-col {
+  width: 13.25%;
+}
+
+.topic-list--container-max-1200 .reply-col {
+  width: 7%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-1200 .topic-list-table th.created-col,
+.topic-list--container-max-1200 .topic-list-table th.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table th.reply-col,
+.topic-list--container-max-1200 .topic-list-table td.created-col,
+.topic-list--container-max-1200 .topic-list-table td.last-reply-col,
+.topic-list--container-max-1200 .topic-list-table td.reply-col,
+.topic-list--container-max-1200 .meta-date-text {
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.topic-list--container-max-992 .topic-col {
+  width: 65.5%;
+}
+
+.topic-list--container-max-992 .created-col,
+.topic-list--container-max-992 .last-reply-col {
+  width: 13.5%;
+}
+
+.topic-list--container-max-992 .reply-col {
+  width: 7.5%;
+  min-width: 4.5rem;
+}
+
+.topic-list--container-max-992 .topic-header-main-row {
+  gap: 0.45rem !important;
+}
+
+.topic-list--container-max-992 .topic-sort-dropdown {
+  width: min(var(--sort-control-width, 100%), 8.6rem);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.topic-header-pagination-list .page-link) {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.7rem;
+  min-width: 1.45rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-shell) {
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.22rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-wrap) {
+  gap: 0.2rem !important;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-input) {
+  font-size: 0.68rem;
+  min-width: calc(1ch + 1.1em);
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-total-pages) {
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992
+  .topic-header-pagination
+  :deep(.pagination-jump-button) {
+  padding: 0.04rem 0.2rem;
+  font-size: 0.68rem;
+}
+
+.topic-list--container-max-992 .topic-list-table th.created-col,
+.topic-list--container-max-992 .topic-list-table th.last-reply-col,
+.topic-list--container-max-992 .topic-list-table th.reply-col,
+.topic-list--container-max-992 .topic-list-table td.created-col,
+.topic-list--container-max-992 .topic-list-table td.last-reply-col,
+.topic-list--container-max-992 .topic-list-table td.reply-col,
+.topic-list--container-max-992 .meta-date-text {
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+.topic-list--container-max-992 .reply-count-badge {
+  min-width: 2rem;
+  text-align: center;
+}
+
+.topic-list--container-max-992 .created-col :deep(.user-avatar-img),
+.topic-list--container-max-992 .last-reply-col :deep(.user-avatar-img) {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.topic-list--container-max-768 .interaction-aligned-badge,
+.topic-list--container-max-768 .reply-count-badge {
+  min-height: 40px;
+  height: 40px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.topic-list--container-max-768 .topic-title-link {
+  font-size: 0.95rem;
+}
+
+.meta-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+}
+
+.meta-content-group {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+
+.meta-user-row {
+  display: inline-flex;
+  align-items: center;
+  text-align: left;
+}
+
+.meta-cell-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.meta-date-text {
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* 徽章樣式 */
+.badge.bg-secondary {
+  background-color: #86b0bd !important;
+  color: #fff;
+}
+
+.badge.bg-secondary-light {
+  background-color: #d0e8f2 !important;
+  color: #145369;
+}
+
+.interaction-aligned-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.reply-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-height: 28px;
+  padding: 0.2rem 0.45rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.parent-link-btn {
+  border: 1px solid #86b0bd;
+  color: #145369;
+  background-color: #d0e8f2;
+  cursor: pointer;
+}
+
+.parent-link-btn:hover {
+  background-color: #86b0bd;
+  border-color: #86b0bd;
+  color: #fff;
+}
+
+.badge.bg-primary {
+  background-color: #86b0bd !important;
+  color: #fff;
+}
+
+/* 主題標題 */
+.topic-title-link {
+  color: #0f3c4d;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-size: 1.05rem;
+  transition: color 0.2s ease;
+}
+
+.topic-title-link:hover {
+  color: #86b0bd;
+}
+
+/* 圖片樣式 */
+.topic-image-thumb {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #d1d3d4;
+  background: #fff0dd;
+}
+
+/* 互動按鈕容器樣式 */
+.interaction-container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.thread-detail-title {
+  font-weight: 700;
+  color: #0f3c4d;
+  letter-spacing: 0.2px;
+  font-size: 1.35rem;
+}
+
+/* 主文正在回覆的目標內容高亮效果 */
+.thread-detail-card.replying-target {
+  border: 2px solid #145369;
+  box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.08) 0%,
+    rgba(20, 83, 105, 0.03) 100%
+  );
+  position: relative;
+  animation: pulse-border 2s ease-in-out infinite;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.thread-detail-card.replying-target:hover {
+  box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(20, 83, 105, 0.12) 0%,
+    rgba(20, 83, 105, 0.06) 100%
+  );
+}
+
+.thread-detail-card.replying-target::before {
+  content: "✍️ 正在回覆此內容";
+  position: absolute;
+  top: -12px;
+  left: 12px;
+  background: linear-gradient(135deg, #145369 0%, #0f3c4d 100%);
+  color: #fff0dd;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
+  z-index: 10;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  }
+}
+
+.quick-reply-toggle {
+  padding-bottom: 0.5rem !important;
+}
+
+.quick-reply-toggle .btn {
+  min-width: 120px;
+}
+
+.reply-mode-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.reply-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 6px;
+  background: #fff;
+  border: 2px solid #d1d3d4;
+  border-radius: 999px;
+  height: 42px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  margin: 0;
+}
+
+.reply-mode-tabs .nav-link,
+.reply-standalone-btn {
+  border: none;
+  background: transparent;
+  color: #145369;
+  padding: 0 1rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  line-height: 32px;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.reply-standalone-btn {
+  border: 2px solid #d1d3d4;
+  background: #fff;
+  height: 42px;
+  padding: 0 1.1rem;
+}
+
+.reply-mode-tabs .nav-link i,
+.reply-standalone-btn i {
+  font-size: 1.05rem;
+  margin-right: 8px;
+}
+
+.reply-mode-tabs .nav-link:hover,
+.reply-standalone-btn:hover {
+  background: #f8f9fa;
+}
+
+.reply-mode-tabs .nav-link.active {
+  background: #145369;
+  color: #fff;
+}
+
+.quick-reply-box {
+  background: rgba(255, 240, 221, 0.5);
+  border: 1px solid #d1d3d4;
+  border-radius: 8px;
+  padding-top: 1rem; /* 上 */
+  padding-right: 1rem; /* 右 */
+  padding-left: 1rem; /* 左 */
+  padding-bottom: 0; /* 下 */
+}
+
+.quick-reply-actions .btn {
+  min-width: 100px;
+}
+
+.thread-author-link,
+.topic-author-link {
+  color: inherit;
+}
+
+.thread-author-link:hover,
+.topic-author-link:hover {
+  text-decoration: underline;
+}
+
+.thread-detail-image {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: scale-down;
+}
+
+.topic-mobile-card {
+  border: 1px solid #d1d3d4;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.topic-mobile-card:active {
+  transform: scale(0.998);
+}
+
+/* 載入動畫 */
+.spinner-border {
+  color: #145369 !important;
+}
+
+/* 響應式調整 */
+@media (max-width: 1200px) and (min-width: 768px) {
+  .topic-col {
+    width: 66.5%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 13.25%;
+  }
+
+  .reply-col {
+    width: 7%;
+    min-width: 4.5rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.84rem;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 992px) and (min-width: 768px) {
+  .topic-col {
+    width: 65.5%;
+  }
+
+  .created-col,
+  .last-reply-col {
+    width: 13.5%;
+  }
+
+  .reply-col {
+    width: 7.5%;
+    min-width: 4.5rem;
+  }
+
+  .topic-header-main-row {
+    gap: 0.45rem !important;
+  }
+
+  .topic-sort-dropdown {
+    width: min(var(--sort-control-width, 100%), 8.6rem);
+  }
+
+  .topic-header-pagination :deep(.topic-header-pagination-list .page-link) {
+    padding: 0.12rem 0.3rem;
+    font-size: 0.7rem;
+    min-width: 1.45rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-shell) {
+    margin-left: 0.25rem;
+    padding: 0.05rem 0.22rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-wrap) {
+    gap: 0.2rem !important;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-input) {
+    font-size: 0.68rem;
+    min-width: calc(1ch + 1.1em);
+  }
+
+  .topic-header-pagination :deep(.pagination-total-pages) {
+    font-size: 0.68rem;
+  }
+
+  .topic-header-pagination :deep(.pagination-jump-button) {
+    padding: 0.04rem 0.2rem;
+    font-size: 0.68rem;
+  }
+
+  .topic-list-table th.created-col,
+  .topic-list-table th.last-reply-col,
+  .topic-list-table th.reply-col,
+  .topic-list-table td.created-col,
+  .topic-list-table td.last-reply-col,
+  .topic-list-table td.reply-col,
+  .meta-date-text {
+    font-size: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .reply-count-badge {
+    min-width: 2rem;
+    text-align: center;
+  }
+
+  .created-col :deep(.user-avatar-img),
+  .last-reply-col :deep(.user-avatar-img) {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .interaction-aligned-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .reply-count-badge {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .table {
+    font-size: 0.9rem;
+  }
+
+  .table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .topic-title-link {
+    font-size: 0.95rem;
+  }
+
+  .thread-detail-image {
+    max-height: 400px;
+  }
+
+  .reply-mode-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .reply-mode-tabs {
+    width: 100%;
+    justify-content: space-between;
+    height: auto;
+    min-height: 42px;
+  }
+
+  .reply-mode-tabs .nav-link,
+  .reply-standalone-btn {
+    flex: 1 1 auto;
+    min-height: 34px;
+  }
+
+  .reply-standalone-btn {
+    width: 100%;
+  }
+
+  .quick-reply-actions {
+    width: 100%;
+  }
+
+  .quick-reply-actions .btn {
+    min-width: 0;
+    min-height: 40px;
+    flex: 1 1 calc(50% - 0.25rem);
+  }
+}
+
+@media (max-width: 576px) {
+  .table {
+    font-size: 0.85rem;
+  }
+
+  .table td {
+    padding: 0.6rem 0.5rem;
+  }
+
+  .table thead {
+    font-size: 0.8rem;
+  }
+
+  .thread-detail-image {
+    max-height: 300px;
+  }
+}
+
+/* 回文子留言樣式 */
+.reply-comments {
+  border-left: 3px solid #86b0bd;
+  padding-left: 0.5rem;
+  background-color: rgba(255, 240, 221, 0.2);
+  border-radius: 4px;
+}
+
+.comment-list :deep(.thread-post),
+.reply-list :deep(.thread-post),
+.reply-comments :deep(.thread-post) {
+  margin-bottom: 0.25rem !important;
+}
+
+.comment-list :deep(.card-body),
+.reply-list :deep(.card-body),
+.reply-comments :deep(.card-body) {
+  padding: 0.5rem !important;
+}
+</style>
