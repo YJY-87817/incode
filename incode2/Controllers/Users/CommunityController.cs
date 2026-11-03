@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using incode2.Models;
 using System.Linq;
-using incode2.ViewModels;
 
 namespace incode2.Controllers.Users
 {

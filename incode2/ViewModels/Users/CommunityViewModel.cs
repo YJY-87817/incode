@@ -1,8 +1,7 @@
-﻿using Microsoft.Build.Framework;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Users
 {
     public class CommunityViewModel
     {

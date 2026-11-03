@@ -1,7 +1,3 @@
-using incode2.Dtos;
-using incode2.Models;
-using incode2.Partials;
-using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Contents
 {
   public class ContentEditViewModel
   {

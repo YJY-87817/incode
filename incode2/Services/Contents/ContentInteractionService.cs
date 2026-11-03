@@ -1,7 +1,3 @@
-using incode2.Constants;
-using incode2.Dtos;
-using incode2.Models;
-using incode2.Services.Point;
 using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Contents

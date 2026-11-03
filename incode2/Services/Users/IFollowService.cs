@@ -1,5 +1,4 @@
-﻿using incode2.Dtos.Users;
-
+﻿
 namespace incode2.Services.Users
 {
     public interface IFollowService

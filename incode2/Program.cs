@@ -1,18 +1,8 @@
-using incode2.Hubs;
-using incode2.Models;
-using incode2.Services;
-using incode2.Services.user;
-using incode2.Services.Notification;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
-using incode2.Services.Chat;
-using incode2.Services.Users;
-using incode2.Services.Contents;
-using incode2.Services.Point;
 using Microsoft.AspNetCore.Http.Features;
-using incode2.Services.PointShop;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,8 +56,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 builder.Services.AddHttpClient<GeminiService>();
 // SignalR服務
 builder.Services.AddSignalR();
-
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // 3. Cookie
 // owen以下
@@ -158,9 +146,7 @@ builder.Services.AddAuthentication(options =>
     });
 builder.Services.AddAuthorization();
 // owen以上
-builder.Services.AddControllersWithViews();
-builder.Services.AddControllers();
-builder.Services.AddRazorPages();
+builder.Services.AddControllersWithViews(); // 後台 MVC + 前台 API Controller
 //owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -203,55 +189,21 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
-app.UseCors("VueApp"); // 必須在 UseStaticFiles 之前
-app.MapControllers();
-//tim以下
-// 在 app.UseStaticFiles(); 之前添加
-app.UseStaticFiles(new StaticFileOptions
-{
-  OnPrepareResponse = ctx =>
-  {
-    var origin = ctx.Context.Request.Headers["Origin"].ToString();
-    var allowed = new[]
-    {
-      "https://localhost:5173",
-      "https://localhost:5174",
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:8080",
-      "http://localhost:3000",
-      "http://localhost:7190",
-      "http://localhost:3001"
-    };
 
-    var ext = Path.GetExtension(ctx.File.Name);
-    var isAllowed = allowed.Contains(origin);
-    var isStatic = ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".html";
-
-    if (isAllowed && isStatic)
-    {
-      ctx.Context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-      ctx.Context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-      ctx.Context.Response.Headers["Vary"] = "Origin";
-    }
-  }
-});
-//tim以上
-app.UseStaticFiles();
 app.UseRouting();
+// CORS 必須在 UseRouting 之後 (Controller 上的 [EnableCors] 需要)，並放在靜態檔之前：
+// 前端除了呼叫 API，也會以 fetch 讀取 /contents/*.html、/img/... 等靜態檔，共用同一份允許來源設定
 app.UseCors("VueApp");
-app.UseAuthentication(); //  Cookie)
-app.UseAuthorization();  //  Role)
-// https://localhost:xxxx/img/
+app.UseStaticFiles();
+
+app.UseAuthentication(); // Cookie
+app.UseAuthorization();  // Role
+
 app.MapStaticAssets();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-//lin
 app.MapControllers();
-app.MapRazorPages()
-   .WithStaticAssets();
 
 //SignalR的路由 設定聊天室的連線端點
 app.MapHub<ChatHub>("/chatHub");

@@ -1,0 +1,25 @@
+// 專案內所有命名空間統一在此引入，各檔案不需再個別 using incode2.*
+global using incode2.Constants;
+global using incode2.Dtos;
+global using incode2.Dtos.Chat;
+global using incode2.Dtos.Contents;
+global using incode2.Dtos.Point;
+global using incode2.Dtos.PointShop;
+global using incode2.Dtos.Users;
+global using incode2.Extensions;
+global using incode2.Hubs;
+global using incode2.Models;
+global using incode2.Models.Metadata;
+global using incode2.Services.Chat;
+global using incode2.Services.Common;
+global using incode2.Services.Contents;
+global using incode2.Services.Point;
+global using incode2.Services.PointShop;
+global using incode2.Services.Users;
+global using incode2.Validation;
+global using incode2.ViewModels;
+global using incode2.ViewModels.Chat;
+global using incode2.ViewModels.Contents;
+global using incode2.ViewModels.Point;
+global using incode2.ViewModels.PointShop;
+global using incode2.ViewModels.Users;

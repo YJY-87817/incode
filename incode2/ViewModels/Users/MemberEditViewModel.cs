@@ -1,7 +1,6 @@
-﻿using incode2.Dtos.Users;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Users
 {
     public class MemberEditViewModel : MemberIndexViewModel
     {

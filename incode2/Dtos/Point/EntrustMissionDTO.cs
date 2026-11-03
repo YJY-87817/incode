@@ -1,7 +1,6 @@
-using incode2.Models;
 using System.ComponentModel.DataAnnotations;
 
-namespace incode2.DTO
+namespace incode2.Dtos.Point
 {
     public class EntrustMissionDTO
     {

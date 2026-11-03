@@ -1,15 +1,10 @@
-﻿using incode2.Constants;
-using incode2.Dtos.PointShop;
-using incode2.Models;
-using incode2.Services.PointShop;
-using incode2.ViewModels;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace incode2.Controllers
+namespace incode2.Controllers.PointShop
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class OrderController : Controller

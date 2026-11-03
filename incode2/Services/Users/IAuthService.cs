@@ -1,5 +1,4 @@
 ﻿using Humanizer;
-using incode2.Models;
 
 namespace incode2.Services.Users
 {
