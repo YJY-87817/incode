@@ -1,4 +1,4 @@
-﻿namespace incode2.Services
+﻿namespace incode2.Services.Users
 {
     public interface IEmailService
     {

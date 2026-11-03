@@ -1,6 +1,5 @@
-﻿using incode2.Models;
-
-namespace incode2.Services.Notification
+﻿
+namespace incode2.Services.Users
 {
     public interface INotificationService
     {

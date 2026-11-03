@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Users
 {
     public class MemberIndexViewModel
     {

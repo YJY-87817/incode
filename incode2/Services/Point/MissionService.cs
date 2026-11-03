@@ -1,6 +1,3 @@
-using incode2.DTO;
-using incode2.Dtos;
-using incode2.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

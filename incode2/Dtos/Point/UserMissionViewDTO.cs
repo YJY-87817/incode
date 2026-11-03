@@ -1,4 +1,4 @@
-namespace incode2.Dtos 
+namespace incode2.Dtos.Point 
 {
     public class UserMissionViewDTO
     {

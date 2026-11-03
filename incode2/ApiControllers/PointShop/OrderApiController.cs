@@ -1,16 +1,10 @@
-using incode2.Constants;
-using incode2.Dtos;
-using incode2.Dtos.PointShop;
-using incode2.Extensions;
-using incode2.Models;
-using incode2.Services.PointShop;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace incode2.ApiControllers
+namespace incode2.ApiControllers.PointShop
 {
     [EnableCors("VueApp")]
     [ApiController]

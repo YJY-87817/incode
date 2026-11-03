@@ -1,10 +1,4 @@
-﻿using incode2.Dtos.Users;
-using incode2.Enums;
-using incode2.Models;
-using incode2.Partials;
-using incode2.Services.Users;
-using incode2.ViewModels;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace incode2.Controllers.Users

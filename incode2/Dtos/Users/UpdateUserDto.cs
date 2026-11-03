@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace incode2.DTO.user
+namespace incode2.Dtos.Users
 {
     public class UpdateUserDto
     {

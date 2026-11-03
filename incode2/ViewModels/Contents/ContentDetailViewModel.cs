@@ -1,4 +1,6 @@
-﻿// Models/ViewModels/ContentDetailViewModel.cs
+﻿namespace incode2.ViewModels.Contents;
+
+// Models/ViewModels/ContentDetailViewModel.cs
 public class ContentDetailViewModel
 {
   // 主貼文
