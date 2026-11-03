@@ -1,0 +1,9 @@
+<template>
+  <h1>會員的後台</h1>
+  <h2>修改機密資料</h2>
+  <ul>
+    <li>密碼</li>
+    <li>綁定Email</li>
+    <li>刪除帳號</li>
+  </ul>
+</template>
