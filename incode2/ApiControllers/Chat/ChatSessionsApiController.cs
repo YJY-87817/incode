@@ -1,13 +1,9 @@
-﻿using incode2.Models;
-using incode2.Hubs;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using incode2.Dtos.Chat;
-using incode2.Services.Chat;
 
 namespace incode2.ApiControllers.Chat
 {

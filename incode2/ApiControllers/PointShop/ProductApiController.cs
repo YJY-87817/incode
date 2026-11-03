@@ -1,11 +1,7 @@
-﻿using incode2.Dtos;
-using incode2.Dtos.PointShop;
-using incode2.Extensions;
-using incode2.Services.PointShop;
-using Microsoft.AspNetCore.Cors;
+﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
-namespace incode2.ApiControllers
+namespace incode2.ApiControllers.PointShop
 {
     [EnableCors("VueApp")]
     [ApiController]

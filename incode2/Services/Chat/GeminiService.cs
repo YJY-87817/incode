@@ -1,4 +1,4 @@
-﻿using Google.GenAI;
+﻿
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;

@@ -1,4 +1,4 @@
-﻿namespace incode2.DTO
+﻿namespace incode2.Dtos.Point
 {
     public class MissionDTO
     {

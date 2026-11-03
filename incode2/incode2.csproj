@@ -8,52 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\**" />
-    <Content Remove="Data\**" />
-    <EmbeddedResource Remove="Data\**" />
-    <None Remove="Data\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Remove="bundleconfig.json" />
-    <Content Remove="wwwroot\.editorconfig" />
-    <Content Remove="wwwroot\img\1065de9d-bf4a-43ff-9202-d5e965122962.jpg" />
-    <Content Remove="wwwroot\img\2b7802b5-ff83-4728-84fa-08887d533092.jpg" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="bundleconfig.json" />
-    <None Include="efpt.config.json.user" />
-    <None Include="wwwroot\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--<PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />-->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="EfCore.SchemaCompare" Version="8.2.0" />
-    <PackageReference Include="Google.GenAI" Version="0.9.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="9.0.11" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.12" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="wwwroot\img\chat\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="ECPay.Payment.Integration">
-      <HintPath>..\..\ECPayAIO_Net\ECPay.Payment.Integration.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

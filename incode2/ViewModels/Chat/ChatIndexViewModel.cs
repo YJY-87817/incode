@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using incode2.Models;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Chat
 {
     public class ChatIndexViewModel
     {

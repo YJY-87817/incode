@@ -1,6 +1,4 @@
-﻿using incode2.Models;
-using incode2.Services.Point;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.Users
 {

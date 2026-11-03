@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace incode2.ViewModels
+namespace incode2.ViewModels.Contents
 {
   public class ContentViewModel
   {

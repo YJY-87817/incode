@@ -1,40 +1,38 @@
-using incode2.Dtos;
-using incode2.Models;
-
+ï»¿
 namespace incode2.Services.Contents
 {
   public interface IContentInteractionService
   {
     /// <summary>
-    /// ¨ú±o¯S©w¤º®eªº©Ò¦³¤¬°Ê
+    /// å–å¾—ç‰¹å®šå…§å®¹çš„æ‰€æœ‰äº’å‹•
     /// </summary>
     Task<List<ContentInteractionDto>> GetContentInteractions(int contentId);
 
     /// <summary>
-    /// ¨ú±o¨Ï¥ÎªÌ¹ï¯S©w¤º®eªº¤¬°ÊÃş«¬
+    /// å–å¾—ä½¿ç”¨è€…å°ç‰¹å®šå…§å®¹çš„äº’å‹•é¡å‹
     /// </summary>
     Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId);
 
     /// <summary>
-    /// ·s¼W©Î²¾°£¤¬°Ê¡]Toggle¡^
-    /// ¦pªG¨Ï¥ÎªÌ¤w¸g¦³¸Ó¤¬°Ê -> §R°£¡]¨ú®ø¡^
-    /// ¦pªG¨Ï¥ÎªÌ¨S¦³¸Ó¤¬°Ê -> ·s¼W
-    /// ¦pªG¨Ï¥ÎªÌ¦³¨ä¥L¤¬°Ê -> §ó·s¬°·sªº¤¬°ÊÃş«¬
+    /// æ–°å¢æˆ–ç§»é™¤äº’å‹•ï¼ˆToggleï¼‰
+    /// å¦‚æœä½¿ç”¨è€…å·²ç¶“æœ‰è©²äº’å‹• -> åˆªé™¤ï¼ˆå–æ¶ˆï¼‰
+    /// å¦‚æœä½¿ç”¨è€…æ²’æœ‰è©²äº’å‹• -> æ–°å¢
+    /// å¦‚æœä½¿ç”¨è€…æœ‰å…¶ä»–äº’å‹• -> æ›´æ–°ç‚ºæ–°çš„äº’å‹•é¡å‹
     /// </summary>
     Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto);
 
     /// <summary>
-    /// ²¾°£¤¬°Ê
+    /// ç§»é™¤äº’å‹•
     /// </summary>
     Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId);
 
     /// <summary>
-    /// ¨ú±o¤¬°Ê¤ÀÃş¦Cªí
+    /// å–å¾—äº’å‹•åˆ†é¡åˆ—è¡¨
     /// </summary>
     Task<List<InteractionCategory>> GetInteractionCategory();
 
     /// <summary>
-    /// ²Î­p¤º®eªº¤¬°Ê¼Æ¡]«ö¤ÀÃş¡^
+    /// çµ±è¨ˆå…§å®¹çš„äº’å‹•æ•¸ï¼ˆæŒ‰åˆ†é¡ï¼‰
     /// </summary>
     Task<object> GetInteractionStats(int contentId);
 
@@ -47,7 +45,7 @@ namespace incode2.Services.Contents
     Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId);
 
     /// <summary>
-    /// ¬d¸ß©e°U¥ô°Èªº³Ì¨Î¸Ñµª ContentId
+    /// æŸ¥è©¢å§”è¨—ä»»å‹™çš„æœ€ä½³è§£ç­” ContentId
     /// </summary>
     Task<int?> GetBestAnswerContentId(int entrustMissionId);
 

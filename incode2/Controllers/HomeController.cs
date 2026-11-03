@@ -1,6 +1,4 @@
-using incode2.Models;
-using incode2.ViewModels;
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -27,12 +25,12 @@ namespace incode2.Controllers
         {
             var displaydata = new HomeViewModel();
             displaydata.displaycounts = new List<int>();
-            // ¤W¤è¼Æ¶qÅã¥Ü¥Î
+            // ä¸Šæ–¹æ•¸é‡é¡¯ç¤ºç”¨
             displaydata.displaycounts.Add(await _context.User.CountAsync());
             displaydata.displaycounts.Add(await _context.Content.CountAsync());
             displaydata.displaycounts.Add((int)await _context.PointRecharge.Where(e => e.Status == "success").SumAsync(e => e.CashAmount));
-            displaydata.displaycounts.Add(await _context.Orders.Where(e =>e.Status == "«Ý³B²z").CountAsync());
-            // ·|­û¤H¼Æ¹Ïªí
+            displaydata.displaycounts.Add(await _context.Orders.Where(e =>e.Status == "å¾…è™•ç†").CountAsync());
+            // æœƒå“¡äººæ•¸åœ–è¡¨
             displaydata.userdisplay = await _context.User
                 .GroupBy(u => new { u.CreatedAt.Value.Year, u.CreatedAt.Value.Month })
                 .Select(g => new HomeUser
@@ -44,7 +42,7 @@ namespace incode2.Controllers
                 .OrderBy(x => x.createyear)
                 .ThenBy(x => x.createmonth)
                 .ToListAsync();
-            // µo¤å¼Æ¶q±Æ¦æº]
+            // ç™¼æ–‡æ•¸é‡æŽ’è¡Œæ¦œ
             displaydata.userContentCounts = await _context.User
                 .Select(u => new UserContentCount
                 {

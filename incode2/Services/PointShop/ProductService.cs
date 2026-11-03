@@ -1,7 +1,4 @@
-﻿using incode2.Dtos;
-using incode2.Dtos.PointShop;
-using incode2.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Services.PointShop
 {

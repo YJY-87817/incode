@@ -1,12 +1,9 @@
 ﻿using System.Security.Claims;
-using incode2.Enums;
-using incode2.Services.Users;
-using incode2.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace incode2.Controllers
+namespace incode2.Controllers.Users
 {
     public class AccountController : Controller
     {

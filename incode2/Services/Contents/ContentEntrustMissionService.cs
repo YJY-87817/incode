@@ -1,7 +1,4 @@
 using System.Text;
-using incode2.DTO;
-using incode2.Dtos;
-using incode2.Services.Point;
 
 namespace incode2.Services.Contents
 {

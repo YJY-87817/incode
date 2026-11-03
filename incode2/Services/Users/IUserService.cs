@@ -1,7 +1,4 @@
-﻿using incode2.DTO.user;
-using incode2.Dtos.Users;
-using incode2.Models;
-
+﻿
 namespace incode2.Services.Users
 {
     public interface IUserService

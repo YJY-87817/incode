@@ -1,6 +1,4 @@
-﻿using incode2.Models;
-using incode2.Hubs;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Hosting;
@@ -9,8 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using incode2.Dtos.Chat;
-using incode2.Services.Chat;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using System.Text.Json;
