@@ -4,9 +4,9 @@
 
 ## 📍 主要信息流轉點
 
-### 1. **forum.vue** - 路由到 store 的連接點
+### 1. **ForumView.vue** - 路由到 store 的連接點
 
-檔案：[src/views/Contents/forum.vue](../src/views/Contents/forum.vue)
+檔案：[src/views/contents/ForumView.vue](../src/views/contents/ForumView.vue)
 
 #### 信息流說明
 
@@ -60,12 +60,12 @@
   - 數據回落策略
 
 - **openThread()** (L1495-1500)
-  - 【入口點】說明此方法被 forum.vue 的 watch 調用
+  - 【入口點】說明此方法被 ForumView.vue 的 watch 調用
   - 調用 fetchThreadDetail() 的流程
 
 ### 3. **TopicListView.vue** - 列表雙視圖組件
 
-檔案：[src/components/Contents/TopicListView.vue](../src/components/Contents/TopicListView.vue)
+檔案：[src/components/contents/TopicListView.vue](../src/components/contents/TopicListView.vue)
 
 添加的註解：
 
@@ -76,7 +76,7 @@
 
 ### 4. **ThreadPost.vue** - 巢狀回覆加載邏輯
 
-檔案：[src/components/Contents/ThreadPost.vue](../src/components/Contents/ThreadPost.vue)
+檔案：[src/components/contents/ThreadPost.vue](../src/components/contents/ThreadPost.vue)
 
 添加的註解：
 
@@ -96,7 +96,7 @@
 
 ```
 ┌─────────────────┐
-│  forum.vue      │ (視圖層)
+│  ForumView.vue      │ (視圖層)
 │  (watch/call)   │
 └────────┬────────┘
          │ router.push() + watch(route.params.id)

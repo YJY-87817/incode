@@ -1,6 +1,6 @@
 <!-- 可用點數 -->
 <script setup>
-import { usePointStore } from "@/stores/point/UsePointStore.js";
+import { usePointStore } from "@/stores/point/pointStore.js";
 const store = usePointStore();
 </script>
 

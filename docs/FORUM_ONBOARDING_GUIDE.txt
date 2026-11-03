@@ -17,14 +17,14 @@
 - 功能型組件：src/components/
 
 2) 與 forum 最直接有關的資料夾
-- 頁面入口：src/views/Contents/forum.vue
+- 頁面入口：src/views/contents/ForumView.vue
 - 核心狀態：src/stores/forumStore.js
 - 發文共用流程：src/composables/useForumPost.js
 - Forum API：
   - src/api/contentApi.js
   - src/api/contentInteractionApi.js
-  - src/api/imageapi.js
-- Forum UI：src/components/Contents/
+  - src/api/imageApi.js
+- Forum UI：src/components/contents/
   - CategoryFilter.vue（分類）
   - TopicListView.vue（列表+詳情容器）
   - ThreadPost.vue（單則內容）
@@ -46,12 +46,12 @@
 ==================================================
 
 【大白話一句話】
-路由進 forum 頁面 -> forum.vue 只負責「協調」 -> forumStore 負責「資料真相」 -> 各組件只讀寫 store 狀態 -> store 透過 contentApi/contentInteractionApi 打後端。
+路由進 forum 頁面 -> ForumView.vue 只負責「協調」 -> forumStore 負責「資料真相」 -> 各組件只讀寫 store 狀態 -> store 透過 contentApi/contentInteractionApi 打後端。
 
 【完整流程圖（文字版）】
 A. 使用者進入 /forum
-  -> router/index.js 匹配到 views/Contents/forum.vue
-  -> forum.vue onMounted:
+  -> router/index.js 匹配到 views/contents/ForumView.vue
+  -> ForumView.vue onMounted:
      1. 同步 windowWidth 到 forumStore
      2. forumStore.fetchCategories()
      3. forumStore.setSortOption("latest")（內部會 fetchTopics）
@@ -64,7 +64,7 @@ B. forum 列表資料載入
 
 C. 點某篇主題進詳情
   -> TopicListView.goToThread(threadId) -> router.push({ name: "forum-thread", params: { id } })
-  -> forum.vue watch(route.params.id)
+  -> ForumView.vue watch(route.params.id)
   -> forumStore.openThread(id)
   -> forumStore.fetchThreadDetail(id)
      - contentApi.getContent(id)
@@ -85,10 +85,10 @@ E. 互動（讚/收藏/隱藏/檢舉/最佳解）
   -> 視情況刷新列表/詳情
 
 ==================================================
-三、forum.vue 在做什麼（定位：頁面協調層）
+三、ForumView.vue 在做什麼（定位：頁面協調層）
 ==================================================
 
-你可以把 forum.vue 看成「導演」，不是演員。
+你可以把 ForumView.vue 看成「導演」，不是演員。
 它不做太多商業邏輯，主要做：
 - 啟動時該抓什麼資料
 - 路由改變時該切列表 or 詳情
@@ -227,7 +227,7 @@ Case A：列表資料怪怪的
 
 Case B：點進詳情資料不完整
 - 看 route.params.id 是否正確
-- 看 forum.vue watch(route.params.id) 有沒有觸發
+- 看 ForumView.vue watch(route.params.id) 有沒有觸發
 - 看 forumStore.fetchThreadDetail()：
   - getContent
   - getChildren(reply/comment)
@@ -239,7 +239,7 @@ Case C：按讚數量不同步
 
 Case D：詳細回覆草稿不見
 - 看 ThreadPost.selectDetailedReply() 的草稿建立
-- 看 forum.vue shouldShowSidebar 條件
+- 看 ForumView.vue shouldShowSidebar 條件
 - 看 NewTopicSidebar 是否把草稿誤刪
 
 ==================================================
@@ -248,16 +248,16 @@ Case D：詳細回覆草稿不見
 
 第 1 輪（30~45 分鐘）
 1. src/router/index.js（forum 路由）
-2. src/views/Contents/forum.vue（頁面協調）
+2. src/views/contents/ForumView.vue（頁面協調）
 3. src/stores/forumStore.js（先看 state + fetchTopics + fetchThreadDetail + handleInteraction）
 
 第 2 輪（45~60 分鐘）
-4. src/components/Contents/TopicListView.vue（列表/詳情切換）
-5. src/components/Contents/ThreadPost.vue（回覆、巢狀、快速回覆）
-6. src/components/Contents/InteractionButtons.vue（互動按鈕）
+4. src/components/contents/TopicListView.vue（列表/詳情切換）
+5. src/components/contents/ThreadPost.vue（回覆、巢狀、快速回覆）
+6. src/components/contents/InteractionButtons.vue（互動按鈕）
 
 第 3 輪（30 分鐘）
-7. src/components/Contents/NewTopicModal.vue + NewTopicSidebar.vue
+7. src/components/contents/NewTopicModal.vue + NewTopicSidebar.vue
 8. src/composables/useForumPost.js
 9. src/api/contentApi.js + contentInteractionApi.js + imageapi.js
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import { usePointStore } from "@/stores/point/UsePointStore.js";
+import { usePointStore } from "@/stores/point/pointStore.js";
 
 const store = usePointStore();
 const currentPage = ref(1);

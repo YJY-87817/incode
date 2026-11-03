@@ -1,4 +1,4 @@
-import apiClient from "./request";
+import apiClient from "@/api/request";
 
 const BEST_ANSWER_NAME_REGEX = /(best[-_ ]?answer|最佳解答|最佳解)/i;
 

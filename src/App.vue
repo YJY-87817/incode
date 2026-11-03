@@ -16,10 +16,10 @@
 
 /*ertrtre*/
 import { RouterView } from "vue-router";
-import ChatWidget from "@/components/ChatWidget.vue";
-import Cart from "@/components/PointShop/Cart.vue";
+import ChatWidget from "@/components/chat/ChatWidget.vue";
+import Cart from "@/components/pointshop/Cart.vue";
 import { onMounted } from "vue";
-import { useAuthStore } from "@/stores/user/auth";
+import { useAuthStore } from "@/stores/users/auth";
 
 const authStore = useAuthStore();
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import axios from "axios";
 import Swal from "sweetalert2";
 
