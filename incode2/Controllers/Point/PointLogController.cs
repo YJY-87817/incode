@@ -1,8 +1,4 @@
-﻿using Google.GenAI.Types;
-using incode2.Models;
-using incode2.Partials;
-using incode2.ViewModels;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;

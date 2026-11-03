@@ -1,11 +1,5 @@
-using Google.GenAI.Types;
-using incode2.DTO;
-using incode2.Dtos;
-using incode2.Models;
-using incode2.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using incode2.Constants; // 引用PointType定義的 Enum
-using NuGet.Protocol.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

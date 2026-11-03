@@ -1,11 +1,9 @@
-﻿using incode2.Services;
-using incode2.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace incode2.Controllers
+namespace incode2.Controllers.PointShop
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class ProductController : Controller

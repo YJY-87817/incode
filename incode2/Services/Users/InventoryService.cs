@@ -1,9 +1,6 @@
-﻿using incode2.DTO.user;
-using incode2.Models;
-using incode2.Services.user;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace incode2.Services.user
+namespace incode2.Services.Users
 {
     public class InventoryService : IInventoryService
     {

@@ -1,7 +1,7 @@
 /*!
- * Start Bootstrap - SB Admin 2 (Bootstrap 5 ª©¥»)
- * ª©Åv Copyright 2013-2021 Start Bootstrap
- * §ó·s¬° Bootstrap 5 ¤º®e
+ * Start Bootstrap - SB Admin 2 (Bootstrap 5 ç‰ˆæœ¬)
+ * ç‰ˆæ¬Š Copyright 2013-2021 Start Bootstrap
+ * æ›´æ–°ç‚º Bootstrap 5 å…§å®¹
  */
 
 (function ($) {
@@ -65,12 +65,12 @@
     }
   });
 
-  // Smooth scrolling using jQuery animate (²¾°£ easing ¨Ì¿à)
+  // Smooth scrolling using jQuery animate (ç§»é™¤ easing ä¾è³´)
   $(document).on('click', 'a.scroll-to-top', function (e) {
     var $anchor = $(this);
     $('html, body').stop().animate({
       scrollTop: ($($anchor.attr('href')).offset().top)
-    }, 1000); // ²¾°£ 'easeInOutExpo'¡A¨Ï¥Î¹w³]ªº 'swing' ®ÄªG
+    }, 1000); // ç§»é™¤ 'easeInOutExpo'ï¼Œä½¿ç”¨é è¨­çš„ 'swing' æ•ˆæœ
     e.preventDefault();
   });
 

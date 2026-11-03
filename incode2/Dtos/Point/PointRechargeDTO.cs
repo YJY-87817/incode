@@ -1,6 +1,5 @@
-﻿using incode2.Models;
-
-namespace incode2.DTO
+﻿
+namespace incode2.Dtos.Point
 {
     public class PointRechargeDTO : PointRecharge
     {

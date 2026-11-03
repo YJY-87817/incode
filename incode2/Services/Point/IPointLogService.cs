@@ -1,8 +1,3 @@
-using incode2.Constants;
-using incode2.DTO;
-using incode2.Dtos;
-using incode2.Models;
-using incode2.ViewModels;
 
 namespace incode2.Services.Point
 {

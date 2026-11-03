@@ -1,7 +1,3 @@
-using incode2.DTO;
-using incode2.Extensions;
-using incode2.Models;
-using incode2.Services.Point;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

@@ -1,5 +1,3 @@
-using incode2.Dtos;
-using incode2.Dtos.PointShop;
 
 namespace incode2.Services.PointShop
 {

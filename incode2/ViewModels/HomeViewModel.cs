@@ -1,5 +1,4 @@
-﻿using incode2.Models;
-
+﻿
 namespace incode2.ViewModels
 {
     public class HomeViewModel
