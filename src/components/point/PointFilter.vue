@@ -1,5 +1,5 @@
 <script setup>
-import { usePointStore } from "@/stores/point/UsePointStore.js";
+import { usePointStore } from "@/stores/point/pointStore.js";
 const store = usePointStore();
 
 const mainColor = "#145369";

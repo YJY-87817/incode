@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted } from "vue";
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
-import FooterCentered from "@/examples/footers/FooterCentered.vue";
-import { usePointStore } from "@/stores/point/UsePointStore.js";
+import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
+import FooterCentered from "@/components/layout/FooterCentered.vue";
+import { usePointStore } from "@/stores/point/pointStore.js";
 import PointSummary from "@/components/point/PointSummary.vue";
 import PointFilter from "@/components/point/PointFilter.vue";
 import PointTable from "@/components/point/PointTable.vue";

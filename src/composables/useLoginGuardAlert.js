@@ -1,6 +1,6 @@
 import Swal from "sweetalert2";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/user/auth";
+import { useAuthStore } from "@/stores/users/auth";
 
 const LOGIN_SCROLL_STORAGE_KEY_PREFIX = "login-redirect-scroll:";
 

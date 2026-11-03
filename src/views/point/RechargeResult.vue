@@ -1,10 +1,10 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import DefaultNavbar from "@/examples/navbars/NavbarDefault.vue";
+import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import axios from "axios";
 // 如果需要更新點數餘額显示，這裡會需要一個專門查餘額的 API
-// import { usePointStore } from "@/stores/point/UsePointStore.js";
+// import { usePointStore } from "@/stores/point/pointStore.js";
 
 const router = useRouter();
 const route = useRoute();

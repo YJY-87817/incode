@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import apiClient from "@/api/request.js";
 import contentApi from "@/api/contentApi.js";
 import contentInteractionApi from "@/api/contentInteractionApi.js";
-import { useAuthStore } from "@/stores/user/auth.js";
+import { useAuthStore } from "@/stores/users/auth.js";
 import {
   fetchBodyHtml,
   parseBodyContent,
@@ -1753,7 +1753,7 @@ export const useForumStore = defineStore("forum", {
     /**
      * 【入口點】打開線程詳情
      *
-     * 此方法由 forum.vue 的 watch(route.params.id) 中調用（見 forum.vue L134）
+     * 此方法由 ForumView.vue 的 watch(route.params.id) 中調用（見 ForumView.vue L134）
      * 流程：
      * 1. 記錄選中的線程 ID 到 state.selectedThread
      * 2. 調用 fetchThreadDetail() 取回線程詳情及其回覆列表
