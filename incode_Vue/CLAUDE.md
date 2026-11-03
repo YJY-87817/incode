@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 本檔案提供給 Claude Code（與接手的開發者）在此專案工作時的背景、慣例與目前進度。
-專案目前由個人維護。後端在另一個 repo `YJY-87817/incode`（ASP.NET Core 9），其 CLAUDE.md 有完整架構與全專案檢查清單。
+專案目前由個人維護。本資料夾位於前後端合一的 repo 中，後端在同層的 `../incode2/`（ASP.NET Core 9），
+根目錄的 `CLAUDE.md` 有整體架構、後端慣例與全專案檢查清單。
 
 ## 專案概觀
 
@@ -73,7 +74,7 @@ src/
 ## 建置與驗證
 
 - `npm install`（repo 沒有 lockfile）、`npm run dev`、`npm run build`
-- `vite.config.js` 的 dev server 需要根目錄的 `key.pem` / `cert.pem`（已 gitignore）；
+- `vite.config.js` 的 dev server 需要 `incode_Vue/` 下的 `key.pem` / `cert.pem`（已 gitignore）；
   只要 build 時也會讀取，雲端環境可臨時產生自簽憑證：
   `openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 1 -subj /CN=localhost`，用完刪除
 - ESLint 9 沒有 `eslint.config.js`，`npm run lint` 目前無法執行
@@ -86,11 +87,11 @@ src/
 - **聊天室 XSS**：`src/components/chat/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
   後端聊天權限問題又讓任何人能以客服身分發訊息。修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
 - `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
-- 後端還有多項權限問題（點數、會員、聊天 API），完整清單與修正建議見後端 repo CLAUDE.md 的「全專案檢查結果」。
+- 後端還有多項權限問題（點數、會員、聊天 API），完整清單與修正建議見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
 
 ## 修正紀錄
 
-分支 `claude/vibrant-ride-w4z8f7`：
+（以下為合併進 monorepo 之前，原 `incode_Vue` repo 的修正）
 
 1. 點數商城錯誤修正：檔名大小寫、取消 / 改寄送資料沒檢查 `ok`、購物車可超過庫存、重複結帳、搜尋未編碼與競態、HTML 注入等
 2. 點數商城重構：共用模組（Swal、utils、composables、共用 CSS）、訂單明細延遲載入、購物車價格同步、Cart.vue 巢狀互動元素

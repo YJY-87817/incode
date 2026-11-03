@@ -3,14 +3,25 @@
 本檔案提供給 Claude Code（與接手的開發者）在此專案工作時的背景、慣例與目前進度。
 專案目前由個人維護（原為多人分組專案，程式中的 `//owen`、`//tim`、`//yjy`、`//qiu` 註解為原分工標記）。
 
+本 repo 為前後端合一的 monorepo（2026-11 將原 `YJY-87817/incode_Vue` 連同 commit 歷史併入 `incode_Vue/`）：
+
+| 資料夾 | 內容 | 專屬說明 |
+|---|---|---|
+| `incode2/` | 後端 ASP.NET Core 9 | 本檔案 |
+| `incode_Vue/` | 前端 Vue 3 + Vite | `incode_Vue/CLAUDE.md`（在該資料夾工作時會自動載入） |
+| `docs/` | 資料表設計、Content API 導覽 | |
+
+- 同一個功能牽涉前後端時，在同一個分支 / PR 一起修改。
+- 前端合併前的歷史：`git log edfd961^2`（合併 commit 的第二個 parent）。
+
 ## 專案概觀
 
-- **後端（本 repo）**：`incode2/`，ASP.NET Core 9 (`net9.0`) 單一專案，解決方案 `incode2.sln`
+- **後端**：`incode2/`，ASP.NET Core 9 (`net9.0`) 單一專案，解決方案 `incode2.sln`
   - 同時提供 **前台 REST API**（`ApiControllers/`，給 Vue 前台）與 **後台管理 MVC**（`Controllers/` + `Views/`，Razor）
   - EF Core 9 + SQL Server（Database-First，`Models/` 為產生的實體，擴充放 `Models/Partials/`）
   - SignalR 聊天室 `/chatHub`（`Hubs/ChatHub.cs`），Gemini AI 客服（`Services/Chat/GeminiService.cs`）
   - 綠界 ECPay 點數儲值（`Services/Point/EcpayService.cs`）
-- **前端**：另一個 repo `YJY-87817/incode_Vue`（Vue 3 + Vite + Pinia + Bootstrap），透過 CORS 帶 Cookie 呼叫 API
+- **前端**：`incode_Vue/`（Vue 3 + Vite + Pinia + Bootstrap），開發時另外啟動 Vite，透過 CORS 帶 Cookie 呼叫 API
 
 ### 目錄分層
 
@@ -100,13 +111,13 @@ incode/
 
 ## 修正紀錄
 
-分支 `claude/vibrant-ride-w4z8f7`（前後端 repo 同名分支）：
+（1～4 為合併成 monorepo 之前，前後端各自 repo 的 PR）
 
 1. 點數商城訂單 API：擁有者檢查、修改訂單補扣 / 退點、數量驗證、只有「待處理」可修改 / 取消
 2. 點數商城後端重構：交易一致性、原子扣庫存、點數鎖、重複商品合併、後台建單 / 修改改用 OrderService、
    修正後台修改訂單點數類型相反與可改會員、已取消訂單不可恢復、HTTP 狀態碼、圖片上傳驗證與權限、
    後台商品圖片路徑穿越刪檔、寄送資料刪除表單缺 `method="post"`
-3. 前端點數商城（`incode_Vue`）：錯誤修正與重構（見前端 repo 的 CLAUDE.md）
+3. 前端點數商城（`incode_Vue`）：錯誤修正與重構（見 `incode_Vue/CLAUDE.md`）
 4. 後端整理：
    - 資料夾與命名空間統一（見「目錄分層」），新增 `GlobalUsings.cs`；Big5 原始檔轉 UTF-8
    - 刪除未使用的類別（`StringExtensions`、命名空間錯誤的重複 `Partials/User`、`Follow`、`AddRewardRequest`、`NewOrderDTO` 等）、
@@ -119,6 +130,7 @@ incode/
    - `Program.cs`：移除重複的 `UseRouting` / `UseCors` / `UseStaticFiles` / `MapControllers` 與未使用的 Razor Pages，
      靜態檔 CORS 改由 `UseCors` 統一處理（原本手寫的允許來源清單少了 ngrok 網址）
    - 文件移到 repo 根目錄 `docs/`（`CONTENT_API_ONBOARDING` 由 Big5 轉 UTF-8 並改為 .md）
+5. 合併前後端為 monorepo：`incode_Vue` 以 `git subtree` 併入（保留歷史），新增根目錄 `README.md`；`appsettings.json` 的 `EmailSettings` 原本誤放在 `Authentication` 底下（`EmailService` 讀取根層級），已移到根層級
 
 ## 全專案檢查結果（2026-11 完成，尚未修正）
 
