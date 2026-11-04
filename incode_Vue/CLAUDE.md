@@ -75,9 +75,8 @@ src/
 ## 建置與驗證
 
 - `npm install`（repo 沒有 lockfile）、`npm run dev`、`npm run build`
-- `vite.config.js` 的 dev server 需要 `incode_Vue/` 下的 `key.pem` / `cert.pem`（已 gitignore）；
-  只要 build 時也會讀取，雲端環境可臨時產生自簽憑證：
-  `openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 1 -subj /CN=localhost`，用完刪除
+- `vite.config.js`：`incode_Vue/` 下有 `key.pem` / `cert.pem`（已 gitignore）時 dev server 使用 HTTPS，沒有時改為 HTTP；`npm run build` 不需要憑證
+- CI（repo 根目錄 `.github/workflows/ci.yml`）在 Linux 執行 `npm install` + `npm run build`，匯入路徑大小寫錯誤會讓 PR 檢查失敗
 - ESLint 9 沒有 `eslint.config.js`，`npm run lint` 目前無法執行
 - 沒有自動化測試。曾以 Playwright（環境內建 Chromium）+ 攔截 API 回應的方式做瀏覽器冒煙測試
 

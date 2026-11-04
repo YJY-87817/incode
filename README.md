@@ -120,7 +120,7 @@ incode/
    npm install
    ```
 
-2. **HTTPS 憑證**：開發伺服器使用 HTTPS，需要在 `incode_Vue/` 放 `key.pem` 與 `cert.pem`（已加入 `.gitignore`）。
+2. **HTTPS 憑證**：開發伺服器使用 HTTPS，需要在 `incode_Vue/` 放 `key.pem` 與 `cert.pem`（已加入 `.gitignore`；沒有憑證時會改用 HTTP，但後端 Cookie 需要 HTTPS 才能登入）。
    可用 [mkcert](https://github.com/FiloSottile/mkcert) 產生受信任的本機憑證：
 
    ```bash
@@ -172,6 +172,7 @@ export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;...
 - 架構、程式慣例（權限檢查、API 回應格式、點數異動、圖片上傳…）與待處理問題清單請見 [`CLAUDE.md`](CLAUDE.md)，
   前端的細節見 [`incode_Vue/CLAUDE.md`](incode_Vue/CLAUDE.md)。
 - 同一個功能牽涉前後端時，請在同一個分支 / PR 一起修改。
+- 每個 PR 會由 GitHub Actions（`.github/workflows/ci.yml`）自動建置前後端，兩個檢查都通過再合併。
 - 前端合併進本 repo 前的 commit 歷史仍保留：`git log edfd961^2`。
 
 ## 授權

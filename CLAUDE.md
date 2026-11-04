@@ -110,6 +110,7 @@ incode/
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
+- **CI**：`.github/workflows/ci.yml`（只做建置，沒有測試）。PR 合併前請確認兩個 job 都通過
 - 專案沒有自動化測試。雲端環境若只有 .NET 8 SDK，可複製一份改 `net8.0`、ASP.NET Core 套件降為 8.x 做編譯檢查；
   搭配 Docker 資料庫可實際啟動後端，用 API（註冊 / 登入取得 Cookie）做端對端測試
 - `wwwroot/img/` 下有使用者上傳的圖片被提交進 git，新增上傳功能時注意不要再提交上傳檔
@@ -157,11 +158,15 @@ incode/
    條件式索引會建立失敗）。以 Docker 資料庫實測時另外修正兩個原有錯誤：新增論壇分類時 `description` 為必填（前端送 null，
    功能一直失敗）→ 改為選填；後台 `CommunityController` 從未有對應 View（必定 500）→ 刪除
 
+9. CI（全專案檢查 20）：`.github/workflows/ci.yml` 在每個 PR 與推送到 main 時於 Linux 執行後端 `dotnet build`（Release）
+   與前端 `npm install` + `npm run build`，可擋下檔名大小寫錯誤；`vite.config.js` 改為 `key.pem` / `cert.pem` 存在時才啟用 HTTPS
+   （原本沒有憑證時連 `npm run build` 都會失敗）
+
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5 已修正（見修正紀錄 6），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、18～20 已修正（見修正紀錄 6～9），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ 加 CI（20）→ 其餘。
+建議修正順序：撤銷外洩金鑰（6）→ 點數併發（8、9）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -204,7 +209,7 @@ incode/
 
 18. ~~網址寫死~~（已修正，見修正紀錄 7）
 19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql` 與 Docker 資料庫，見修正紀錄 7、8）
-20. **沒有測試與 CI**：建議先在 PR 上跑 `dotnet build` 與 `npm run build`（可擋下 Linux 大小寫路徑等問題）。
+20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
 21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
 22. **前端效能 / 結構**：同時使用 Bootstrap、Vuetify（`import * as components` 全量匯入）、Material Kit，主程式包 1.17 MB；
