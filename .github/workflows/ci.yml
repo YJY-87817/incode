@@ -1,0 +1,55 @@
+name: CI
+
+# 每個 PR 與推送到 main 時，分別建置後端與前端。
+# 在 Linux 上建置，可擋下 Windows / macOS 不會發現的檔名大小寫錯誤。
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: 後端 (dotnet build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore incode2.sln
+
+      - name: Build
+        run: dotnet build incode2.sln --no-restore --configuration Release
+
+  frontend:
+    name: 前端 (npm run build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: incode_Vue
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          # repo 沒有 package-lock.json，以 package.json 作為快取依據
+          cache-dependency-path: incode_Vue/package.json
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
