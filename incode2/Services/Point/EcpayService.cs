@@ -8,7 +8,8 @@ namespace incode2.Services.Point
         private readonly string MerchantID;
         private readonly string HashKey;
         private readonly string HashIV;
-        private readonly string ReturnUrl;
+        private readonly string ReturnUrl;     // 綠界伺服器端付款結果通知 (需公開網址，開發時用 ngrok)
+        private readonly string ClientBackUrl; // 付款完成後使用者被導回的前端頁面
         private readonly IConfiguration _config;
 
         public EcpayService(IConfiguration config)
@@ -17,6 +18,7 @@ namespace incode2.Services.Point
             HashKey = config["ECPay:HashKey"] ?? throw new InvalidOperationException("ECPay:HashKey 未設定");
             HashIV = config["ECPay:HashIV"] ?? throw new InvalidOperationException("ECPay:HashIV 未設定");
             ReturnUrl = config["ECPay:ReturnUrl"] ?? throw new InvalidOperationException("ECPay:ReturnUrl 未設定");
+            ClientBackUrl = $"{config.GetFrontendUrl()}/recharge-result";
         }
 
         public Dictionary<string, string> CreatePayment(
@@ -32,7 +34,7 @@ namespace incode2.Services.Point
             { "TradeDesc", "平台點數儲值" },
             { "ItemName", $"儲值 {order.CashAmount} 元 獲得 {order.PointsGranted} 點" },
             { "ReturnURL", ReturnUrl },
-            { "ClientBackURL", "https://localhost:5173/recharge-result" },
+            { "ClientBackURL", ClientBackUrl }, // 付款完成後導回前端的頁面
             { "ChoosePayment", "ALL" },
             { "EncryptType", "1" }
         };

@@ -26,16 +26,8 @@ namespace incode2.ApiControllers.Point
             return Ok(missions);
         }
 
-        [HttpPost("{missionId}/increment")]
-        [Authorize]
-        public async Task<IActionResult> Increment(int missionId, [FromBody] IncrementRequest? req)
-        {
-            int userId = User.GetId();
-            var increment = req?.Increment ?? 1;
-
-            var result = await _service.IncrementProgressAsync(userId, missionId, increment);
-            return StatusCode(result.Code, result);
-        }
+        // 任務進度只由伺服器端 IMissionService.TriggerMissionAsync 觸發 (登入、按讚、購買…)，
+        // 不提供讓會員自行增加進度的 API
 
         [HttpPost("claim-reward")]
         [Authorize]
@@ -54,6 +46,4 @@ namespace incode2.ApiControllers.Point
             public int ProgressId { get; set; }  // MissionProgressId
         }
     }
-
-    public class IncrementRequest { public int Increment { get; set; } = 1; }
 }

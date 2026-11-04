@@ -18,18 +18,8 @@ builder.Services.AddCors(options =>
 {
   options.AddPolicy("VueApp", policy =>
   {
-    policy.WithOrigins(
-        "https://localhost:5173",
-        "https://localhost:5174",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://localhost:7190",
-        "http://localhost:3001",
-        "https://hexabasic-yair-causally.ngrok-free.dev",
-        "https://groomishly-undeft-ettie.ngrok-free.dev"
-      )
+    // 允許來源由設定提供：App:FrontendUrl + App:CorsOrigins (見 appsettings.json)
+    policy.WithOrigins(builder.Configuration.GetCorsOrigins())
       .AllowAnyMethod()
       .AllowAnyHeader()
       .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
@@ -60,6 +50,8 @@ builder.Services.AddSignalR();
 // 3. Cookie
 // owen以下
 const string MemberScheme = "MemberAuth";
+// API 與 SignalR 未登入 / 無權限時回 401 / 403，不轉址到登入頁
+static bool IsApiOrHub(PathString path) => path.StartsWithSegments("/api") || path.StartsWithSegments("/chatHub");
 const string AdminScheme = "AdminAuth";
 
 // 使用 PolicyScheme 作為預設，根據 cookie 存在情況選擇要用哪個 scheme Authenticate
@@ -103,7 +95,7 @@ builder.Services.AddAuthentication(options =>
       options.Events.OnRedirectToLogin = context =>
       {
         // 如果是 API 請求，回傳 401 狀態碼，不要跳轉 HTML 頁面
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (IsApiOrHub(context.Request.Path))
         {
           context.Response.StatusCode = StatusCodes.Status401Unauthorized;
           return Task.CompletedTask;
@@ -115,7 +107,7 @@ builder.Services.AddAuthentication(options =>
 
       options.Events.OnRedirectToAccessDenied = context =>
       {
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (IsApiOrHub(context.Request.Path))
         {
           context.Response.StatusCode = StatusCodes.Status403Forbidden;
           return Task.CompletedTask;

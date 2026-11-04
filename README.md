@@ -51,13 +51,24 @@ incode/
 | 項目 | 版本 |
 |---|---|
 | .NET SDK | 9.0 |
-| SQL Server | SQL Server 或 LocalDB（Windows） |
+| SQL Server | Docker（建議，見下方）、SQL Server 或 LocalDB（Windows） |
 | Node.js | 20.19 以上（Vite 7 需求） |
 
 ### 後端
 
-1. **資料庫**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`（LocalDB 的 `incodedatabase`）。
-   專案為 Database-First，repo 內沒有 migration，資料表結構請參考 [`docs/dbdiagram.md`](docs/dbdiagram.md)。
+1. **資料庫**（二擇一）：
+   - **Docker（建議）**：在 repo 根目錄啟動，第一次會自動建立資料庫並執行建表與基本資料腳本：
+
+     ```bash
+     docker compose up -d
+     ```
+
+     後端用 `https (Docker DB)` 這個 launch profile 啟動即可連到這個資料庫（Visual Studio 選這個 profile，或下方指令）。
+     要回到全新的資料庫時執行 `docker compose down -v` 再 `docker compose up -d`。
+   - **LocalDB / 自己的 SQL Server**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`；
+     建立空資料庫後執行 [`docs/database/schema.sql`](docs/database/schema.sql) 與 [`seed.sql`](docs/database/seed.sql)。
+
+   建立資料庫後，從前台註冊一個帳號並設為管理員才能登入後台，步驟見 [`docs/database/README.md`](docs/database/README.md)。
 
 2. **機密設定**：API 金鑰等不要寫進 `appsettings.json`，改用 user-secrets：
 
@@ -86,6 +97,12 @@ incode/
    dotnet run --project incode2 --launch-profile https
    ```
 
+   使用 Docker 資料庫時：
+
+   ```bash
+   dotnet run --project incode2 --launch-profile "https (Docker DB)"
+   ```
+
    - 後台：<https://localhost:7190>（管理員帳號登入）
    - 前台 API：`https://localhost:7190/api/...`
    - SignalR：`https://localhost:7190/chatHub`
@@ -111,6 +128,7 @@ incode/
    ```
 
 3. **後端網址**：設定在 `incode_Vue/.env`（`VITE_API_BASE_URL`、`VITE_BASE_URL`），預設指向 `https://localhost:7190`。
+   程式內不寫死網址，一律讀這兩個變數。
 
 4. **啟動**：
 
@@ -123,6 +141,31 @@ incode/
    ```bash
    npm run build
    ```
+
+## 部署設定
+
+前後端的網址都由設定提供，部署時只需覆寫設定，不用改程式：
+
+| 位置 | 設定 | 用途 |
+|---|---|---|
+| 後端 `appsettings.json` → `App:FrontendUrl` | 前端網址 | Google 登入導回、重設密碼信件連結、綠界付款完成導回、AI 回覆中的連結；並自動加入 CORS 允許來源 |
+| 後端 `App:CorsOrigins` | 額外的 CORS 允許來源 | 其他開發 port、ngrok 等 |
+| 後端 `ECPay:ReturnUrl` | 綠界付款結果通知網址 | 需為綠界伺服器連得到的公開網址（開發時用 ngrok） |
+| 前端 `.env.production` | `VITE_API_BASE_URL`、`VITE_BASE_URL` | 後端 API 與網站網址（`npm run build` 時使用） |
+
+後端在正式環境以環境變數覆寫，例如：
+
+```bash
+export App__FrontendUrl=https://www.example.com
+```
+
+```bash
+export App__CorsOrigins__0=https://admin.example.com
+```
+
+```bash
+export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;..."
+```
 
 ## 開發說明
 

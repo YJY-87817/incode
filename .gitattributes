@@ -61,3 +61,6 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# Shell 腳本在 Linux 容器內執行 (docker/db/init.sh)，固定使用 LF，避免 Windows 簽出時轉成 CRLF 而無法執行
+*.sh text eol=lf

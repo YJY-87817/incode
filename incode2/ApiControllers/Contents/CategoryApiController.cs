@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -99,6 +100,7 @@ namespace incode2.ApiControllers.Contents
     //   - IsActive 預設設為 1（啟用狀態）
     // 範例: POST https://localhost:7190/api/CategoryApi
     [HttpPost]
+    [Authorize] // 會員可新增分類，但需登入
     public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto request)
     {
       if (request.ParentCategoryId.HasValue)
@@ -142,7 +144,7 @@ namespace incode2.ApiControllers.Contents
       public int Id { get; set; }
       public int? ParentCategoryId { get; set; }
       public string Name { get; set; }
-      public string Description { get; set; }
+      public string? Description { get; set; }
 
       // 前端論壇用到的統計
       public int TopicCount { get; set; }
@@ -158,7 +160,7 @@ namespace incode2.ApiControllers.Contents
       public string Name { get; set; }
 
       [StringLength(200)]
-      public string Description { get; set; }
+      public string? Description { get; set; } // 選填 (前端未填時送 null；原本為必填導致新增分類失敗)
     }
   }
 }

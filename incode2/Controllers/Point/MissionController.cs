@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authorization;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Controllers.Point
 {
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class MissionController : Controller
     {
         private readonly incodedatabaseContext _context;
