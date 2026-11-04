@@ -3,12 +3,12 @@
 本檔案提供給 Claude Code（與接手的開發者）在此專案工作時的背景、慣例與目前進度。
 專案目前由個人維護（原為多人分組專案，程式中的 `//owen`、`//tim`、`//yjy`、`//qiu` 註解為原分工標記）。
 
-本 repo 為前後端合一的 monorepo（2026-11 將原 `YJY-87817/incode_Vue` 連同 commit 歷史併入 `incode_Vue/`）：
+本 repo 為前後端合一的 monorepo（2026-11 將原 `YJY-87817/incode_Vue` 連同 commit 歷史併入，現為 `incode.Vue/`）：
 
 | 資料夾 | 內容 | 專屬說明 |
 |---|---|---|
-| `incode2/` | 後端 ASP.NET Core 10 | 本檔案 |
-| `incode_Vue/` | 前端 Vue 3 + Vite | `incode_Vue/CLAUDE.md`（在該資料夾工作時會自動載入） |
+| `incode.MVC/` | 後端 ASP.NET Core 10 | 本檔案 |
+| `incode.Vue/` | 前端 Vue 3 + Vite | `incode.Vue/CLAUDE.md`（在該資料夾工作時會自動載入） |
 | `docs/` | 資料表設計、Content API 導覽 | |
 
 - 同一個功能牽涉前後端時，在同一個分支 / PR 一起修改。
@@ -16,20 +16,20 @@
 
 ## 專案概觀
 
-- **後端**：`incode2/`，ASP.NET Core 10 (`net10.0`，LTS，支援至 2028-11) 單一專案，解決方案 `incode2.sln`
+- **後端**：`incode.MVC/`，ASP.NET Core 10 (`net10.0`，LTS，支援至 2028-11) 單一專案，解決方案 `incode.sln`
   - 同時提供 **前台 REST API**（`ApiControllers/`，給 Vue 前台）與 **後台管理 MVC**（`Controllers/` + `Views/`，Razor）
   - EF Core 10 + SQL Server（Database-First，`Models/` 為產生的實體，擴充放 `Models/Partials/`）
   - SignalR 聊天室 `/chatHub`（`Hubs/ChatHub.cs`），Gemini AI 客服（`Services/Chat/GeminiService.cs`）
   - 綠界 ECPay 點數儲值（`Services/Point/EcpayService.cs`）
-- **前端**：`incode_Vue/`（Vue 3 + Vite + Pinia + Bootstrap），開發時另外啟動 Vite，透過 CORS 帶 Cookie 呼叫 API
+- **前端**：`incode.Vue/`（Vue 3 + Vite + Pinia + Bootstrap），開發時另外啟動 Vite，透過 CORS 帶 Cookie 呼叫 API
 
 ### 目錄分層
 
 ```
 incode/
-├── incode2.sln
+├── incode.sln
 ├── docs/                       專案文件（資料表設計 dbdiagram、Content API 導覽）
-└── incode2/
+└── incode.MVC/
     ├── Program.cs              DI 註冊、驗證、CORS、Middleware
     ├── GlobalUsings.cs         專案內所有命名空間的 global using（新增資料夾時記得補上）
     ├── ApiControllers/<模組>/  前台 REST API（api/[controller]）；Common/ 放共用的圖片 API
@@ -38,7 +38,7 @@ incode/
     ├── Hubs/                   SignalR
     ├── Services/<模組>/        商業邏輯（IXxxService + 實作）；Common/ 放圖片上傳與檢查
     ├── Models/                 EF 產生的實體（勿手改）
-    │   ├── Partials/           實體 / DbContext 的 partial 擴充（命名空間必須是 incode2.Models）
+    │   ├── Partials/           實體 / DbContext 的 partial 擴充（命名空間必須是 incode.MVC.Models）
     │   └── Metadata/           [ModelMetadataType] 用的驗證 / 顯示設定
     ├── Dtos/<模組>/            API 傳輸物件（ResultDTO、PagedResultDto 在根目錄）
     ├── ViewModels/<模組>/      後台頁面模型
@@ -49,9 +49,9 @@ incode/
     └── wwwroot/                靜態檔；contents/ 與 img/ 下為執行時產生的資料（論壇內文、上傳圖片）
 ```
 
-- 模組名稱統一：`Chat`、`Contents`、`Point`、`PointShop`、`Users`，**命名空間 = `incode2.<資料夾路徑>`**
-  （例：`Services/Users/AuthService.cs` → `incode2.Services.Users`）。
-- 專案內命名空間由 `GlobalUsings.cs` 統一引入，檔案內不需再寫 `using incode2.*`。
+- 模組名稱統一：`Chat`、`Contents`、`Point`、`PointShop`、`Users`，**命名空間 = `incode.MVC.<資料夾路徑>`**
+  （例：`Services/Users/AuthService.cs` → `incode.MVC.Services.Users`）。
+- 專案內命名空間由 `GlobalUsings.cs` 統一引入，檔案內不需再寫 `using incode.MVC.*`。
 - 原始碼一律 UTF-8（部分舊檔原為 Big5，已轉換；Big5 在非 Windows 環境編譯時中文字串會變亂碼）。
 
 ### 模組
@@ -124,7 +124,7 @@ incode/
 2. 點數商城後端重構：交易一致性、原子扣庫存、點數鎖、重複商品合併、後台建單 / 修改改用 OrderService、
    修正後台修改訂單點數類型相反與可改會員、已取消訂單不可恢復、HTTP 狀態碼、圖片上傳驗證與權限、
    後台商品圖片路徑穿越刪檔、寄送資料刪除表單缺 `method="post"`
-3. 前端點數商城（`incode_Vue`）：錯誤修正與重構（見 `incode_Vue/CLAUDE.md`）
+3. 前端點數商城（`incode.Vue`）：錯誤修正與重構（見 `incode.Vue/CLAUDE.md`）
 4. 後端整理：
    - 資料夾與命名空間統一（見「目錄分層」），新增 `GlobalUsings.cs`；Big5 原始檔轉 UTF-8
    - 刪除未使用的類別（`StringExtensions`、命名空間錯誤的重複 `Partials/User`、`Follow`、`AddRewardRequest`、`NewOrderDTO` 等）、
@@ -165,6 +165,9 @@ incode/
 10. 升級 .NET 10（.NET 9 為 STS，2026-11-10 結束支援）：`net10.0`、Microsoft 套件升到 10.x、CI 改用 .NET 10 SDK；
     直接參考 `System.Security.Cryptography.Pkcs` 10.x 取代 `Microsoft.Data.SqlClient` 帶入的 9.0.11（高風險漏洞 GHSA-846f-f764-76mx）。
     `Microsoft.VisualStudio.Web.CodeGeneration.Design`（VS scaffolding，執行時不使用）仍帶入有低風險漏洞的 `NuGet.*` 6.12.1
+11. 專案更名：後端 `incode2/` → `incode.MVC/`（`incode.MVC.csproj`，命名空間 `incode2.*` → `incode.MVC.*`，組件名稱 `incode.MVC.dll`）、
+    前端 `incode_Vue/` → `incode.Vue/`、`incode2.sln` → `incode.sln`。`UserSecretsId` 保持不變（沿用既有的 user-secrets）。
+    舊的 commit / 文件中出現的 `incode2`、`incode_Vue` 即為這兩個資料夾
 
 ## 全專案檢查結果（2026-11）
 
@@ -179,7 +182,7 @@ incode/
 
 ### 🟠 高
 
-6. **API 金鑰提交進 git 歷史**：`incode2/appsettings.json` 的歷史版本中有 `GeminiApiKey`、`TmdbApiKey` 的真實值
+6. **API 金鑰提交進 git 歷史**：`incode.MVC/appsettings.json` 的歷史版本中有 `GeminiApiKey`、`TmdbApiKey` 的真實值
    （目前檔案已清空，但歷史仍可取得）。→ 到 Google / TMDB 後台**撤銷並重新產生金鑰**，改用 user-secrets 或環境變數。
    ECPay 目前放的是綠界公開的測試帳號（`3002607`），正式上線時正式金鑰不可放進 repo。
 7. **任務進度可以自己增加**：`MissionProgressApiController` 的 `POST {missionId}/increment` 讓會員自訂增量，
