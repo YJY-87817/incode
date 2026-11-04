@@ -57,7 +57,8 @@ incode/
 ### 後端
 
 1. **資料庫**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`（LocalDB 的 `incodedatabase`）。
-   專案為 Database-First，repo 內沒有 migration，資料表結構請參考 [`docs/dbdiagram.md`](docs/dbdiagram.md)。
+   新環境請建立空資料庫後執行 [`docs/database/schema.sql`](docs/database/schema.sql) 與 [`seed.sql`](docs/database/seed.sql)，
+   再把註冊的帳號設為管理員，步驟見 [`docs/database/README.md`](docs/database/README.md)。
 
 2. **機密設定**：API 金鑰等不要寫進 `appsettings.json`，改用 user-secrets：
 
@@ -111,6 +112,7 @@ incode/
    ```
 
 3. **後端網址**：設定在 `incode_Vue/.env`（`VITE_API_BASE_URL`、`VITE_BASE_URL`），預設指向 `https://localhost:7190`。
+   程式內不寫死網址，一律讀這兩個變數。
 
 4. **啟動**：
 
@@ -123,6 +125,31 @@ incode/
    ```bash
    npm run build
    ```
+
+## 部署設定
+
+前後端的網址都由設定提供，部署時只需覆寫設定，不用改程式：
+
+| 位置 | 設定 | 用途 |
+|---|---|---|
+| 後端 `appsettings.json` → `App:FrontendUrl` | 前端網址 | Google 登入導回、重設密碼信件連結、綠界付款完成導回、AI 回覆中的連結；並自動加入 CORS 允許來源 |
+| 後端 `App:CorsOrigins` | 額外的 CORS 允許來源 | 其他開發 port、ngrok 等 |
+| 後端 `ECPay:ReturnUrl` | 綠界付款結果通知網址 | 需為綠界伺服器連得到的公開網址（開發時用 ngrok） |
+| 前端 `.env.production` | `VITE_API_BASE_URL`、`VITE_BASE_URL` | 後端 API 與網站網址（`npm run build` 時使用） |
+
+後端在正式環境以環境變數覆寫，例如：
+
+```bash
+export App__FrontendUrl=https://www.example.com
+```
+
+```bash
+export App__CorsOrigins__0=https://admin.example.com
+```
+
+```bash
+export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;..."
+```
 
 ## 開發說明
 

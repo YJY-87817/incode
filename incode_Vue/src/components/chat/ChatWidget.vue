@@ -29,7 +29,7 @@ const selectedFile = ref(null);
 // 在記憶體中暫存 Session ID
 const currentSessionId = ref(0);
 
-const API_BASE_URL = "https://localhost:7190";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL; // 後端網址 (.env)
 
 // 設定「不顯示按鈕」的頁面黑名單
 const excludedPaths = [

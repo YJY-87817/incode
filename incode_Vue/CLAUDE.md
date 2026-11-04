@@ -9,6 +9,7 @@
 - Vue 3（`<script setup>`）+ Vite + Pinia（`pinia-plugin-persistedstate`）+ Vue Router
 - UI：Bootstrap 5（含 `bootstrap-vue-next`）、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
 - 後端 API：`VITE_API_BASE_URL`（開發為 `https://localhost:7190/api`），圖片等靜態檔：`VITE_BASE_URL`
+  （**不要在程式中寫死後端網址**，一律讀這兩個變數；正式環境以 `.env.production` 覆寫）
 - 登入：後端 Cookie 驗證，axios 必須帶 `withCredentials: true`
   - 全域 `axios`：`main.js` 設定 `axios.defaults.withCredentials` / `baseURL`，並有 401 攔截器（清除登入狀態、導向登入頁）
   - `src/api/request.js` 的 `apiClient`：`axios.create` 建立時就複製預設值，所以自己設定了 `withCredentials: true`
@@ -26,7 +27,7 @@ src/
 ├── router/index.js
 ├── api/                    後端 API 呼叫
 │   ├── request.js          共用 axios (apiClient，baseURL = VITE_API_BASE_URL)
-│   ├── pointClient.js      點數模組用的 axios (baseURL 寫死 https://localhost:7190)
+│   ├── pointClient.js      點數模組用的 axios (baseURL = VITE_BASE_URL，呼叫路徑自帶 /api)
 │   └── contentApi.js / contentInteractionApi.js / imageApi.js / pointShopApi.js
 ├── stores/                 Pinia
 │   ├── chatStore.js / forumStore.js
@@ -87,7 +88,6 @@ src/
 - **聊天室 XSS**：`src/components/chat/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
   修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
 - `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
-- 多處寫死 `https://localhost:7190`（`api/pointClient.js`、`ChatWidget.vue`、`AuthView.vue`、會員頁的 `STATIC_BASE_URL`），應改用 `.env`。
 - 呼叫了後端不存在的端點：`RechargeResult.vue` 的 `PointRechargeApi/check-order`、`taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
 - 完整問題清單見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
 

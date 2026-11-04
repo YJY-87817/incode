@@ -21,17 +21,20 @@ namespace incode2.ApiControllers.Chat
         private readonly GeminiService _geminiService;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly string _frontendUrl; // 前端網址 (App:FrontendUrl)，AI 回覆中產生連結用
 
         public ChatMessagesApiController(
           incodedatabaseContext context,
           GeminiService geminiService,
           IHubContext<ChatHub> hubContext,
-          IWebHostEnvironment webHostEnvironment)
+          IWebHostEnvironment webHostEnvironment,
+          IConfiguration configuration)
         {
             _context = context;
             _geminiService = geminiService;
             _hubContext = hubContext;
             _webHostEnvironment = webHostEnvironment;
+            _frontendUrl = configuration.GetFrontendUrl();
         }
 
 
@@ -268,7 +271,7 @@ namespace incode2.ApiControllers.Chat
                         string keyword = firstResponse.Split('|')[1].Trim();
                         string productDataJson = GetProductInfo(keyword);
                         string imagePathPrefix = "/img/product/";
-                        string frontendUrl = "https://localhost:5173";
+                        string frontendUrl = _frontendUrl;
 
                         string finalPrompt = $@"{basePrompt}
                         ---
@@ -296,7 +299,7 @@ namespace incode2.ApiControllers.Chat
                         // --- 呼叫文章工具 ---
                         string keyword = firstResponse.Split('|')[1].Trim();
                         string contentDataJson = SearchContents(keyword);
-                        string frontendUrl = "https://localhost:5173";
+                        string frontendUrl = _frontendUrl;
 
                         string finalPrompt = $@"{basePrompt}
                         ---
@@ -318,7 +321,7 @@ namespace incode2.ApiControllers.Chat
                         // --- 呼叫點數工具 ---
                         string keyword = firstResponse.Split('|')[1].Trim();
                         string pointDataJson = PointLogs(keyword);
-                        string frontendUrl = "https://localhost:5173";
+                        string frontendUrl = _frontendUrl;
 
                         string finalPrompt = $@"{basePrompt}
                         ---
@@ -620,7 +623,7 @@ namespace incode2.ApiControllers.Chat
                 {
                     string keyword = firstResponse.Split('|')[1].Trim();
                     string contentDataJson = SearchContents(keyword);
-                    string frontendUrl = "https://localhost:5173";
+                    string frontendUrl = _frontendUrl;
 
                     string finalPrompt = $@"{basePrompt}
                     ---

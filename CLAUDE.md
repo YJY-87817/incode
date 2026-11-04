@@ -81,6 +81,8 @@ incode/
 - **不外洩例外**：catch 後用 `ILogger` 記錄，回傳通用訊息，不要把 `ex.Message` 回給前端。
 - **點數異動**：透過 `IPointLogService.ChangePointsAsync`（不會自己 SaveChanges，由呼叫端在交易內儲存）。
 - **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價。
+- **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
+  前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
 - **圖片上傳**：先用 `Services/Common/ImageFileValidator.Validate()` 檢查（僅 jpg/png/gif/webp + 檔頭比對，單檔 20 MB）；
   刪除檔案時檔名以資料庫為準並 `Path.GetFileName()`，不可使用表單傳入的路徑。
@@ -103,7 +105,8 @@ incode/
 
 ## 建置與驗證
 
-- 需要 .NET 9 SDK、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）
+- 需要 .NET 9 SDK、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
+  新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
 - 專案沒有自動化測試。雲端環境若只有 .NET 8 SDK，可複製一份改 `net8.0`、ASP.NET Core 套件降為 8.x 做編譯檢查；
   訂單邏輯曾以 SQLite in-memory（`Foreign Keys=False`）寫臨時測試驗證
@@ -142,12 +145,17 @@ incode/
    - 刪除無驗證的 `PointRechargeApi` GET / PUT / DELETE、`ContentNotificationApiController`（前後端皆未使用）、
      `EntrustMissionApi` DELETE（直接刪除不會退預扣點數）、`GET api/EntrustMissionProgressApi`；`POST api/CategoryApi` 需登入
    - `/chatHub` 未登入回 401（原本轉址到登入頁）
+7. 部署設定與資料庫腳本（全專案檢查 18、19）：
+   - 後端新增 `App:FrontendUrl`、`App:CorsOrigins` 設定（`Extensions/ConfigurationExtensions.cs`），Google 登入導回、
+     重設密碼連結、綠界 `ClientBackURL`、AI 回覆連結、CORS 允許來源全部改讀設定；正式環境以環境變數覆寫
+   - 前端寫死的 `https://localhost:7190` 全部改用 `.env` 的 `VITE_API_BASE_URL` / `VITE_BASE_URL`
+   - 新增 `docs/database/`：由 EF 模型產生的 `schema.sql`、基本資料 `seed.sql`（角色、點數類型、互動分類＋範例分類與任務）與說明
 
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5 已修正（見修正紀錄 6），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ 寫死網址改設定（18）、補建表腳本（19）→ 加 CI（20）→ 其餘。
+建議修正順序：撤銷外洩金鑰（6）→ 加 CI（20）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -188,12 +196,8 @@ incode/
 
 ### 🟠 部署 / 維運（2026-11-04 檢查）
 
-18. **網址寫死**：後端 Google 登入導回、忘記密碼連結、ECPay `ClientBackURL`、`ChatMessagesApiController` 4 處寫死
-    `https://localhost:5173`；`appsettings.json` 的 ECPay `ReturnUrl` 與 CORS 清單寫死 ngrok；前端 `api/pointClient.js`、
-    `ChatWidget.vue`、`AuthView.vue`（Google 登入）、4 個會員頁的 `STATIC_BASE_URL` 寫死 `https://localhost:7190`。
-    → 後端新增 `FrontendUrl` 設定；前端一律使用 `.env` 的 `VITE_API_BASE_URL` / `VITE_BASE_URL`。
-19. **資料庫無法重建**：repo 內沒有 migration 或建表 SQL，資料庫只存在本機 LocalDB。
-    → 由 EF 模型產生建表腳本（`dotnet ef dbcontext script`）放入 `docs/`，並補基本資料（角色、互動分類、任務定義、點數類型）。
+18. ~~網址寫死~~（已修正，見修正紀錄 7）
+19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql`，見修正紀錄 7；尚未在 SQL Server 實際執行過）
 20. **沒有測試與 CI**：建議先在 PR 上跑 `dotnet build` 與 `npm run build`（可擋下 Linux 大小寫路徑等問題）。
 21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。

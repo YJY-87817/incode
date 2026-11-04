@@ -72,7 +72,7 @@
     try {
       const { data } = await axios.get("/ContentApi");
       const listData = Array.isArray(data) ? data : data.items || [];
-      const STATIC_BASE_URL = "https://localhost:7190";
+      const STATIC_BASE_URL = import.meta.env.VITE_BASE_URL; // 後端靜態檔網址 (.env)
 
       const filteredList = listData.filter(post => String(post.userId || post.UserId) === String(userId));
       const parser = new DOMParser();
