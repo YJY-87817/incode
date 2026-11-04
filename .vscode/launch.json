@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/incode2/bin/Debug/net9.0/incode2.dll",
+            "program": "${workspaceFolder}/incode.MVC/bin/Debug/net10.0/incode.MVC.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/incode2",
+            "cwd": "${workspaceFolder}/incode.MVC",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "action": "openExternally",

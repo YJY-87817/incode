@@ -1,0 +1,126 @@
+﻿@model IEnumerable<incode.MVC.Models.ShippedDetail>
+
+@{
+    ViewData["Title"] = "寄送管理";
+}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center">
+            <h4 class="mb-0">寄送管理</h4>
+            <div class="ms-auto">
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fa fa-plus me-2" aria-hidden="true"></i> 新增寄送資料
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="shippedTable" class="table table-bordered table-striped table-hover align-middle" style="visibility: hidden;">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th style="width:60px">寄送ID</th>
+                            <th style="width:60px">訂單ID</th>
+                            <th style="width:60px">狀態</th>
+                            <th style="width:80px">姓名</th>
+                            <th style="min-width:250px">地址</th>
+                            <th style="width:110px">電話</th>
+                            <th style="width:140px">寄送日期</th>
+                            <th style="width:140px">送達日期</th>
+                            <th style="width:60px">失敗</th>
+                            <th style="min-width:100px">說明</th>
+                            <th style="width:100px">完成</th>
+                            <th style="width:60px">查看</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.ShippedDetailId)</td>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.OrderId)</td>
+                                <td class="text-center" data-order="@(item.Order.Status ?? "")">
+                                    @if (!string.IsNullOrEmpty(item.Order.Status))
+                                    {
+                                        <span class="badge @(item.Order.Status == "已完成" ? "bg-success" : item.Order.Status == "已取消" ? "bg-danger" : item.Order.Status == "待處理" ? "bg-warning" : "bg-secondary")">
+                                            @item.Order.Status
+                                        </span>
+                                    }
+                                </td>
+                                <td>@Html.DisplayFor(modelItem => item.RecipientName)</td>
+                                <td>@Html.DisplayFor(modelItem => item.RecipientAddress)</td>
+                                <td class="text-center">@Html.DisplayFor(modelItem => item.RecipientPhone)</td>
+                                <td class="text-center" data-order="@(item.ShippedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">@(item.ShippedDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center" data-order="@(item.ArrivalDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">@(item.ArrivalDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+                                <td class="text-center" data-order="@(item.IsFailed ? "1" : "0")">
+                                    @if (item.IsFailed)
+                                    {
+                                        <span class="badge bg-danger">是</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">否</span>
+                                    }
+                                </td>
+                                <td>@Html.DisplayFor(modelItem => item.Remark)</td>
+                                <td class="text-center" data-order="@(item.IsCompleted ? "1" : "0")">
+                                    @if (item.IsCompleted)
+                                    {
+                                        <span class="badge bg-success">完成</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">未完成</span>
+                                    }
+                                </td>
+                                <td class="text-center" data-order="">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">修改</a>
+                                        <a class="btn btn-sm btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        $(document).ready(function () {
+            $('#shippedTable').DataTable({
+                language: {
+                    processing: "處理中...",
+                    loadingRecords: "載入中...",
+                    lengthMenu: "顯示 _MENU_ 筆資料",
+                    zeroRecords: "沒有符合的資料",
+                    info: "顯示第 _START_ 至 _END_ 筆資料，共 _TOTAL_ 筆",
+                    infoEmpty: "顯示第 0 至 0 筆資料，共 0 筆",
+                    infoFiltered: "(從 _MAX_ 筆資料中過濾)",
+                    search: "搜尋:",
+                    paginate: {
+                        first: "第一頁",
+                        previous: "上一頁",
+                        next: "下一頁",
+                        last: "最後一頁"
+                    }
+                },
+                order: [[0, 'desc']], // 預設按寄送ID降冪排序
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "全部"]],
+                columnDefs: [
+                    { orderable: false, targets: [10] } // 查看欄位不可排序
+                ],
+                responsive: true,
+                autoWidth: false,
+                initComplete: function() {
+                    $('#shippedTable').css('visibility', 'visible');
+                }
+            });
+        });
+    </script>
+}

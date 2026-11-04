@@ -1,0 +1,135 @@
+﻿@model incode.MVC.Models.ShippedDetail
+
+@{
+    ViewData["Title"] = "編輯寄送資料";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white py-3">
+                    <h4 class="mb-0 fs-5">編輯寄送資訊 (ID: @Model.ShippedDetailId)</h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <form id="editShippedForm" asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="ShippedDetailId" />
+
+                        <div class="mb-4">
+                            <label asp-for="OrderId" class="form-label fw-bold text-dark">訂單ID</label>
+                            <input asp-for="OrderId" type="number" class="form-control bg-light" readonly required>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-primary mb-3"><i class="bi bi-person-badge me-2"></i>收件人資訊</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label fw-bold">收件人名稱 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientPhone" class="form-label fw-bold">收件人電話 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientPhone" class="form-control" required>
+                            </div>
+                            <div class="col-12 mb-4">
+                                <label asp-for="RecipientAddress" class="form-label fw-bold">收件人地址 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientAddress" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <h5 class="text-primary mb-3"><i class="bi bi-clock-history me-2"></i>物流排程與備註</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ShippedDate" class="form-label fw-bold">寄送日期</label>
+                                <input asp-for="ShippedDate" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ArrivalDate" class="form-label fw-bold">送達日期</label>
+                                <input asp-for="ArrivalDate" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-12 mb-4">
+                                <label asp-for="Remark" class="form-label fw-bold">備註說明</label>
+                                <textarea asp-for="Remark" class="form-control" rows="3" placeholder="請填寫配送細節或異常狀況..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body py-3 d-flex gap-5 justify-content-center">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsFailed" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsFailed" class="form-check-label fw-bold text-danger">寄送失敗</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsCompleted" class="form-check-input" type="checkbox" role="switch">
+                                    <label asp-for="IsCompleted" class="form-check-label fw-bold text-success">寄送完成</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 驗證提示訊息 -->
+                        <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            <strong>請檢查以下必填欄位：</strong>
+                            <ul id="errorList" class="mb-0 mt-2"></ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button id="BtnEdit" type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold" onclick="validateEditShippedForm(event)">
+                                <i class="bi bi-save me-1"></i> 儲存所有修改
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-link text-secondary">返回列表</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function validateEditShippedForm(event) {
+            const form = document.getElementById('editShippedForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const recipientName = document.querySelector('input[name="RecipientName"]');
+            if (!recipientName.value.trim()) {
+                errors.push('收件人名稱');
+            }
+
+            const recipientPhone = document.querySelector('input[name="RecipientPhone"]');
+            if (!recipientPhone.value.trim()) {
+                errors.push('收件人電話');
+            }
+
+            const recipientAddress = document.querySelector('input[name="RecipientAddress"]');
+            if (!recipientAddress.value.trim()) {
+                errors.push('收件人地址');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
+            }
+        }
+    </script>
+}
