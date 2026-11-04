@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using System;
@@ -11,8 +12,12 @@ namespace incode2.ApiControllers.Chat
     [ApiController]
     // [Route]: 定義路由規則，這裡設定為 api/ChatSessionsApi
     [Route("api/ChatSessionsApi")]
+    [Authorize]
     public class ChatSessionsApiController : ControllerBase
     {
+        // 只能存取自己的對話 (客服 / 管理員可存取全部)
+        private bool CanAccess(int ownerUserId) => User.IsInRole("Admin") || ownerUserId == User.GetId();
+
         // _context: 資料庫上下文，用於與 SQL Server 進行 CRUD 操作
         private readonly incodedatabaseContext _context;
 
@@ -39,6 +44,8 @@ namespace incode2.ApiControllers.Chat
         [HttpGet("User/{userId}")]
         public async Task<IActionResult> GetSessions(int userId)
         {
+            if (!CanAccess(userId)) return NotFound();
+
             // 使用 EF Core 查詢 ChatSession 資料表
             var sessions = await _context.ChatSession
                 .Where(s => s.UserId == userId) // 過濾條件：只抓取該使用者的對話
@@ -65,7 +72,7 @@ namespace incode2.ApiControllers.Chat
             // 建立一個新的 ChatSession 實體物件
             var session = new ChatSession
             {
-                UserId = request.UserId, // 設定擁有者 ID
+                UserId = User.GetId(), // 擁有者一律為登入者 (不採用前端傳入的 UserId)
                 Title = "新對話",        // 預設標題
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
@@ -88,7 +95,7 @@ namespace incode2.ApiControllers.Chat
             // 1. 先從資料庫找出這個對話 Session
             var session = await _context.ChatSession.FindAsync(sessionId);
 
-            if (session == null) return NotFound("找不到對話");
+            if (session == null || !CanAccess(session.UserId)) return NotFound("找不到對話");
 
             // 2. 抓取該對話的第一則 User 訊息，用來判斷話題內容
             var firstMessage = await _context.ChatMessage
@@ -119,7 +126,7 @@ namespace incode2.ApiControllers.Chat
 
                 // 6. 透過 SignalR 通知前端更新標題 (建議打開此註解)
                 // 假設前端監聽 UpdateSessionTitle 事件
-                await _hubContext.Clients.All.SendAsync("UpdateSessionTitle", sessionId, newTitle);
+                await _hubContext.Clients.Group(sessionId.ToString()).SendAsync("UpdateSessionTitle", sessionId, newTitle); // 只通知該對話 (原本廣播給所有連線)
 
                 return Ok(new { sessionId, newTitle });
             }
@@ -136,7 +143,7 @@ namespace incode2.ApiControllers.Chat
         public async Task<IActionResult> DeleteSession(int id)
         {
             var session = await _context.ChatSession.FindAsync(id);
-            if (session == null) return NotFound("找不到該對話");
+            if (session == null || !CanAccess(session.UserId)) return NotFound("找不到該對話");
 
             // 1. 刪除關聯的訊息
             var messages = _context.ChatMessage.Where(m => m.SessionId == id);

@@ -23,13 +23,7 @@ namespace incode2.ApiControllers.Point
             _entrustMissionProgressService = entrustMissionProgressService;
         }
 
-        // GET: api/EntrustMissionProgressApi
-        [HttpGet]
-        public async Task<IEnumerable<EntrustMissionProgressDTO>> GetEntrustMissionProgress()
-        {
-            var entrustMissionProgress = await _entrustMissionProgressService.GetAllProgressAsync();
-            return entrustMissionProgress;
-        }
+        // 原本的 GET api/EntrustMissionProgressApi 會匿名列出所有人的委託任務進度，已移除 (請用 user/my-tasks)
 
         // GET: api/EntrustMissionProgressApi/user/my-tasks
         [HttpGet("user/my-tasks")]

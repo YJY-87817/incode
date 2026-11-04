@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace incode2.Controllers.Users
 {
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class CommunityController : Controller
     {
         private readonly incodedatabaseContext _context;

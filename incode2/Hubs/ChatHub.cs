@@ -1,71 +1,66 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
-using System;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace incode2.Hubs
 {
-    // [Authorize] // 視需求開啟
+    /// <summary>
+    /// 客服聊天室。訊息一律透過 ChatMessagesApiController 存檔後由 IHubContext 推播，
+    /// Hub 本身只負責加入 / 離開群組。
+    /// 群組：每個對話以 ChatSessionId 為群組名稱；"SupportAgents" 為客服人員群組 (收到真人客服請求)。
+    /// </summary>
+    [Authorize] // 需登入 (前台會員 Cookie 或後台管理員 Cookie)
     public class ChatHub : Hub
     {
-        public override async Task OnConnectedAsync()
+        public const string SupportGroup = "SupportAgents";
+
+        private readonly incodedatabaseContext _context;
+
+        public ChatHub(incodedatabaseContext context)
         {
-            // 連線時可以做紀錄 (選用)
-            await base.OnConnectedAsync();
+            _context = context;
         }
 
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            await base.OnDisconnectedAsync(exception);
-        }
+        private bool IsAdmin => Context.User?.IsInRole("Admin") == true;
 
-        // ==========================================
-        // 1. 客服專區 (配合 Controller)
-        // ==========================================
-
-        // 客服人員登入後台時呼叫此方法
+        // 客服人員登入後台時呼叫 (僅限管理員)
         public async Task JoinSupportGroup()
         {
-            // ★ 修改 1: 名稱統一改為 "SupportAgents"，跟 Controller 一樣
-            await Groups.AddToGroupAsync(Context.ConnectionId, "SupportAgents");
+            if (!IsAdmin)
+                throw new HubException("沒有權限");
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, SupportGroup);
         }
 
         public async Task LeaveSupportGroup()
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "SupportAgents");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, SupportGroup);
         }
 
-        // ==========================================
-        // 2. 聊天室分流 (核心功能)
-        // ==========================================
-
-        // 使用者進入頁面，或客服點擊某個對話時呼叫
+        // 使用者進入對話，或客服點擊某個對話時呼叫：只能加入自己的對話 (管理員可加入任何對話)
         public async Task JoinSessionGroup(string sessionId)
         {
-            if (!string.IsNullOrEmpty(sessionId))
+            if (!int.TryParse(sessionId, out var id))
+                throw new HubException("無效的對話");
+
+            if (!IsAdmin)
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+                var userId = Context.User!.GetId();
+                var isOwner = await _context.ChatSession.AnyAsync(s => s.ChatSessionId == id && s.UserId == userId);
+                if (!isOwner)
+                    throw new HubException("找不到該對話");
             }
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, id.ToString());
         }
 
         public async Task LeaveSessionGroup(string sessionId)
         {
-            if (!string.IsNullOrEmpty(sessionId))
-            {
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
-            }
+            if (int.TryParse(sessionId, out var id))
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, id.ToString());
         }
 
-        // ==========================================
-        // 3. (選用) 僅轉發不存檔的訊息
-        // ==========================================
-
-        // 如果你的所有對話都走 API (存檔+推播)，其實不需要這個方法。
-        // 但保留它可以做為打字狀態提示 (Typing Indicator) 等不需存檔的功能。
-        public async Task SendMessage(string sessionId, string user, string message)
-        {
-            // ★ 修改 2: 只發給該房間的人，而不是 Clients.All
-            await Clients.Group(sessionId).SendAsync("ReceiveMessage", user, message);
-        }
+        // 原本的 SendMessage(sessionId, user, message) 可指定任意發送者名稱並推播到任何群組 (冒充客服)，
+        // 前後台都沒有使用，已移除；訊息請走 ChatMessagesApiController
     }
 }

@@ -132,28 +132,7 @@ namespace incode2.ApiControllers.Point
         }
 
 
-        // DELETE: api/EntrustMissionApi/5
-        [HttpDelete("{id}")]
-        public async Task<ResultDTO> DeleteEntrustMission(int id)
-        {
-            var entrustMission = await _context.EntrustMission.FindAsync(id);
-            if (entrustMission == null)
-            {
-                return new ResultDTO { Ok = false, Code = 404 }; //id不存在顯示404
-            }
-            try
-            {
-                _context.EntrustMission.Remove(entrustMission);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-                return new ResultDTO { Ok = false, Code = 500 }; //id存在捕捉例外顯示50
-            }
-
-            return new ResultDTO { Ok = true, Code = 204 };
-        }
-
-
+        // 原本的 DELETE api/EntrustMissionApi/{id} 沒有登入與擁有者檢查，且直接刪除不會退還預扣點數，已移除；
+        // 若要提供取消委託，需走 IPointReserveService 釋放預扣點數的流程
     }
 }
