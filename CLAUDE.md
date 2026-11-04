@@ -58,7 +58,7 @@ incode/
 
 | 模組 | API | 後台 | Service |
 |---|---|---|---|
-| 會員 | `ApiControllers/Users/*` | `Account`、`Member`、`Community` | `Services/Users/*` |
+| 會員 | `ApiControllers/Users/*` | `Account`、`Member` | `Services/Users/*` |
 | 論壇內容 | `ApiControllers/Contents/*` | `Content*` | `Services/Contents/*` |
 | 點數 / 任務 / 儲值 | `ApiControllers/Point/*` | `Mission*`、`EntrustMission`、`PointLog`、`PointRecharge` | `Services/Point/*` |
 | 點數商城 | `ApiControllers/PointShop/*` | `Product`、`Order`、`Shipped` | `Services/PointShop/*` |
@@ -108,8 +108,10 @@ incode/
 - 需要 .NET 9 SDK、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
   新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
+- **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
+  `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - 專案沒有自動化測試。雲端環境若只有 .NET 8 SDK，可複製一份改 `net8.0`、ASP.NET Core 套件降為 8.x 做編譯檢查；
-  訂單邏輯曾以 SQLite in-memory（`Foreign Keys=False`）寫臨時測試驗證
+  搭配 Docker 資料庫可實際啟動後端，用 API（註冊 / 登入取得 Cookie）做端對端測試
 - `wwwroot/img/` 下有使用者上傳的圖片被提交進 git，新增上傳功能時注意不要再提交上傳檔
 
 ## 修正紀錄
@@ -150,6 +152,10 @@ incode/
      重設密碼連結、綠界 `ClientBackURL`、AI 回覆連結、CORS 允許來源全部改讀設定；正式環境以環境變數覆寫
    - 前端寫死的 `https://localhost:7190` 全部改用 `.env` 的 `VITE_API_BASE_URL` / `VITE_BASE_URL`
    - 新增 `docs/database/`：由 EF 模型產生的 `schema.sql`、基本資料 `seed.sql`（角色、點數類型、互動分類＋範例分類與任務）與說明
+8. Docker 測試資料庫：根目錄 `docker-compose.yml`（SQL Server 2022 + 自動執行 `docs/database` 腳本的 `db-init`）、
+   `docker/db/init.sh`、後端 launch profile `https (Docker DB)`；`schema.sql` 補上 `SET QUOTED_IDENTIFIER ON`（sqlcmd 預設 OFF，
+   條件式索引會建立失敗）。以 Docker 資料庫實測時另外修正兩個原有錯誤：新增論壇分類時 `description` 為必填（前端送 null，
+   功能一直失敗）→ 改為選填；後台 `CommunityController` 從未有對應 View（必定 500）→ 刪除
 
 ## 全專案檢查結果（2026-11）
 
@@ -197,7 +203,7 @@ incode/
 ### 🟠 部署 / 維運（2026-11-04 檢查）
 
 18. ~~網址寫死~~（已修正，見修正紀錄 7）
-19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql`，見修正紀錄 7；尚未在 SQL Server 實際執行過）
+19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql` 與 Docker 資料庫，見修正紀錄 7、8）
 20. **沒有測試與 CI**：建議先在 PR 上跑 `dotnet build` 與 `npm run build`（可擋下 Linux 大小寫路徑等問題）。
 21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。

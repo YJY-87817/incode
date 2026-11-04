@@ -51,14 +51,24 @@ incode/
 | 項目 | 版本 |
 |---|---|
 | .NET SDK | 9.0 |
-| SQL Server | SQL Server 或 LocalDB（Windows） |
+| SQL Server | Docker（建議，見下方）、SQL Server 或 LocalDB（Windows） |
 | Node.js | 20.19 以上（Vite 7 需求） |
 
 ### 後端
 
-1. **資料庫**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`（LocalDB 的 `incodedatabase`）。
-   新環境請建立空資料庫後執行 [`docs/database/schema.sql`](docs/database/schema.sql) 與 [`seed.sql`](docs/database/seed.sql)，
-   再把註冊的帳號設為管理員，步驟見 [`docs/database/README.md`](docs/database/README.md)。
+1. **資料庫**（二擇一）：
+   - **Docker（建議）**：在 repo 根目錄啟動，第一次會自動建立資料庫並執行建表與基本資料腳本：
+
+     ```bash
+     docker compose up -d
+     ```
+
+     後端用 `https (Docker DB)` 這個 launch profile 啟動即可連到這個資料庫（Visual Studio 選這個 profile，或下方指令）。
+     要回到全新的資料庫時執行 `docker compose down -v` 再 `docker compose up -d`。
+   - **LocalDB / 自己的 SQL Server**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`；
+     建立空資料庫後執行 [`docs/database/schema.sql`](docs/database/schema.sql) 與 [`seed.sql`](docs/database/seed.sql)。
+
+   建立資料庫後，從前台註冊一個帳號並設為管理員才能登入後台，步驟見 [`docs/database/README.md`](docs/database/README.md)。
 
 2. **機密設定**：API 金鑰等不要寫進 `appsettings.json`，改用 user-secrets：
 
@@ -85,6 +95,12 @@ incode/
 
    ```bash
    dotnet run --project incode2 --launch-profile https
+   ```
+
+   使用 Docker 資料庫時：
+
+   ```bash
+   dotnet run --project incode2 --launch-profile "https (Docker DB)"
    ```
 
    - 後台：<https://localhost:7190>（管理員帳號登入）

@@ -19,6 +19,17 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    // 連線到 docker compose 啟動的 SQL Server (見根目錄 docker-compose.yml)
+    "https (Docker DB)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7190;http://localhost:5187",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__incodedatabase": "Server=localhost,1433;Database=incodedatabase;User Id=sa;Password=Incode_Dev_2026!;TrustServerCertificate=True"
+      }
     }
   }
 }
