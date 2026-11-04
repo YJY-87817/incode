@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -99,6 +100,7 @@ namespace incode2.ApiControllers.Contents
     //   - IsActive 預設設為 1（啟用狀態）
     // 範例: POST https://localhost:7190/api/CategoryApi
     [HttpPost]
+    [Authorize] // 會員可新增分類，但需登入
     public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto request)
     {
       if (request.ParentCategoryId.HasValue)

@@ -131,43 +131,28 @@ incode/
      靜態檔 CORS 改由 `UseCors` 統一處理（原本手寫的允許來源清單少了 ngrok 網址）
    - 文件移到 repo 根目錄 `docs/`（`CONTENT_API_ONBOARDING` 由 Big5 轉 UTF-8 並改為 .md）
 5. 合併前後端為 monorepo：`incode_Vue` 以 `git subtree` 併入（保留歷史），新增根目錄 `README.md`；`appsettings.json` 的 `EmailSettings` 原本誤放在 `Authentication` 底下（`EmailService` 讀取根層級），已移到根層級
+6. 權限漏洞修正（全專案檢查 🔴 1～5）：
+   - 刪除 `POST api/PointLogApi/add-reward`（會員可自訂點數）、`GET api/PointLogApi`、`POST api/MissionProgressApi/{id}/increment`
+   - 後台 `PointLog`、`PointRecharge`、`Mission`、`MissionProgress`、`EntrustMission`、`Community` 加上管理員驗證
+   - `UserApiController` 恢復 `[Authorize]`：列出全部會員 / 刪除會員限管理員；公開個人頁、統計、大頭貼上傳為 `[AllowAnonymous]`
+     （註冊流程在登入前上傳大頭貼）；上傳改用 `ImageFileValidator`（單檔 5 MB、最多 5 張）；`PUT profile` 不再回傳密碼雜湊
+   - `ChatHub` 需登入，只能加入自己的對話群組，客服群組限管理員，移除可冒充發送者的 `SendMessage`；
+     `GetActiveSupportSessions`、`AdminReply` 限管理員；`GetHistory` 與 `ChatSessionsApiController` 檢查對話擁有者，
+     `AutoTitle` 改為只通知該對話群組
+   - 刪除無驗證的 `PointRechargeApi` GET / PUT / DELETE、`ContentNotificationApiController`（前後端皆未使用）、
+     `EntrustMissionApi` DELETE（直接刪除不會退預扣點數）、`GET api/EntrustMissionProgressApi`；`POST api/CategoryApi` 需登入
+   - `/chatHub` 未登入回 401（原本轉址到登入頁）
 
-## 全專案檢查結果（2026-11 完成，尚未修正）
+## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過，以下問題**都還沒修**，之後有空依序處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5 已修正（見修正紀錄 6），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：先處理 🔴 的 1～4（加 `[Authorize]` / 擁有者檢查，改動小、效果大），再處理金鑰外洩與 XSS。
+建議修正順序：撤銷外洩金鑰（6）→ 寫死網址改設定（18）、補建表腳本（19）→ 加 CI（20）→ 其餘。
 
-### 🔴 嚴重
+### 🔴 嚴重（1～5 已修正）
 
-1. **任何會員都能替自己加任意點數**：`ApiControllers/Point/PointLogApiController.cs` 的 `POST add-reward`，
-   `changeAmount` 由前端表單決定，直接寫入點數紀錄。
-   → 刪除此 API，委託任務獎勵只能由 `ContentInteractionService.SelectBestAnswerAsync` 發放。
-2. **後台點數相關頁面沒有登入檢查**：`Controllers/Point/` 的 `PointLogController`、`PointRechargeController`、
-   `MissionController`、`MissionProgressController`、`EntrustMissionController` 都沒有 `[Authorize]`。
-   匿名使用者可以進後台，例如 `PointLog/Create` 新增任意點數紀錄。`Controllers/Users/CommunityController.cs` 也沒有（會列出所有會員）。
-   → class 加上 `[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`。
-3. **會員 API 的 `[Authorize]` 被註解掉**（`ApiControllers/Users/UserApiController.cs`，路由 `api/User`）：
-   - `DELETE api/User/{id}`：**匿名就能刪除任何會員**（權限檢查也被註解掉）
-   - `GET api/User`：匿名取得所有會員的 Email
-   - `POST api/User/images`：匿名上傳任意檔案到 `wwwroot/img/user`，沒有檢查格式（可上傳 .html 造成 XSS）
-   - `PUT api/User/profile` 回傳整個 `User` 實體，包含密碼雜湊與 `ResetToken`
-   → 恢復 `[Authorize]`；刪除限管理員或本人；`GET` 全部會員限管理員；上傳改用 `ImageFileValidator`；回傳改用 DTO。
-4. **客服聊天沒有權限與擁有者檢查**：
-   - `Hubs/ChatHub.cs` 完全沒有驗證：匿名連線就能 `JoinSupportGroup`（收到所有客服通知）、`JoinSessionGroup` 任意對話（竊聽），
-     `SendMessage` 可自訂發送者名稱（冒充客服）
-   - `ApiControllers/Chat/ChatMessagesApiController.cs`：`GetActiveSupportSessions`（所有人的客服對話與最後訊息）、
-     `AdminReply`（以客服身分回覆任何對話）只檢查有登入，任何會員都能用；`GetHistory/{sessionId}` 可讀任何人的對話
-   - `ApiControllers/Chat/ChatSessionsApiController.cs` 沒有 `[Authorize]`：`User/{userId}` 讀任何人的對話列表、
-     `Create` 替任何人建立、`Delete/{id}` 刪除任何人的對話、`AutoTitle` 可匿名一直呼叫 Gemini（費用）
-   → Hub 加 `[Authorize]`，加入群組前檢查對話屬於本人，客服群組 / AdminReply / 客服列表限管理員；API 一律用登入者 ID 檢查擁有者。
-5. **其他沒有登入檢查的 API**：
-   - `PointRechargeApiController`：`GET` / `GET {id}` / `PUT {id}` / `DELETE {id}` 可匿名列出、修改、刪除所有人的儲值紀錄
-   - `ContentNotificationApiController`：整個 controller 可匿名讀取 / 新增 / 修改 / 刪除所有通知
-   - `CategoryApiController`：`POST` 可匿名新增論壇分類
-   - `EntrustMissionApiController`：`DELETE {id}` 可匿名刪除任何委託任務（已預扣的點數不會退）
-   - `PointLogApiController` `GET`、`EntrustMissionProgressApiController` `GET`：匿名取得所有人的點數紀錄 / 任務進度
-   → 不需要的 CRUD 直接刪除；需要的加 `[Authorize]` 與擁有者 / 管理員檢查。
+1. ~~`add-reward` 會員可自訂點數~~ 2. ~~後台點數頁面沒有登入檢查~~ 3. ~~會員 API `[Authorize]` 被註解掉~~
+4. ~~客服聊天沒有權限與擁有者檢查~~ 5. ~~其他沒有登入檢查的 API~~
 
 ### 🟠 高
 
@@ -184,22 +169,40 @@ incode/
    綠界重送或同時回呼可能重複加點；`AddPointsFromRechargeAsync` 先 commit 加點，之後更新儲值狀態失敗時，重試會再加一次。
    → 同一交易內以條件更新 `UPDATE ... SET Status='success' WHERE OrderNo=@no AND Status<>'success'`，影響 1 筆才加點。
 10. **聊天室 XSS**（前端 `src/components/chat/ChatWidget.vue`）：訊息以 `v-html` 顯示，客服 / SignalR 收到的訊息、使用者輸入、
-    `marked.parse` 的結果都沒有經過 DOMPurify。配合第 4 點（任何人都能以客服身分發訊息），可以對其他會員執行腳本。
+    `marked.parse` 的結果都沒有經過 DOMPurify（第 4 點修正後只有管理員能以客服身分回覆，但 AI 回覆與歷史訊息仍未過濾）。
     → `v-html` 前一律用 `utils/sanitizeHtml.js`（DOMPurify）處理。
 11. **聊天圖片上傳**（`ChatMessagesApiController` UploadImage）：檔名直接使用原始 `FileName`（`Guid + "_" + FileName`），
     在 Windows 上可用 `..\` 路徑寫到其他目錄；也沒有檢查格式。→ 改用 `ImageFileValidator` 與 Guid 檔名。
 
 ### 🟡 中
 
-12. **CSRF**：會員 Cookie 設定 `SameSite=None`，接受 `[FromForm]` / multipart 的 API（例如上面的 `add-reward`、各圖片上傳）
+12. **CSRF**：會員 Cookie 設定 `SameSite=None`，接受 `[FromForm]` / multipart 的 API（例如各圖片上傳）
     可以被其他網站以表單直接送出。→ 會員 Cookie 改 `SameSite=Lax`（前後端同站時）或對表單 API 加 AntiForgery。
 13. **論壇互動可以送出任意分類**：`ContentInteractionApiController` `POST` 接受任何 `InteractionCategoryId`，
     會員可以自己替回覆加上「最佳解答」等系統分類（假徽章）；按讚可反覆取消 / 重按，每次都觸發按讚任務。
     → 限制會員可用的分類；任務改為同一內容只計一次。
-14. **委託任務可匿名刪除後點數不退**（見第 5 點），刪除流程應該走釋放預扣點數。
+14. 委託任務沒有取消流程：原本的 DELETE 已移除（直接刪除不會退預扣點數），若要提供取消需走 `IPointReserveService` 釋放預扣點數。
 15. **沒有登入嘗試次數限制**：會員 / 後台登入、忘記密碼寄信都沒有 rate limit 或鎖定。→ 使用 ASP.NET Core Rate Limiting middleware。
 16. 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
 17. `InventoryController` `POST add`：會員可以替自己加任意道具與數量（目前前端沒有使用這個功能）。
+
+### 🟠 部署 / 維運（2026-11-04 檢查）
+
+18. **網址寫死**：後端 Google 登入導回、忘記密碼連結、ECPay `ClientBackURL`、`ChatMessagesApiController` 4 處寫死
+    `https://localhost:5173`；`appsettings.json` 的 ECPay `ReturnUrl` 與 CORS 清單寫死 ngrok；前端 `api/pointClient.js`、
+    `ChatWidget.vue`、`AuthView.vue`（Google 登入）、4 個會員頁的 `STATIC_BASE_URL` 寫死 `https://localhost:7190`。
+    → 後端新增 `FrontendUrl` 設定；前端一律使用 `.env` 的 `VITE_API_BASE_URL` / `VITE_BASE_URL`。
+19. **資料庫無法重建**：repo 內沒有 migration 或建表 SQL，資料庫只存在本機 LocalDB。
+    → 由 EF 模型產生建表腳本（`dotnet ef dbcontext script`）放入 `docs/`，並補基本資料（角色、互動分類、任務定義、點數類型）。
+20. **沒有測試與 CI**：建議先在 PR 上跑 `dotnet build` 與 `npm run build`（可擋下 Linux 大小寫路徑等問題）。
+21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
+    → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
+22. **前端效能 / 結構**：同時使用 Bootstrap、Vuetify（`import * as components` 全量匯入）、Material Kit，主程式包 1.17 MB；
+    `TopicListView.vue`、`forumStore.js` 超過 2700 行；3 種 axios 設定中只有全域 axios 處理 401。
+23. **前端呼叫不存在的後端端點**：`views/point/RechargeResult.vue` 的 `PointRechargeApi/check-order/{orderNo}`、
+    `stores/point/taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
+24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。
+25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
 
 ### ⚪ 低 / 程式品質
 

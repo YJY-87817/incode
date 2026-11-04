@@ -85,9 +85,11 @@ src/
 - `src/api/imageApi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
 - 匯入路徑請與實際檔名大小寫一致（Windows / macOS 不分大小寫，但 Linux build 會失敗）。
 - **聊天室 XSS**：`src/components/chat/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
-  後端聊天權限問題又讓任何人能以客服身分發訊息。修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
+  修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
 - `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
-- 後端還有多項權限問題（點數、會員、聊天 API），完整清單與修正建議見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
+- 多處寫死 `https://localhost:7190`（`api/pointClient.js`、`ChatWidget.vue`、`AuthView.vue`、會員頁的 `STATIC_BASE_URL`），應改用 `.env`。
+- 呼叫了後端不存在的端點：`RechargeResult.vue` 的 `PointRechargeApi/check-order`、`taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
+- 完整問題清單見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
 
 ## 修正紀錄
 
