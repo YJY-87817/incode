@@ -7,8 +7,8 @@
 
 | 資料夾 | 內容 | 技術 |
 |---|---|---|
-| [`incode2/`](incode2/) | 後端：前台 REST API + 後台管理網站 | ASP.NET Core 10、EF Core 10、SQL Server、SignalR |
-| [`incode_Vue/`](incode_Vue/) | 前端：會員使用的網站 | Vue 3、Vite、Pinia、Vue Router、Bootstrap 5、Vuetify |
+| [`incode.MVC/`](incode.MVC/) | 後端：前台 REST API + 後台管理網站 | ASP.NET Core 10、EF Core 10、SQL Server、SignalR |
+| [`incode.Vue/`](incode.Vue/) | 前端：會員使用的網站 | Vue 3、Vite、Pinia、Vue Router、Bootstrap 5、Vuetify |
 | [`docs/`](docs/) | 資料表設計、API 說明文件 | |
 
 ## 功能
@@ -26,16 +26,16 @@
 incode/
 ├── README.md
 ├── CLAUDE.md               開發慣例、架構說明、修正紀錄與待處理問題清單
-├── incode2.sln
+├── incode.sln
 ├── docs/                   dbdiagram（資料表設計）、Content API 導覽
-├── incode2/                後端
+├── incode.MVC/             後端
 │   ├── ApiControllers/     前台 API（/api/...）
 │   ├── Controllers/        後台 MVC        ── Views/  後台頁面
 │   ├── Services/           商業邏輯
 │   ├── Models/             EF Core 實體（Database-First）
 │   ├── Dtos/  ViewModels/  Constants/  Extensions/  Validation/  Hubs/
 │   └── wwwroot/            後台靜態檔、上傳圖片、論壇內文
-└── incode_Vue/             前端
+└── incode.Vue/             前端
     └── src/
         ├── views/          頁面
         ├── components/     元件
@@ -65,7 +65,7 @@ incode/
 
      後端用 `https (Docker DB)` 這個 launch profile 啟動即可連到這個資料庫（Visual Studio 選這個 profile，或下方指令）。
      要回到全新的資料庫時執行 `docker compose down -v` 再 `docker compose up -d`。
-   - **LocalDB / 自己的 SQL Server**：預設連線字串在 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase`；
+   - **LocalDB / 自己的 SQL Server**：預設連線字串在 `incode.MVC/appsettings.json` 的 `ConnectionStrings:incodedatabase`；
      建立空資料庫後執行 [`docs/database/schema.sql`](docs/database/schema.sql) 與 [`seed.sql`](docs/database/seed.sql)。
 
    建立資料庫後，從前台註冊一個帳號並設為管理員才能登入後台，步驟見 [`docs/database/README.md`](docs/database/README.md)。
@@ -73,7 +73,7 @@ incode/
 2. **機密設定**：API 金鑰等不要寫進 `appsettings.json`，改用 user-secrets：
 
    ```bash
-   cd incode2
+   cd incode.MVC
    ```
 
    ```bash
@@ -94,13 +94,13 @@ incode/
 3. **啟動**：
 
    ```bash
-   dotnet run --project incode2 --launch-profile https
+   dotnet run --project incode.MVC --launch-profile https
    ```
 
    使用 Docker 資料庫時：
 
    ```bash
-   dotnet run --project incode2 --launch-profile "https (Docker DB)"
+   dotnet run --project incode.MVC --launch-profile "https (Docker DB)"
    ```
 
    - 後台：<https://localhost:7190>（管理員帳號登入）
@@ -113,21 +113,21 @@ incode/
 1. 安裝套件：
 
    ```bash
-   cd incode_Vue
+   cd incode.Vue
    ```
 
    ```bash
    npm install
    ```
 
-2. **HTTPS 憑證**：開發伺服器使用 HTTPS，需要在 `incode_Vue/` 放 `key.pem` 與 `cert.pem`（已加入 `.gitignore`；沒有憑證時會改用 HTTP，但後端 Cookie 需要 HTTPS 才能登入）。
+2. **HTTPS 憑證**：開發伺服器使用 HTTPS，需要在 `incode.Vue/` 放 `key.pem` 與 `cert.pem`（已加入 `.gitignore`；沒有憑證時會改用 HTTP，但後端 Cookie 需要 HTTPS 才能登入）。
    可用 [mkcert](https://github.com/FiloSottile/mkcert) 產生受信任的本機憑證：
 
    ```bash
    mkcert -key-file key.pem -cert-file cert.pem localhost 127.0.0.1
    ```
 
-3. **後端網址**：設定在 `incode_Vue/.env`（`VITE_API_BASE_URL`、`VITE_BASE_URL`），預設指向 `https://localhost:7190`。
+3. **後端網址**：設定在 `incode.Vue/.env`（`VITE_API_BASE_URL`、`VITE_BASE_URL`），預設指向 `https://localhost:7190`。
    程式內不寫死網址，一律讀這兩個變數。
 
 4. **啟動**：
@@ -170,7 +170,7 @@ export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;...
 ## 開發說明
 
 - 架構、程式慣例（權限檢查、API 回應格式、點數異動、圖片上傳…）與待處理問題清單請見 [`CLAUDE.md`](CLAUDE.md)，
-  前端的細節見 [`incode_Vue/CLAUDE.md`](incode_Vue/CLAUDE.md)。
+  前端的細節見 [`incode.Vue/CLAUDE.md`](incode.Vue/CLAUDE.md)。
 - 同一個功能牽涉前後端時，請在同一個分支 / PR 一起修改。
 - 每個 PR 會由 GitHub Actions（`.github/workflows/ci.yml`）自動建置前後端，兩個檢查都通過再合併。
 - 前端合併進本 repo 前的 commit 歷史仍保留：`git log edfd961^2`。
@@ -178,4 +178,4 @@ export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;...
 ## 授權
 
 前端使用 [Vue Material Kit](https://www.creative-tim.com/product/vue-material-kit)（Creative Tim, MIT License）作為版型，
-授權聲明見 [`incode_Vue/LICENSE`](incode_Vue/LICENSE)。
+授權聲明見 [`incode.Vue/LICENSE`](incode.Vue/LICENSE)。

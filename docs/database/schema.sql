@@ -1,8 +1,8 @@
 -- =============================================================================
 -- incode 資料庫建表腳本 (SQL Server)
 --
--- 由 EF Core 模型 (incode2/Models/incodedatabaseContext.cs) 產生：
---   cd incode2
+-- 由 EF Core 模型 (incode.MVC/Models/incodedatabaseContext.cs) 產生：
+--   cd incode.MVC
 --   dotnet ef dbcontext script -o ../docs/database/schema.sql
 -- 模型為 Database-First 從原資料庫產生，資料表、欄位、預設值、外鍵、索引皆包含在內；
 -- 原資料庫若有 CHECK 條件、Trigger、View 等模型未描述的物件，不會出現在此腳本中。

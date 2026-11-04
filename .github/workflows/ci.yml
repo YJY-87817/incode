@@ -27,17 +27,17 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore incode2.sln
+        run: dotnet restore incode.sln
 
       - name: Build
-        run: dotnet build incode2.sln --no-restore --configuration Release
+        run: dotnet build incode.sln --no-restore --configuration Release
 
   frontend:
     name: 前端 (npm run build)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: incode_Vue
+        working-directory: incode.Vue
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +46,7 @@ jobs:
           node-version: 22
           cache: npm
           # repo 沒有 package-lock.json，以 package.json 作為快取依據
-          cache-dependency-path: incode_Vue/package.json
+          cache-dependency-path: incode.Vue/package.json
 
       - name: Install
         run: npm install --no-audit --no-fund

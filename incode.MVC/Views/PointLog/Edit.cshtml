@@ -1,0 +1,113 @@
+﻿@model incode.MVC.Models.PointLog
+
+@{
+    ViewData["Title"] = "點數紀錄修改";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning py-3">
+                    <h4 class="mb-0 fs-5 fw-bold text-dark">
+                        <i class="fas fa-edit me-2"></i>點數紀錄修改
+                    </h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-action="Edit" id="editForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        <input type="hidden" asp-for="PointLogId" />
+
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div class="row mb-4 p-3 bg-light rounded">
+                            <div class="col-md-6">
+                                <label class="text-muted fw-bold small">建立時間</label>
+                                <div class="fw-bold">@Model.CreatedAt</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted fw-bold small">會員 Email</label>
+                                <div class="fw-bold">@Model.User?.Email</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PointTypeDefinitionId" class="form-label fw-bold">類型定義 <span class="text-danger">*</span></label>
+                                <select asp-for="PointTypeDefinitionId" class="form-select" asp-items="ViewBag.PointTypeDefinitionId" required></select>
+                                <span asp-validation-for="PointTypeDefinitionId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="BalanceAfter" class="form-label fw-bold text-success">變動後餘額</label>
+                                <input asp-for="BalanceAfter" class="form-control" type="number" readonly />
+                                <span asp-validation-for="BalanceAfter" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="ChangeAmount" class="form-label fw-bold text-primary">變動點數 <span class="text-danger">*</span></label>
+                                <input asp-for="ChangeAmount" class="form-control" type="number" required />
+                                <span asp-validation-for="ChangeAmount" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="SourceType" class="form-label fw-bold">來源類型</label>
+                                <input asp-for="SourceType" class="form-control" />
+                                <span asp-validation-for="SourceType" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="SourceId" class="form-label fw-bold">來源 ID</label>
+                                <input asp-for="SourceId" class="form-control" />
+                                <span asp-validation-for="SourceId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Status" class="form-label fw-bold">狀態</label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="pending">待處理</option>
+                                    <option value="success">成功</option>
+                                    <option value="failed">失敗</option>
+                                    <option value="cancelled">已取消</option>
+                                    <option value="system">系統操作</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="DisplaySource" class="form-label fw-bold">顯示來源</label>
+                                <input asp-for="DisplaySource" class="form-control" />
+                                <span asp-validation-for="DisplaySource" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-4">
+                                <label asp-for="DisplaySourceSubTitle" class="form-label fw-bold">來源副標題</label>
+                                <input asp-for="DisplaySourceSubTitle" class="form-control" />
+                                <span asp-validation-for="DisplaySourceSubTitle" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-warning px-5 fw-bold shadow-sm text-dark">
+                                <i class="fas fa-save me-1"></i> 儲存修改
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-arrow-left me-1"></i> 返回列表
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
