@@ -7,7 +7,7 @@
 
 | 資料夾 | 內容 | 專屬說明 |
 |---|---|---|
-| `incode2/` | 後端 ASP.NET Core 9 | 本檔案 |
+| `incode2/` | 後端 ASP.NET Core 10 | 本檔案 |
 | `incode_Vue/` | 前端 Vue 3 + Vite | `incode_Vue/CLAUDE.md`（在該資料夾工作時會自動載入） |
 | `docs/` | 資料表設計、Content API 導覽 | |
 
@@ -16,9 +16,9 @@
 
 ## 專案概觀
 
-- **後端**：`incode2/`，ASP.NET Core 9 (`net9.0`) 單一專案，解決方案 `incode2.sln`
+- **後端**：`incode2/`，ASP.NET Core 10 (`net10.0`，LTS，支援至 2028-11) 單一專案，解決方案 `incode2.sln`
   - 同時提供 **前台 REST API**（`ApiControllers/`，給 Vue 前台）與 **後台管理 MVC**（`Controllers/` + `Views/`，Razor）
-  - EF Core 9 + SQL Server（Database-First，`Models/` 為產生的實體，擴充放 `Models/Partials/`）
+  - EF Core 10 + SQL Server（Database-First，`Models/` 為產生的實體，擴充放 `Models/Partials/`）
   - SignalR 聊天室 `/chatHub`（`Hubs/ChatHub.cs`），Gemini AI 客服（`Services/Chat/GeminiService.cs`）
   - 綠界 ECPay 點數儲值（`Services/Point/EcpayService.cs`）
 - **前端**：`incode_Vue/`（Vue 3 + Vite + Pinia + Bootstrap），開發時另外啟動 Vite，透過 CORS 帶 Cookie 呼叫 API
@@ -105,14 +105,15 @@ incode/
 
 ## 建置與驗證
 
-- 需要 .NET 9 SDK、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
+- 需要 .NET 10 SDK（Visual Studio 2026）、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
   新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`（只做建置，沒有測試）。PR 合併前請確認兩個 job 都通過
-- 專案沒有自動化測試。雲端環境若只有 .NET 8 SDK，可複製一份改 `net8.0`、ASP.NET Core 套件降為 8.x 做編譯檢查；
-  搭配 Docker 資料庫可實際啟動後端，用 API（註冊 / 登入取得 Cookie）做端對端測試
+- 專案沒有自動化測試。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
+  （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
+  用 API（註冊 / 登入取得 Cookie）做端對端測試
 - `wwwroot/img/` 下有使用者上傳的圖片被提交進 git，新增上傳功能時注意不要再提交上傳檔
 
 ## 修正紀錄
@@ -161,6 +162,9 @@ incode/
 9. CI（全專案檢查 20）：`.github/workflows/ci.yml` 在每個 PR 與推送到 main 時於 Linux 執行後端 `dotnet build`（Release）
    與前端 `npm install` + `npm run build`，可擋下檔名大小寫錯誤；`vite.config.js` 改為 `key.pem` / `cert.pem` 存在時才啟用 HTTPS
    （原本沒有憑證時連 `npm run build` 都會失敗）
+10. 升級 .NET 10（.NET 9 為 STS，2026-11-10 結束支援）：`net10.0`、Microsoft 套件升到 10.x、CI 改用 .NET 10 SDK；
+    直接參考 `System.Security.Cryptography.Pkcs` 10.x 取代 `Microsoft.Data.SqlClient` 帶入的 9.0.11（高風險漏洞 GHSA-846f-f764-76mx）。
+    `Microsoft.VisualStudio.Web.CodeGeneration.Design`（VS scaffolding，執行時不使用）仍帶入有低風險漏洞的 `NuGet.*` 6.12.1
 
 ## 全專案檢查結果（2026-11）
 
