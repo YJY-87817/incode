@@ -7,7 +7,7 @@
 
 | 資料夾 | 內容 | 技術 |
 |---|---|---|
-| [`incode2/`](incode2/) | 後端：前台 REST API + 後台管理網站 | ASP.NET Core 9、EF Core 9、SQL Server、SignalR |
+| [`incode2/`](incode2/) | 後端：前台 REST API + 後台管理網站 | ASP.NET Core 10、EF Core 10、SQL Server、SignalR |
 | [`incode_Vue/`](incode_Vue/) | 前端：會員使用的網站 | Vue 3、Vite、Pinia、Vue Router、Bootstrap 5、Vuetify |
 | [`docs/`](docs/) | 資料表設計、API 說明文件 | |
 
@@ -50,7 +50,7 @@ incode/
 
 | 項目 | 版本 |
 |---|---|
-| .NET SDK | 9.0 |
+| .NET SDK | 10.0（Visual Studio 需 2026 版；VS 2022 不支援 .NET 10） |
 | SQL Server | Docker（建議，見下方）、SQL Server 或 LocalDB（Windows） |
 | Node.js | 20.19 以上（Vite 7 需求） |
 
