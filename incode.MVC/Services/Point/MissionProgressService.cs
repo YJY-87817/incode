@@ -156,6 +156,9 @@ namespace incode.MVC.Services.Point
             using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 先鎖定會員再讀取 RewardedAt：同時送出的領獎請求會排隊，第二個會看到已領取
+                await _pointLogService.LockUsersAsync(userId);
+
                 var progress = await _context.MissionProgress
                     .Include(p => p.Mission)
                     .FirstOrDefaultAsync(p => p.MissionProgressId == progressId && p.UserId == userId);
