@@ -4,7 +4,7 @@ import axios from "axios";
 
 const items = ref([]);
 const isLoading = ref(false);
-const STATIC_BASE_URL = "https://localhost:7190";
+const STATIC_BASE_URL = import.meta.env.VITE_BASE_URL; // 後端靜態檔網址 (.env)
 const extractFirstImage = (htmlContent) => {
   if (!htmlContent) return null;
   const parser = new DOMParser();

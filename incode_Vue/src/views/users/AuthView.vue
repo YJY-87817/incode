@@ -33,7 +33,7 @@ const loginRules = {
 
 const handleGoogleLogin = () => {
   // 這裡不能用 axios，必須直接讓瀏覽器跳轉
-  window.location.href = "https://localhost:7190/api/AuthApi/login-google";
+  window.location.href = `${import.meta.env.VITE_API_BASE_URL}/AuthApi/login-google`;
 };
 
 const handleLogin = async () => {

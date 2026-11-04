@@ -9,7 +9,7 @@ namespace incode2.ApiControllers.Users
   //localhost:7190/api/User
   [Route("api/[controller]")]
   [ApiController]
-  //[Authorize]
+  [Authorize] // 預設需登入；公開的端點個別標示 [AllowAnonymous]
     public class UserController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
@@ -23,60 +23,48 @@ namespace incode2.ApiControllers.Users
             _imageService = imageService;
         }
 
+        private const int MaxAvatarFiles = 5;
+        private const long MaxAvatarBytes = 5L * 1024 * 1024; // 5 MB
+
+        // POST: api/User/images  上傳大頭貼
+        // 註冊流程會在登入前先上傳大頭貼，因此允許匿名；只接受檢查過的圖片 (格式 + 檔頭)，限制數量與大小
         [HttpPost("images")]
+        [AllowAnonymous]
+        [RequestSizeLimit(MaxAvatarFiles * MaxAvatarBytes)]
         public async Task<IActionResult> UploadImages([FromForm] List<IFormFile> files)
         {
-            try
+            var list = files?.Where(f => f != null && f.Length > 0).ToList();
+            if (list == null || list.Count == 0)
+                return BadRequest(new { message = "未提供檔案" });
+            if (list.Count > MaxAvatarFiles)
+                return BadRequest(new { message = $"一次最多上傳 {MaxAvatarFiles} 張圖片" });
+
+            foreach (var file in list)
             {
-                if (files == null || files.Count == 0)
-                    return BadRequest(new { message = "未提供檔案" });
+                var error = ImageFileValidator.Validate(file, MaxAvatarBytes);
+                if (error != null) return BadRequest(new { message = error });
+            }
 
-                var urls = new List<string>();
+            string storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/user");
+            Directory.CreateDirectory(storagePath);
 
-                // 1. 直接在這裡指定要存入的實體路徑為 wwwroot/img/user
-                string storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/user");
-
-                // 2. 檢查資料夾是否存在，沒有的話就建立
-                if (!Directory.Exists(storagePath))
-                    Directory.CreateDirectory(storagePath);
-
-                // 3. 處理每一個上傳的檔案
-                foreach (var file in files)
+            var urls = new List<string>();
+            foreach (var file in list)
+            {
+                var fileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(file)}";
+                using (var stream = new FileStream(Path.Combine(storagePath, fileName), FileMode.CreateNew))
                 {
-                    if (file == null || file.Length == 0) continue;
-
-                    // 產生唯一檔名
-                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                    var filePath = Path.Combine(storagePath, fileName);
-
-                    // 儲存檔案到硬碟
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    // 將前端需要的網址路徑加入 List 
-                    // 這裡回傳的就會是 /img/user/xxx.jpg
-                    urls.Add($"/img/user/{fileName}");
+                    await file.CopyToAsync(stream);
                 }
-
-                if (urls.Count == 0)
-                    return BadRequest(new { message = "沒有有效的檔案" });
-
-                // 4. 回傳給前端
-                return Ok(new { imageUrls = urls });
+                urls.Add($"/img/user/{fileName}");
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }   
 
+            return Ok(new { imageUrls = urls });
+        }
 
-// GET: api/User
-// 取得所有使用者列表
-// 管理員能用(或者用於搜尋)
+        // GET: api/User  取得所有使用者列表 (含 Email，僅限管理員)
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUser()
         {
             // 使用 Select 將 User 轉成 UserDto (自動過濾掉密碼)
@@ -93,8 +81,10 @@ namespace incode2.ApiControllers.Users
                 .ToListAsync();
         }
 
-        // GET: api/User/profile??username={test2CQ}
+        // GET: api/User/profile?username={username}
+        // 不帶 username 取得自己的完整資料 (需登入)；帶 username 為公開個人頁，只回傳公開欄位
         [HttpGet("profile")]
+        [AllowAnonymous]
         public async Task<ActionResult<UserDto>> GetProfile([FromQuery] string? username)
         {
             int? currentUserId = null;
@@ -179,18 +169,28 @@ namespace incode2.ApiControllers.Users
                 throw;
             }
 
-            return Ok(new { message = "更新成功", user = user });
+            // 只回傳可公開給本人的欄位 (原本回傳整個 User 實體，包含密碼雜湊與 ResetToken)
+            return Ok(new
+            {
+                message = "更新成功",
+                user = new UserDto
+                {
+                    UserId = user.UserId,
+                    Username = user.Username,
+                    ImageUrl = user.ImageUrl ?? "",
+                    Email = user.Email,
+                    Phone = user.Phone,
+                    Address = user.Address,
+                    Birthday = user.Birthday,
+                }
+            });
         }        
 
-        // DELETE: api/User/5
+        // DELETE: api/User/5  刪除會員 (僅限管理員)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            // 權限檢查：只有本人或管理員可以刪除
-            int currentUserId = User.GetId();
-            // 假設只有 Admin 才能隨便刪人，或者本人刪除自己
-            // if (currentUserId != id && !User.IsInRole("Admin")) return Forbid();
-
             var user = await _context.User.FindAsync(id);
             if (user == null)
             {
@@ -208,8 +208,9 @@ namespace incode2.ApiControllers.Users
             return _context.User.Any(e => e.UserId == id);
         }
 
-        // user/41/stats
+        // GET: api/User/41/stats  公開個人頁的統計數字
         [HttpGet("{userId}/stats")]
+        [AllowAnonymous]
         public async Task<ActionResult<UserProfileStatsDto>> GetUserStats(int userId)
         {
             // 呼叫 Service

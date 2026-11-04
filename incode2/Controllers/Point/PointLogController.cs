@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace incode2.Controllers.Point
 {
+    [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class PointLogController : Controller
     {
         private readonly incodedatabaseContext _context;

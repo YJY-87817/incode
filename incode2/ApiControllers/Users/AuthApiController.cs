@@ -13,11 +13,13 @@ namespace incode2.ApiControllers.Users
     {        
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
+        private readonly string _frontendUrl;
 
-        public AuthApiController(IAuthService authService, IUserService userService)
+        public AuthApiController(IAuthService authService, IUserService userService, IConfiguration configuration)
         {
             _authService = authService;
             _userService = userService;
+            _frontendUrl = configuration.GetFrontendUrl();
         }
 
         ///AuthApi/Register
@@ -184,7 +186,7 @@ namespace incode2.ApiControllers.Users
             await SignInProcessAsync(user, true); // Google 登入預設記住我
 
             // --- 最後：重導回前端 Vue --
-            return Redirect("https://localhost:5173/userindex");
+            return Redirect($"{_frontendUrl}/userindex");
         }
 
         [HttpPost("logout")]
@@ -232,7 +234,7 @@ namespace incode2.ApiControllers.Users
         {
             // 這裡的網址要設定為 "前端 Vue 的網址"！
             // 假設你的 Vue 跑在 port 5173
-            string frontendUrl = "https://localhost:5173/reset-password";
+            string frontendUrl = $"{_frontendUrl}/reset-password";
 
             // 呼叫 Service (Service 內寄信時，會把 token 拼在 frontendUrl 後面)
             await _authService.ForgotPasswordAsync(request.Email, frontendUrl);
