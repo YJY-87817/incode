@@ -28,7 +28,7 @@
     try {
       const response = await axios.get("/contentapi/me/posts");
       const listData = response.data.items || [];
-      const STATIC_BASE_URL = "https://localhost:7190";
+      const STATIC_BASE_URL = import.meta.env.VITE_BASE_URL; // 後端靜態檔網址 (.env)
       // 使用 Promise.all 等待所有文章內容都下載完
       const processedItems = await Promise.all(
         listData.map(async (post) => {

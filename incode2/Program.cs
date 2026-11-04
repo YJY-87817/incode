@@ -18,18 +18,8 @@ builder.Services.AddCors(options =>
 {
   options.AddPolicy("VueApp", policy =>
   {
-    policy.WithOrigins(
-        "https://localhost:5173",
-        "https://localhost:5174",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://localhost:7190",
-        "http://localhost:3001",
-        "https://hexabasic-yair-causally.ngrok-free.dev",
-        "https://groomishly-undeft-ettie.ngrok-free.dev"
-      )
+    // 允許來源由設定提供：App:FrontendUrl + App:CorsOrigins (見 appsettings.json)
+    policy.WithOrigins(builder.Configuration.GetCorsOrigins())
       .AllowAnyMethod()
       .AllowAnyHeader()
       .AllowCredentials(); // 允許帶 Cookie (前後端分離驗證必備)
