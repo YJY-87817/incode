@@ -10,6 +10,11 @@
 -- 使用方式：先建立空資料庫，再依序執行 schema.sql、seed.sql（詳見 docs/database/README.md）
 -- =============================================================================
 
+-- 條件式索引 (filtered index) 需要 QUOTED_IDENTIFIER ON；sqlcmd 預設為 OFF
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
 CREATE TABLE [content_category] (
     [content_category_id] int NOT NULL IDENTITY,
     [parent_category_id] int NULL,

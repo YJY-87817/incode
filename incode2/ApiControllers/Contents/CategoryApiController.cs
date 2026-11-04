@@ -144,7 +144,7 @@ namespace incode2.ApiControllers.Contents
       public int Id { get; set; }
       public int? ParentCategoryId { get; set; }
       public string Name { get; set; }
-      public string Description { get; set; }
+      public string? Description { get; set; }
 
       // 前端論壇用到的統計
       public int TopicCount { get; set; }
@@ -160,7 +160,7 @@ namespace incode2.ApiControllers.Contents
       public string Name { get; set; }
 
       [StringLength(200)]
-      public string Description { get; set; }
+      public string? Description { get; set; } // 選填 (前端未填時送 null；原本為必填導致新增分類失敗)
     }
   }
 }
