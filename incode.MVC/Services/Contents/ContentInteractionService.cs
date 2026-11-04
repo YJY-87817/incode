@@ -237,6 +237,10 @@ namespace incode.MVC.Services.Contents
 
       try
       {
+        // 先鎖定委託人（只有委託人能選最佳解答；取消委託也鎖同一人），
+        // 同時送出的選擇 / 取消會排隊，第二個請求會讀到已結案的狀態，不會重複發放獎勵
+        await _pointLogService.LockUsersAsync(selectorUserId);
+
         var mission = await _context.EntrustMission
           .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
 

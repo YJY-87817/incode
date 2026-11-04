@@ -18,53 +18,74 @@ namespace incode.MVC.Services.Point
             _context = context;
         }
 
-        // 儲值成功加點
-        public async Task AddPointsFromRechargeAsync(PointRecharge recharge)
+        // 綠界付款成功回呼
+        public async Task<RechargeResult> CompleteRechargeAsync(string orderNo, string? paymentTradeNo)
         {
-            using var tx = await _context.Database.BeginTransactionAsync();
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 為了冪等性，檢查資料庫最新狀態（不追蹤）
-                var dbOrder = await _context.PointRecharge
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.PointRechargeId == recharge.PointRechargeId);
+                // 條件更新會鎖住這筆儲值單到交易結束：同時到達的重複回呼會在這裡等待，之後更新 0 筆
+                var updated = await _context.PointRecharge
+                    .Where(r => r.OrderNo == orderNo && r.Status != "success")
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(r => r.Status, "success")
+                        .SetProperty(r => r.PaymentTradeNo, paymentTradeNo));
 
-                if (dbOrder == null)
-                    throw new Exception("訂單不存在");
-
-                if (dbOrder.Status == "success")
+                if (updated == 0)
                 {
-                    await tx.CommitAsync(); // 已經成功過了，還是 commit 保持一致
-                    return;
+                    await tx.CommitAsync();
+                    return await _context.PointRecharge.AnyAsync(r => r.OrderNo == orderNo)
+                        ? RechargeResult.AlreadyProcessed
+                        : RechargeResult.NotFound;
                 }
 
-                // 執行加點（這邊會寫 PointLog，但不 SaveChanges）
-                bool success = await ChangePointsAsync(
-                    userId: recharge.UserId,           // 直接用傳進來的
+                var recharge = await _context.PointRecharge
+                    .AsNoTracking()
+                    .FirstAsync(r => r.OrderNo == orderNo);
+
+                await ChangePointsAsync(
+                    userId: recharge.UserId,
                     changeAmount: recharge.PointsGranted,
                     sourceType: "point_recharge",
                     sourceId: recharge.PointRechargeId,
                     type: PointType.IncomePointRecharge,
                     displaySource: "點數儲值",
-                    displaySubTitle: $"訂單 #{recharge.OrderNo ?? recharge.PointRechargeId.ToString()}"
-                );
+                    displaySubTitle: $"訂單 #{recharge.OrderNo ?? recharge.PointRechargeId.ToString()}");
 
-                if (!success)
-                    throw new Exception("加點失敗（餘額異常）");
-
-                // ★ 重要：這裡不要更新 recharge 狀態，也不要 SaveChanges
-                // 讓呼叫端負責更新訂單狀態
-
+                // 狀態更新與加點在同一個交易：任一失敗都會 rollback，綠界重試時會重新處理
+                await _context.SaveChangesAsync();
                 await tx.CommitAsync();
+                return RechargeResult.Completed;
             }
             catch
             {
                 await tx.RollbackAsync();
+                _context.ChangeTracker.Clear();
                 throw;
             }
         }
 
-        // 加扣點 //transaction另外包
+        public async Task LockUsersAsync(params int[] userIds)
+        {
+            if (_context.Database.CurrentTransaction == null)
+                throw new InvalidOperationException("點數異動必須在交易內執行");
+
+            if (!_context.Database.IsSqlServer()) return; // sp_getapplock 為 SQL Server 專用
+
+            // 固定依 ID 由小到大取得鎖，避免兩個請求互相等待對方（例如 A 打賞 B 的同時 B 打賞 A）。
+            // 同一交易內重複鎖定同一會員不會卡住（applock 可重入）
+            foreach (var userId in userIds.Distinct().Order())
+            {
+                var resource = $"point-user-{userId}";
+                await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                    DECLARE @result int;
+                    EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive',
+                        @LockOwner = 'Transaction', @LockTimeout = 10000;
+                    IF @result < 0 THROW 50001, 'point lock timeout', 1;");
+            }
+        }
+
+        // 加扣點：呼叫端負責交易與 SaveChanges
         public async Task<bool> ChangePointsAsync(
             int userId,
             int changeAmount,
@@ -74,7 +95,14 @@ namespace incode.MVC.Services.Point
             string? displaySource = null,
             string? displaySubTitle = null)
         {
-            var currentBalance = await GetCurrentBalanceAsync(userId);
+            // 鎖定後才讀餘額：同一會員的其他異動必須等這個交易結束，不會兩邊讀到同一個舊餘額
+            await LockUsersAsync(userId);
+
+            // 餘額 = 資料庫最後一筆 + 這個交易中尚未儲存的異動（同一交易對同一會員多次加扣點時才會正確）
+            var pending = _context.ChangeTracker.Entries<PointLog>()
+                .Where(e => e.State == EntityState.Added && e.Entity.UserId == userId)
+                .Sum(e => e.Entity.ChangeAmount);
+            var currentBalance = await GetCurrentBalanceAsync(userId) + pending;
             var newBalance = currentBalance + changeAmount;
 
             if (changeAmount < 0 && newBalance < 0)
@@ -89,7 +117,7 @@ namespace incode.MVC.Services.Point
                 ChangeAmount = changeAmount,
                 BalanceAfter = newBalance,
                 Status = "success",
-                CreatedAt = DateTime.Now,  // 建議改用 UTC 避免時區問題
+                CreatedAt = DateTime.Now,
                 DisplaySource = displaySource,
                 DisplaySourceSubTitle = displaySubTitle
             };
@@ -243,6 +271,9 @@ namespace incode.MVC.Services.Point
             using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 先鎖定雙方（依 ID 排序），之後的餘額檢查與扣款才不會被同時送出的打賞穿越
+                await LockUsersAsync(fromUserId, toUserId);
+
                 var fromBalance = await GetCurrentBalanceAsync(fromUserId);
                 if (fromBalance < amount)
                     throw new Exception("點數不足");
@@ -310,6 +341,7 @@ namespace incode.MVC.Services.Point
             catch
             {
                 await tx.RollbackAsync();
+                _context.ChangeTracker.Clear();
                 throw;
             }
         }

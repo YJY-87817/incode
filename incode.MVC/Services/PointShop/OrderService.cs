@@ -521,28 +521,14 @@ namespace incode.MVC.Services.PointShop
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock + quantity));
         }
 
-        // 同一會員的點數異動排隊執行，避免同時下單 / 修改時以相同餘額重複扣點
-        // (SQL Server application lock，交易結束自動釋放)
-        private async Task LockUserPointsAsync(int userId)
-        {
-            if (!_context.Database.IsSqlServer()) return; // sp_getapplock 為 SQL Server 專用
-
-            var resource = $"point-user-{userId}";
-            await _context.Database.ExecuteSqlInterpolatedAsync($@"
-                DECLARE @result int;
-                EXEC @result = sp_getapplock @Resource = {resource}, @LockMode = 'Exclusive',
-                    @LockOwner = 'Transaction', @LockTimeout = 10000;
-                IF @result < 0 THROW 50001, 'point lock timeout', 1;");
-        }
-
-        // 在交易內執行異動：業務失敗 (OrderFailure) 回傳訊息，其他例外記錄 log 並回傳通用訊息
+        // 在交易內執行異動（先鎖定會員點數，同時下單 / 修改時不會以相同餘額重複扣點）：業務失敗 (OrderFailure) 回傳訊息，其他例外記錄 log 並回傳通用訊息
         private async Task<ResultDTO<int>> RunInTransactionAsync(int userId, string operation,
             Func<Task<int>> work, string successMessage)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await LockUserPointsAsync(userId);
+                await _pointlogService.LockUsersAsync(userId);
                 var id = await work();
                 await transaction.CommitAsync();
                 return ResultDTO<int>.Success(id, successMessage);

@@ -208,6 +208,9 @@ namespace incode.MVC.Services.Point
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 與選擇最佳解答鎖定同一位委託人，避免同時取消與結案造成退款又發獎勵
+                await _pointLogService.LockUsersAsync(userId);
+
                 var mission = await _context.EntrustMission
                     .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
 
