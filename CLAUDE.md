@@ -79,7 +79,10 @@ incode/
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
 - **不外洩例外**：catch 後用 `ILogger` 記錄，回傳通用訊息，不要把 `ex.Message` 回給前端。
-- **點數異動**：透過 `IPointLogService.ChangePointsAsync`（不會自己 SaveChanges，由呼叫端在交易內儲存）。
+- **點數異動**：透過 `IPointLogService.ChangePointsAsync`，必須在交易內呼叫（沒有交易會丟例外），不會自己 SaveChanges。
+  它會以 `sp_getapplock`（`point-user-{userId}`）鎖定該會員到交易結束。**讀取會決定能不能異動的資料之前**
+  （餘額、任務是否已領獎、委託狀態…）先呼叫 `LockUsersAsync(userId, ...)`，同一會員的請求才會排隊、不會讀到舊狀態；
+  多位會員一次傳入（內部依 ID 排序避免死結）。
 - **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價。
 - **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
   前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
@@ -99,7 +102,7 @@ incode/
 
 - 整筆在交易內（`RunInTransactionAsync`），業務失敗丟 `OrderFailure` → rollback + 回傳訊息
 - 庫存用 `ExecuteUpdateAsync` 原子更新（`WHERE Stock >= 數量`），商品讀取用 `AsNoTracking`，**不要**改 tracked 實體的 `Stock` 再 SaveChanges
-- 同一會員的點數異動以 `sp_getapplock`（`point-user-{userId}`）排隊；非 SQL Server（測試用 SQLite）時略過
+- 交易開始先 `IPointLogService.LockUsersAsync(userId)`，同一會員的點數異動排隊；非 SQL Server（測試用 SQLite）時略過
 - 明細同商品會合併；數量必須 > 0；新加入的商品必須上架中
 - 權限 / 狀態檢查由呼叫端負責：會員只能操作自己的「待處理」訂單；已取消訂單不可改回其他狀態
 
@@ -168,12 +171,18 @@ incode/
 11. 專案更名：後端 `incode2/` → `incode.MVC/`（`incode.MVC.csproj`，命名空間 `incode2.*` → `incode.MVC.*`，組件名稱 `incode.MVC.dll`）、
     前端 `incode_Vue/` → `incode.Vue/`、`incode2.sln` → `incode.sln`。`UserSecretsId` 保持不變（沿用既有的 user-secrets）。
     舊的 commit / 文件中出現的 `incode2`、`incode_Vue` 即為這兩個資料夾
+12. 點數併發（全專案檢查 8、9）：`PointLogService.LockUsersAsync`（原 `OrderService` 的 `sp_getapplock`）供所有點數流程共用，
+    `ChangePointsAsync` 強制在交易內並自動鎖定、餘額會計入同一交易中尚未儲存的異動；打賞先依 ID 順序鎖定雙方；
+    任務領獎、選擇最佳解答、取消委託在讀取狀態前先鎖定會員；綠界付款成功改為 `CompleteRechargeAsync`：
+    同一交易內以條件更新 `Status <> 'success'` 搶下訂單，影響 1 筆才加點（失敗通知也不會覆蓋已成功的訂單）。
+    以同時送出 10 個請求實測：修正前打賞 10 筆全成功（餘額 100 扣 300）、任務獎勵 / 綠界加點 / 最佳解答獎勵各重複 10 次，
+    修正後皆只成立一次、帳本連續
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、18～20 已修正（見修正紀錄 6～9），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～9、18～20 已修正（見修正紀錄 6～9、12），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ 點數併發（8、9）→ 其餘。
+建議修正順序：撤銷外洩金鑰（6）→ 聊天室 XSS 與圖片上傳（10、11）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -185,15 +194,9 @@ incode/
 6. **API 金鑰提交進 git 歷史**：`incode.MVC/appsettings.json` 的歷史版本中有 `GeminiApiKey`、`TmdbApiKey` 的真實值
    （目前檔案已清空，但歷史仍可取得）。→ 到 Google / TMDB 後台**撤銷並重新產生金鑰**，改用 user-secrets 或環境變數。
    ECPay 目前放的是綠界公開的測試帳號（`3002607`），正式上線時正式金鑰不可放進 repo。
-7. **任務進度可以自己增加**：`MissionProgressApiController` 的 `POST {missionId}/increment` 讓會員自訂增量，
-   可以直接把任何任務（登入、購買、按讚…）刷到完成再領獎。→ 刪除此 API，進度只由伺服器端 `TriggerMissionAsync` 觸發。
-8. **點數併發問題**：`PointLogService.ChangePointsAsync` 以「讀取最後餘額 + 變動」計算，打賞（`TipAsync`）、
-   任務領獎（`MissionProgressService.ClaimRewardAsync`，先檢查 `RewardedAt` 再寫入）、委託任務沒有鎖，
-   同時送出多個請求可以重複扣款 / 重複領獎、餘額扣成負數。點數商城已用 `sp_getapplock` 處理。
-   → 把 `OrderService.LockUserPointsAsync` 的做法抽到 `PointLogService`，所有點數異動都在交易內先鎖定會員。
-9. **ECPay 回呼冪等性**（`PointRechargeApiController.EcpayReturn`）：「檢查是否已成功 → 加點 → 更新狀態」沒有鎖，
-   綠界重送或同時回呼可能重複加點；`AddPointsFromRechargeAsync` 先 commit 加點，之後更新儲值狀態失敗時，重試會再加一次。
-   → 同一交易內以條件更新 `UPDATE ... SET Status='success' WHERE OrderNo=@no AND Status<>'success'`，影響 1 筆才加點。
+7. ~~任務進度可以自己增加~~（`increment` API 已刪除，見修正紀錄 6）
+8. ~~點數併發問題~~（見修正紀錄 12）
+9. ~~ECPay 回呼冪等性~~（見修正紀錄 12）
 10. **聊天室 XSS**（前端 `src/components/chat/ChatWidget.vue`）：訊息以 `v-html` 顯示，客服 / SignalR 收到的訊息、使用者輸入、
     `marked.parse` 的結果都沒有經過 DOMPurify（第 4 點修正後只有管理員能以客服身分回覆，但 AI 回覆與歷史訊息仍未過濾）。
     → `v-html` 前一律用 `utils/sanitizeHtml.js`（DOMPurify）處理。
