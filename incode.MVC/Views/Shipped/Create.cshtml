@@ -1,0 +1,137 @@
+﻿@model incode.MVC.Models.ShippedDetail
+
+@{
+    ViewData["Title"] = "寄送管理";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="mb-0 fs-5"><i class="bi bi-truck me-2"></i>新增寄送資料</h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <form id="shippedForm" asp-action="Create" method="post">
+
+                        <div class="mb-4">
+                            <label asp-for="OrderId" class="form-label fw-bold text-dark">
+                                需寄送訂單ID <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="OrderId" type="number" class="form-control border-success-subtle" placeholder="請輸入訂單ID" required>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-secondary mb-3"><i class="bi bi-person-circle me-2"></i>收件人資訊</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="RecipientName" class="form-label fw-bold text-dark">收件人名稱 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientName" class="form-control" placeholder="請輸入全名" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RecipientPhone" class="form-label fw-bold text-dark">收件人電話 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientPhone" class="form-control" placeholder="09xx-xxx-xxx" required>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="RecipientAddress" class="form-label fw-bold text-dark">收件地址 <span class="text-danger">*</span></label>
+                                <input asp-for="RecipientAddress" class="form-control" placeholder="請輸入詳細地址" required>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="text-secondary mb-3"><i class="bi bi-calendar-event me-2"></i>物流時間</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="ShippedDate" class="form-label fw-bold text-dark">寄送日期時間</label>
+                                <input asp-for="ShippedDate" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ArrivalDate" class="form-label fw-bold text-dark">送達日期時間</label>
+                                <input asp-for="ArrivalDate" type="datetime-local" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Remark" class="form-label fw-bold text-dark">備註</label>
+                            <textarea asp-for="Remark" class="form-control" rows="3" placeholder="例如:警衛室代收、週末不配送等..."></textarea>
+                        </div>
+
+                        <!-- 驗證提示訊息 -->
+                        <div id="validationAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            <strong>請檢查以下必填欄位：</strong>
+                            <ul id="errorList" class="mb-0 mt-2"></ul>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-2">
+                            <button id="BtnCreate" type="submit" class="btn btn-success px-4 py-2 flex-grow-1 fw-bold shadow-sm" onclick="validateShippedForm(event)">
+                                <i class="bi bi-check-lg me-1"></i>確認新增寄送
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">
+                                取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function validateShippedForm(event) {
+            const form = document.getElementById('shippedForm');
+            const validationAlert = document.getElementById('validationAlert');
+            const errorList = document.getElementById('errorList');
+            const errors = [];
+
+            // 清空錯誤列表
+            errorList.innerHTML = '';
+
+            // 驗證必填欄位
+            const orderId = document.querySelector('input[name="OrderId"]');
+            if (!orderId.value.trim()) {
+                errors.push('需寄送訂單ID');
+            }
+
+            const recipientName = document.querySelector('input[name="RecipientName"]');
+            if (!recipientName.value.trim()) {
+                errors.push('收件人名稱');
+            }
+
+            const recipientPhone = document.querySelector('input[name="RecipientPhone"]');
+            if (!recipientPhone.value.trim()) {
+                errors.push('收件人電話');
+            }
+
+            const recipientAddress = document.querySelector('input[name="RecipientAddress"]');
+            if (!recipientAddress.value.trim()) {
+                errors.push('收件地址');
+            }
+
+            // 如果有錯誤，顯示提示並阻止提交
+            if (errors.length > 0) {
+                event.preventDefault();
+                errors.forEach(error => {
+                    errorList.innerHTML += `<li>${error}</li>`;
+                });
+                validationAlert.classList.remove('d-none');
+                // 滾動到錯誤訊息位置
+                validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // 沒有錯誤，隱藏提示訊息
+                validationAlert.classList.add('d-none');
+                // 允許表單提交
+                form.submit();
+            }
+        }
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

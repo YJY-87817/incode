@@ -7,7 +7,7 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/incode2.sln",
+        "${workspaceFolder}/incode.sln",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
@@ -19,7 +19,7 @@
       "type": "process",
       "args": [
         "publish",
-        "${workspaceFolder}/incode2.sln",
+        "${workspaceFolder}/incode.sln",
         "/property:GenerateFullPaths=true",
         "/consoleloggerparameters:NoSummary;ForceNoAlign"
       ],
@@ -29,7 +29,7 @@
       "label": "watch",
       "command": "dotnet",
       "type": "process",
-      "args": ["watch", "run", "--project", "${workspaceFolder}/incode2.sln"],
+      "args": ["watch", "run", "--project", "${workspaceFolder}/incode.sln"],
       "problemMatcher": "$msCompile"
     },
     {
@@ -40,7 +40,7 @@
         "watch",
         "run",
         "--project",
-        "${workspaceFolder}/incode2/incode2.csproj"
+        "${workspaceFolder}/incode.MVC/incode.MVC.csproj"
       ],
       "isBackground": true,
       "problemMatcher": "$msCompile",

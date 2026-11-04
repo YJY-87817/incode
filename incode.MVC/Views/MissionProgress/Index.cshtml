@@ -1,0 +1,126 @@
+﻿@model IEnumerable<incode.MVC.Models.MissionProgress>
+
+@{
+    // 優先使用 Controller 設定的 ViewBag.PageTitle，否則使用預設標題
+    ViewData["Title"] = ViewBag.PageTitle ?? "任務進度管理";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-line me-2"></i>@ViewData["Title"]
+        </h1>
+        <a asp-controller="Mission" asp-action="Index" class="btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> 返回任務列表
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">參與者明細列表</h6>
+            <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-plus fa-sm text-white-50"></i> 手動新增記錄
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle" id="progressTable" width="100%" cellspacing="0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>用戶</th>
+                            <th>任務名稱</th>
+                            <th>當前進度</th>
+                            <th>狀態</th>
+                            <th>接取時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-primary">
+                                        @(string.IsNullOrEmpty(item.User?.Email) ? "-" : item.User.Email.Split('@')[0])
+                                    </div>
+                                    <small class="text-muted">ID: @item.UserId</small>
+                                </td>
+                                <td>
+                                    <div class="text-black fw-bold">@item.Mission.MissionName</div>
+                                    <small class="text-muted text-truncate" style="max-width: 200px; display:inline-block;" title="@item.Mission.MissionDetail">
+                                        @item.Mission.MissionDetail
+                                    </small>
+                                </td>
+                                <td>
+                                    @if (item.Mission.TargetCount > 0)
+                                    {
+                                        var percentage = (int)Math.Min(100, (double)item.CurrentCount / item.Mission.TargetCount * 100);
+                                        <div class="progress progress-sm mr-2" title="@percentage%">
+                                            <div class="progress-bar @(percentage == 100 ? "bg-success" : "bg-info")" role="progressbar"
+                                                 style="width: @percentage%" aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small class="text-muted">@item.CurrentCount / @item.Mission.TargetCount</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="font-weight-bold text-info">@item.CurrentCount</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @* 狀態徽章樣式優化 *@
+                                    @if (item.RewardedAt.HasValue)
+                                    {
+                                        <span class="badge bg-success shadow-sm">已領獎</span>
+                                    }
+                                    else if (item.CompletedAt.HasValue)
+                                    {
+                                        <span class="badge bg-warning text-dark shadow-sm">已完成</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-primary shadow-sm">進行中</span>
+                                    }
+                                </td>
+                                <td class="text-center small">
+                                    @item.AcceptedAt?.ToString("yyyy-MM-dd HH:mm")
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group shadow-sm">
+                                        <a asp-action="Edit" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-primary" title="編輯">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        @* <a asp-action="Details" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-info" title="詳情">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.MissionProgressId" class="btn btn-sm btn-outline-danger" title="刪除">
+                                            <i class="fas fa-trash"></i>
+                                        </a> *@
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // 初始化 DataTable
+            $('#progressTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/zh-HANT.json"
+                },
+                "order": [[4, "desc"]], // 預設按接取時間倒序
+                "columnDefs": [
+                    { "orderable": false, "targets": [5] } // 操作欄位不排序
+                ],
+                "pageLength": 10,
+                "lengthMenu": [10, 25, 50]
+            });
+        });
+    </script>
+}

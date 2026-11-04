@@ -12,7 +12,7 @@ SET QUOTED_IDENTIFIER ON;
 -- -----------------------------------------------------------------------------
 -- 1-1. 角色 role
 --      程式以 role_id 判斷身分：1 = 管理員（可登入後台），2 = 一般會員（註冊預設）
---      對應 incode2/Constants/RoleType.cs
+--      對應 incode.MVC/Constants/RoleType.cs
 -- -----------------------------------------------------------------------------
 MERGE [role] AS t
 USING (VALUES
@@ -27,7 +27,7 @@ WHEN NOT MATCHED THEN
 
 -- -----------------------------------------------------------------------------
 -- 1-2. 點數異動類型 point_type_definition
---      ID 必須與 incode2/Constants/PointEnum.cs 的 PointType 列舉一致
+--      ID 必須與 incode.MVC/Constants/PointEnum.cs 的 PointType 列舉一致
 -- -----------------------------------------------------------------------------
 SET IDENTITY_INSERT [point_type_definition] ON;
 
@@ -53,7 +53,7 @@ SET IDENTITY_INSERT [point_type_definition] OFF;
 
 -- -----------------------------------------------------------------------------
 -- 1-3. 論壇互動分類 interaction_category
---      前端以 ID 呼叫：1 = 按讚、2 = 隱藏、3 = 收藏、4 = 檢舉 (incode_Vue/src/api/contentInteractionApi.js)
+--      前端以 ID 呼叫：1 = 按讚、2 = 隱藏、3 = 收藏、4 = 檢舉 (incode.Vue/src/api/contentInteractionApi.js)
 --      後端以 ID 1 判斷按讚任務，以名稱 best_answer 找最佳解答分類
 -- -----------------------------------------------------------------------------
 SET IDENTITY_INSERT [interaction_category] ON;

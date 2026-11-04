@@ -1,0 +1,25 @@
+// 專案內所有命名空間統一在此引入，各檔案不需再個別 using incode.MVC.*
+global using incode.MVC.Constants;
+global using incode.MVC.Dtos;
+global using incode.MVC.Dtos.Chat;
+global using incode.MVC.Dtos.Contents;
+global using incode.MVC.Dtos.Point;
+global using incode.MVC.Dtos.PointShop;
+global using incode.MVC.Dtos.Users;
+global using incode.MVC.Extensions;
+global using incode.MVC.Hubs;
+global using incode.MVC.Models;
+global using incode.MVC.Models.Metadata;
+global using incode.MVC.Services.Chat;
+global using incode.MVC.Services.Common;
+global using incode.MVC.Services.Contents;
+global using incode.MVC.Services.Point;
+global using incode.MVC.Services.PointShop;
+global using incode.MVC.Services.Users;
+global using incode.MVC.Validation;
+global using incode.MVC.ViewModels;
+global using incode.MVC.ViewModels.Chat;
+global using incode.MVC.ViewModels.Contents;
+global using incode.MVC.ViewModels.Point;
+global using incode.MVC.ViewModels.PointShop;
+global using incode.MVC.ViewModels.Users;

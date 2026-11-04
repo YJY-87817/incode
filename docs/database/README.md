@@ -1,6 +1,6 @@
 # 資料庫
 
-SQL Server（開發預設為 LocalDB）。專案為 Database-First：`incode2/Models/` 由資料庫產生，repo 內沒有 EF migration，
+SQL Server（開發預設為 LocalDB）。專案為 Database-First：`incode.MVC/Models/` 由資料庫產生，repo 內沒有 EF migration，
 新環境請用本資料夾的腳本建立資料庫。
 
 | 檔案 | 內容 |
@@ -26,7 +26,7 @@ docker compose up -d
 
 ## 手動建立（LocalDB / 自己的 SQL Server）
 
-1. 建立空資料庫（名稱需與 `incode2/appsettings.json` 的 `ConnectionStrings:incodedatabase` 一致，預設 `incodedatabase`）：
+1. 建立空資料庫（名稱需與 `incode.MVC/appsettings.json` 的 `ConnectionStrings:incodedatabase` 一致，預設 `incodedatabase`）：
 
    ```sql
    CREATE DATABASE incodedatabase;
@@ -65,7 +65,7 @@ dotnet tool install --global dotnet-ef
 ```
 
 ```bash
-cd incode2
+cd incode.MVC
 ```
 
 ```bash

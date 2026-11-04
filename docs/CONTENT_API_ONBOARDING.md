@@ -1,4 +1,4 @@
-[incode2 Content API 新人導覽 - 第一版]
+[incode.MVC Content API 新人導覽 - 第一版]
 
 這份文件給「剛接手 content API 的新人」，先建立全局地圖，再看資訊流、卡控點、前後端配合方式。
 你可以先看完大綱，再挑任一段深入問我。
@@ -8,13 +8,13 @@
 ==================================================
 
 A. 專案骨架（從根目錄角度）
-- `incode2/Program.cs`：整體啟動設定（DI、CORS、Cookie Auth、路由）
-- `incode2/ApiControllers/Contents/*`：Content 對外 API 入口
-- `incode2/Services/Contents/*`：內容領域商業邏輯（真正核心）
-- `incode2/Services/Point/*`：點數、打賞、委託任務獎勵相關流程
-- `incode2/Models/*` + `incodedatabaseContext.cs`：資料表與關聯
-- `incode2/Dtos/Contents/*`：API Request/Response 契約
-- `incode2/Controllers/Contents/*` + `Views/Content*`：後台 MVC/Razor 管理頁（不是前台論壇 API）
+- `incode.MVC/Program.cs`：整體啟動設定（DI、CORS、Cookie Auth、路由）
+- `incode.MVC/ApiControllers/Contents/*`：Content 對外 API 入口
+- `incode.MVC/Services/Contents/*`：內容領域商業邏輯（真正核心）
+- `incode.MVC/Services/Point/*`：點數、打賞、委託任務獎勵相關流程
+- `incode.MVC/Models/*` + `incodedatabaseContext.cs`：資料表與關聯
+- `incode.MVC/Dtos/Contents/*`：API Request/Response 契約
+- `incode.MVC/Controllers/Contents/*` + `Views/Content*`：後台 MVC/Razor 管理頁（不是前台論壇 API）
 
 B. 一次 API 呼叫的主路徑
 前端(通常 Vue) -> `ContentApiController` -> `ContentService` -> `DbContext` -> SQL
@@ -40,7 +40,7 @@ D. 前後端協作關鍵
 ==================================================
 
 1-1. 啟動與組態
-- 檔案：`incode2/Program.cs`
+- 檔案：`incode.MVC/Program.cs`
 - 你要注意的三件事：
   1) DI 註冊
      - `IContentService -> ContentService`
@@ -57,11 +57,11 @@ D. 前後端協作關鍵
      - API 未授權時，不 redirect，直接回 401/403（很重要，前端比較好處理）
 
 1-2. Content API 入口
-- 檔案：`incode2/ApiControllers/Contents/ContentApiController.cs`
+- 檔案：`incode.MVC/ApiControllers/Contents/ContentApiController.cs`
 - 這支是 content 主幹，幾乎所有論壇內容讀寫都在這邊進入 service。
 
 1-3. Content 商業邏輯核心
-- 檔案：`incode2/Services/Contents/ContentService.cs`
+- 檔案：`incode.MVC/Services/Contents/ContentService.cs`
 - 你可以把它當成「規則中心」：
   - 查詢與分頁
   - 型別過濾
@@ -200,7 +200,7 @@ D. 前後端協作關鍵
 ==================================================
 
 3-1. API 入口
-- `incode2/ApiControllers/Contents/ContentInteractionApiController.cs`
+- `incode.MVC/ApiControllers/Contents/ContentInteractionApiController.cs`
 
 3-2. Toggle 行為
 - `POST /api/ContentInteractionApi`
@@ -261,14 +261,14 @@ D. 前後端協作關鍵
 5) 你接手後，建議先掌握的 8 個檔案（最優先）
 ==================================================
 
-1. `incode2/ApiControllers/Contents/ContentApiController.cs`
-2. `incode2/Services/Contents/ContentService.cs`
-3. `incode2/ApiControllers/Contents/ContentInteractionApiController.cs`
-4. `incode2/Services/Contents/ContentInteractionService.cs`
-5. `incode2/Services/Contents/ContentEntrustMissionService.cs`
-6. `incode2/Services/Point/EntrustMissionService.cs`
-7. `incode2/Services/Point/PointLogService.cs`
-8. `incode2/Models/incodedatabaseContext.cs`
+1. `incode.MVC/ApiControllers/Contents/ContentApiController.cs`
+2. `incode.MVC/Services/Contents/ContentService.cs`
+3. `incode.MVC/ApiControllers/Contents/ContentInteractionApiController.cs`
+4. `incode.MVC/Services/Contents/ContentInteractionService.cs`
+5. `incode.MVC/Services/Contents/ContentEntrustMissionService.cs`
+6. `incode.MVC/Services/Point/EntrustMissionService.cs`
+7. `incode.MVC/Services/Point/PointLogService.cs`
+8. `incode.MVC/Models/incodedatabaseContext.cs`
 
 
 ==================================================
