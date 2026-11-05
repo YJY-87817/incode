@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue"; // 引入 computed
 import { useTaskStore } from "@/stores/point/taskStore";
-import { useRouter } from "vue-router";
 
 // 引入元件
 import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
@@ -12,7 +11,6 @@ import EntrustMissionTable from "@/components/point/EntrustMissionTable.vue";
 import TaskDetailDrawer from "@/components/point/TaskDetailDrawer.vue";
 import Swal from "sweetalert2";
 
-const router = useRouter();
 const store = useTaskStore();
 
 // 狀態控制
@@ -29,9 +27,11 @@ const openDetail = (task) => {
   isDrawerOpen.value = true;
 };
 
+// 只有平台任務可以接取（MissionList 發出 { type: "platform", mission }）；
+// 委託任務的列表與詳細抽屜直接導向討論區，不會發出 claim
 const handleClaim = async (payload) => {
-  if (!payload?.type) return;
-  const task = payload.mission || payload.commission;
+  if (payload?.type !== "platform") return;
+  const task = payload.mission;
   if (!task?.id) return;
 
   isClaiming.value = true;
@@ -39,10 +39,7 @@ const handleClaim = async (payload) => {
   task.claimed = true;
 
   try {
-    await store.claimTask(payload.type, task.id);
-    if (payload.type === "entrust" && task.contentId) {
-      router.push(`/forum/${task.contentId}`);
-    }
+    await store.claimTask(task.id);
   } catch (err) {
     task.claimed = originalClaimed;
     Swal.fire({
