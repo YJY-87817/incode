@@ -14,6 +14,15 @@
       ]
     },
     {
+      "provider": "jsdelivr",
+      "library": "dompurify@3.4.17",
+      "destination": "wwwroot/lib/dompurify/",
+      "files": [
+        "dist/purify.min.js",
+        "LICENSE"
+      ]
+    },
+    {
       "provider": "cdnjs",
       "library": "datatables@1.13.7",
       "destination": "wwwroot/lib/datatables/"

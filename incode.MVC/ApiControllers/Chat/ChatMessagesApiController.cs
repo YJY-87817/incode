@@ -17,6 +17,8 @@ namespace incode.MVC.ApiControllers.Chat
     [Authorize]
     public class ChatMessagesApiController : Controller
     {
+        private const long MaxChatImageBytes = 10L * 1024 * 1024; // 聊天圖片單檔 10 MB
+
         private readonly incodedatabaseContext _context;
         private readonly GeminiService _geminiService;
         private readonly IHubContext<ChatHub> _hubContext;
@@ -520,6 +522,10 @@ namespace incode.MVC.ApiControllers.Chat
             if (userId == 0) return Unauthorized();
             if (request.Image == null || request.Image.Length == 0) return BadRequest("未上傳圖片");
 
+            // 只接受圖片（副檔名 + 檔頭比對），避免把 .html / .svg 等檔案寫進 wwwroot
+            var imageError = ImageFileValidator.Validate(request.Image, MaxChatImageBytes);
+            if (imageError != null) return BadRequest(imageError);
+
             var (currentSession, isNew) = await GetOrInitSessionAsync(userId, request.SessionId, "圖片對話");
             int validSessionId = currentSession.ChatSessionId;
             string validSessionIdStr = validSessionId.ToString();
@@ -529,9 +535,10 @@ namespace incode.MVC.ApiControllers.Chat
                 // 圖片實體存檔 
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img", "chat");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Image.FileName;
+                // 檔名只用 Guid + 正規化副檔名，不使用使用者提供的檔名（原本可用 ..\ 寫到其他目錄）
+                string uniqueFileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(request.Image)}";
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create)) { await request.Image.CopyToAsync(fileStream); }
+                using (var fileStream = new FileStream(filePath, FileMode.CreateNew)) { await request.Image.CopyToAsync(fileStream); }
                 string dbRelativeUrl = $"/img/chat/{uniqueFileName}";
 
                 // 存入 User 圖片訊息
@@ -540,7 +547,7 @@ namespace incode.MVC.ApiControllers.Chat
                 {
                     SessionId = validSessionId,
                     Role = "user",
-                    Body = $"<img src='{dbRelativeUrl}' /> {request.UserContent}",
+                    Body = $"<img src='{dbRelativeUrl}' /> {System.Net.WebUtility.HtmlEncode(request.UserContent)}",
                     CreatedAt = DateTime.Now
                 });
                 await _context.SaveChangesAsync();
