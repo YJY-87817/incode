@@ -68,6 +68,10 @@ incode/
 
 - 預設 `SmartScheme`：有 `Incode.Admin` Cookie → `AdminAuth`，否則 → `MemberAuth`（`Incode.Member`）
 - 前台 API 未登入回 401 / 403（不轉址）
+- **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
+  伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
+- **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
+  ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
   （後台登入 `AccountController` 只允許 `RoleId == Admin`，Claim 角色固定為 `"Admin"`）
 - 取得登入者 ID：`User.GetId()`（`Extensions/ClaimsExtensions.cs`）
@@ -185,12 +189,19 @@ incode/
       改為輸出到 `data-body` 後以 DOMPurify 過濾再顯示，SignalR 即時訊息（`appendMessage`）也一樣；
       DOMPurify 放在 `wwwroot/lib/dompurify/`（libman.json 已登記）
     - `UploadImage` 改用 `ImageFileValidator`（單檔 10 MB）與 Guid 檔名，不再使用原始檔名；圖片附帶文字存入前 HTML 編碼
+14. CSRF 與登入次數限制（全專案檢查 12、15）：
+    - `Extensions/OriginCheckExtensions.cs`（`app.UseApiOriginCheck`）：`/api` 的寫入請求與 `/chatHub` 只接受自己與 CORS 允許來源的
+      `Origin`（沒有 Origin 時看 `Referer`，都沒有視為非瀏覽器請求放行）；綠界回呼列為例外。會員 Cookie 維持 `SameSite=None`
+      （前後端可能不同網域），CSRF 由 Origin 檢查負責。實測修正前，其他網站的頁面能以會員身分上傳聊天圖片
+    - `Extensions/RateLimitExtensions.cs`：依 IP 限制登入 / 註冊（每分鐘 20 次）、忘記密碼 / 重設密碼（每 15 分鐘 5 次），超過回 429
+    - `Services/Users/LoginAttemptLimiter.cs`：同一帳號 15 分鐘內失敗 5 次即暫停登入 15 分鐘（會員 API 回 429，後台顯示訊息），
+      記憶體計數，重啟清除
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～11、18～20 已修正（見修正紀錄 6～9、12、13），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～12、15、18～20 已修正（見修正紀錄 6～9、12～14），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ CSRF 與登入次數限制（12、15）→ 其餘。
+建議修正順序：撤銷外洩金鑰（6）→ 論壇互動分類與儲值金額（13、16、17）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -210,13 +221,12 @@ incode/
 
 ### 🟡 中
 
-12. **CSRF**：會員 Cookie 設定 `SameSite=None`，接受 `[FromForm]` / multipart 的 API（例如各圖片上傳）
-    可以被其他網站以表單直接送出。→ 會員 Cookie 改 `SameSite=Lax`（前後端同站時）或對表單 API 加 AntiForgery。
+12. ~~CSRF~~（見修正紀錄 14）
 13. **論壇互動可以送出任意分類**：`ContentInteractionApiController` `POST` 接受任何 `InteractionCategoryId`，
     會員可以自己替回覆加上「最佳解答」等系統分類（假徽章）；按讚可反覆取消 / 重按，每次都觸發按讚任務。
     → 限制會員可用的分類；任務改為同一內容只計一次。
 14. 委託任務沒有取消流程：原本的 DELETE 已移除（直接刪除不會退預扣點數），若要提供取消需走 `IPointReserveService` 釋放預扣點數。
-15. **沒有登入嘗試次數限制**：會員 / 後台登入、忘記密碼寄信都沒有 rate limit 或鎖定。→ 使用 ASP.NET Core Rate Limiting middleware。
+15. ~~沒有登入嘗試次數限制~~（見修正紀錄 14）
 16. 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
 17. `InventoryController` `POST add`：會員可以替自己加任意道具與數量（目前前端沒有使用這個功能）。
 
