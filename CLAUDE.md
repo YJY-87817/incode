@@ -68,6 +68,10 @@ incode/
 
 - 預設 `SmartScheme`：有 `Incode.Admin` Cookie → `AdminAuth`，否則 → `MemberAuth`（`Incode.Member`）
 - 前台 API 未登入回 401 / 403（不轉址）
+- **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
+  伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
+- **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
+  ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
   （後台登入 `AccountController` 只允許 `RoleId == Admin`，Claim 角色固定為 `"Admin"`）
 - 取得登入者 ID：`User.GetId()`（`Extensions/ClaimsExtensions.cs`）
@@ -185,12 +189,28 @@ incode/
       改為輸出到 `data-body` 後以 DOMPurify 過濾再顯示，SignalR 即時訊息（`appendMessage`）也一樣；
       DOMPurify 放在 `wwwroot/lib/dompurify/`（libman.json 已登記）
     - `UploadImage` 改用 `ImageFileValidator`（單檔 10 MB）與 Guid 檔名，不再使用原始檔名；圖片附帶文字存入前 HTML 編碼
+14. CSRF 與登入次數限制（全專案檢查 12、15）：
+    - `Extensions/OriginCheckExtensions.cs`（`app.UseApiOriginCheck`）：`/api` 的寫入請求與 `/chatHub` 只接受自己與 CORS 允許來源的
+      `Origin`（沒有 Origin 時看 `Referer`，都沒有視為非瀏覽器請求放行）；綠界回呼列為例外。會員 Cookie 維持 `SameSite=None`
+      （前後端可能不同網域），CSRF 由 Origin 檢查負責。實測修正前，其他網站的頁面能以會員身分上傳聊天圖片
+    - `Extensions/RateLimitExtensions.cs`：依 IP 限制登入 / 註冊（每分鐘 20 次）、忘記密碼 / 重設密碼（每 15 分鐘 5 次），超過回 429
+    - `Services/Users/LoginAttemptLimiter.cs`：同一帳號 15 分鐘內失敗 5 次即暫停登入 15 分鐘（會員 API 回 429，後台顯示訊息），
+      記憶體計數，重啟清除
+15. 前端效能與 401 處理（全專案檢查 22 的一部分）：
+    - Vuetify 改用 `vite-plugin-vuetify` 只打包用到的元件（原本 `import * as components`）；移除完全沒用到的 `bootstrap-vue-next`
+    - 路由除了首頁之外全部改為 `() => import()` 延遲載入
+    - Vuetify 圖示由 `@mdi/font`（CSS 418 KB + 字型 403 KB）改為 SVG，只打包用到的圖示（`src/plugins/vuetifyIcons.js`，新圖示要登記）
+    - logo `okapi.svg`（1.8 MB 的點陣描圖 SVG，每頁導覽列都會載入）改為 18 KB 的 WebP，favicon 改為 64px PNG
+    - 首頁載入的主程式 JS 1,199 KB → 578 KB、CSS 1,687 KB → 1,049 KB
+    - `src/api/authInterceptor.js`：全域 axios、`apiClient`、`pointClient` 共用 401 處理。原本 `apiClient` 只印 console、`pointClient` 沒處理，
+      登入逾時後畫面仍顯示已登入。已登入狀態收到 401 → 清除 Pinia 狀態、提示並導向登入頁（登入後回原頁）；
+      未登入時 `apiClient` / `pointClient` 交給呼叫端（論壇頁訪客的背景查詢會 401，不能把訪客踢去登入頁）
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～11、18～20 已修正（見修正紀錄 6～9、12、13），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～12、15、18～20 已修正，22 部分修正（見修正紀錄 6～9、12～15），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ CSRF 與登入次數限制（12、15）→ 其餘。
+建議修正順序：論壇互動分類與儲值金額（13、16、17）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -199,8 +219,8 @@ incode/
 
 ### 🟠 高
 
-6. **API 金鑰提交進 git 歷史**：`incode.MVC/appsettings.json` 的歷史版本中有 `GeminiApiKey`、`TmdbApiKey` 的真實值
-   （目前檔案已清空，但歷史仍可取得）。→ 到 Google / TMDB 後台**撤銷並重新產生金鑰**，改用 user-secrets 或環境變數。
+6. ~~API 金鑰提交進 git 歷史~~（`GeminiApiKey`、`TmdbApiKey` 已於 2026-11 撤銷並重新產生；舊值仍在 git 歷史但已失效。
+   金鑰只放 user-secrets 或環境變數，`appsettings*.json` 保持空字串）。
    ECPay 目前放的是綠界公開的測試帳號（`3002607`），正式上線時正式金鑰不可放進 repo。
 7. ~~任務進度可以自己增加~~（`increment` API 已刪除，見修正紀錄 6）
 8. ~~點數併發問題~~（見修正紀錄 12）
@@ -210,13 +230,12 @@ incode/
 
 ### 🟡 中
 
-12. **CSRF**：會員 Cookie 設定 `SameSite=None`，接受 `[FromForm]` / multipart 的 API（例如各圖片上傳）
-    可以被其他網站以表單直接送出。→ 會員 Cookie 改 `SameSite=Lax`（前後端同站時）或對表單 API 加 AntiForgery。
+12. ~~CSRF~~（見修正紀錄 14）
 13. **論壇互動可以送出任意分類**：`ContentInteractionApiController` `POST` 接受任何 `InteractionCategoryId`，
     會員可以自己替回覆加上「最佳解答」等系統分類（假徽章）；按讚可反覆取消 / 重按，每次都觸發按讚任務。
     → 限制會員可用的分類；任務改為同一內容只計一次。
 14. 委託任務沒有取消流程：原本的 DELETE 已移除（直接刪除不會退預扣點數），若要提供取消需走 `IPointReserveService` 釋放預扣點數。
-15. **沒有登入嘗試次數限制**：會員 / 後台登入、忘記密碼寄信都沒有 rate limit 或鎖定。→ 使用 ASP.NET Core Rate Limiting middleware。
+15. ~~沒有登入嘗試次數限制~~（見修正紀錄 14）
 16. 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
 17. `InventoryController` `POST add`：會員可以替自己加任意道具與數量（目前前端沒有使用這個功能）。
 
@@ -227,8 +246,9 @@ incode/
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
 21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
-22. **前端效能 / 結構**：同時使用 Bootstrap、Vuetify（`import * as components` 全量匯入）、Material Kit，主程式包 1.17 MB；
-    `TopicListView.vue`、`forumStore.js` 超過 2700 行；3 種 axios 設定中只有全域 axios 處理 401。
+22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
+    尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
+    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
 23. **前端呼叫不存在的後端端點**：`views/point/RechargeResult.vue` 的 `PointRechargeApi/check-order/{orderNo}`、
     `stores/point/taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
 24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。

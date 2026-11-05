@@ -1,35 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 // tim 以下
+// 首頁直接載入，其餘頁面以 () => import() 延遲載入（各自打包成獨立檔案，進入該頁才下載）
 import HomeView from "@/views/HomeView.vue";
 // tim 以上
-// owen
 import { useAuthStore } from "@/stores/users/auth";
 import Swal from "sweetalert2";
-import AuthView from "@/views/users/AuthView.vue";
-import ResetPasswordView from "@/views/users/ResetPasswordView.vue";
-import UserIndex from "@/views/users/UserIndex.vue";
-import UserSettings from "@/views/users/UserSettings.vue";
-import UserProfile from "@/views/users/UserProfile.vue";
-import UserCollections from "@/views/users/UserCollections.vue";
-import UserPost from "@/views/users/UserPost.vue";
-import UserLike from "@/views/users/UserLike.vue";
-import UserSave from "@/views/users/UserSave.vue";
-import UserMission from "@/views/users/UserMission.vue";
-// owen
-// qiu以下
-import Task from "@/views/point/Task.vue";
-import Mytask from "@/views/point/MyTask.vue";
-import Recharge from "@/views/point/Recharge.vue";
-import PointLog from "@/views/point/PointLog.vue";
-import RechargeResult from "@/views/point/RechargeResult.vue";
-// qiu以上
-// yjy 以下
-import ProductView from "@/views/pointshop/ProductView.vue";
-import OrderView from "@/views/pointshop/OrderView.vue";
-import Checkout from "@/views/pointshop/CheckoutView.vue";
-import ProductGrid from "@/components/pointshop/ProductGrid.vue";
-import ProductDetail from "@/components/pointshop/ProductDetail.vue";
-// yjy 以上
 
 const LOGIN_SCROLL_STORAGE_KEY_PREFIX = "login-redirect-scroll:";
 
@@ -104,7 +79,7 @@ const routes = [
   {
     path: "/auth",
     name: "Auth",
-    component: AuthView,
+    component: () => import("@/views/users/AuthView.vue"),
   },
   {
     path: "/register",
@@ -122,54 +97,54 @@ const routes = [
   {
     path: "/reset-password",
     name: "ResetPassword",
-    component: ResetPasswordView,
+    component: () => import("@/views/users/ResetPasswordView.vue"),
   },
   {
     path: "/usersettings",
     name: "UserSettings",
-    component: UserSettings,
+    component: () => import("@/views/users/UserSettings.vue"),
     meta: { requiresAuth: true },
   },
   {
     path: "/profile/:username",
     name: "UserProfile",
-    component: UserProfile,
+    component: () => import("@/views/users/UserProfile.vue"),
     props: true,
   },
   {
     path: "/userindex",
     name: "UserIndex",
-    component: UserIndex,
+    component: () => import("@/views/users/UserIndex.vue"),
     meta: { requiresAuth: true },
     redirect: { name: "UserPost" },
     children: [
       {
         path: "usercollections",
         name: "UserCollections",
-        component: UserCollections,
+        component: () => import("@/views/users/UserCollections.vue"),
         redirect: { name: "UserPost" },
         children: [
           {
             path: "userpost",
             name: "UserPost",
-            component: UserPost,
+            component: () => import("@/views/users/UserPost.vue"),
           },
           {
             path: "usersave",
             name: "UserSave",
-            component: UserSave,
+            component: () => import("@/views/users/UserSave.vue"),
           },
           {
             path: "UserLike",
             name: "UserLike",
-            component: UserLike,
+            component: () => import("@/views/users/UserLike.vue"),
           },
         ],
       },
       {
         path: "usermission",
         name: "UserMission",
-        component: UserMission,
+        component: () => import("@/views/users/UserMission.vue"),
       },
     ],
   },
@@ -184,44 +159,44 @@ const routes = [
   {
     path: "/mytask",
     name: "mytask",
-    component: Mytask, // 我的任務
+    component: () => import("@/views/point/MyTask.vue"), // 我的任務
   },
   {
     path: "/point-log",
     name: "point-log",
-    component: PointLog, //views的檔案名稱
+    component: () => import("@/views/point/PointLog.vue"), //views的檔案名稱
   },
   {
     path: "/task",
     name: "task",
-    component: Task, //views的檔案名稱
+    component: () => import("@/views/point/Task.vue"), //views的檔案名稱
   },
   {
     path: "/recharge",
     name: "recharge",
-    component: Recharge, //views的檔案名稱
+    component: () => import("@/views/point/Recharge.vue"), //views的檔案名稱
   },
   {
     path: "/recharge-result",
     name: "recharge-result",
-    component: RechargeResult, //views的檔案名稱
+    component: () => import("@/views/point/RechargeResult.vue"), //views的檔案名稱
   },
   // qiu以上
 
   // yjy 以下
   {
     path: "/PointShop/Product",
-    component: ProductView,
+    component: () => import("@/views/pointshop/ProductView.vue"),
     children: [
       {
         path: "",
         name: "PointShop",
-        component: ProductGrid,
+        component: () => import("@/components/pointshop/ProductGrid.vue"),
       },
       {
         path: ":id",
         name: "ProductDetail",
-        component: ProductDetail,
+        component: () => import("@/components/pointshop/ProductDetail.vue"),
         props: true,
       },
     ],
@@ -229,12 +204,12 @@ const routes = [
   {
     path: "/PointShop/Order",
     name: "Order",
-    component: OrderView,
+    component: () => import("@/views/pointshop/OrderView.vue"),
   },
   {
     path: "/PointShop/Checkout",
     name: "Checkout",
-    component: Checkout,
+    component: () => import("@/views/pointshop/CheckoutView.vue"),
   },
   // yjy 以上
   // 沒設定的路由導向NotFound頁面、放最下面

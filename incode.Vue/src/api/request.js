@@ -1,4 +1,5 @@
 import axios from "axios";
+import { installAuthInterceptor } from "@/api/authInterceptor.js";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
@@ -10,25 +11,10 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+// 401：登入逾時時清除登入狀態並導向登入頁（未登入時交給呼叫端，見 authInterceptor.js）
+installAuthInterceptor(apiClient);
 
-apiClient.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      console.error("登入逾時，請重新登入");
-    }
-    return Promise.reject(error);
-  },
-);
+// 回傳 response.data（使用 apiClient 的呼叫端直接拿到 body）
+apiClient.interceptors.response.use((response) => response.data);
 
 export default apiClient;
