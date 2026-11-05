@@ -13,6 +13,7 @@
 - 登入：後端 Cookie 驗證，axios 必須帶 `withCredentials: true`
   - 全域 `axios`：`main.js` 設定 `axios.defaults.withCredentials` / `baseURL`，並有 401 攔截器（清除登入狀態、導向登入頁）
   - `src/api/request.js` 的 `apiClient`：`axios.create` 建立時就複製預設值，所以自己設定了 `withCredentials: true`
+- `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
   元件中請用 `computed(() => authStore.isAuthenticated)`，**不要**存成常數（會失去響應式）
 
@@ -84,8 +85,6 @@ src/
 
 - `src/api/imageApi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
 - 匯入路徑請與實際檔名大小寫一致（Windows / macOS 不分大小寫，但 Linux build 會失敗）。
-- **聊天室 XSS**：`src/components/chat/ChatWidget.vue` 以 `v-html` 顯示訊息（客服訊息、使用者輸入、`marked.parse` 結果）沒有經過 DOMPurify，
-  修正時 `v-html` 前一律用 `utils/sanitizeHtml.js`。
 - `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
 - 呼叫了後端不存在的端點：`RechargeResult.vue` 的 `PointRechargeApi/check-order`、`taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
 - 完整問題清單見根目錄 `CLAUDE.md` 的「全專案檢查結果」。

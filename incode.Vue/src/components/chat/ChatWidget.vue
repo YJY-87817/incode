@@ -5,6 +5,7 @@ import axios from 'axios';
 import * as signalR from "@microsoft/signalr";
 import { useChatStore } from '@/stores/chatStore';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import aiAvatarGif from '@/assets/gif/1.gif';
 
 const route = useRoute();
@@ -50,6 +51,19 @@ const formatTime = (dateInput) => {
 const renderMarkdown = (text) => {
     if (!text) return '';
     return marked.parse(text);
+};
+
+const escapeHtml = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+// 所有訊息顯示前都經過這裡（v-html）：
+// - 使用者輸入一律當純文字（跳脫 HTML）
+// - AI / 客服 / 系統訊息允許格式（Markdown 轉出的 HTML），但先用 DOMPurify 移除 script、事件屬性、javascript: 連結等
+const toSafeHtml = (msg) => {
+    if (!msg?.text) return '';
+    if (msg.role === 'user') return escapeHtml(msg.text);
+    return DOMPurify.sanitize(msg.text, { USE_PROFILES: { html: true }, ADD_ATTR: ['target'] });
 };
 
 const getFullImageUrl = (url) => {
@@ -511,7 +525,7 @@ onUnmounted(() => {
             <div class="bubble-content">
               <div class="bubble" :class="{ 'system-msg': msg.isSystem }">
                 <img v-if="msg.imageUrl" :src="msg.imageUrl" class="msg-image" @load="scrollToBottom" />
-                <span v-if="msg.text" class="msg-text markdown-body" v-html="msg.text"></span>
+                <span v-if="msg.text" class="msg-text markdown-body" v-html="toSafeHtml(msg)"></span>
               </div>
               <div class="msg-time">{{ formatTime(msg.time) }}</div>
             </div>
