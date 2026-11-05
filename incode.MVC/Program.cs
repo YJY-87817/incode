@@ -88,7 +88,9 @@ builder.Services.AddAuthentication(options =>
         options.ExpireTimeSpan = TimeSpan.FromDays(7);        
         options.Cookie.Path = "/";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.None; // 配合跨域/第三方登入
+        // SameSite=None：前後端可能部署在不同網域，API 請求才帶得到 Cookie。
+        // 其他網站也因此能帶著 Cookie 送出請求，CSRF 由下方 UseApiOriginCheck 檢查 Origin 擋下
+        options.Cookie.SameSite = SameSiteMode.None;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.SlidingExpiration = true;
 
@@ -142,6 +144,9 @@ builder.Services.AddControllersWithViews(); // 後台 MVC + 前台 API Controlle
 //owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<LoginAttemptLimiter>(); // 同一帳號登入失敗次數限制
+builder.Services.AddAuthRateLimiting();               // 登入 / 註冊 / 忘記密碼的 IP 速率限制
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -186,10 +191,13 @@ app.UseRouting();
 // CORS 必須在 UseRouting 之後 (Controller 上的 [EnableCors] 需要)，並放在靜態檔之前：
 // 前端除了呼叫 API，也會以 fetch 讀取 /contents/*.html、/img/... 等靜態檔，共用同一份允許來源設定
 app.UseCors("VueApp");
+// CSRF：API 的寫入請求與 SignalR 只接受自己與 CORS 允許來源的 Origin（見 Extensions/OriginCheckExtensions.cs）
+app.UseApiOriginCheck(builder.Configuration.GetCorsOrigins());
 app.UseStaticFiles();
 
 app.UseAuthentication(); // Cookie
 app.UseAuthorization();  // Role
+app.UseRateLimiter();    // 在 UseCors 之後，429 回應也帶 CORS 標頭，前端才讀得到訊息
 
 app.MapStaticAssets();
 app.MapControllerRoute(
