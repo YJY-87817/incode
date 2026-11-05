@@ -26,15 +26,8 @@ namespace incode.MVC.ApiControllers.Users
             return Ok(items);
         }
 
-        // POST: api/Inventory/add
-        // 測試用：獲得道具
-        [HttpPost("add")]
-        public async Task<IActionResult> AddItem([FromBody] AddItemDto dto)
-        {
-            int userId = User.GetId();
-            await _inventoryService.AddItemAsync(userId, dto.ItemId, dto.Quantity);
-            return Ok(new { message = $"已獲得道具 ID: {dto.ItemId}, 數量: {dto.Quantity}" });
-        }
+        // 原本的 POST api/Inventory/add（測試用：會員可以替自己加任意道具與數量）已移除，前端沒有使用。
+        // 道具只能由伺服器端流程（例如兌換、任務獎勵）透過 IInventoryService.AddItemAsync 發放
 
         // POST: api/Inventory/use/101
         // 使用道具 (數量減少)

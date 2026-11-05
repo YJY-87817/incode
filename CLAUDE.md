@@ -87,7 +87,9 @@ incode/
   它會以 `sp_getapplock`（`point-user-{userId}`）鎖定該會員到交易結束。**讀取會決定能不能異動的資料之前**
   （餘額、任務是否已領獎、委託狀態…）先呼叫 `LockUsersAsync(userId, ...)`，同一會員的請求才會排隊、不會讀到舊狀態；
   多位會員一次傳入（內部依 ID 排序避免死結）。
-- **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價。
+- **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價；前端可輸入的金額 / 數量要在 DTO 加 `[Range]`。
+- **任務進度**：只由伺服器端觸發。可以被會員反覆切換的動作（例如按讚）不要用 `TriggerMissionAsync` 每次 +1，
+  改用 `SyncMissionCountAsync` 依實際資料計算。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
 - **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
   前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
@@ -205,12 +207,27 @@ incode/
     - `src/api/authInterceptor.js`：全域 axios、`apiClient`、`pointClient` 共用 401 處理。原本 `apiClient` 只印 console、`pointClient` 沒處理，
       登入逾時後畫面仍顯示已登入。已登入狀態收到 401 → 清除 Pinia 狀態、提示並導向登入頁（登入後回原頁）；
       未登入時 `apiClient` / `pointClient` 交給呼叫端（論壇頁訪客的背景查詢會 401，不能把訪客踢去登入頁）
+16. 論壇互動、儲值金額、道具（全專案檢查 13、16、17）：
+    - `POST api/ContentInteractionApi` 只接受會員可設定的分類（`Constants/InteractionCategoryIds.MemberToggleable`：按讚、隱藏、收藏、檢舉），
+      其他（最佳解答、打賞、不存在的分類）回 400；內容不存在回 404，不再回傳例外訊息
+    - 刪除 `DELETE api/ContentInteractionApi/{contentId}/{userId}/{categoryId}`：沒有登入檢查且 userId 由網址指定，
+      任何人都能刪除別人的互動（含最佳解答紀錄）；前端沒有使用
+    - 按讚任務改用 `IMissionService.SyncMissionCountAsync`：進度 = 本週期內目前仍按讚中的不同內容數（不含自己的內容），只增不減。
+      原本每按一次 +1，對同一篇反覆取消 / 重按 5 次就能完成任務；任務進度已領獎（`rewarded`）時不再被改回 `completed`
+    - 儲值 `PointRechargeDTO` 不再繼承實體，`CashAmount` 限 10～50,000 元（原本 0、負數都能建立訂單，3 億元時點數溢位成負數）；前端同步檢查
+    - 刪除 `POST api/Inventory/add`（測試用，會員可替自己加任意道具與數量，前端沒有使用）
+17. 前端呼叫不存在的端點（全專案檢查 23）：
+    - 儲值完成頁 `RechargeResult.vue` 原本沒有查詢訂單（API 呼叫被註解掉），**一律顯示「儲值成功」**（付款失敗也一樣）。
+      後端新增 `GET api/PointRechargeApi/order/{orderNo}`（只能查自己的訂單，否則 404）；`Recharge.vue` 送出前把訂單編號存到
+      sessionStorage（綠界導回時不帶訂單編號，`utils/rechargeOrder.js`），結果頁輪詢約 20 秒，依 success / failed / 尚未收到通知分別顯示
+    - `taskStore.claimTask` 刪除委託任務分支（呼叫不存在的 `EntrustMissionApi/{id}/entrustMissionClaim`）。委託任務沒有「接取」：
+      列表與詳細抽屜本來就只導向討論區，會員回覆後由委託人選最佳解答；`claimTask` 只處理平台任務
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～12、15、18～20 已修正，22 部分修正（見修正紀錄 6～9、12～15），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～13、15～20、23 已修正，22 部分修正（見修正紀錄 6～9、12～17），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：論壇互動分類與儲值金額（13、16、17）→ 其餘。
+建議修正順序：委託任務取消（14）→ 套件（24）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -231,13 +248,11 @@ incode/
 ### 🟡 中
 
 12. ~~CSRF~~（見修正紀錄 14）
-13. **論壇互動可以送出任意分類**：`ContentInteractionApiController` `POST` 接受任何 `InteractionCategoryId`，
-    會員可以自己替回覆加上「最佳解答」等系統分類（假徽章）；按讚可反覆取消 / 重按，每次都觸發按讚任務。
-    → 限制會員可用的分類；任務改為同一內容只計一次。
+13. ~~論壇互動可以送出任意分類、按讚任務可重複觸發~~（見修正紀錄 16）
 14. 委託任務沒有取消流程：原本的 DELETE 已移除（直接刪除不會退預扣點數），若要提供取消需走 `IPointReserveService` 釋放預扣點數。
 15. ~~沒有登入嘗試次數限制~~（見修正紀錄 14）
-16. 儲值金額 `CashAmount` 沒有驗證（0、負數、超大值）。
-17. `InventoryController` `POST add`：會員可以替自己加任意道具與數量（目前前端沒有使用這個功能）。
+16. ~~儲值金額沒有驗證~~（見修正紀錄 16）
+17. ~~會員可以替自己加道具~~（`POST api/Inventory/add` 已刪除，見修正紀錄 16）
 
 ### 🟠 部署 / 維運（2026-11-04 檢查）
 
@@ -249,8 +264,7 @@ incode/
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
     尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
     Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
-23. **前端呼叫不存在的後端端點**：`views/point/RechargeResult.vue` 的 `PointRechargeApi/check-order/{orderNo}`、
-    `stores/point/taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
+23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
 
@@ -263,3 +277,4 @@ incode/
   但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
 - 錯誤訊息直接回傳 `ex.Message`：聊天、打賞、會員上傳等多處。
 - `wwwroot/img/` 下的使用者上傳圖片被提交進 git，建議加入 `.gitignore`。
+- 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。

@@ -329,51 +329,31 @@ export const useTaskStore = defineStore("task", {
       }
     },
 
-    async claimTask(type, taskId) {
-      // 移除 return，改為根據 type 決定 endpoint
+    // 接取平台任務（POST api/MissionApi/{id}/claim）。
+    // 委託任務沒有「接取」：會員直接到討論串回覆，由委託人選最佳解答（EntrustMissionTable / TaskDetailDrawer 只導向討論區）。
+    // 原本委託任務會呼叫後端不存在的 EntrustMissionApi/{id}/entrustMissionClaim，已移除
+    async claimTask(taskId) {
       try {
-        const isPlatform = type === "platform";
-        const endpoint = isPlatform
-          ? `/api/MissionApi/${taskId}/claim`
-          : `/api/EntrustMissionApi/${taskId}/entrustMissionClaim`;
-
-        const response = await service.post(endpoint);
+        const response = await service.post(`/api/MissionApi/${taskId}/claim`);
         const result = response.data;
 
         // 只要後端回傳 ok 或成功狀態
         if (result.ok && result.data) {
-          const listKey = isPlatform ? "missions" : "entrustMissions";
-          const taskIndex = this[listKey].findIndex((t) => t.id === taskId);
+          const taskIndex = this.missions.findIndex((t) => t.id === taskId);
 
           if (taskIndex !== -1) {
-            // 1. 取得舊任務並建立副本 (確保響應式渲染)
-            const task = { ...this[listKey][taskIndex] };
-
-            // 2. 更新狀態
+            // 取得舊任務並建立副本 (確保響應式渲染)，更新狀態與人數後寫回 Store
+            const task = { ...this.missions[taskIndex] };
             task.claimed = true;
-
-            // 3. 更新人數 (處理不同的欄位名稱)
-            if (isPlatform) {
-              // 平台任務用 participantCount
-              task.participants =
-                result.data.participantCount ?? (task.participants || 0) + 1;
-            } else {
-              // 委託任務用 currentParticipants
-              task.applicants =
-                result.data.CurrentParticipants ?? (task.applicants || 0) + 1;
-            }
-
-            // 4. 寫回 Store 並觸發 UI 刷新
-            this[listKey][taskIndex] = task;
-            this[listKey] = [...this[listKey]];
+            task.participants =
+              result.data.participantCount ?? (task.participants || 0) + 1;
+            this.missions[taskIndex] = task;
+            this.missions = [...this.missions];
           }
         }
         return result;
       } catch (err) {
-        console.error(
-          `領取 ${type} 請求失敗：`,
-          err.response?.data || err.message,
-        );
+        console.error("領取任務請求失敗：", err.response?.data || err.message);
         const msg = err.response?.data?.message
           ? `${err.response.data.message} (錯誤碼: ${err.response.data.code || err.response.status})`
           : "領取失敗，請稍後再試";
