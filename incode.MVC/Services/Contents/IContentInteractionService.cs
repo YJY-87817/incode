@@ -14,17 +14,10 @@ namespace incode.MVC.Services.Contents
     Task<List<ContentInteractionDto>> GetUserInteraction(int contentId, int userId);
 
     /// <summary>
-    /// 新增或移除互動（Toggle）
-    /// 如果使用者已經有該互動 -> 刪除（取消）
-    /// 如果使用者沒有該互動 -> 新增
-    /// 如果使用者有其他互動 -> 更新為新的互動類型
+    /// 新增或移除互動（Toggle）：已有該互動 -> 刪除（Data 為 null）；沒有 -> 新增（Data 為新增的互動）。
+    /// 只接受 InteractionCategoryIds.MemberToggleable 的分類，其他回 400；內容不存在回 404
     /// </summary>
-    Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto);
-
-    /// <summary>
-    /// 移除互動
-    /// </summary>
-    Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId);
+    Task<ResultDTO<ContentInteractionDto?>> AddOrUpdateInteraction(CreateContentInteractionDto dto);
 
     /// <summary>
     /// 取得互動分類列表

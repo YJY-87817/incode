@@ -16,6 +16,9 @@ const selectedPlan = ref(2); // 預設選中熱門方案
 const customAmount = ref(null);
 const isLoading = ref(false);
 const exchangeRate = 10;
+// 自訂金額範圍（與後端 PointRechargeDTO 的 [Range] 一致）
+const MIN_AMOUNT = 10;
+const MAX_AMOUNT = 50000;
 
 // 計算屬性
 const finalDetails = computed(() => {
@@ -31,10 +34,20 @@ const finalDetails = computed(() => {
   return plan || { points: 0, price: 0, bonus: 0 };
 });
 
+// 自訂金額的錯誤訊息（null 表示可送出）
+const customAmountError = computed(() => {
+  const amt = customAmount.value;
+  if (amt === null || amt === "") return null;
+  if (!Number.isInteger(Number(amt))) return "金額必須是整數";
+  if (amt < MIN_AMOUNT) return `金額不可低於 ${MIN_AMOUNT}`;
+  if (amt > MAX_AMOUNT) return `金額不可超過 ${MAX_AMOUNT.toLocaleString()}`;
+  return null;
+});
+
 const isSubmitDisabled = computed(() => {
   if (
     selectedPlan.value === "custom" &&
-    (!customAmount.value || customAmount.value < 10)
+    (!customAmount.value || customAmountError.value)
   )
     return true;
   return false;
@@ -110,7 +123,11 @@ const handleCheckout = async () => {
       Swal.fire({
         icon: "error",
         title: "支付失敗",
-        text: "無法啟動支付流程，請檢查網路或聯繫客服",
+        // 後端驗證失敗（例如金額超出範圍）時顯示後端訊息
+        text:
+          err.response?.data?.errors?.CashAmount?.[0] ||
+          err.response?.data?.message ||
+          "無法啟動支付流程，請檢查網路或聯繫客服",
         confirmButtonColor: "#145369",
         customClass: { confirmButton: "text-white" },
       });
@@ -191,14 +208,17 @@ const handleCheckout = async () => {
                           type="number"
                           class="form-control"
                           v-model="customAmount"
+                          :min="MIN_AMOUNT"
+                          :max="MAX_AMOUNT"
+                          step="1"
                           placeholder="請輸入金額"
                         />
                       </div>
                       <small
-                        v-if="customAmount && customAmount < 10"
+                        v-if="customAmountError"
                         class="text-danger mt-1 d-block text-xs"
                       >
-                        金額不可低於 10
+                        {{ customAmountError }}
                       </small>
                     </div>
                     <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">

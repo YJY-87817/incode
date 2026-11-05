@@ -37,6 +37,7 @@ namespace incode.MVC.ApiControllers.Point
         public async Task<IActionResult> CreateRecharge(
        [FromBody] PointRechargeDTO dto)
         {
+            // 金額範圍由 PointRechargeDTO 的 [Range] 驗證（[ApiController] 不通過時自動回 400）
             int userId = User.GetId();
 
             var order = new PointRecharge
