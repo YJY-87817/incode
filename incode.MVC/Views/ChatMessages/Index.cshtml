@@ -254,6 +254,7 @@
             }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="~/lib/dompurify/dist/purify.min.js"></script>
 }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
@@ -334,9 +335,8 @@
                                 {
                                     <img src="@targetUserAvatar" class="avatar-chat-img mr-2">
                                 }
-                                <div class="text">
-                                    @Html.Raw(item.Body)
-                                </div>
+                                @* 訊息內容來自會員 / AI，不可直接 Html.Raw：先以文字輸出到 data 屬性，載入後經 DOMPurify 過濾再顯示 *@
+                                <div class="text js-chat-body" data-body="@item.Body"></div>
                             </div>
                             <div class="time small text-gray-400 mt-1 @(isRightSide ? "text-right" : "")">@timeStr</div>
                         </div>
@@ -573,6 +573,15 @@
             }
         }
 
+        // 聊天訊息（會員輸入、AI 回覆）顯示前一律過濾：移除 script、事件屬性、javascript: 連結等
+        function sanitizeChatHtml(html) {
+            return DOMPurify.sanitize(html || "", { USE_PROFILES: { html: true } });
+        }
+
+        document.querySelectorAll(".js-chat-body").forEach(function (el) {
+            el.innerHTML = sanitizeChatHtml(el.dataset.body);
+        });
+
         function appendMessage(senderName, messageHtml, isRightSide) {
         var now = new Date();
         var year = now.getFullYear();
@@ -598,7 +607,7 @@
             <div class="small text-gray-500 mb-1 ${textAlign}">${senderName}</div>
             <div class="d-flex ${flexDir}">
                 ${avatarHtml}
-                <div class="text">${messageHtml}</div>
+                <div class="text">${sanitizeChatHtml(messageHtml)}</div>
             </div>
             <div class="time small text-gray-400 mt-1 ${textAlign}">${fullDateTime}</div>
         </div>`;
