@@ -96,59 +96,25 @@ namespace incode.MVC.ApiControllers.Contents
       if (dto.ContentId <= 0 || dto.InteractionCategoryId <= 0)
         return BadRequest(new { message = "ContentId 和 InteractionCategoryId 必須大於 0" });
 
-      try
-      {
-        // 設定 userId，確保使用者只能互動自己的操作
-        dto.UserId = userId;
+      // 設定 userId，確保使用者只能互動自己的操作
+      dto.UserId = userId;
 
-        // 寫入/移除互動交由 ContentInteractionService 處理
-        var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
+      // 寫入/移除互動交由 ContentInteractionService 處理（只接受會員可設定的分類）
+      var result = await _contentInteractionService.AddOrUpdateInteraction(dto);
+      if (!result.Ok)
+        return StatusCode(result.Code, new { message = result.Message });
 
-        // 回傳新增互動或是移除互動
-        if (result == null)
-        {
-          return Ok(new
-          {
-            message = "互動已移除",
-            isRemoved = true,
-            data = (object)null
-          });
-        }
-        else
-        {
-          return Ok(new
-          {
-            message = "互動已新增或更新",
-            isRemoved = false,
-            data = result
-          });
-        }
-      }
-      catch (Exception ex)
+      // 回傳新增互動或是移除互動
+      return Ok(new
       {
-        return StatusCode(500, new { message = ex.Message });
-      }
+        message = result.Message,
+        isRemoved = result.Data == null,
+        data = result.Data
+      });
     }
 
-    // 刪除特定互動記錄
-    // DELETE https://localhost:7190/api/contentinteractionapi/{contentId}/{userId}/{interactionCategoryId}
-    // Path Parameters:
-    //   - contentId (int): 內容ID
-    //   - userId (int): 使用者ID
-    //   - interactionCategoryId (int): 互動分類ID
-    // Response: { message: "互動已移除" }
-    // 範例: DELETE https://localhost:7190/api/contentinteractionapi/5/10/1
-    [HttpDelete("{contentId}/{userId}/{interactionCategoryId}")]
-    public async Task<IActionResult> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
-    {
-      if (contentId <= 0 || userId <= 0 || interactionCategoryId <= 0)
-        return BadRequest(new { message = "所有 ID 參數必須大於 0" });
-
-      var success = await _contentInteractionService.RemoveInteraction(contentId, userId, interactionCategoryId);
-      if (!success) return NotFound(new { message = "找不到此互動記錄" });
-
-      return Ok(new { message = "互動已移除" });
-    }
+    // 原本的 DELETE api/contentinteractionapi/{contentId}/{userId}/{interactionCategoryId} 沒有登入檢查、
+    // userId 由網址指定（任何人都能刪除別人的互動，包含最佳解答紀錄），且前端沒有使用，已移除；取消互動請用 POST 切換
 
     // 取得互動分類列表
     // GET https://localhost:7190/api/contentinteractionapi/category

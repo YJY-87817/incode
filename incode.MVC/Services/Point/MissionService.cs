@@ -237,9 +237,27 @@ namespace incode.MVC.Services.Point
         }
 
         //事件入口
-        public async Task TriggerMissionAsync(int userId, string actionType, int increment = 1)
+        public Task TriggerMissionAsync(int userId, string actionType, int increment = 1)
+            => UpdateMissionProgressAsync(userId, actionType, (mission, progress, cycleStart, cycleEnd) =>
+            {
+                // 判斷是否可以累加：只對「每天簽到」這類一次性的做限制，
+                // 其他 daily 任務（post, like, comment 等）與週期任務允許累計
+                var resetType = (mission.ResetType ?? "none").ToLowerInvariant();
+                bool canIncrement = !(resetType == "daily" && mission.TargetType == "login") || progress.CurrentCount == 0;
+                return Task.FromResult(canIncrement ? progress.CurrentCount + increment : progress.CurrentCount);
+            });
+
+        public Task SyncMissionCountAsync(int userId, string actionType, Func<DateTime, DateTime, Task<int>> countInCycle)
+            => UpdateMissionProgressAsync(userId, actionType, async (mission, progress, cycleStart, cycleEnd) =>
+                Math.Max(progress.CurrentCount, await countInCycle(cycleStart, cycleEnd)));
+
+        // 對所有符合 actionType 的有效任務：取得（或建立）本週期的進度，以 newCount 算出新的進度並判斷是否完成
+        private async Task UpdateMissionProgressAsync(
+            int userId,
+            string actionType,
+            Func<Mission, MissionProgress, DateTime, DateTime, Task<int>> newCount)
         {
-            var now = DateTime.Now; 
+            var now = DateTime.Now;
             // 抓所有符合 actionType 的有效任務，不限定週期
             var missions = await _context.Mission
                 .Where(m => m.IsActive &&
@@ -247,7 +265,6 @@ namespace incode.MVC.Services.Point
                 .ToListAsync();
             foreach (var mission in missions)
             {
-                var resetType = (mission.ResetType ?? "none").ToLowerInvariant();
                 var (cycleStart, cycleEnd) = GetCycleRange(mission.ResetType);
                 // 取得本週期的進度
                 var progress = await _context.MissionProgress
@@ -270,36 +287,14 @@ namespace incode.MVC.Services.Point
                     };
                     _context.MissionProgress.Add(progress);
                 }
-                // 判斷是否可以累加
-                bool canIncrement = true;
-                switch (resetType)
-                {
-                    case "daily":
-                        // 只對「每天簽到」這類一次性的做限制
-                        if (mission.TargetType == "login")
-                        {
-                            canIncrement = progress.CurrentCount == 0;
-                        }
-                        // 其他 daily 任務（post, like, comment 等）允許累計
-                        break;
-                    case "weekly":
-                    case "monthly":
-                    case "yearly":
-                    case "once":
-                    case "none":
-                        // 週期任務，允許累加
-                        canIncrement = true;
-                        break;
-                }
-                if (canIncrement)
-                {
-                    progress.CurrentCount += increment;
-                }
-                // 自動完成判斷
-                if (progress.CurrentCount >= mission.TargetCount)
+
+                progress.CurrentCount = await newCount(mission, progress, cycleStart, cycleEnd);
+
+                // 自動完成判斷（已領獎的不改回 completed）
+                if (progress.CurrentCount >= mission.TargetCount && progress.Status != "rewarded")
                 {
                     progress.Status = "completed";
-                    progress.CompletedAt = now;
+                    progress.CompletedAt ??= now;
                 }
             }
             await _context.SaveChangesAsync();

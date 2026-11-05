@@ -18,6 +18,9 @@
     未登入時全域 axios 導向登入頁，`apiClient` / `pointClient` 只把錯誤拋給呼叫端
 - **Vuetify**：元件由 `vite-plugin-vuetify` 自動匯入（不要 `import * as components`）。圖示為 SVG，
   只有 `src/plugins/vuetifyIcons.js` 登記的 `mdi-xxx` 會顯示，**用新圖示要先在那裡登記**；沒有 MDI 字型 CSS，不能寫 `<i class="mdi mdi-xxx">`
+- **儲值流程**：`Recharge.vue` 建立訂單後把訂單編號存到 sessionStorage（`utils/rechargeOrder.js`）再送出綠界表單；
+  綠界導回 `/recharge-result`，以 `GET PointRechargeApi/order/{orderNo}` 輪詢實際狀態（不要假設付款成功）
+- **任務**：只有平台任務可以「接取」（`taskStore.claimTask`）；委託任務是到討論串回覆，由委託人選最佳解答
 - **路由**：新頁面一律 `component: () => import("@/views/...")` 延遲載入（只有首頁直接 import）
 - `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
@@ -94,7 +97,6 @@ src/
 - `src/api/imageApi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
 - 匯入路徑請與實際檔名大小寫一致（Windows / macOS 不分大小寫，但 Linux build 會失敗）。
 - `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
-- 呼叫了後端不存在的端點：`RechargeResult.vue` 的 `PointRechargeApi/check-order`、`taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
 - 完整問題清單見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
 
 ## 修正紀錄

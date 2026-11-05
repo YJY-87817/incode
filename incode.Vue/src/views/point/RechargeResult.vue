@@ -3,45 +3,72 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import axios from "axios";
-// 如果需要更新點數餘額显示，這裡會需要一個專門查餘額的 API
-// import { usePointStore } from "@/stores/point/pointStore.js";
+import { RECHARGE_ORDER_KEY } from "@/utils/rechargeOrder.js";
 
 const router = useRouter();
 const route = useRoute();
-// const pointStore = usePointStore();
 
 const countdown = ref(5);
 let timer = null;
+let cancelled = false;
 const isProcessing = ref(true);
-const status = ref("checking"); // checking, success, failed
+// success：已入帳、failed：付款失敗 / 取消、pending：尚未收到綠界付款通知（或查不到訂單）
+const status = ref("checking");
+const pointsGranted = ref(null);
+
+// 綠界的付款通知（ReturnURL）可能比使用者導回本頁晚到，最多輪詢約 20 秒
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMES = 10;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const readOrderNo = () => {
+  if (route.query.orderNo) return String(route.query.orderNo);
+  try {
+    return sessionStorage.getItem(RECHARGE_ORDER_KEY);
+  } catch {
+    return null;
+  }
+};
+
+// 查詢自己的儲值訂單（GET api/PointRechargeApi/order/{orderNo}），直到有結果或逾時
+const checkOrder = async (orderNo) => {
+  for (let i = 0; i < POLL_TIMES && !cancelled; i++) {
+    try {
+      const { data } = await axios.get(
+        `/PointRechargeApi/order/${encodeURIComponent(orderNo)}`,
+      );
+      if (data.status === "success" || data.status === "failed") {
+        pointsGranted.value = data.pointsGranted;
+        return data.status;
+      }
+    } catch (error) {
+      // 404（不存在 / 不是自己的訂單）、401（未登入）不再重試；其他錯誤（網路）繼續等
+      const code = error.response?.status;
+      if (code === 404 || code === 401) return "pending";
+    }
+    await sleep(POLL_INTERVAL_MS);
+  }
+  return "pending";
+};
 
 onMounted(async () => {
-  // 核心邏輯：等待 2 秒，讓後端的 ReturnURL 有時間跑完
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const orderNo = readOrderNo();
+  const result = orderNo ? await checkOrder(orderNo) : "pending";
+  if (cancelled) return;
+  status.value = result;
+  isProcessing.value = false;
 
-  try {
-    // 這裡通常需要一個 API 來根據 URL 參數查訂單
-    // 例如網址有 ?OrderNo=...
-    const orderNo = route.query.OrderNo;
-
-    // 範例：呼叫後端 API 檢查該訂單狀態
-    // const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/PointRechargeApi/check-order/${orderNo}`);
-
-    // 假設 API 檢查結果是成功
-    status.value = "success";
-
-    // 如果有 userStore，這裡應該更新餘額，但依照需求這裡不用。
-    // if (pointStore.fetchBalance) {
-    //   await pointStore.fetchBalance();
-    // }
-  } catch (error) {
-    console.error("檢查狀態失敗:", error);
-    status.value = "failed";
-  } finally {
-    isProcessing.value = false;
+  // 已有結果時清除，避免下次進入本頁顯示舊訂單
+  if (result !== "pending") {
+    try {
+      sessionStorage.removeItem(RECHARGE_ORDER_KEY);
+    } catch {
+      // 忽略
+    }
   }
 
-  // 倒數計時器
+  // 已入帳才自動返回首頁；失敗 / 處理中留在本頁讓使用者看清楚
+  if (result !== "success") return;
   timer = setInterval(() => {
     countdown.value--;
     if (countdown.value <= 0) {
@@ -52,6 +79,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  cancelled = true;
   if (timer) clearInterval(timer);
 });
 </script>
@@ -77,19 +105,38 @@ onUnmounted(() => {
           </div>
           <h2 class="mt-4 font-weight-bolder">儲值成功！</h2>
           <p class="text-secondary">
-            點數已即時入帳。<br />
+            <template v-if="pointsGranted">
+              {{ pointsGranted.toLocaleString() }} 點已入帳。<br />
+            </template>
+            <template v-else>點數已入帳。<br /></template>
             祝您在 incode 玩得愉快！
           </p>
         </div>
 
-        <div v-else>
+        <div v-else-if="status === 'failed'">
           <div
             class="icon-shape icon-lg bg-gradient-danger shadow-danger text-center border-radius-xl mt-n4 mx-auto"
           >
             <i class="fas fa-times text-white opacity-10"></i>
           </div>
-          <h2 class="mt-4 font-weight-bolder text-danger">系統處理中</h2>
-          <p class="text-secondary">若 5 分鐘後仍未入帳，請聯繫客服。</p>
+          <h2 class="mt-4 font-weight-bolder text-danger">付款未完成</h2>
+          <p class="text-secondary">
+            本次付款失敗或已取消，點數不會入帳。<br />
+            可以回到儲值頁重新付款。
+          </p>
+        </div>
+
+        <div v-else>
+          <div
+            class="icon-shape icon-lg bg-gradient-warning shadow-warning text-center border-radius-xl mt-n4 mx-auto"
+          >
+            <i class="fas fa-hourglass-half text-white opacity-10"></i>
+          </div>
+          <h2 class="mt-4 font-weight-bolder">系統處理中</h2>
+          <p class="text-secondary">
+            尚未收到付款結果，入帳可能需要幾分鐘。<br />
+            請稍後到點數明細確認，若 5 分鐘後仍未入帳，請聯繫客服。
+          </p>
         </div>
 
         <div class="mt-4">
@@ -104,7 +151,7 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <p class="text-xs text-secondary mt-4">
+        <p v-if="status === 'success'" class="text-xs text-secondary mt-4">
           <span class="badge badge-secondary text-dark">{{ countdown }}</span>
           秒後自動返回首頁...
         </p>

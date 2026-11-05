@@ -58,21 +58,17 @@ namespace incode.MVC.Services.Contents
     // 新增或移除互動（Toggle）
     // 如果使用者已經有該互動 -> 刪除（取消）
     // 如果使用者沒有該互動 -> 新增
+    // 只接受會員可以自己設定的分類（InteractionCategoryIds.MemberToggleable）
+    // 成功時 Data 為新增的互動，取消互動時 Data 為 null
 
-    public async Task<ContentInteractionDto> AddOrUpdateInteraction(CreateContentInteractionDto dto)
+    public async Task<ResultDTO<ContentInteractionDto?>> AddOrUpdateInteraction(CreateContentInteractionDto dto)
     {
-      // 檢查content是否存在
-      var contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId);
-      if (!contentExists)
-      {
-        throw new Exception($"內容 ID {dto.ContentId} 不存在");
-      }
+      if (!InteractionCategoryIds.MemberToggleable.Contains(dto.InteractionCategoryId))
+        return ResultDTO<ContentInteractionDto?>.Failure("不支援的互動類型", 400);
 
-      // 檢查互動分類是否存在
-      var categoryExists = await _context.InteractionCategory
-        .AnyAsync(ic => ic.InteractionCategoryId == dto.InteractionCategoryId);
-      if (!categoryExists)
-        throw new Exception($"互動類別 ID {dto.InteractionCategoryId} 不存在");
+      var contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId && c.IsActive == 1);
+      if (!contentExists)
+        return ResultDTO<ContentInteractionDto?>.Failure("內容不存在或已被移除", 404);
 
       // 查找現有互動（同一使用者對同一內容同一分類）
       var existingInteraction = await _context.ContentInteraction
@@ -85,7 +81,7 @@ namespace incode.MVC.Services.Contents
         _context.ContentInteraction.Remove(existingInteraction);
         await _context.SaveChangesAsync();
 
-        return null;
+        return ResultDTO<ContentInteractionDto?>.Success(null, "互動已移除");
       }
 
       var newInteraction = new ContentInteraction
@@ -96,19 +92,25 @@ namespace incode.MVC.Services.Contents
         CreatedAt = DateTime.Now
       };
       _context.ContentInteraction.Add(newInteraction);
-
-      // qiu 檢查是否為讚的互動分類，如果是，觸發任務
-      bool isLikeCategory = await IsLikeCategoryAsync(dto.InteractionCategoryId);
-
-      if (isLikeCategory)
-      {
-         await _missionService.TriggerMissionAsync(dto.UserId, "like", 1);
-      }
-      //-----------------------------------------------------
-
       await _context.SaveChangesAsync();
 
-      return await _context.ContentInteraction
+      // qiu 按讚任務：進度 = 本週期內「目前仍按讚中的不同內容」數（不含自己的內容）。
+      // 原本每按一次就 +1，對同一篇反覆取消 / 重按就能完成任務；改為依實際資料計算，同一內容只算一次
+      if (dto.InteractionCategoryId == InteractionCategoryIds.Like)
+      {
+        var userId = dto.UserId;
+        await _missionService.SyncMissionCountAsync(userId, "like", (cycleStart, cycleEnd) =>
+          _context.ContentInteraction
+            .Where(ci => ci.UserId == userId
+              && ci.CategoryId == InteractionCategoryIds.Like
+              && ci.CreatedAt >= cycleStart && ci.CreatedAt <= cycleEnd
+              && ci.Content.UserId != userId)
+            .Select(ci => ci.ContentId)
+            .Distinct()
+            .CountAsync());
+      }
+
+      var created = await _context.ContentInteraction
         .Where(ci => ci.ContentInteractionId == newInteraction.ContentInteractionId)
         .Include(ci => ci.Category)
         .Select(ci => new ContentInteractionDto
@@ -121,29 +123,8 @@ namespace incode.MVC.Services.Contents
           CreatedAt = ci.CreatedAt ?? DateTime.Now
         })
         .FirstAsync();
-    }
 
-        private async Task<bool> IsLikeCategoryAsync(int categoryId)
-        {
-            // 方法1：硬編碼 CategoryId（如果你的讚永遠是固定 ID，例如 1）
-             return categoryId == 1;
-        }
-
-
-        // 移除互動
-
-        public async Task<bool> RemoveInteraction(int contentId, int userId, int interactionCategoryId)
-    {
-      var interaction = await _context.ContentInteraction
-        .FirstOrDefaultAsync(ci => ci.ContentId == contentId 
-          && ci.UserId == userId 
-          && ci.CategoryId == interactionCategoryId);
-
-      if (interaction == null) return false;
-
-      _context.ContentInteraction.Remove(interaction);
-      await _context.SaveChangesAsync();
-      return true;
+      return ResultDTO<ContentInteractionDto?>.Success(created, "互動已新增");
     }
 
 
@@ -211,7 +192,7 @@ namespace incode.MVC.Services.Contents
 
       return await _context.ContentInteraction
         .AsNoTracking()
-        .Where(ci => ci.CategoryId == 1 && contentIdList.Contains(ci.ContentId))
+        .Where(ci => ci.CategoryId == InteractionCategoryIds.Like && contentIdList.Contains(ci.ContentId))
         .GroupBy(ci => ci.ContentId)
         .Select(g => new { ContentId = g.Key, LikeCount = g.Count() })
         .ToDictionaryAsync(x => x.ContentId, x => x.LikeCount);
@@ -221,7 +202,7 @@ namespace incode.MVC.Services.Contents
     {
       return await _context.ContentInteraction
         .AsNoTracking()
-        .Where(ci => ci.ContentId == contentId && ci.CategoryId == 1)
+        .Where(ci => ci.ContentId == contentId && ci.CategoryId == InteractionCategoryIds.Like)
         .CountAsync();
     }
 
