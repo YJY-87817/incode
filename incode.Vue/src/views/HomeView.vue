@@ -22,7 +22,7 @@ onUnmounted(() => {
         <div class="col-lg-8 mx-auto text-center mt-8 mb-5">
           <h1 class="display-3 font-weight-bold mb-4 text-dark">
             <img
-              src="@/assets/img/okapi.svg"
+              src="@/assets/img/okapi.webp"
               alt="logo"
               style="
                 height: 100px;

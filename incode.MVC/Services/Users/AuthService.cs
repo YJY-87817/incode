@@ -9,9 +9,11 @@ namespace incode.MVC.Services.Users
         private readonly IUserService _userService;
         private readonly IEmailService _emailService;
         private readonly IMissionService _missionService;
+        private readonly LoginAttemptLimiter _loginLimiter;
 
-        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService, IMissionService missionService)
+        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService, IMissionService missionService, LoginAttemptLimiter loginLimiter)
         {
+            _loginLimiter = loginLimiter;
             _context = context;
             _passwordService = passwordService;
             _userService = userService;
@@ -71,10 +73,24 @@ namespace incode.MVC.Services.Users
         //  登入驗證
         public async Task<LoginResult> ValidateUserAsync(string email, string password)
         {
+            email ??= string.Empty;
+
+            // 同一帳號失敗太多次：在比對密碼前就擋下（帳號是否存在都一樣處理，不透露帳號資訊）
+            if (_loginLimiter.IsLockedOut(email))
+            {
+                return new LoginResult
+                {
+                    IsSuccess = false,
+                    IsLockedOut = true,
+                    Message = $"登入失敗次數過多，請 {LoginAttemptLimiter.Window.TotalMinutes:0} 分鐘後再試"
+                };
+            }
+
             var user = await _userService.GetUserByEmailAsync(email);
 
             if (user == null)
             {
+                _loginLimiter.RecordFailure(email);
                 return new LoginResult
                 {
                     IsSuccess = false,
@@ -96,12 +112,15 @@ namespace incode.MVC.Services.Users
 
             if (!isPasswordCorrect)
             {
+                _loginLimiter.RecordFailure(email);
                 return new LoginResult
                 {
                     IsSuccess = false,
                     Message = "帳號或密碼錯誤"
                 };
             }
+
+            _loginLimiter.Reset(email);
 
             // 登入成功 → 觸發每日登入任務
             await _missionService.TriggerMissionAsync(user.UserId, "login", 1);

@@ -7,12 +7,18 @@
 ## 專案概觀
 
 - Vue 3（`<script setup>`）+ Vite + Pinia（`pinia-plugin-persistedstate`）+ Vue Router
-- UI：Bootstrap 5（含 `bootstrap-vue-next`）、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
+- UI：Bootstrap 5、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
 - 後端 API：`VITE_API_BASE_URL`（開發為 `https://localhost:7190/api`），圖片等靜態檔：`VITE_BASE_URL`
   （**不要在程式中寫死後端網址**，一律讀這兩個變數；正式環境以 `.env.production` 覆寫）
 - 登入：後端 Cookie 驗證，axios 必須帶 `withCredentials: true`
-  - 全域 `axios`：`main.js` 設定 `axios.defaults.withCredentials` / `baseURL`，並有 401 攔截器（清除登入狀態、導向登入頁）
-  - `src/api/request.js` 的 `apiClient`：`axios.create` 建立時就複製預設值，所以自己設定了 `withCredentials: true`
+  - 全域 `axios`：`main.js` 設定 `axios.defaults.withCredentials` / `baseURL`
+  - `src/api/request.js` 的 `apiClient`、`src/api/pointClient.js`：`axios.create` 建立時就複製預設值，所以自己設定了 `withCredentials: true`
+  - 401 處理統一在 `src/api/authInterceptor.js`（三個 axios 都有安裝；**新增 axios 實例時也要 `installAuthInterceptor()`**）：
+    已登入狀態收到 401 → 清除登入狀態、提示「登入已逾時」並導向登入頁（`?redirect=` 回原頁）；
+    未登入時全域 axios 導向登入頁，`apiClient` / `pointClient` 只把錯誤拋給呼叫端
+- **Vuetify**：元件由 `vite-plugin-vuetify` 自動匯入（不要 `import * as components`）。圖示為 SVG，
+  只有 `src/plugins/vuetifyIcons.js` 登記的 `mdi-xxx` 會顯示，**用新圖示要先在那裡登記**；沒有 MDI 字型 CSS，不能寫 `<i class="mdi mdi-xxx">`
+- **路由**：新頁面一律 `component: () => import("@/views/...")` 延遲載入（只有首頁直接 import）
 - `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
   元件中請用 `computed(() => authStore.isAuthenticated)`，**不要**存成常數（會失去響應式）
@@ -25,9 +31,11 @@
 ```
 src/
 ├── main.js / App.vue / material-kit.js
+├── plugins/vuetifyIcons.js  Vuetify 用到的 MDI 圖示（SVG）
 ├── router/index.js
 ├── api/                    後端 API 呼叫
 │   ├── request.js          共用 axios (apiClient，baseURL = VITE_API_BASE_URL)
+│   ├── authInterceptor.js  所有 axios 共用的 401 處理
 │   ├── pointClient.js      點數模組用的 axios (baseURL = VITE_BASE_URL，呼叫路徑自帶 /api)
 │   └── contentApi.js / contentInteractionApi.js / imageApi.js / pointShopApi.js
 ├── stores/                 Pinia

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace incode.MVC.Controllers.Users
 {
@@ -31,6 +32,7 @@ namespace incode.MVC.Controllers.Users
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -41,7 +43,7 @@ namespace incode.MVC.Controllers.Users
             // 2. 基礎驗證失敗 (帳密錯或無此人)
             if (!result.IsSuccess || result.Member == null)
             {
-                ModelState.AddModelError(string.Empty, "帳號或密碼錯誤");
+                ModelState.AddModelError(string.Empty, result.IsLockedOut ? result.Message : "帳號或密碼錯誤");
                 return View(model);
             }
 

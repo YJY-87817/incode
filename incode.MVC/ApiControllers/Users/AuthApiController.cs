@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace incode.MVC.ApiControllers.Users
@@ -24,6 +25,7 @@ namespace incode.MVC.ApiControllers.Users
 
         ///AuthApi/Register
         [HttpPost("register")]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {            
             if (!ModelState.IsValid)
@@ -102,10 +104,16 @@ namespace incode.MVC.ApiControllers.Users
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> Login([FromBody] LoginDto loginData)
         {
             // 1. 呼叫 Service 驗證帳密
             var result = await _authService.ValidateUserAsync(loginData.Email, loginData.Password);
+
+            if (result.IsLockedOut)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new { message = result.Message });
+            }
 
             if (!result.IsSuccess)
             {                
@@ -230,6 +238,7 @@ namespace incode.MVC.ApiControllers.Users
 
         // 前端 Vue 請 POST 到: /api/Auth/forgot-password
         [HttpPost("forgot-password")]
+        [EnableRateLimiting(RateLimitPolicies.PasswordReset)]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             // 這裡的網址要設定為 "前端 Vue 的網址"！
@@ -246,6 +255,7 @@ namespace incode.MVC.ApiControllers.Users
         // API 2: 重設密碼
         // 前端 Vue 請 POST 到: /api/Auth/reset-password
         [HttpPost("reset-password")]
+        [EnableRateLimiting(RateLimitPolicies.PasswordReset)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             bool result = await _authService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword);
