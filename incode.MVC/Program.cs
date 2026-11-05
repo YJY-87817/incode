@@ -141,6 +141,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 // owen以上
 builder.Services.AddControllersWithViews(); // 後台 MVC + 前台 API Controller
+builder.Services.AddApiDocs();               // OpenAPI 文件（Scalar，僅開發環境開放）
 //owen
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -204,6 +205,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapControllers();
+app.MapApiDocs(); // /openapi/v1.json、/scalar/v1（僅開發環境）
 
 //SignalR的路由 設定聊天室的連線端點
 app.MapHub<ChatHub>("/chatHub");
