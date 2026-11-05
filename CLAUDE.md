@@ -216,12 +216,18 @@ incode/
       原本每按一次 +1，對同一篇反覆取消 / 重按 5 次就能完成任務；任務進度已領獎（`rewarded`）時不再被改回 `completed`
     - 儲值 `PointRechargeDTO` 不再繼承實體，`CashAmount` 限 10～50,000 元（原本 0、負數都能建立訂單，3 億元時點數溢位成負數）；前端同步檢查
     - 刪除 `POST api/Inventory/add`（測試用，會員可替自己加任意道具與數量，前端沒有使用）
+17. 前端呼叫不存在的端點（全專案檢查 23）：
+    - 儲值完成頁 `RechargeResult.vue` 原本沒有查詢訂單（API 呼叫被註解掉），**一律顯示「儲值成功」**（付款失敗也一樣）。
+      後端新增 `GET api/PointRechargeApi/order/{orderNo}`（只能查自己的訂單，否則 404）；`Recharge.vue` 送出前把訂單編號存到
+      sessionStorage（綠界導回時不帶訂單編號，`utils/rechargeOrder.js`），結果頁輪詢約 20 秒，依 success / failed / 尚未收到通知分別顯示
+    - `taskStore.claimTask` 刪除委託任務分支（呼叫不存在的 `EntrustMissionApi/{id}/entrustMissionClaim`）。委託任務沒有「接取」：
+      列表與詳細抽屜本來就只導向討論區，會員回覆後由委託人選最佳解答；`claimTask` 只處理平台任務
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～13、15～20 已修正，22 部分修正（見修正紀錄 6～9、12～16），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～13、15～20、23 已修正，22 部分修正（見修正紀錄 6～9、12～17），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：前端呼叫不存在的端點（23）→ 委託任務取消（14）→ 其餘。
+建議修正順序：委託任務取消（14）→ 套件（24）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -258,8 +264,7 @@ incode/
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
     尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
     Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
-23. **前端呼叫不存在的後端端點**：`views/point/RechargeResult.vue` 的 `PointRechargeApi/check-order/{orderNo}`、
-    `stores/point/taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
+23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
 

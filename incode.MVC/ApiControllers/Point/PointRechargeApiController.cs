@@ -122,7 +122,36 @@ namespace incode.MVC.ApiControllers.Point
             return Content("1|OK");
         }
 
-        // 儲值紀錄的查詢 / 修改 / 刪除只在後台 (PointRechargeController) 提供；
+        // 查詢自己的儲值訂單狀態（前端付款完成頁 RechargeResult.vue 用來確認是否已入帳）
+        // GET api/PointRechargeApi/order/{orderNo}
+        // status：pending（尚未收到綠界通知）、success（已加點）、failed（付款失敗 / 取消）
+        [HttpGet("order/{orderNo}")]
+        [Authorize]
+        public async Task<IActionResult> GetMyOrder(string orderNo)
+        {
+            int userId = User.GetId();
+
+            var order = await _context.PointRecharge
+                .AsNoTracking()
+                .Where(r => r.OrderNo == orderNo && r.UserId == userId)
+                .Select(r => new
+                {
+                    r.OrderNo,
+                    r.Status,
+                    r.CashAmount,
+                    r.PointsGranted,
+                    r.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            // 不存在或不是自己的訂單一律 404
+            if (order == null)
+                return NotFound(new { ok = false, code = 404, message = "找不到儲值訂單" });
+
+            return Ok(order);
+        }
+
+        // 儲值紀錄的列表 / 修改 / 刪除只在後台 (PointRechargeController) 提供；
         // 原本這裡的 GET / PUT / DELETE 沒有登入檢查，任何人都能讀取或竄改所有人的儲值紀錄，已移除
     }
 }

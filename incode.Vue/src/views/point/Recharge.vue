@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { RECHARGE_ORDER_KEY } from "@/utils/rechargeOrder.js";
 
 // 儲值方案設定
 const plans = ref([
@@ -101,6 +102,13 @@ const handleCheckout = async () => {
       );
 
       const ecpayData = res.data;
+
+      // 付款完成頁（RechargeResult.vue）以訂單編號查詢入帳狀態；綠界導回時不會帶訂單編號，先存起來
+      try {
+        sessionStorage.setItem(RECHARGE_ORDER_KEY, ecpayData.MerchantTradeNo);
+      } catch {
+        // 無痕模式等無法使用 sessionStorage 時，結果頁會改顯示「處理中」
+      }
 
       // 3. 建立並提交隱藏 Form
       const form = document.createElement("form");
