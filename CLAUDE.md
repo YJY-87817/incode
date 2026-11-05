@@ -196,10 +196,19 @@ incode/
     - `Extensions/RateLimitExtensions.cs`：依 IP 限制登入 / 註冊（每分鐘 20 次）、忘記密碼 / 重設密碼（每 15 分鐘 5 次），超過回 429
     - `Services/Users/LoginAttemptLimiter.cs`：同一帳號 15 分鐘內失敗 5 次即暫停登入 15 分鐘（會員 API 回 429，後台顯示訊息），
       記憶體計數，重啟清除
+15. 前端效能與 401 處理（全專案檢查 22 的一部分）：
+    - Vuetify 改用 `vite-plugin-vuetify` 只打包用到的元件（原本 `import * as components`）；移除完全沒用到的 `bootstrap-vue-next`
+    - 路由除了首頁之外全部改為 `() => import()` 延遲載入
+    - Vuetify 圖示由 `@mdi/font`（CSS 418 KB + 字型 403 KB）改為 SVG，只打包用到的圖示（`src/plugins/vuetifyIcons.js`，新圖示要登記）
+    - logo `okapi.svg`（1.8 MB 的點陣描圖 SVG，每頁導覽列都會載入）改為 18 KB 的 WebP，favicon 改為 64px PNG
+    - 首頁載入的主程式 JS 1,199 KB → 578 KB、CSS 1,687 KB → 1,049 KB
+    - `src/api/authInterceptor.js`：全域 axios、`apiClient`、`pointClient` 共用 401 處理。原本 `apiClient` 只印 console、`pointClient` 沒處理，
+      登入逾時後畫面仍顯示已登入。已登入狀態收到 401 → 清除 Pinia 狀態、提示並導向登入頁（登入後回原頁）；
+      未登入時 `apiClient` / `pointClient` 交給呼叫端（論壇頁訪客的背景查詢會 401，不能把訪客踢去登入頁）
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～12、15、18～20 已修正（見修正紀錄 6～9、12～14），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～12、15、18～20 已修正，22 部分修正（見修正紀錄 6～9、12～15），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：論壇互動分類與儲值金額（13、16、17）→ 其餘。
 
@@ -237,8 +246,9 @@ incode/
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
 21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
-22. **前端效能 / 結構**：同時使用 Bootstrap、Vuetify（`import * as components` 全量匯入）、Material Kit，主程式包 1.17 MB；
-    `TopicListView.vue`、`forumStore.js` 超過 2700 行；3 種 axios 設定中只有全域 axios 處理 401。
+22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
+    尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
+    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
 23. **前端呼叫不存在的後端端點**：`views/point/RechargeResult.vue` 的 `PointRechargeApi/check-order/{orderNo}`、
     `stores/point/taskStore.js` 的 `EntrustMissionApi/{id}/entrustMissionClaim`。
 24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。

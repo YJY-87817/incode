@@ -167,7 +167,7 @@ watch(
         data-placement="bottom"
       >
         <img
-          src="@/assets/img/okapi.svg"
+          src="@/assets/img/okapi.webp"
           alt="logo"
           style="
             height: 40px;
@@ -315,10 +315,12 @@ watch(
                           :to="item.to"
                           class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center"
                         >
-                          <i
+                          <v-icon
                             v-if="item.icon"
-                            :class="`mdi ${item.icon} me-2 text-primary`"
-                          ></i>
+                            :icon="item.icon"
+                            size="1.2em"
+                            class="me-2 text-primary"
+                          />
                           <span>{{ item.title }}</span>
                         </RouterLink>
                       </li>
@@ -331,7 +333,7 @@ watch(
                           class="dropdown-item py-2 ps-3 border-radius-md text-danger d-flex align-items-center"
                           @click="handleLogout"
                         >
-                          <i class="mdi mdi-logout me-2"></i>
+                          <v-icon icon="mdi-logout" size="1.2em" class="me-2" />
                           <span>登出</span>
                         </a>
                       </li>
@@ -493,10 +495,12 @@ watch(
                     :to="item.to"
                     class="dropdown-item py-2 ps-3 border-radius-md d-flex align-items-center"
                   >
-                    <i
+                    <v-icon
                       v-if="item.icon"
-                      :class="`mdi ${item.icon} me-2 text-primary`"
-                    ></i>
+                      :icon="item.icon"
+                      size="1.2em"
+                      class="me-2 text-primary"
+                    />
                     <span>{{ item.title }}</span>
                   </RouterLink>
                 </li>
@@ -509,7 +513,7 @@ watch(
                     class="dropdown-item py-2 ps-3 border-radius-md text-danger d-flex align-items-center"
                     @click="handleLogout"
                   >
-                    <i class="mdi mdi-logout me-2"></i>
+                    <v-icon icon="mdi-logout" size="1.2em" class="me-2" />
                     <span>登出</span>
                   </a>
                 </li>
