@@ -89,6 +89,8 @@ incode/
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
 - **圖片上傳**：先用 `Services/Common/ImageFileValidator.Validate()` 檢查（僅 jpg/png/gif/webp + 檔頭比對，單檔 20 MB）；
   刪除檔案時檔名以資料庫為準並 `Path.GetFileName()`，不可使用表單傳入的路徑。
+- **顯示使用者內容**：Razor 不要對會員 / AI 產生的內容用 `@Html.Raw`；需要保留格式時先經 DOMPurify（`~/lib/dompurify`）。
+  前端 `v-html` 前一律過濾（論壇用 `utils/sanitizeHtml.js`，聊天用 `ChatWidget.vue` 的 `toSafeHtml`）。
 - **後台訊息**：Controller 用 `TempData["SuccessMessage"] / TempData["ErrorMessage"]`，View 放 `<partial name="_TempDataAlert" />`。
 - **表單**：POST 表單要有 `method="post"`，Action 加 `[ValidateAntiForgeryToken]`。
 - 檔案編碼：保持原檔的 BOM / 換行格式，避免整檔 diff。
@@ -177,12 +179,18 @@ incode/
     同一交易內以條件更新 `Status <> 'success'` 搶下訂單，影響 1 筆才加點（失敗通知也不會覆蓋已成功的訂單）。
     以同時送出 10 個請求實測：修正前打賞 10 筆全成功（餘額 100 扣 300）、任務獎勵 / 綠界加點 / 最佳解答獎勵各重複 10 次，
     修正後皆只成立一次、帳本連續
+13. 聊天室 XSS 與圖片上傳（全專案檢查 10、11）：
+    - 前端 `ChatWidget.vue` 顯示訊息前經 `toSafeHtml`：使用者輸入一律跳脫為純文字，AI / 客服 / 系統訊息以 DOMPurify 過濾
+    - **後台客服頁面 `Views/ChatMessages/Index.cshtml` 原本以 `@Html.Raw` 顯示會員訊息**（會員可在管理員的後台執行腳本）：
+      改為輸出到 `data-body` 後以 DOMPurify 過濾再顯示，SignalR 即時訊息（`appendMessage`）也一樣；
+      DOMPurify 放在 `wwwroot/lib/dompurify/`（libman.json 已登記）
+    - `UploadImage` 改用 `ImageFileValidator`（單檔 10 MB）與 Guid 檔名，不再使用原始檔名；圖片附帶文字存入前 HTML 編碼
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～9、18～20 已修正（見修正紀錄 6～9、12），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、7～11、18～20 已修正（見修正紀錄 6～9、12、13），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：撤銷外洩金鑰（6）→ 聊天室 XSS 與圖片上傳（10、11）→ 其餘。
+建議修正順序：撤銷外洩金鑰（6）→ CSRF 與登入次數限制（12、15）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -197,11 +205,8 @@ incode/
 7. ~~任務進度可以自己增加~~（`increment` API 已刪除，見修正紀錄 6）
 8. ~~點數併發問題~~（見修正紀錄 12）
 9. ~~ECPay 回呼冪等性~~（見修正紀錄 12）
-10. **聊天室 XSS**（前端 `src/components/chat/ChatWidget.vue`）：訊息以 `v-html` 顯示，客服 / SignalR 收到的訊息、使用者輸入、
-    `marked.parse` 的結果都沒有經過 DOMPurify（第 4 點修正後只有管理員能以客服身分回覆，但 AI 回覆與歷史訊息仍未過濾）。
-    → `v-html` 前一律用 `utils/sanitizeHtml.js`（DOMPurify）處理。
-11. **聊天圖片上傳**（`ChatMessagesApiController` UploadImage）：檔名直接使用原始 `FileName`（`Guid + "_" + FileName`），
-    在 Windows 上可用 `..\` 路徑寫到其他目錄；也沒有檢查格式。→ 改用 `ImageFileValidator` 與 Guid 檔名。
+10. ~~聊天室 XSS~~（含後台客服頁面，見修正紀錄 13）
+11. ~~聊天圖片上傳~~（見修正紀錄 13）
 
 ### 🟡 中
 
