@@ -127,7 +127,6 @@
                   :html="safeContent"
                   :min-height="previewMinHeight"
                   text-color="#145369"
-                  :allow-scripts="true"
                   :extra-css="iframeExtraCssCollapsed"
                 />
                 <HtmlIframe
@@ -136,7 +135,6 @@
                   :html="safeContent"
                   :min-height="previewMinHeight"
                   text-color="#145369"
-                  :allow-scripts="true"
                   :extra-css="iframeExtraCssExpanded"
                 />
               </div>

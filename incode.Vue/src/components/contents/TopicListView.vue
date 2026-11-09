@@ -1082,7 +1082,6 @@ onBeforeUnmount(() => {
             "
             :min-height="120"
             text-color="#432f28"
-            :allow-scripts="true"
             :extra-css="`body { white-space: pre-wrap; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; height: auto; object-fit: contain; }`"
           />
           <!-- 改圖片大小在上面這裡 -->
@@ -1385,7 +1384,6 @@ onBeforeUnmount(() => {
                     :html="topic.contentHtml || topic.content"
                     :min-height="0"
                     text-color="#145369"
-                    :allow-scripts="true"
                     :extra-css="getTopicPreviewCss(topic)"
                   />
                 </div>
@@ -1592,7 +1590,6 @@ onBeforeUnmount(() => {
                             :html="topic.contentHtml || topic.content"
                             :min-height="0"
                             text-color="#145369"
-                            :allow-scripts="true"
                             :extra-css="getTopicPreviewCss(topic)"
                           />
                         </div>
