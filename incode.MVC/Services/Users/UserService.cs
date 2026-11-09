@@ -1,15 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace incode.MVC.Services.Users
 {
     public class UserService : IUserService
     {
         private readonly incodedatabaseContext _context;
+        private readonly IMemoryCache _cache;
 
-        public UserService(incodedatabaseContext context)
+        public UserService(incodedatabaseContext context, IMemoryCache cache)
         {
             _context = context;
-          
+            _cache = cache;
         }
 
         public async Task<User?> GetUserByEmailAsync(string email)
@@ -146,13 +148,14 @@ namespace incode.MVC.Services.Users
             return (UpdateProfileResult.Success, user);
         }
 
-        public async Task<bool> DeleteUserAsync(int userId)
+        public async Task<bool> SetActiveAsync(int userId, bool isActive)
         {
             var user = await _context.User.FindAsync(userId);
             if (user == null) return false;
 
-            _context.User.Remove(user);
+            user.IsActive = isActive;
             await _context.SaveChangesAsync();
+            MemberCookieValidator.Evict(_cache, userId); // 讓登入狀態檢查立即看到新狀態
             return true;
         }
 
@@ -160,6 +163,7 @@ namespace incode.MVC.Services.Users
         {
             _context.User.Update(user);
             await _context.SaveChangesAsync();
+            MemberCookieValidator.Evict(_cache, user.UserId); // 後台會員編輯可能改了 IsActive
         }
         public async Task AddLoginLogAsync(int userId, string ipAddress)
         {

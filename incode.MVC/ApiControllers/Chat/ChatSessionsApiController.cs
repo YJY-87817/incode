@@ -90,6 +90,10 @@ namespace incode.MVC.ApiControllers.Chat
                 // 呼叫 GeminiService 發送請求
                 string newTitle = await _geminiService.GetGeminiReplyAsync(prompt);
 
+                // AI 無法回覆時 GeminiService 會回傳固定的錯誤訊息，不能把它當成標題存起來
+                if (newTitle == GeminiService.AiUnavailableMessage)
+                    return StatusCode(503, new { message = "AI 暫時無法命名，請稍後再試" });
+
                 // 4. 清理 AI 回傳的雜訊
                 newTitle = newTitle.Replace("\"", "").Replace("「", "").Replace("」", "").Trim();
                 if (newTitle.Length > 50) newTitle = newTitle.Substring(0, 50);

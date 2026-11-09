@@ -71,6 +71,7 @@ incode/
 - 前台 API 未登入回 401 / 403（不轉址）
 - **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
   伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
+- **停用帳號**：用 `UserService.SetActiveAsync`（不刪除會員；已登入的人由 `MemberCookieValidator` 在下個請求登出）
 - **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
   ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
@@ -295,10 +296,17 @@ incode/
     - 驗證：聊天 25 項、其餘前台 API 52 項（User / Follow / Notification / Status / Category / 儲值含綠界回呼 / 委託）在 main 與分支各跑一次，
       結果相同（上述行為變動除外）；併發 18、互動 16、委託取消 17、後台委託 14、例外訊息 8、權限與訂單 35 項回歸測試通過；
       SignalR `JoinSessionGroup` 以 Hub 連線實測
+28. 停用帳號與 AI 命名（低優先清單）：
+    - 管理員停用會員：原本 `DELETE api/User/{id}` 因外鍵（註冊就有任務進度等資料）一律 500，已移除；改為 `POST api/User/{id}/deactivate`
+      與 `/activate`（不能停用自己、找不到 404），只改 `IsActive`，資料保留。停用後無法登入（原有檢查），
+      **已登入的人也會立刻被登出**：`Extensions/MemberCookieValidator` 在會員 Cookie 驗證時檢查帳號是否仍啟用（查無會員視為無效），
+      結果快取 60 秒，`UserService.SetActiveAsync` / `UpdateUserAsync`（後台會員編輯）會清除快取，直接改資料庫最慢 60 秒後生效。
+      原本停用只擋登入，已登入的 Cookie 效期 7 天且自動延長，停用形同無效
+    - `ChatSessionsApi/AutoTitle`：Gemini 無法回覆時不再把「AI 客服暫時無法回覆…」存成對話標題，改回 503、標題不變
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～27），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～28），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -340,9 +348,3 @@ incode/
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
-
-### ⚪ 低 / 程式品質
-
-- 管理員刪除會員（`DELETE api/User/{id}`）：會員註冊後就有任務進度等關聯資料，外鍵會擋下，實際上一律回 500。
-  需要決定改成停用帳號（`IsActive`），還是連同關聯資料一併刪除
-- AI 自動命名對話（`ChatSessionsApi/AutoTitle`）：Gemini 無法回覆時，標題會被設成「AI 客服暫時無法回覆…」這句固定訊息

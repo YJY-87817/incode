@@ -22,7 +22,7 @@ namespace incode.MVC.Services.Chat
         private readonly ILogger<GeminiService> _logger;
 
         // AI 服務失敗時顯示給使用者的訊息（細節只寫進 log，不放進聊天內容）
-        private const string AiUnavailableMessage = "AI 客服暫時無法回覆，請稍後再試或改由真人客服協助。";
+        public const string AiUnavailableMessage = "AI 客服暫時無法回覆，請稍後再試或改由真人客服協助。";
 
         public GeminiService(HttpClient httpClient, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<GeminiService> logger)
         {
