@@ -459,7 +459,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           @click="toggleBold"
-          :class="{ 'is-active': editor?.value?.isActive('bold') }"
+          :class="{ 'is-active': editor?.isActive('bold') }"
           class="toolbar-btn"
           title="粗體"
         >
@@ -468,7 +468,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           @click="toggleItalic"
-          :class="{ 'is-active': editor?.value?.isActive('italic') }"
+          :class="{ 'is-active': editor?.isActive('italic') }"
           class="toolbar-btn"
           title="斜體"
         >
@@ -477,7 +477,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           @click="toggleUnderline"
-          :class="{ 'is-active': editor?.value?.isActive('underline') }"
+          :class="{ 'is-active': editor?.isActive('underline') }"
           class="toolbar-btn"
           title="底線"
         >
