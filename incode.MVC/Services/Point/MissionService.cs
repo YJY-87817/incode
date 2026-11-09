@@ -86,11 +86,8 @@ namespace incode.MVC.Services.Point
                 cycleEnd = cycleStart.AddYears(10); 
             }
 
-            // 先檢查是否存在
-            var existing = await _context.MissionProgress
-                .AnyAsync(p => p.UserId == userId &&
-                               p.MissionId == missionId &&
-                               p.CycleStartAt == cycleStart);
+            // 先檢查是否存在（一次性任務：任何時候建立過進度都算）
+            var existing = await FindProgressAsync(userId, mission, cycleStart) != null;
 
             if (existing)
             {
@@ -111,7 +108,7 @@ namespace incode.MVC.Services.Point
                     Status = "ongoing",
                     AcceptedAt = DateTime.Now,
                     CycleStartAt = cycleStart,
-                    CycleEndAt = cycleStart.AddDays(7) // 保守設一個範圍，實際以 resetType 為主
+                    CycleEndAt = cycleEnd
                 };
 
                 // 簽到類任務自動完成
@@ -189,6 +186,21 @@ namespace incode.MVC.Services.Point
             };
         }
 
+        // 本週期的進度。一次性任務不看週期起點：改版前的資料以「建立當天」當起點，同一會員可能已有多筆，
+        // 優先取已領獎的那一筆（之後不會再被判定為可領），否則取最早的一筆
+        private Task<MissionProgress?> FindProgressAsync(int userId, Mission mission, DateTime cycleStart)
+        {
+            var query = _context.MissionProgress.Where(p => p.UserId == userId && p.MissionId == mission.MissionId);
+
+            if (!MissionResetTypes.IsOneTime(mission.ResetType))
+                return query.FirstOrDefaultAsync(p => p.CycleStartAt == cycleStart);
+
+            return query
+                .OrderByDescending(p => p.RewardedAt.HasValue)
+                .ThenBy(p => p.MissionProgressId)
+                .FirstOrDefaultAsync();
+        }
+
         // 週期計算輔助方法
         private (DateTime Start, DateTime End) GetCycleRange(string? resetType)
         {
@@ -221,15 +233,10 @@ namespace incode.MVC.Services.Point
                     end = start.AddYears(1).AddTicks(-1);
                     break;
 
-                case "once":
-                    // 一次性任務：用固定範圍，或用建立當天作為週期
-                    start = now.Date;
+                default: // once、none、null、空字串或其他未知 → 一次性任務
+                    // 固定週期（原本用「今天」當起點，每天都會建立新進度、可以每天再領一次獎勵）
+                    start = MissionResetTypes.OneTimeCycleStart;
                     end = new DateTime(9999, 12, 31, 23, 59, 59); // 最大值，避免溢位
-                    break;
-
-                default: // null、空字串或其他未知 → 視為一次性
-                    start = now.Date;
-                    end = new DateTime(9999, 12, 31, 23, 59, 59);
                     break;
             }
 
@@ -266,12 +273,8 @@ namespace incode.MVC.Services.Point
             foreach (var mission in missions)
             {
                 var (cycleStart, cycleEnd) = GetCycleRange(mission.ResetType);
-                // 取得本週期的進度
-                var progress = await _context.MissionProgress
-                    .FirstOrDefaultAsync(p =>
-                        p.UserId == userId &&
-                        p.MissionId == mission.MissionId &&
-                        p.CycleStartAt == cycleStart);
+                // 取得本週期的進度（一次性任務：唯一的那一筆）
+                var progress = await FindProgressAsync(userId, mission, cycleStart);
                 // 如果今天/本週期還沒建立 → 建立新進度
                 if (progress == null)
                 {

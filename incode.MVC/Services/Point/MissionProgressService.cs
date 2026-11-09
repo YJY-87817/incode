@@ -47,6 +47,12 @@ namespace incode.MVC.Services.Point
                 .Where(p => p.UserId == userId)
                 .ToListAsync();
 
+            // 已領過獎的一次性任務（任何一筆進度領過就不能再領）
+            var rewardedOneTime = data
+                .Where(p => p.Mission != null && p.RewardedAt.HasValue && MissionResetTypes.IsOneTime(p.Mission.ResetType))
+                .Select(p => p.MissionId)
+                .ToHashSet();
+
             return data.Select(p =>
             {
                 var m = p.Mission;
@@ -54,7 +60,8 @@ namespace incode.MVC.Services.Point
 
                 var resetType = (m.ResetType ?? "none").ToLowerInvariant();
                 bool isCompleted = p.CurrentCount >= m.TargetCount;
-                bool canClaim = isCompleted && !p.RewardedAt.HasValue && m.IsActive;
+                bool canClaim = isCompleted && !p.RewardedAt.HasValue && m.IsActive
+                                && !(MissionResetTypes.IsOneTime(m.ResetType) && rewardedOneTime.Contains(m.MissionId));
 
                 // 已領取過，檢查是否同週期
                 if (p.RewardedAt.HasValue)
@@ -182,6 +189,12 @@ namespace incode.MVC.Services.Point
                         Code = 400,
                         Message = $"進度未達標 ({progress.CurrentCount}/{mission.TargetCount})"
                     };
+
+                // 一次性任務：同一會員任何一筆進度領過就不能再領（改版前每天會建立新進度，可能有多筆）
+                if (MissionResetTypes.IsOneTime(mission.ResetType) &&
+                    await _context.MissionProgress.AnyAsync(p =>
+                        p.UserId == userId && p.MissionId == mission.MissionId && p.RewardedAt != null))
+                    return new ResultDTO { Ok = false, Code = 400, Message = "此任務已領取過獎勵" };
 
                 if (progress.RewardedAt.HasValue)
                 {
