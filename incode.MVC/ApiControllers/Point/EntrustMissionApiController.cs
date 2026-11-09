@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,12 +14,10 @@ namespace incode.MVC.ApiControllers.Point
     [ApiController]
     public class EntrustMissionApiController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
         private readonly IEntrustMissionService _entrustMissionService;
 
-        public EntrustMissionApiController(incodedatabaseContext context, IEntrustMissionService entrustMissionService)
+        public EntrustMissionApiController(IEntrustMissionService entrustMissionService)
         {
-            _context = context;
             _entrustMissionService = entrustMissionService;
         }
 
@@ -36,22 +33,8 @@ namespace incode.MVC.ApiControllers.Point
         [HttpGet("{id}")]
         public async Task<EntrustMissionDTO> GetEntrustMission(int id)
         {
-            EntrustMissionDTO? EmDTO = await _context.EntrustMission.Select(em => new EntrustMissionDTO
-            {
-                EntrustMissionId = em.EntrustMissionId,
-                UserId = em.UserId,
-                ContentId = em.ContentId,
-                Title = em.Title,
-                Detail = em.Detail,
-                RewardPoints = em.RewardPoints,
-                Category = em.Category,
-                Deadline = em.Deadline,
-                Status = em.Status,
-                IsUrgent = em.IsUrgent ?? false,
-                IsActive = em.IsActive,
-                CreatedAt = em.CreatedAt,
-                UpdatedAt = em.UpdatedAt,
-            }).FirstOrDefaultAsync(em => em.EntrustMissionId == id);
+            // 只回傳上架中的委託（隱藏 / 已下架的不外露）
+            var EmDTO = await _entrustMissionService.GetEntrustMissionByIdAsync(id);
 
             return EmDTO;
         }

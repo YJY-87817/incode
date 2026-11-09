@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace incode.MVC.ApiControllers.PointShop
@@ -13,19 +12,17 @@ namespace incode.MVC.ApiControllers.PointShop
     public class OrderApiController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly incodedatabaseContext _context;
 
-        public OrderApiController(IOrderService orderService, incodedatabaseContext context)
+        public OrderApiController(IOrderService orderService)
         {
             _orderService = orderService;
-            _context = context;
         }
 
         private int userId => HttpContext.User.GetId();
 
         // 取得自己的訂單 (找不到時一律回 404，不透露訂單是否存在)
         private Task<Orders?> FindOwnOrderAsync(int orderId)
-            => _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);
+            => _orderService.GetOwnOrderAsync(orderId, userId);
 
         // 會員端只有「待處理」的訂單可以修改 / 取消 / 改寄送資料
         private static ResultDTO<int>? CheckEditable(Orders order, string action)
@@ -88,10 +85,7 @@ namespace incode.MVC.ApiControllers.PointShop
         public async Task<ActionResult<ResultDTO<int>>> EditShipped(int shippedDetailId, [FromBody] NewShippedRequest shipped)
         {
             // 只能修改自己訂單的寄送資料
-            var order = await _context.ShippedDetail
-                .Where(s => s.ShippedDetailId == shippedDetailId && s.Order.UserId == userId)
-                .Select(s => s.Order)
-                .FirstOrDefaultAsync();
+            var order = await _orderService.GetOwnOrderByShippedDetailAsync(shippedDetailId, userId);
 
             if (order == null)
                 return this.ToActionResult(ResultDTO<int>.Failure($"找不到編號為 {shippedDetailId} 的寄送資料", 404));

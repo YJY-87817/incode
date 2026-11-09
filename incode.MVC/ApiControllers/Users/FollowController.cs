@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace incode.MVC.ApiControllers.Users
 {
@@ -9,126 +8,62 @@ namespace incode.MVC.ApiControllers.Users
     [Authorize]
     public class FollowController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IFollowService _followService;
 
-        public FollowController(incodedatabaseContext context)
+        public FollowController(IFollowService followService)
         {
-            _context = context;
+            _followService = followService;
         }
 
-        // GET: api/Follow/followers
+        // GET: api/Follow/followers  我的粉絲
         [HttpGet("followers")]
         public async Task<ActionResult<IEnumerable<object>>> GetMyFollowers()
-        {            
-            int myId = User.GetId();
-
-            var followers = await _context.Follow
-                .Where(f => f.FolloweeId == myId)
-                .Select(f => new {
-                    f.FollowerId,
-                    f.Follower.Username,
-                    f.Follower.ImageUrl,
-                    f.CreatedAt
-                })
-                .ToListAsync();
-
-            return Ok(followers);
+        {
+            var list = await _followService.GetFollowersAsync(User.GetId());
+            return Ok(list.Select(x => new { FollowerId = x.Id, x.Username, x.ImageUrl, x.CreatedAt }));
         }
 
-        // GET: api/Follow/following
+        // GET: api/Follow/following  我追蹤中的人
         [HttpGet("following")]
         public async Task<ActionResult<IEnumerable<object>>> GetMyFollowing()
         {
-            int myId = User.GetId(); 
-
-            var following = await _context.Follow
-                .Where(f => f.FollowerId == myId)
-                .Select(f => new {
-                    f.FolloweeId,
-                    f.Followee.Username,
-                    f.Followee.ImageUrl,
-                    f.CreatedAt
-                })
-                .ToListAsync();
-
-            return Ok(following);
+            var list = await _followService.GetFollowingAsync(User.GetId());
+            return Ok(list.Select(x => new { FolloweeId = x.Id, x.Username, x.ImageUrl, x.CreatedAt }));
         }
 
-        // GET: api/Follow/followers/5
+        // GET: api/Follow/followers/5  指定會員的粉絲（Id 為粉絲的會員編號）
         [HttpGet("followers/{userId}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetUserFollowers(int userId)
-        {
-            var followers = await _context.Follow
-                .Where(f => f.FolloweeId == userId) // 這裡改用傳進來的 userId
-                .Select(f => new {
-                    Id = f.FollowerId,              // 注意：這裡回傳的是粉絲的 ID
-                    Username = f.Follower.Username,
-                    ImageUrl = f.Follower.ImageUrl,
-                    CreatedAt = f.CreatedAt
-                })
-                .ToListAsync();
+        public async Task<ActionResult<IEnumerable<FollowListItemDto>>> GetUserFollowers(int userId)
+            => Ok(await _followService.GetFollowersAsync(userId));
 
-            return Ok(followers);
-        }
-
-        // GET: api/Follow/following/5
+        // GET: api/Follow/following/5  指定會員追蹤中的人（Id 為被追蹤者的會員編號）
         [HttpGet("following/{userId}")]
-        public async Task<ActionResult<IEnumerable<object>>> GetUserFollowing(int userId)
-        {
-            var following = await _context.Follow
-                .Where(f => f.FollowerId == userId) // 這裡改用傳進來的 userId
-                .Select(f => new {
-                    Id = f.FolloweeId,              // 注意：這裡回傳的是被追蹤者的 ID
-                    Username = f.Followee.Username,
-                    ImageUrl = f.Followee.ImageUrl,
-                    CreatedAt = f.CreatedAt
-                })
-                .ToListAsync();
-
-            return Ok(following);
-        }
+        public async Task<ActionResult<IEnumerable<FollowListItemDto>>> GetUserFollowing(int userId)
+            => Ok(await _followService.GetFollowingAsync(userId));
 
         // POST: api/Follow/{targetId}
         [HttpPost("{targetId}")]
         public async Task<IActionResult> FollowUser(int targetId)
         {
-            int myId = User.GetId(); 
-
-            if (myId == targetId) return BadRequest("不能追蹤自己");
-
-            var exists = await _context.Follow
-                .AnyAsync(f => f.FollowerId == myId && f.FolloweeId == targetId);
-
-            if (exists) return BadRequest("已經追蹤過了");
-
-            var follow = new Follow
+            var result = await _followService.FollowUserAsync(User.GetId(), targetId);
+            return result switch
             {
-                FollowerId = myId,
-                FolloweeId = targetId,
-                CreatedAt = DateTime.Now
+                FollowResult.Success => Ok(new { message = "追蹤成功" }),
+                FollowResult.Self => BadRequest("不能追蹤自己"),
+                FollowResult.AlreadyFollowing => BadRequest("已經追蹤過了"),
+                FollowResult.TargetNotFound => NotFound("找不到該使用者"),
+                _ => StatusCode(500)
             };
-
-            _context.Follow.Add(follow);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "追蹤成功" });
         }
 
         // DELETE: api/Follow/{targetId}
         [HttpDelete("{targetId}")]
         public async Task<IActionResult> UnfollowUser(int targetId)
         {
-            int myId = User.GetId(); 
-
-            var follow = await _context.Follow
-                .FirstOrDefaultAsync(f => f.FollowerId == myId && f.FolloweeId == targetId);
-
-            if (follow == null) return NotFound("未找到追蹤紀錄");
-
-            _context.Follow.Remove(follow);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "已取消追蹤" });
+            var result = await _followService.UnfollowUserAsync(User.GetId(), targetId);
+            return result == FollowResult.Success
+                ? Ok(new { message = "已取消追蹤" })
+                : NotFound("未找到追蹤紀錄");
         }
     }
 }
