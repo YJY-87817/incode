@@ -19,12 +19,17 @@ namespace incode.MVC.Services.Chat
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly ILogger<GeminiService> _logger;
 
-        public GeminiService(HttpClient httpClient, IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
+        // AI 服務失敗時顯示給使用者的訊息（細節只寫進 log，不放進聊天內容）
+        private const string AiUnavailableMessage = "AI 客服暫時無法回覆，請稍後再試或改由真人客服協助。";
+
+        public GeminiService(HttpClient httpClient, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<GeminiService> logger)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _webHostEnvironment = webHostEnvironment;
+            _logger = logger;
         }
 
 
@@ -32,7 +37,11 @@ namespace incode.MVC.Services.Chat
         public async Task<string> GetGeminiReplyAsync(string fullPrompt)
         {
             string geminiApiKey = _configuration["GeminiApiKey"];
-            if (string.IsNullOrEmpty(geminiApiKey)) return "[系統內部錯誤] Gemini API Key 未設定";
+            if (string.IsNullOrEmpty(geminiApiKey))
+            {
+                _logger.LogError("GeminiApiKey 未設定");
+                return AiUnavailableMessage;
+            }
 
             string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
 
@@ -156,7 +165,11 @@ namespace incode.MVC.Services.Chat
 
                 return status == "processing" ? "圖片生成中，請稍候 20 秒。" : "生圖服務暫時忙碌。";
             }
-            catch (Exception ex) { return $"生成異常：{ex.Message}"; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AI 生圖失敗");
+                return "圖片生成失敗，請稍後再試。";
+            }
         }
 
         // ==========================================
@@ -209,10 +222,15 @@ namespace incode.MVC.Services.Chat
                 else
                 {
                     string errorDetails = await response.Content.ReadAsStringAsync();
-                    return $"[API 錯誤] 代碼: {response.StatusCode}\n詳細訊息: {errorDetails}";
+                    _logger.LogError("Gemini API 回應錯誤 {StatusCode}: {Details}", (int)response.StatusCode, errorDetails);
+                    return AiUnavailableMessage;
                 }
             }
-            catch (Exception ex) { return $"[連線錯誤] {ex.Message}"; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "呼叫 Gemini API 失敗");
+                return AiUnavailableMessage;
+            }
         }
     }
 }

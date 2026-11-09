@@ -201,7 +201,8 @@ namespace incode.MVC.Services.Point
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                return new ResultDTO { Ok = false, Code = 500, Message = $"建立失敗：{ex.Message}" };
+                _logger.LogError(ex, "建立委託失敗 - UserId: {UserId}", userId);
+                return new ResultDTO { Ok = false, Code = 500, Message = "建立委託失敗，請稍後再試" };
             }
         }
 

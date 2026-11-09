@@ -263,10 +263,10 @@ namespace incode.MVC.Services.Point
         public async Task TipAsync(int fromUserId, int toUserId, int contentId, int amount)
         {
             if (fromUserId == toUserId)
-                throw new Exception("不能打賞自己");
+                throw new BusinessException("不能打賞自己");
 
             if (amount <= 0)
-                throw new ArgumentException("打賞金額必須大於 0");
+                throw new BusinessException("打賞金額必須大於 0");
 
             using var tx = await _context.Database.BeginTransactionAsync();
             try
@@ -276,7 +276,7 @@ namespace incode.MVC.Services.Point
 
                 var fromBalance = await GetCurrentBalanceAsync(fromUserId);
                 if (fromBalance < amount)
-                    throw new Exception("點數不足");
+                    throw new BusinessException("點數不足");
 
                 var contentTitle = await _context.Content
                     .Where(c => c.ContentId == contentId)
