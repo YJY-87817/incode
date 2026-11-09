@@ -272,11 +272,16 @@ incode/
       改為一律保留 `sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"`、不允許腳本；
       內容在顯示前已經過 DOMPurify（會移除 script / iframe），所以原本的 `allow-scripts` 沒有實際用途
 25. 儲值方案點數：`Recharge.vue` 的方案原本寫「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點）。
-    前端改為依後端規則由金額計算點數（50 元 = 500、95 元 = 950、270 元 = 2700），移除不存在的贈點顯示
+    前端改為依後端規則由金額計算點數，方案價格改為整數（50 元 = 500、100 元 = 1000、300 元 = 3000），移除不存在的贈點顯示
+26. 前端重複的 Bootstrap CSS（全專案檢查 22 的一部分）：`main.js` 原本在 Material Kit（內含自己編譯的 Bootstrap 5.2）之外又載入一整份
+    Bootstrap 5.3 CSS。移除後主 CSS 1,049 KB → 876 KB；5.3 才有、專案有用到的 22 個工具類別（`bg-*-subtle`、`fw-semibold`、`rounded-4`、
+    `object-fit-cover` 等）收進 `src/assets/css/bootstrap53-utilities.css`。以改前 / 改後兩份建置、12 個頁面與表單驗證狀態截圖逐像素比對，
+    結果完全一致（一開始 `rounded-4` 寫死 1rem 差了 4px：Material Kit 的 `:root` 把 `--bs-border-radius-xl` 設成 .75rem，改為引用變數後一致）。
+    Bootstrap JS（offcanvas 等 `data-bs-*`）與 `bootstrap-icons` 仍使用
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～24），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～26），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -313,9 +318,8 @@ incode/
 21. **上傳檔案在 git 與 wwwroot**（部分修正，見修正紀錄 21）：~~新的上傳檔寫進 wwwroot~~。
     尚未處理：改版前約 93 MB 的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中。
     移除前要先把這些檔案複製到各環境的 `App:UploadRoot`（否則 pull 後檔案被刪、網址失效）；git 歷史中的檔案要改寫歷史才會變小。
-22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
-    尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
-    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
+22. **前端效能 / 結構**（部分修正，見修正紀錄 15、26）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
+    尚未處理：`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
