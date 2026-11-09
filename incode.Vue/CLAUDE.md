@@ -94,7 +94,7 @@ src/
 - `vite.config.js`：`incode.Vue/` 下有 `key.pem` / `cert.pem`（已 gitignore）時 dev server 使用 HTTPS，沒有時改為 HTTP；`npm run build` 不需要憑證
 - CI（repo 根目錄 `.github/workflows/ci.yml`）在 Linux 執行 `npm ci` + `npm run build`，匯入路徑大小寫錯誤會讓 PR 檢查失敗
 - ESLint 9 沒有 `eslint.config.js`，`npm run lint` 目前無法執行
-- 沒有自動化測試。曾以 Playwright（環境內建 Chromium）+ 攔截 API 回應的方式做瀏覽器冒煙測試
+- 單元測試：`npm test`（Vitest + jsdom，測試檔與原始檔同資料夾 `*.test.js`；涵蓋 sanitizeHtml、safeChatHtml、pointShopUtils、authInterceptor），CI 會執行。`toSafeHtml` 已從 `ChatWidget.vue` 抽到 `utils/safeChatHtml.js`。曾以 Playwright（環境內建 Chromium）+ 攔截 API 回應的方式做瀏覽器冒煙測試
 
 ## 已知問題
 
