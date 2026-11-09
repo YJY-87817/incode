@@ -24,14 +24,17 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly string _frontendUrl; // 前端網址 (App:FrontendUrl)，AI 回覆中產生連結用
+        private readonly ILogger<ChatMessagesApiController> _logger;
 
         public ChatMessagesApiController(
           incodedatabaseContext context,
           GeminiService geminiService,
           IHubContext<ChatHub> hubContext,
           IWebHostEnvironment webHostEnvironment,
-          IConfiguration configuration)
+          IConfiguration configuration,
+          ILogger<ChatMessagesApiController> logger)
         {
+            _logger = logger;
             _context = context;
             _geminiService = geminiService;
             _hubContext = hubContext;
@@ -39,6 +42,13 @@ namespace incode.MVC.ApiControllers.Chat
             _frontendUrl = configuration.GetFrontendUrl();
         }
 
+
+        // 非預期錯誤：記錄例外，回傳通用訊息（不要把 ex.Message 回給前端）
+        private IActionResult ServerError(Exception ex, string action)
+        {
+            _logger.LogError(ex, "{Action}失敗", action);
+            return StatusCode(500, new { message = $"{action}失敗，請稍後再試", error = $"{action}失敗" });
+        }
 
         private int GetCurrentUserId()   //定義取得使用者方法，回傳值為整數
         {
@@ -196,7 +206,8 @@ namespace incode.MVC.ApiControllers.Chat
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = $"建立對話失敗: {ex.Message}" });
+                _logger.LogError(ex, "建立客服對話失敗");
+                return StatusCode(500, new { message = "建立對話失敗，請稍後再試", error = "建立對話失敗" });
             }
         }
 
@@ -367,7 +378,8 @@ namespace incode.MVC.ApiControllers.Chat
             catch (Exception ex)
             {
                 // Catch 區塊也必須有回傳值
-                return StatusCode(500, new { error = $"伺服器錯誤: {ex.Message}" });
+                _logger.LogError(ex, "客服聊天處理失敗");
+                return StatusCode(500, new { message = "伺服器錯誤，請稍後再試", error = "伺服器錯誤" });
             }
         }
 
@@ -402,7 +414,7 @@ namespace incode.MVC.ApiControllers.Chat
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = ex.Message });
+                return ServerError(ex, "取得客服對話列表");
             }
         }
 
@@ -439,7 +451,8 @@ namespace incode.MVC.ApiControllers.Chat
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = $"客服回覆失敗: {ex.Message}" });
+                _logger.LogError(ex, "客服回覆失敗");
+                return StatusCode(500, new { message = "客服回覆失敗，請稍後再試", error = "客服回覆失敗" });
             }
         }
 
@@ -507,7 +520,7 @@ namespace incode.MVC.ApiControllers.Chat
             catch (Exception ex)
             {
                 // 確保 catch 也有回傳，避免編譯錯誤
-                return StatusCode(500, new { error = ex.Message });
+                return ServerError(ex, "切換客服模式");
             }
         }
 
@@ -666,7 +679,7 @@ namespace incode.MVC.ApiControllers.Chat
 
                 return Ok(new { success = true, sessionId = validSessionId, isNew = isNew });
             }
-            catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+            catch (Exception ex) { return ServerError(ex, "上傳聊天圖片"); }
         }
 
         // 取得歷史訊息
@@ -698,7 +711,7 @@ namespace incode.MVC.ApiControllers.Chat
                   .ToListAsync();
                 return Ok(history);
             }
-            catch (Exception ex) { return StatusCode(500, new { error = ex.Message }); }
+            catch (Exception ex) { return ServerError(ex, "取得聊天紀錄"); }
         }
 
         // 檢查登入狀態

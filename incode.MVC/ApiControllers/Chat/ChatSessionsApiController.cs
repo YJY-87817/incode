@@ -28,14 +28,18 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly IHubContext<ChatHub> _hubContext;
 
         // 建構子 (Constructor): 透過依賴注入 (DI) 取得所需的服務實例
+        private readonly ILogger<ChatSessionsApiController> _logger;
+
         public ChatSessionsApiController(
             incodedatabaseContext context,
             GeminiService geminiService,
-            IHubContext<ChatHub> hubContext)
+            IHubContext<ChatHub> hubContext,
+            ILogger<ChatSessionsApiController> logger)
         {
             _context = context;
             _geminiService = geminiService;
             _hubContext = hubContext;
+            _logger = logger;
         }
 
         // ==========================================
@@ -132,7 +136,8 @@ namespace incode.MVC.ApiControllers.Chat
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"AI 命名失敗: {ex.Message}");
+                _logger.LogError(ex, "AI 命名對話失敗 - SessionId: {SessionId}", sessionId);
+                return StatusCode(500, new { message = "AI 命名失敗，請稍後再試" });
             }
         }
 
