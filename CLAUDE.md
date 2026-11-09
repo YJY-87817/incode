@@ -90,7 +90,7 @@ incode/
   （餘額、任務是否已領獎、委託狀態…）先呼叫 `LockUsersAsync(userId, ...)`，同一會員的請求才會排隊、不會讀到舊狀態；
   多位會員一次傳入（內部依 ID 排序避免死結）。
 - **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價；前端可輸入的金額 / 數量要在 DTO 加 `[Range]`。
-- **任務進度**：只由伺服器端觸發。可以被會員反覆切換的動作（例如按讚）不要用 `TriggerMissionAsync` 每次 +1，
+- **任務進度**：只由伺服器端觸發。一次性任務（`MissionResetTypes.IsOneTime`）每位會員只有一筆進度、只能領一次獎勵。可以被會員反覆切換的動作（例如按讚）不要用 `TriggerMissionAsync` 每次 +1，
   改用 `SyncMissionCountAsync` 依實際資料計算。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
 - **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
   前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
@@ -250,10 +250,15 @@ incode/
     後台商品圖片改存到 `App:UploadRoot`（預設 `App_Data/uploads`，已 gitignore；正式環境以 `App__UploadRoot` 設成部署資料夾外的絕對路徑）。
     `Program.cs` 以第二個 `UseStaticFiles` 把該資料夾掛在網站根目錄，**網址與資料庫內容都不變**；改版前留在 `wwwroot` 的檔案仍由
     wwwroot 提供，刪除（商品換圖、後台刪圖）時兩處都會找
+22. 一次性任務可每天重複領獎：`reset_type` 為 `once` / `none`（例如「首次兌換」）的任務，週期起點原本是「今天」，
+    每天會建立新的進度、可以每天再領一次獎勵（實測隔天再兌換，50 點發了第 2 次）。
+    - 一次性任務改用固定週期起點 `MissionResetTypes.OneTimeCycleStart`（`Constants/MissionResetTypes.cs`），每位會員只有一筆進度
+    - 改版前的舊資料可能已有多筆：查詢進度時一次性任務不看週期起點（優先取已領獎的那筆）；領獎時任何一筆領過就拒絕，
+      「我的任務」也不再顯示可領
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～21），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～22），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -305,4 +310,6 @@ incode/
   但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
 - 建立委託（`CreateEntrustMissionAsync`）沒有檢查關聯的內容是否為自己的文章，可以把委託掛在別人的文章上。
 - 後台 `EntrustMission/Edit` 可以直接把狀態改成 cancelled，但不會退還預扣點數（取消請走前台 API 的流程）。
+- 任務大廳（`MissionList.vue`）按下領取後，還沒等後端回應就先顯示「領取成功」。
+- 論壇編輯器工具列的「啟用中」狀態永遠不會亮（`TiptapEditor.vue` 模板寫成 `editor?.value?.isActive`）。
 - 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。
