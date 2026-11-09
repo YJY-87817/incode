@@ -2,6 +2,14 @@
 
 @{
     ViewData["Title"] = "編輯委託任務";
+    var statusText = Model.Status switch
+    {
+        "open" => "徵求中",
+        "completed" => "已完成",
+        "cancelled" => "已取消",
+        "expired" => "已過期",
+        _ => Model.Status
+    };
 }
 
 <div class="container py-4">
@@ -13,6 +21,11 @@
                 </div>
 
                 <div class="card-body p-4">
+                    <partial name="_TempDataAlert" />
+                    <div class="alert alert-info small">
+                        狀態、獎勵點數、最佳解答、關聯內容與啟用狀態牽涉會員的預扣點數，不能在這裡直接修改。
+                        要取消委託請使用頁面下方的「取消委託並退款」。
+                    </div>
                     <form id="editForm" asp-action="Edit" method="post">
                         <input type="hidden" asp-for="EntrustMissionId" />
                         <input type="hidden" asp-for="CreatedAt" />
@@ -47,25 +60,15 @@
                                         <span asp-validation-for="Category" class="text-danger small"></span>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="Status" class="form-label fw-bold">狀態 <span class="text-danger">*</span></label>
-                                        <select asp-for="Status" class="form-select border-warning-subtle" required>
-                                            <option value="open">開放中</option>
-                                            <option value="completed">已完成</option>
-                                            <option value="cancelled">已取消</option>
-                                            <option value="expired">已過期</option>
-                                        </select>
-                                        <span asp-validation-for="Status" class="text-danger small"></span>
+                                        <label class="form-label fw-bold">狀態</label>
+                                        <div class="form-control-plaintext bg-light border rounded px-2">@statusText</div>
                                     </div>
                                 </div>
 
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
-                                        <label asp-for="RewardPoints" class="form-label fw-bold text-danger">獎勵點數 <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">P</span>
-                                            <input asp-for="RewardPoints" type="number" class="form-control" min="0" required>
-                                        </div>
-                                        <span asp-validation-for="RewardPoints" class="text-danger small"></span>
+                                        <label class="form-label fw-bold text-danger">獎勵點數</label>
+                                        <div class="form-control-plaintext bg-light border rounded px-2">@Model.RewardPoints P</div>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="Deadline" class="form-label fw-bold text-success">截止日期</label>
@@ -92,33 +95,23 @@
                                 <label class="form-label fw-bold text-muted mb-3">關聯設定</label>
 
                                 <div class="mb-3 text-start">
-                                    <label asp-for="ContentId" class="form-label fw-bold">關聯內容</label>
-                                    <select asp-for="ContentId" class="form-select" asp-items="ViewBag.ContentId">
-                                        <option value="">-- 請選擇 --</option>
-                                    </select>
-                                    <span asp-validation-for="ContentId" class="text-danger small"></span>
+                                    <label class="form-label fw-bold">關聯內容</label>
+                                    <div class="form-control-plaintext bg-light border rounded px-2">#@Model.ContentId @(Model.Content?.Title)</div>
                                 </div>
 
                                 <div class="mb-3 text-start">
-                                    <label asp-for="BestContentId" class="form-label fw-bold">最佳內容</label>
-                                    <select asp-for="BestContentId" class="form-select" asp-items="ViewBag.BestContentId">
-                                        <option value="">-- 請選擇 --</option>
-                                    </select>
-                                    <span asp-validation-for="BestContentId" class="text-danger small"></span>
+                                    <label class="form-label fw-bold">最佳內容</label>
+                                    <div class="form-control-plaintext bg-light border rounded px-2">@(Model.BestContentId.HasValue ? $"#{Model.BestContentId}" : "尚未選出")</div>
                                 </div>
 
                                 <div class="mb-3 text-start">
-                                    <label asp-for="BestUserId" class="form-label fw-bold">獲選會員</label>
-                                    <select asp-for="BestUserId" class="form-select" asp-items="ViewBag.BestUserId">
-                                        <option value="">-- 請選擇 --</option>
-                                    </select>
-                                    <span asp-validation-for="BestUserId" class="text-danger small"></span>
+                                    <label class="form-label fw-bold">獲選會員</label>
+                                    <div class="form-control-plaintext bg-light border rounded px-2">@(Model.BestUser?.Email ?? "—")</div>
                                 </div>
 
                                 <div class="mb-3 text-start">
-                                    <label asp-for="SelectedAt" class="form-label fw-bold">獲選時間</label>
-                                    <input asp-for="SelectedAt" class="form-control" type="datetime-local" />
-                                    <span asp-validation-for="SelectedAt" class="text-danger small"></span>
+                                    <label class="form-label fw-bold">獲選時間</label>
+                                    <div class="form-control-plaintext bg-light border rounded px-2">@(Model.SelectedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</div>
                                 </div>
 
                                 <div class="mt-4 px-4 text-start">
@@ -127,11 +120,7 @@
                                         <input type="hidden" name="IsUrgent" value="false" />
                                         <label class="form-check-label fw-bold text-danger" asp-for="IsUrgent">緊急任務</label>
                                     </div>
-                                    <div class="form-check form-switch">
-                                        <input type="checkbox" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "") class="form-check-input" />
-                                        <input type="hidden" name="IsActive" value="false" />
-                                        <label asp-for="IsActive" class="form-check-label fw-bold">啟用任務</label>
-                                    </div>
+                                    <div class="small text-muted">啟用狀態：@(Model.IsActive ? "啟用" : "已下架")</div>
                                 </div>
                             </div>
                         </div>
@@ -151,6 +140,19 @@
                             <a href="@Url.Action("Index")" class="btn btn-outline-secondary px-4">取消</a>
                         </div>
                     </form>
+
+                    @if (Model.Status == "open")
+                    {
+                        <hr class="my-4">
+                        <form asp-action="Cancel" asp-route-id="@Model.EntrustMissionId" method="post"
+                              onsubmit="return confirm('確定取消這個委託？預扣的 @Model.RewardPoints 點會退回給發起人。');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle me-1"></i> 取消委託並退款
+                            </button>
+                            <span class="small text-muted ms-2">退回預扣點數給發起人；已有會員回覆也可以取消</span>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
@@ -177,11 +179,6 @@
             const category = document.querySelector('input[name="Category"]');
             if (!category.value.trim()) {
                 errors.push('類別');
-            }
-
-            const rewardPoints = document.querySelector('input[name="RewardPoints"]');
-            if (!rewardPoints.value) {
-                errors.push('獎勵點數');
             }
 
             // 如果有錯誤，顯示提示並阻止提交

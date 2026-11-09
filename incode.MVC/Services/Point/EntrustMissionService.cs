@@ -143,9 +143,22 @@ namespace incode.MVC.Services.Point
             if (dto.Deadline.HasValue && dto.Deadline < now)
                 return new ResultDTO { Ok = false, Code = 400, Message = "截止時間不能是過去時間" };
 
-            bool contentExists = await _context.Content.AnyAsync(c => c.ContentId == dto.ContentId);
-            if (!contentExists)
+            // 只能掛在自己的主題文章（不是回覆）上：不是自己的文章一律 404。
+            // 選最佳解答時以「回覆所屬的主題」比對委託的 ContentId，掛在回覆上的委託永遠無法結案
+            var content = await _context.Content
+                .AsNoTracking()
+                .Where(c => c.ContentId == dto.ContentId && c.IsActive == 1)
+                .Select(c => new { c.UserId, c.ParentContentId })
+                .FirstOrDefaultAsync();
+            if (content == null || content.UserId != userId)
                 return new ResultDTO { Ok = false, Code = 404, Message = "指定的內容不存在" };
+            if (content.ParentContentId.HasValue)
+                return new ResultDTO { Ok = false, Code = 400, Message = "委託只能建立在自己的主題文章上" };
+
+            bool hasMission = await _context.EntrustMission
+                .AnyAsync(em => em.ContentId == dto.ContentId && em.IsActive && em.Status != "cancelled");
+            if (hasMission)
+                return new ResultDTO { Ok = false, Code = 409, Message = "這篇文章已經有委託" };
 
             bool userExists = await _context.User.AnyAsync(u => u.UserId == userId);
             if (!userExists)
@@ -209,7 +222,24 @@ namespace incode.MVC.Services.Point
         // 取消委託（退還預扣點數）
         // 委託人取消委託：狀態改為 cancelled 並退還預扣點數（同一交易）。
         // 只有「徵求中」且還沒有其他會員回覆的委託可以取消，避免拿到解答後取消、拿回賞金
-        public async Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
+        public Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
+            => CancelAsync(entrustMissionId, userId, byAdmin: false);
+
+        // 後台管理員取消委託：不限發起人、已有回覆或已下架也可以取消（例如違規內容），同樣退還預扣點數
+        public async Task<ResultDTO> CancelEntrustMissionByAdminAsync(int entrustMissionId)
+        {
+            var ownerId = await _context.EntrustMission
+                .Where(em => em.EntrustMissionId == entrustMissionId)
+                .Select(em => (int?)em.UserId)
+                .FirstOrDefaultAsync();
+            if (ownerId == null)
+                return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
+
+            return await CancelAsync(entrustMissionId, ownerId.Value, byAdmin: true);
+        }
+
+        // userId：委託人（會員取消時為登入者，後台取消時為委託的發起人）
+        private async Task<ResultDTO> CancelAsync(int entrustMissionId, int userId, bool byAdmin)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -218,7 +248,7 @@ namespace incode.MVC.Services.Point
                 await _pointLogService.LockUsersAsync(userId);
 
                 var mission = await _context.EntrustMission
-                    .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
+                    .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && (em.IsActive || byAdmin));
 
                 // 不存在或不是自己發起的委託一律 404
                 if (mission == null || mission.UserId != userId)
@@ -230,7 +260,7 @@ namespace incode.MVC.Services.Point
                 if (mission.Status != "open" || mission.BestContentId.HasValue)
                     return new ResultDTO { Ok = false, Code = 409, Message = "已結案的委託無法取消" };
 
-                if (await HasRepliesFromOthersAsync(mission.ContentId, userId))
+                if (!byAdmin && await HasRepliesFromOthersAsync(mission.ContentId, userId))
                     return new ResultDTO { Ok = false, Code = 409, Message = "已有其他會員回覆，無法取消，請從回覆中選出最佳解答" };
 
                 mission.Status = "cancelled";

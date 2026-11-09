@@ -9,14 +9,12 @@ import TaskSidebar from "@/components/point/TaskSidebar.vue";
 import MissionList from "@/components/point/MissionList.vue";
 import EntrustMissionTable from "@/components/point/EntrustMissionTable.vue";
 import TaskDetailDrawer from "@/components/point/TaskDetailDrawer.vue";
-import Swal from "sweetalert2";
 
 const store = useTaskStore();
 
 // 狀態控制
 const isDrawerOpen = ref(false);
 const selectedTask = ref(null);
-const isClaiming = ref(false);
 
 // 安全讀取長度的計算屬性 (防止 undefined.length 報錯)
 const missionCount = computed(() => store.missions?.length || 0);
@@ -25,31 +23,6 @@ const entrustCount = computed(() => store.entrustMissions?.length || 0);
 const openDetail = (task) => {
   selectedTask.value = task;
   isDrawerOpen.value = true;
-};
-
-// 只有平台任務可以接取（MissionList 發出 { type: "platform", mission }）；
-// 委託任務的列表與詳細抽屜直接導向討論區，不會發出 claim
-const handleClaim = async (payload) => {
-  if (payload?.type !== "platform") return;
-  const task = payload.mission;
-  if (!task?.id) return;
-
-  isClaiming.value = true;
-  const originalClaimed = task.claimed;
-  task.claimed = true;
-
-  try {
-    await store.claimTask(task.id);
-  } catch (err) {
-    task.claimed = originalClaimed;
-    Swal.fire({
-      icon: "error",
-      title: "接取失敗",
-      text: err.message || "接取失敗，請稍後再試",
-    });
-  } finally {
-    isClaiming.value = false;
-  }
 };
 
 onMounted(() => {
@@ -121,13 +94,10 @@ onMounted(() => {
             <transition name="fade-slide" mode="out-in">
               <div :key="store.activeTab">
                 <div v-if="store.activeTab === 'mission'">
-                  <MissionList @open-detail="openDetail" @claim="handleClaim" />
+                  <MissionList @open-detail="openDetail" />
                 </div>
                 <div v-else>
-                  <EntrustMissionTable
-                    @open-detail="openDetail"
-                    @claim="handleClaim"
-                  />
+                  <EntrustMissionTable @open-detail="openDetail" />
                 </div>
               </div>
             </transition>
@@ -140,8 +110,6 @@ onMounted(() => {
       v-model:open="isDrawerOpen"
       :task="selectedTask"
       :tab="store.activeTab"
-      :is-claiming="isClaiming"
-      @claim="handleClaim"
     />
     <div
       v-if="isDrawerOpen"

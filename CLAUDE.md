@@ -255,10 +255,18 @@ incode/
     - 一次性任務改用固定週期起點 `MissionResetTypes.OneTimeCycleStart`（`Constants/MissionResetTypes.cs`），每位會員只有一筆進度
     - 改版前的舊資料可能已有多筆：查詢進度時一次性任務不看週期起點（優先取已領獎的那筆）；領獎時任何一筆領過就拒絕，
       「我的任務」也不再顯示可領
+23. 委託與任務的小問題（低優先清單）：
+    - 建立委託（`CreateEntrustMissionAsync`）只能掛在自己的主題文章：別人的文章 404、回覆 400、同一篇已有委託 409。
+      原本可以把委託掛在別人的文章上並扣自己的點數；`POST api/EntrustMissionApi` 失敗時改以 `Code` 作為 HTTP 狀態碼（原本 409 變 500）
+    - 後台 `EntrustMission/Edit` 只能改標題、詳情、類別、截止日期、緊急；狀態、賞金、最佳解答、關聯內容、啟用不能再直接改
+      （原本改成「已取消」不會退點）。新增「取消委託並退款」（`POST EntrustMission/Cancel/{id}` → `CancelEntrustMissionByAdminAsync`，
+      不限發起人、已有回覆也可取消）；徵求中的委託不能直接刪除
+    - 任務大廳（`MissionList.vue`）改為等後端回應才顯示「領取成功」，失敗只顯示失敗訊息（原本兩個提示都會跳出）；領取中按鈕停用
+    - 論壇編輯器工具列的粗體 / 斜體 / 底線「啟用中」狀態可以正常顯示（模板原本寫成 `editor?.value?.isActive`）
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～22），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～23），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -308,8 +316,4 @@ incode/
   新密碼沒有長度規則；信件連結中的 email 沒有 URL encode；前端網址寫死 `https://localhost:5173`（Google 登入導回也是）。
 - 論壇內容在前端以 `HtmlIframe` 顯示，`allow-scripts` + `allow-same-origin` 時會移除 sandbox；內容已用 DOMPurify 過濾，
   但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
-- 建立委託（`CreateEntrustMissionAsync`）沒有檢查關聯的內容是否為自己的文章，可以把委託掛在別人的文章上。
-- 後台 `EntrustMission/Edit` 可以直接把狀態改成 cancelled，但不會退還預扣點數（取消請走前台 API 的流程）。
-- 任務大廳（`MissionList.vue`）按下領取後，還沒等後端回應就先顯示「領取成功」。
-- 論壇編輯器工具列的「啟用中」狀態永遠不會亮（`TiptapEditor.vue` 模板寫成 `editor?.value?.isActive`）。
 - 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。
