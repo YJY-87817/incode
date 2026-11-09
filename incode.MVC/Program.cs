@@ -94,6 +94,9 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.SlidingExpiration = true;
 
+      // 帳號被停用 / 刪除時，已登入的人下一個請求就登出（見 MemberCookieValidator）
+      options.Events.OnValidatePrincipal = MemberCookieValidator.ValidateAsync;
+
       options.Events.OnRedirectToLogin = context =>
       {
         // 如果是 API 請求，回傳 401 狀態碼，不要跳轉 HTML 頁面

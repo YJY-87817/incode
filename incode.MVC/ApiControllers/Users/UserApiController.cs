@@ -141,17 +141,30 @@ namespace incode.MVC.ApiControllers.Users
             });
         }        
 
-        // DELETE: api/User/5  刪除會員 (僅限管理員)
-        [HttpDelete("{id}")]
+        // POST: api/User/5/deactivate  停用帳號 (僅限管理員)
+        // 不刪除資料（會員有任務進度、點數、文章等關聯資料）：停用後無法登入，已登入的人下一個請求就被登出
+        [HttpPost("{id}/deactivate")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeactivateUser(int id)
         {
-            if (!await _userService.DeleteUserAsync(id))
-            {
-                return NotFound();
-            }
+            if (id == User.GetId())
+                return BadRequest(new { message = "不能停用自己的帳號" });
 
-            return NoContent();
+            if (!await _userService.SetActiveAsync(id, false))
+                return NotFound();
+
+            return Ok(new { message = "已停用帳號" });
+        }
+
+        // POST: api/User/5/activate  恢復帳號 (僅限管理員)
+        [HttpPost("{id}/activate")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ActivateUser(int id)
+        {
+            if (!await _userService.SetActiveAsync(id, true))
+                return NotFound();
+
+            return Ok(new { message = "已恢復帳號" });
         }
 
         // GET: api/User/41/stats  公開個人頁的統計數字

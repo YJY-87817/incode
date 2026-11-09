@@ -31,8 +31,10 @@ namespace incode.MVC.Services.Users
         /// </summary>
         Task<(UpdateProfileResult Result, User? User)> UpdateProfileAsync(int userId, UpdateUserDto dto);
 
-        /// <summary>刪除會員；找不到回傳 false。</summary>
-        Task<bool> DeleteUserAsync(int userId);
+        /// <summary>
+        /// 停用 / 啟用帳號（不刪除資料）；停用後無法登入，已登入的人也會被登出。找不到回傳 false。
+        /// </summary>
+        Task<bool> SetActiveAsync(int userId, bool isActive);
     }
 
     public enum UpdateProfileResult
