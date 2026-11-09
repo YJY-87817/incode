@@ -92,6 +92,24 @@ export const useMissionStore = defineStore("mission", {
       }
     },
 
+    /**
+     * 取消自己發起的委託（POST api/EntrustMissionApi/{id}/cancel），預扣點數會退回。
+     * 只有徵求中、且還沒有其他會員回覆的委託可以取消；失敗時丟出後端訊息
+     */
+    async cancelEntrust(entrustMissionId) {
+      try {
+        const { data } = await axios.post(
+          `/api/EntrustMissionApi/${entrustMissionId}/cancel`,
+        );
+        await this.fetchMyMissions();
+        return data;
+      } catch (err) {
+        // 狀態已變更（已有人回覆、已結案、已取消）時也重新整理清單
+        if (err.response?.status === 409) await this.fetchMyMissions();
+        throw new Error(err.response?.data?.message || "取消委託失敗，請稍後再試");
+      }
+    },
+
     handleError(err) {
       if (err.response?.status === 401) {
         this.error = "登入已過期，請重新登入";

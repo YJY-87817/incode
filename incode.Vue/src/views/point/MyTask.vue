@@ -38,9 +38,9 @@ const filteredMissions = computed(() => {
     if (activeTab.value === "completed") {
       // 已領取，或是處於冷卻期（completed 但不能領）
       // 平台任務：已領取或冷卻期
-      // 委託任務：已結案 (status === "completed")
+      // 委託任務：已結案 (status === "completed") 或已取消
       if (isEntrust) {
-        return m.status === "completed";
+        return m.status === "completed" || m.status === "cancelled";
       }
       return (
         m.status === "rewarded" ||
@@ -61,7 +61,8 @@ const viewDetail = (mission) => {
 // 計算進度條寬度
 const calculateWidth = (mission) => {
   if (mission.entrustMissionId) {
-    // 委託任務：徵求中 20%，已結案 100%
+    // 委託任務：徵求中 20%，已結案 100%，已取消 0%
+    if (mission.status === "cancelled") return 0;
     return mission.hasBestAnswer ? 100 : 20;
   }
   // 平台任務維持原邏輯
@@ -153,6 +154,59 @@ const claimReward = async (mission) => {
   }
 };
 
+// 委託狀態文字
+const entrustStatusText = (mission) => {
+  if (mission.status === "cancelled") return "已取消";
+  return mission.hasBestAnswer ? "已結案" : "徵求解答中";
+};
+
+// 取消自己發起、徵求中的委託（後端會再檢查是否已有其他會員回覆）
+const canCancelEntrust = (mission) =>
+  !!mission.entrustMissionId && mission.isOwner && mission.status === "open";
+
+const isCancelling = ref(false);
+
+const cancelEntrust = async (mission) => {
+  const result = await Swal.fire({
+    title: "確定取消委託？",
+    text: `取消「${mission.title}」後，預扣的 ${mission.rewardPoints || 0} 點會退回。已有其他會員回覆的委託無法取消。`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#145369",
+    cancelButtonColor: "#86B0BD",
+    confirmButtonText: "確定取消委託",
+    cancelButtonText: "保留委託",
+    reverseButtons: true,
+    customClass: {
+      confirmButton: "text-white",
+      cancelButton: "text-white",
+    },
+  });
+  if (!result.isConfirmed) return;
+
+  isCancelling.value = true;
+  try {
+    const data = await missionStore.cancelEntrust(mission.entrustMissionId);
+    isDetailOpen.value = false;
+    await Swal.fire({
+      icon: "success",
+      title: "委託已取消",
+      text: data?.message || "預扣點數已退回",
+      confirmButtonColor: "#145369",
+      timer: 2500,
+    });
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "無法取消",
+      text: err.message,
+      confirmButtonColor: "#145369",
+    });
+  } finally {
+    isCancelling.value = false;
+  }
+};
+
 const formatDate = (date) =>
   date ? new Date(date).toLocaleString("zh-TW") : "---";
 
@@ -230,7 +284,9 @@ onMounted(() => {
             <div
               v-for="mission in filteredMissions"
               :key="
-                mission.missionProgressId || mission.entrustMissionProgressId
+                mission.entrustMissionId
+                  ? `entrust-${mission.entrustMissionId}`
+                  : `mission-${mission.missionProgressId}`
               "
               class="card border-0 shadow-sm mb-3 task-card"
               :class="{ 'entrust-border': mission.entrustMissionId }"
@@ -273,9 +329,7 @@ onMounted(() => {
                         <span class="text-xxs">
                           <template v-if="mission.entrustMissionId">
                             狀態：<span class="font-weight-bold">
-                              {{
-                                mission.hasBestAnswer ? "已結案" : "徵求解答中"
-                              }}
+                              {{ entrustStatusText(mission) }}
                             </span>
                           </template>
                           <template v-else>
@@ -314,6 +368,16 @@ onMounted(() => {
                       class="btn btn-xs btn-theme mb-0"
                     >
                       領取獎勵
+                    </button>
+
+                    <!-- 委託任務：自己發起、徵求中 → 可以取消 -->
+                    <button
+                      v-else-if="canCancelEntrust(mission)"
+                      @click="cancelEntrust(mission)"
+                      :disabled="isCancelling"
+                      class="btn btn-xs btn-outline-danger mb-0"
+                    >
+                      取消委託
                     </button>
 
                     <!-- 委託任務：如果是我獲得的，顯示已獲得 -->
@@ -440,6 +504,26 @@ onMounted(() => {
                 <p class="text-secondary text-xs mt-1">
                   {{ formatDate(selectedMission.createdAt) }}
                 </p>
+              </div>
+            </div>
+
+            <div
+              v-if="selectedMission.status === 'cancelled'"
+              class="timeline-block mb-3"
+            >
+              <span class="timeline-step bg-secondary text-white">
+                <i class="fas fa-ban text-xxs"></i>
+              </span>
+              <div class="timeline-content">
+                <h6 class="text-dark text-sm font-weight-bold mb-0">
+                  委託已取消
+                </h6>
+                <p class="text-secondary text-xs mt-1">
+                  {{ formatDate(selectedMission.updatedAt) }}
+                </p>
+                <small class="text-secondary">
+                  （預扣的 {{ selectedMission.rewardPoints }} Pts 已退回）
+                </small>
               </div>
             </div>
 
