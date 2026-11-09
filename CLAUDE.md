@@ -80,6 +80,8 @@ incode/
 ## 開發慣例（新程式請遵守）
 
 - **擁有者檢查**：前台 API 讀寫資料時必須確認屬於 `User.GetId()`，找不到或非本人一律回 404。
+- **分層**：新寫的前台 API Controller 與 Hub 不直接使用 `incodedatabaseContext`（聊天已完成，其餘見檢查結果 25）：資料存取與擁有者判斷放在 `Services/<模組>/`
+  （參考 `Services/Chat/ChatService.cs`），Controller 只處理 HTTP、授權屬性、SignalR 推播。後台 MVC 的 CRUD 頁面暫時直接用 DbContext
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -278,10 +280,16 @@ incode/
     `object-fit-cover` 等）收進 `src/assets/css/bootstrap53-utilities.css`。以改前 / 改後兩份建置、12 個頁面與表單驗證狀態截圖逐像素比對，
     結果完全一致（一開始 `rounded-4` 寫死 1rem 差了 4px：Material Kit 的 `:root` 把 `--bs-border-radius-xl` 設成 .75rem，改為引用變數後一致）。
     Bootstrap JS（offcanvas 等 `data-bs-*`）與 `bootstrap-icons` 仍使用
+27. 後端分層（全專案檢查 25 的一部分）：新增 `Services/Chat/IChatService` / `ChatService`，`ChatMessagesApiController`（原本 26 處直接使用 DbContext）、
+    `ChatSessionsApiController`、`ChatHub` 改為只呼叫服務；對話擁有者判斷（`IsOwnerAsync`）、取得 / 建立對話、訊息存檔、
+    客服列表（`SupportSessionDto`）、刪除對話集中在服務裡，API 路徑與回應格式不變。
+    以 25 項聊天流程測試（建立 / 接續對話、AI 與真人模式、客服列表、客服回覆、歷史、命名、刪除、他人存取）在 main 與分支各跑一次，
+    結果相同，唯一差異是修正：他人對話上傳圖片原本因空值例外回 500（回應帶出 `NullReferenceException`），現在回 401。
+    SignalR `JoinSessionGroup` 以 Hub 連線實測（本人 / 管理員可加入、他人被拒）
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～26），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22、25 部分修正（見修正紀錄 6～9、12～27），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -322,4 +330,7 @@ incode/
     尚未處理：`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
-25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
+25. **後端分層**（部分修正，見修正紀錄 27）：~~聊天（`ChatMessagesApiController`、`ChatSessionsApiController`、`ChatHub`）~~。
+    尚未處理：前台 API 還有 9 個直接使用 DbContext（`UserApiController`、`FollowController`、`NotificationController`、`StatusController`、
+    `CategoryApiController`、`PointRechargeApiController`、`OrderApiController`、`EntrustMissionApiController`、`EntrustMissionProgressApiController`），
+    後台 MVC 有 15 個（CRUD 頁面）。

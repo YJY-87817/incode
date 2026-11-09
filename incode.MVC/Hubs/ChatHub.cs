@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace incode.MVC.Hubs
 {
@@ -14,11 +13,11 @@ namespace incode.MVC.Hubs
     {
         public const string SupportGroup = "SupportAgents";
 
-        private readonly incodedatabaseContext _context;
+        private readonly IChatService _chat;
 
-        public ChatHub(incodedatabaseContext context)
+        public ChatHub(IChatService chat)
         {
-            _context = context;
+            _chat = chat;
         }
 
         private bool IsAdmin => Context.User?.IsInRole("Admin") == true;
@@ -46,7 +45,7 @@ namespace incode.MVC.Hubs
             if (!IsAdmin)
             {
                 var userId = Context.User!.GetId();
-                var isOwner = await _context.ChatSession.AnyAsync(s => s.ChatSessionId == id && s.UserId == userId);
+                var isOwner = await _chat.IsOwnerAsync(id, userId);
                 if (!isOwner)
                     throw new HubException("找不到該對話");
             }
