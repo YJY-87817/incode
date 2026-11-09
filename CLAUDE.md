@@ -80,8 +80,9 @@ incode/
 ## 開發慣例（新程式請遵守）
 
 - **擁有者檢查**：前台 API 讀寫資料時必須確認屬於 `User.GetId()`，找不到或非本人一律回 404。
-- **分層**：新寫的前台 API Controller 與 Hub 不直接使用 `incodedatabaseContext`（聊天已完成，其餘見檢查結果 25）：資料存取與擁有者判斷放在 `Services/<模組>/`
-  （參考 `Services/Chat/ChatService.cs`），Controller 只處理 HTTP、授權屬性、SignalR 推播。後台 MVC 的 CRUD 頁面暫時直接用 DbContext
+- **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
+  （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
+  後台 MVC 的 CRUD 頁面（`Controllers/`）暫時直接用 DbContext
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -280,16 +281,24 @@ incode/
     `object-fit-cover` 等）收進 `src/assets/css/bootstrap53-utilities.css`。以改前 / 改後兩份建置、12 個頁面與表單驗證狀態截圖逐像素比對，
     結果完全一致（一開始 `rounded-4` 寫死 1rem 差了 4px：Material Kit 的 `:root` 把 `--bs-border-radius-xl` 設成 .75rem，改為引用變數後一致）。
     Bootstrap JS（offcanvas 等 `data-bs-*`）與 `bootstrap-icons` 仍使用
-27. 後端分層（全專案檢查 25 的一部分）：新增 `Services/Chat/IChatService` / `ChatService`，`ChatMessagesApiController`（原本 26 處直接使用 DbContext）、
-    `ChatSessionsApiController`、`ChatHub` 改為只呼叫服務；對話擁有者判斷（`IsOwnerAsync`）、取得 / 建立對話、訊息存檔、
-    客服列表（`SupportSessionDto`）、刪除對話集中在服務裡，API 路徑與回應格式不變。
-    以 25 項聊天流程測試（建立 / 接續對話、AI 與真人模式、客服列表、客服回覆、歷史、命名、刪除、他人存取）在 main 與分支各跑一次，
-    結果相同，唯一差異是修正：他人對話上傳圖片原本因空值例外回 500（回應帶出 `NullReferenceException`），現在回 401。
-    SignalR `JoinSessionGroup` 以 Hub 連線實測（本人 / 管理員可加入、他人被拒）
+27. 後端分層（全專案檢查 25）：前台 API Controller 與 `ChatHub` 全部改為只呼叫服務，不再使用 `incodedatabaseContext`
+    （後台 MVC 的 15 個 CRUD 頁面維持原樣）。
+    - 新增 `ChatService`（聊天：對話擁有者判斷、取得 / 建立對話、訊息存檔、客服列表、歷史、命名、刪除）、`CategoryService`（分類與統計）、
+      `PointRechargeService`（儲值訂單建立、失敗標記、會員查詢；金額換點數的比率 `PointsPerCash` 只定義在這裡）
+    - 補強既有服務：`UserService`（管理員列表、依暱稱查詢、更新個人資料、刪除）、`FollowService`（粉絲 / 追蹤名單、追蹤結果 `FollowResult`）、
+      `OrderService`（`GetOwnOrderAsync` 等擁有者查詢）；`NotificationController`、`StatusController`、`EntrustMissionApiController` 改用原本
+      寫好卻沒人使用的服務
+    - 行為變動：他人對話上傳圖片原本因空值例外回 500（回應帶出 `NullReferenceException`）→ 401；追蹤不存在的會員 500 → 404；
+      標記別人的通知 403 → 404（與「非本人一律 404」一致）；`GET api/EntrustMissionApi/{id}` 不再回傳已下架的委託
+    - 刪除 `EntrustMissionProgressApiController` 與 `IEntrustMissionProgressService`、`EntrustMissionProgressDTO`：服務從來沒有實作也沒有註冊，
+      API 一律 500，前端沒有使用
+    - 驗證：聊天 25 項、其餘前台 API 52 項（User / Follow / Notification / Status / Category / 儲值含綠界回呼 / 委託）在 main 與分支各跑一次，
+      結果相同（上述行為變動除外）；併發 18、互動 16、委託取消 17、後台委託 14、例外訊息 8、權限與訂單 35 項回歸測試通過；
+      SignalR `JoinSessionGroup` 以 Hub 連線實測
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22、25 部分修正（見修正紀錄 6～9、12～27），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～27），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -330,7 +339,10 @@ incode/
     尚未處理：`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
-25. **後端分層**（部分修正，見修正紀錄 27）：~~聊天（`ChatMessagesApiController`、`ChatSessionsApiController`、`ChatHub`）~~。
-    尚未處理：前台 API 還有 9 個直接使用 DbContext（`UserApiController`、`FollowController`、`NotificationController`、`StatusController`、
-    `CategoryApiController`、`PointRechargeApiController`、`OrderApiController`、`EntrustMissionApiController`、`EntrustMissionProgressApiController`），
-    後台 MVC 有 15 個（CRUD 頁面）。
+25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
+
+### ⚪ 低 / 程式品質
+
+- 管理員刪除會員（`DELETE api/User/{id}`）：會員註冊後就有任務進度等關聯資料，外鍵會擋下，實際上一律回 500。
+  需要決定改成停用帳號（`IsActive`），還是連同關聯資料一併刪除
+- AI 自動命名對話（`ChatSessionsApi/AutoTitle`）：Gemini 無法回覆時，標題會被設成「AI 客服暫時無法回覆…」這句固定訊息

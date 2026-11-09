@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace incode.MVC.ApiControllers.Users
 {
@@ -9,45 +8,27 @@ namespace incode.MVC.ApiControllers.Users
     [Authorize]
     public class NotificationController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
+        private readonly INotificationService _notificationService;
 
-        public NotificationController(incodedatabaseContext context)
+        public NotificationController(INotificationService notificationService)
         {
-            _context = context;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserNotification>>> GetNotifications()
-        {
-            int userId = User.GetId();
-
-            return await _context.UserNotification
-                .Where(n => n.UserId == userId)
-                .OrderByDescending(n => n.CreatedAt)
-                .ToListAsync();
-        }
+            => await _notificationService.GetNotificationsAsync(User.GetId());
 
         [HttpGet("unread-count")]
         public async Task<ActionResult<int>> GetUnreadCount()
-        {
-            int userId = User.GetId(); 
-            int count = await _context.UserNotification
-                .CountAsync(n => n.UserId == userId && n.IsRead == false);
-            return Ok(count);
-        }
+            => Ok(await _notificationService.GetUnreadCountAsync(User.GetId()));
 
         [HttpPut("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            int userId = User.GetId(); 
-
-            var notification = await _context.UserNotification.FindAsync(id);
-            if (notification == null) return NotFound();
-
-            if (notification.UserId != userId) return Forbid();
-
-            notification.IsRead = true;
-            await _context.SaveChangesAsync();
+            // 找不到或不是自己的通知一律 404（不透露別人的通知是否存在）
+            if (!await _notificationService.MarkAsReadAsync(User.GetId(), id))
+                return NotFound();
 
             return NoContent();
         }
@@ -55,16 +36,7 @@ namespace incode.MVC.ApiControllers.Users
         [HttpPost("read-all")]
         public async Task<IActionResult> MarkAllAsRead()
         {
-            int userId = User.GetId();
-            var unreadList = await _context.UserNotification
-                .Where(n => n.UserId == userId && n.IsRead == false)
-                .ToListAsync();
-
-            if (unreadList.Any())
-            {
-                foreach (var item in unreadList) item.IsRead = true;
-                await _context.SaveChangesAsync();
-            }
+            await _notificationService.MarkAllAsReadAsync(User.GetId());
             return NoContent();
         }
     }

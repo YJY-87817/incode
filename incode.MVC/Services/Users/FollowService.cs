@@ -52,38 +52,64 @@ namespace incode.MVC.Services.Users
         }
 
         // 3. 追蹤使用者
-        public async Task FollowUserAsync(int currentUserId, int targetUserId)
+        public async Task<FollowResult> FollowUserAsync(int currentUserId, int targetUserId)
         {
-            // 防止追蹤自己
-            if (currentUserId == targetUserId) return;
+            if (currentUserId == targetUserId) return FollowResult.Self;
 
-            // 檢查是否已經追蹤過
+            if (!await _context.User.AnyAsync(u => u.UserId == targetUserId))
+                return FollowResult.TargetNotFound;
+
             bool exists = await _context.Follow.AnyAsync(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
-            if (exists) return;
+            if (exists) return FollowResult.AlreadyFollowing;
 
-            var follow = new Follow
+            _context.Follow.Add(new Follow
             {
                 FollowerId = currentUserId, // 我是粉絲
                 FolloweeId = targetUserId,  // 對方是被關注者
                 CreatedAt = DateTime.Now
-            };
-
-            _context.Follow.Add(follow);
+            });
             await _context.SaveChangesAsync();
+            return FollowResult.Success;
         }
 
         // 4. 取消追蹤
-        public async Task UnfollowUserAsync(int currentUserId, int targetUserId)
+        public async Task<FollowResult> UnfollowUserAsync(int currentUserId, int targetUserId)
         {
             var follow = await _context.Follow
                 .FirstOrDefaultAsync(f => f.FollowerId == currentUserId && f.FolloweeId == targetUserId);
 
-            if (follow != null)
-            {
-                _context.Follow.Remove(follow);
-                await _context.SaveChangesAsync();
-            }
+            if (follow == null) return FollowResult.NotFollowing;
+
+            _context.Follow.Remove(follow);
+            await _context.SaveChangesAsync();
+            return FollowResult.Success;
         }
+
+        // 5. 指定會員的粉絲名單
+        public Task<List<FollowListItemDto>> GetFollowersAsync(int userId) =>
+            _context.Follow
+                .Where(f => f.FolloweeId == userId)
+                .Select(f => new FollowListItemDto
+                {
+                    Id = f.FollowerId,
+                    Username = f.Follower.Username,
+                    ImageUrl = f.Follower.ImageUrl,
+                    CreatedAt = f.CreatedAt
+                })
+                .ToListAsync();
+
+        // 6. 指定會員追蹤中的名單
+        public Task<List<FollowListItemDto>> GetFollowingAsync(int userId) =>
+            _context.Follow
+                .Where(f => f.FollowerId == userId)
+                .Select(f => new FollowListItemDto
+                {
+                    Id = f.FolloweeId,
+                    Username = f.Followee.Username,
+                    ImageUrl = f.Followee.ImageUrl,
+                    CreatedAt = f.CreatedAt
+                })
+                .ToListAsync();
     }
 }
 
