@@ -1,12 +1,12 @@
 <script setup>
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
 import ImageExtension from "@tiptap/extension-image";
 import YouTube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
-import { NodeSelection, TextSelection } from "prosemirror-state";
+// ProseMirror 一律從 @tiptap/pm 匯入，確保與 Tiptap 使用同一份（instanceof NodeSelection 才會成立）
+import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import { ref, watch, nextTick, onBeforeUnmount } from "vue";
 import { uploadImage } from "@/api/imageApi.js";
 import Cropper from "cropperjs";
@@ -92,14 +92,17 @@ const PreserveImageOnShiftEnter = Extension.create({
 const editor = useEditor({
   content: props.modelValue || "",
   extensions: [
+    // Tiptap 3 的 StarterKit 已內含 Underline（不需另外加入）、Link 與 TrailingNode；
+    // Link、TrailingNode（文件結尾自動補空段落）原本沒有，維持關閉，產生的 HTML 與升級前相同
     StarterKit.configure({
       heading: false,
       blockquote: false,
       codeBlock: false,
       horizontalRule: false,
+      link: false,
+      trailingNode: false,
     }),
     PreserveImageOnShiftEnter,
-    Underline,
     ResizableImage.configure({
       allowBase64: true,
     }),
