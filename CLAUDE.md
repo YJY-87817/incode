@@ -46,7 +46,8 @@ incode/
     ├── Extensions/             擴充方法（ClaimsExtensions、ResultDTOExtensions）
     ├── Validation/             自訂驗證屬性
     ├── Prompts/Prompts.md      AI 客服系統提示詞（執行時讀取，路徑不可改）
-    └── wwwroot/                靜態檔；contents/ 與 img/ 下為執行時產生的資料（論壇內文、上傳圖片）
+    ├── App_Data/uploads/       上傳檔案預設位置（App:UploadRoot，已 gitignore），網址 /img/...、/contents/... 不變
+    └── wwwroot/                靜態檔；contents/ 與 img/fromApi、chat、user、product 下是改版前的上傳檔（仍在 git 中）
 ```
 
 - 模組名稱統一：`Chat`、`Contents`、`Point`、`PointShop`、`Users`，**命名空間 = `incode.MVC.<資料夾路徑>`**
@@ -96,6 +97,9 @@ incode/
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
 - **圖片上傳**：先用 `Services/Common/ImageFileValidator.Validate()` 檢查（僅 jpg/png/gif/webp + 檔頭比對，單檔 20 MB）；
   刪除檔案時檔名以資料庫為準並 `Path.GetFileName()`，不可使用表單傳入的路徑。
+- **檔案存放**：上傳檔一律透過 `UploadStorage`（`Services/Common/UploadStorage.cs`）寫入 / 刪除，資料夾用 `UploadFolders` 常數，
+  檔名由伺服器產生（Guid）。**不要寫進 `wwwroot`**（會被提交進 git、重新部署會被覆蓋）。
+  位置由 `App:UploadRoot` 設定（預設 `App_Data/uploads`），正式環境設成部署資料夾以外的絕對路徑
 - **顯示使用者內容**：Razor 不要對會員 / AI 產生的內容用 `@Html.Raw`；需要保留格式時先經 DOMPurify（`~/lib/dompurify`）。
   前端 `v-html` 前一律過濾（論壇用 `utils/sanitizeHtml.js`，聊天用 `ChatWidget.vue` 的 `toSafeHtml`）。
 - **後台訊息**：Controller 用 `TempData["SuccessMessage"] / TempData["ErrorMessage"]`，View 放 `<partial name="_TempDataAlert" />`。
@@ -126,7 +130,7 @@ incode/
 - 專案沒有自動化測試。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
-- `wwwroot/img/` 下有使用者上傳的圖片被提交進 git，新增上傳功能時注意不要再提交上傳檔
+- 改版前的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中，新的上傳檔在 `App:UploadRoot`（已 gitignore）
 
 ## 修正紀錄
 
@@ -242,12 +246,16 @@ incode/
       改為固定回覆「AI 客服暫時無法回覆…」
     - 新增 `Services/Common/BusinessException`：給使用者看的業務錯誤（例如打賞「點數不足」）丟這個，Controller 才回傳 `Message`；
       其他例外一律回通用訊息
+21. 上傳檔案移出網站目錄（全專案檢查 21 的一部分）：新增 `UploadStorage`，論壇圖片、大頭貼、論壇內文 HTML、聊天圖片、
+    後台商品圖片改存到 `App:UploadRoot`（預設 `App_Data/uploads`，已 gitignore；正式環境以 `App__UploadRoot` 設成部署資料夾外的絕對路徑）。
+    `Program.cs` 以第二個 `UseStaticFiles` 把該資料夾掛在網站根目錄，**網址與資料庫內容都不變**；改版前留在 `wwwroot` 的檔案仍由
+    wwwroot 提供，刪除（商品換圖、後台刪圖）時兩處都會找
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，22 部分修正（見修正紀錄 6～9、12～20），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～21），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：上傳檔案（21）→ 其餘。
+建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -279,8 +287,9 @@ incode/
 18. ~~網址寫死~~（已修正，見修正紀錄 7）
 19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql` 與 Docker 資料庫，見修正紀錄 7、8）
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
-21. **上傳檔案在 git 與 wwwroot**：repo 約 115 MB（多為上傳圖片），且重新部署可能覆蓋 `wwwroot` 而遺失上傳檔。
-    → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
+21. **上傳檔案在 git 與 wwwroot**（部分修正，見修正紀錄 21）：~~新的上傳檔寫進 wwwroot~~。
+    尚未處理：改版前約 93 MB 的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中。
+    移除前要先把這些檔案複製到各環境的 `App:UploadRoot`（否則 pull 後檔案被刪、網址失效）；git 歷史中的檔案要改寫歷史才會變小。
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
     尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
     Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
@@ -294,7 +303,6 @@ incode/
   新密碼沒有長度規則；信件連結中的 email 沒有 URL encode；前端網址寫死 `https://localhost:5173`（Google 登入導回也是）。
 - 論壇內容在前端以 `HtmlIframe` 顯示，`allow-scripts` + `allow-same-origin` 時會移除 sandbox；內容已用 DOMPurify 過濾，
   但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
-- `wwwroot/img/` 下的使用者上傳圖片被提交進 git，建議加入 `.gitignore`。
 - 建立委託（`CreateEntrustMissionAsync`）沒有檢查關聯的內容是否為自己的文章，可以把委託掛在別人的文章上。
 - 後台 `EntrustMission/Edit` 可以直接把狀態改成 cancelled，但不會退還預扣點數（取消請走前台 API 的流程）。
 - 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。
