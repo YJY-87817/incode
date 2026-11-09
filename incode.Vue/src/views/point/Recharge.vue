@@ -10,8 +10,8 @@ const exchangeRate = 10;
 const plans = ref(
   [
     { id: 1, price: 50, popular: false },
-    { id: 2, price: 95, popular: true },
-    { id: 3, price: 270, popular: false },
+    { id: 2, price: 100, popular: true },
+    { id: 3, price: 300, popular: false },
   ].map((p) => ({ ...p, points: p.price * exchangeRate })),
 );
 
