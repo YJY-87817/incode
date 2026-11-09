@@ -7,14 +7,14 @@ namespace incode.MVC.Services.Contents
   public class ContentService : IContentService
   {
     private readonly incodedatabaseContext _context;
-    private readonly IWebHostEnvironment _environment;
+    private readonly UploadStorage _storage;
     private readonly IContentInteractionService _contentInteractionService;
     private readonly IMissionService _missionService;
 
-    public ContentService(incodedatabaseContext context, IWebHostEnvironment environment, IContentInteractionService contentInteractionService, IMissionService missionService)
+    public ContentService(incodedatabaseContext context, UploadStorage storage, IContentInteractionService contentInteractionService, IMissionService missionService)
     {
       _context = context;
-      _environment = environment;
+      _storage = storage;
       _contentInteractionService = contentInteractionService;
       _missionService = missionService;
     }
@@ -639,21 +639,9 @@ namespace incode.MVC.Services.Contents
 
     private async Task<string> SaveContentBodyAsync(string htmlBody)
     {
-      var webRootPath = _environment.WebRootPath;
-      if (string.IsNullOrWhiteSpace(webRootPath))
-      {
-        webRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-      }
-
-      var contentsPath = Path.Combine(webRootPath, "contents");
-      Directory.CreateDirectory(contentsPath);
-
+      // 內文存成 HTML 檔（UploadStorage，網站目錄外），資料庫只存網址 /contents/xxx.html
       var fileName = $"content-{Guid.NewGuid():N}.html";
-      var filePath = Path.Combine(contentsPath, fileName);
-
-      await File.WriteAllTextAsync(filePath, htmlBody ?? string.Empty, new UTF8Encoding(false));
-
-      return $"/contents/{fileName}";
+      return await _storage.SaveTextAsync(UploadFolders.ContentBodies, fileName, htmlBody);
     }
 
     private static List<int> ParseTypes(string? types)

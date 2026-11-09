@@ -2,13 +2,12 @@
 {
   public class ImageService : IImageService
   {
-    // [可自訂]：設定圖片儲存的資料夾名稱，建議放在 wwwroot 之下以便網頁存取
-    private readonly string _storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/fromApi");
+    // 論壇編輯器上傳的圖片：存到 UploadStorage（網站目錄外），網址仍是 /img/fromApi/xxx
+    private readonly UploadStorage _storage;
 
-    public ImageService()
+    public ImageService(UploadStorage storage)
     {
-      // 作用：檢查資料夾是否存在，不存在就建立，避免寫入失敗
-      if (!Directory.Exists(_storagePath)) Directory.CreateDirectory(_storagePath);
+      _storage = storage;
     }
 
     public const int MaxFilesPerUpload = 20;
@@ -31,15 +30,8 @@
       {
         // 不使用原始檔名 (避免路徑符號或覆蓋)，Guid + 正規化後的副檔名
         var fileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(file)}";
-        var filePath = Path.Combine(_storagePath, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.CreateNew))
-        {
-          await file.CopyToAsync(stream);
-        }
-
         // 回傳給前端的網址路徑
-        urls.Add($"/img/fromApi/{fileName}");
+        urls.Add(await _storage.SaveAsync(UploadFolders.ForumImages, fileName, file));
       }
 
       return urls;
@@ -49,13 +41,9 @@
     {
       if (string.IsNullOrWhiteSpace(fileNameOrUrl)) throw new ArgumentException("檔名無效");
 
-      // 僅保留檔名避免路徑穿越
-      var fileName = Path.GetFileName(fileNameOrUrl);
-      var filePath = Path.Combine(_storagePath, fileName);
-
-      if (!File.Exists(filePath)) throw new FileNotFoundException("檔案不存在", fileName);
-
-      File.Delete(filePath);
+      // 僅保留檔名避免路徑穿越（UploadStorage.Delete 內處理）；新舊兩個位置都會找
+      if (!_storage.Delete(UploadFolders.ForumImages, fileNameOrUrl))
+        throw new FileNotFoundException("檔案不存在", Path.GetFileName(fileNameOrUrl));
       await Task.CompletedTask;
     }
   }
