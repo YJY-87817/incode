@@ -132,7 +132,17 @@ namespace incode.MVC.ApiControllers.Point
         }
 
 
-        // 原本的 DELETE api/EntrustMissionApi/{id} 沒有登入與擁有者檢查，且直接刪除不會退還預扣點數，已移除；
-        // 若要提供取消委託，需走 IPointReserveService 釋放預扣點數的流程
+        // 取消委託（委託人）：狀態改為 cancelled 並退還預扣點數
+        // POST api/EntrustMissionApi/{id}/cancel
+        // 只有自己發起、徵求中、且還沒有其他會員回覆的委託可以取消；否則 404（不是自己的）/ 409
+        [HttpPost("{id}/cancel")]
+        [Authorize]
+        public async Task<ActionResult<ResultDTO<object>>> CancelEntrustMission(int id)
+        {
+            var result = await _entrustMissionService.CancelEntrustMissionAsync(id, User.GetId());
+            return this.ToActionResult<object>(result);
+        }
+
+        // 原本的 DELETE api/EntrustMissionApi/{id} 沒有登入與擁有者檢查，且直接刪除不會退還預扣點數，已移除（取消請用上面的 cancel）
     }
 }

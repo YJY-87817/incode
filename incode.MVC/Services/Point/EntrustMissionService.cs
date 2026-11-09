@@ -7,15 +7,18 @@ namespace incode.MVC.Services.Point
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
         private readonly IPointReserveService _pointReserveService;
+        private readonly ILogger<EntrustMissionService> _logger;
 
         public EntrustMissionService(
             incodedatabaseContext context,
             IPointLogService pointLogService,
-            IPointReserveService pointReserveService)
+            IPointReserveService pointReserveService,
+            ILogger<EntrustMissionService> logger)
         {
             _context = context;
             _pointLogService = pointLogService;
             _pointReserveService = pointReserveService;
+            _logger = logger;
         }
 
         // 公開列表：所有可見的委託任務（進行中 + 已結案）
@@ -203,6 +206,8 @@ namespace incode.MVC.Services.Point
         }
 
         // 取消委託（退還預扣點數）
+        // 委託人取消委託：狀態改為 cancelled 並退還預扣點數（同一交易）。
+        // 只有「徵求中」且還沒有其他會員回覆的委託可以取消，避免拿到解答後取消、拿回賞金
         public async Task<ResultDTO> CancelEntrustMissionAsync(int entrustMissionId, int userId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -214,36 +219,71 @@ namespace incode.MVC.Services.Point
                 var mission = await _context.EntrustMission
                     .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId && em.IsActive);
 
-                if (mission == null)
+                // 不存在或不是自己發起的委託一律 404
+                if (mission == null || mission.UserId != userId)
                     return new ResultDTO { Ok = false, Code = 404, Message = "委託任務不存在" };
 
-                if (mission.UserId != userId)
-                    return new ResultDTO { Ok = false, Code = 403, Message = "只有任務發起者可以取消" };
+                if (mission.Status == "cancelled")
+                    return new ResultDTO { Ok = false, Code = 409, Message = "此委託已經取消" };
 
-                if (mission.Status == "completed")
-                    return new ResultDTO { Ok = false, Code = 400, Message = "已結案的任務無法取消" };
+                if (mission.Status != "open" || mission.BestContentId.HasValue)
+                    return new ResultDTO { Ok = false, Code = 409, Message = "已結案的委託無法取消" };
+
+                if (await HasRepliesFromOthersAsync(mission.ContentId, userId))
+                    return new ResultDTO { Ok = false, Code = 409, Message = "已有其他會員回覆，無法取消，請從回覆中選出最佳解答" };
 
                 mission.Status = "cancelled";
                 mission.UpdatedAt = DateTime.Now;
 
-                // 退還預扣點數（如果還沒消耗）
+                // 退還預扣點數
                 var releaseSuccess = await _pointReserveService.ReleaseAsync(mission.UserId, entrustMissionId);
                 if (!releaseSuccess)
                 {
                     await transaction.RollbackAsync();
-                    return new ResultDTO { Ok = false, Code = 400, Message = "退還預扣點數失敗" };
+                    _logger.LogWarning("取消委託時找不到可退還的預扣點數 - EntrustMissionId: {Id}", entrustMissionId);
+                    return new ResultDTO { Ok = false, Code = 409, Message = "找不到可退還的預扣點數，請聯繫客服" };
                 }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new ResultDTO { Ok = true, Code = 200, Message = "委託任務已取消，預扣點數已退回" };
+                return new ResultDTO
+                {
+                    Ok = true,
+                    Code = 200,
+                    Message = $"委託已取消，{mission.RewardPoints} 點已退回",
+                    Data = new { mission.EntrustMissionId, mission.Status, RefundedPoints = mission.RewardPoints }
+                };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return new ResultDTO { Ok = false, Code = 500, Message = ex.Message };
+                _logger.LogError(ex, "取消委託失敗 - EntrustMissionId: {Id}", entrustMissionId);
+                return new ResultDTO { Ok = false, Code = 500, Message = "取消委託失敗，請稍後再試" };
             }
+        }
+
+        // 討論串（委託的主文 rootContentId 底下所有層的回覆）中是否有其他會員仍存在的回覆
+        private async Task<bool> HasRepliesFromOthersAsync(int rootContentId, int ownerId)
+        {
+            var frontier = new List<int> { rootContentId };
+            var visited = new HashSet<int> { rootContentId };
+
+            while (frontier.Count > 0)
+            {
+                var children = await _context.Content
+                    .AsNoTracking()
+                    .Where(c => c.ParentContentId.HasValue && frontier.Contains(c.ParentContentId.Value))
+                    .Select(c => new { c.ContentId, c.UserId, c.IsActive })
+                    .ToListAsync();
+
+                if (children.Any(c => c.IsActive == 1 && c.UserId != ownerId))
+                    return true;
+
+                frontier = children.Select(c => c.ContentId).Where(visited.Add).ToList();
+            }
+
+            return false;
         }
 
         // 已移除的方法（可直接刪除或註解）
