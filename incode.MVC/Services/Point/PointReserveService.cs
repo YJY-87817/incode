@@ -88,8 +88,8 @@ public class PointReserveService : IPointReserveService
             .Select(m => m.Title ?? "未命名委託")
             .FirstOrDefaultAsync();
 
-        // 退點
-        await _pointLogService.ChangePointsAsync(
+        // 退點（失敗時回傳 false，由呼叫端 rollback）
+        return await _pointLogService.ChangePointsAsync(
             userId,
             reserve.ReservedPoints,
             "entrust_mission_refund",
@@ -98,7 +98,5 @@ public class PointReserveService : IPointReserveService
             displaySource: "委託取消退款",
             displaySubTitle: $"任務 #{entrustMissionId} - {missionTitle}"
         );
-
-        return true;
     }
 }
