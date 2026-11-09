@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace incode.MVC.ApiControllers.Users
@@ -12,14 +11,12 @@ namespace incode.MVC.ApiControllers.Users
   [Authorize] // 預設需登入；公開的端點個別標示 [AllowAnonymous]
     public class UserController : ControllerBase
   {
-    private readonly incodedatabaseContext _context;
         private readonly IUserService _userService;
         private readonly IImageService _imageService;
         private readonly UploadStorage _storage;
 
-        public UserController(incodedatabaseContext context, IUserService userService, IImageService imageService, UploadStorage storage)
+        public UserController(IUserService userService, IImageService imageService, UploadStorage storage)
         {
-      _context = context;
             _userService = userService;
             _imageService = imageService;
             _storage = storage;
@@ -62,18 +59,8 @@ namespace incode.MVC.ApiControllers.Users
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUser()
         {
-            // 使用 Select 將 User 轉成 UserDto (自動過濾掉密碼)
-            return await _context.User
-                .Include(u => u.Role)
-                .Select(u => new UserDto
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    Username = u.Username,
-                    ImageUrl = u.ImageUrl,
-                    Role = u.Role.RoleName ?? "Member"
-                })
-                .ToListAsync();
+            // 回傳 UserDto（不含密碼等敏感欄位）
+            return await _userService.GetUserListAsync();
         }
 
         // GET: api/User/profile?username={username}
@@ -87,7 +74,7 @@ namespace incode.MVC.ApiControllers.Users
             {               
                 currentUserId = User.GetId();
             }
-            User targetUser = null;
+            User? targetUser;
 
             if (string.IsNullOrWhiteSpace(username))
             {
@@ -95,12 +82,11 @@ namespace incode.MVC.ApiControllers.Users
                 {
                     return Unauthorized(new { message = "請先登入才能查看個人檔案" });
                 }
-                targetUser = await _context.User.FindAsync(currentUserId);
+                targetUser = await _userService.GetUserByIdAsync(currentUserId.Value);
             }
             else
             {
-                targetUser = await _context.User
-                    .FirstOrDefaultAsync(u => u.Username == username);
+                targetUser = await _userService.GetUserByUsernameAsync(username);
             }
                         
             if (targetUser == null)
@@ -132,37 +118,11 @@ namespace incode.MVC.ApiControllers.Users
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserDto dto)
         {
-            // 1. 安全檢查：確保登入者只能改自己的資料 (除非是管理員)
-            int currentUserId = User.GetId();
-            var user = await _context.User.FindAsync(currentUserId);
-            if (user == null) return NotFound("找不到使用者");
-
-            // 1. Username 比較特別，通常資料庫不允許為 null，且不能是空字串
-            if (!string.IsNullOrWhiteSpace(dto.Username))
-            {
-                if (await _context.User.AnyAsync(u => u.Username == dto.Username && u.UserId != currentUserId))
-                {
-                    return BadRequest("此暱稱已被使用");
-                }
-                user.Username = dto.Username;
-            }
-
-            // 2. 其他欄位：如果有值就更新，沒值(null)就保持原樣
-            // 寫法解釋：user.Phone = 新值 ?? 舊值; (如果新值是null，就用舊值)
-
-            if (dto.ImageUrl != null) user.ImageUrl = dto.ImageUrl;
-            if (dto.Phone != null) user.Phone = dto.Phone;
-            if (dto.Address != null) user.Address = dto.Address;
-            if (dto.Birthday != null) user.Birthday = dto.Birthday;
-           
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                throw;
-            }
+            // 只能改自己的資料：ID 一律取自登入者
+            var (result, user) = await _userService.UpdateProfileAsync(User.GetId(), dto);
+            if (result == UpdateProfileResult.NotFound) return NotFound("找不到使用者");
+            if (result == UpdateProfileResult.UsernameTaken) return BadRequest("此暱稱已被使用");
+            user = user!;
 
             // 只回傳可公開給本人的欄位 (原本回傳整個 User 實體，包含密碼雜湊與 ResetToken)
             return Ok(new
@@ -181,26 +141,30 @@ namespace incode.MVC.ApiControllers.Users
             });
         }        
 
-        // DELETE: api/User/5  刪除會員 (僅限管理員)
-        [HttpDelete("{id}")]
+        // POST: api/User/5/deactivate  停用帳號 (僅限管理員)
+        // 不刪除資料（會員有任務進度、點數、文章等關聯資料）：停用後無法登入，已登入的人下一個請求就被登出
+        [HttpPost("{id}/deactivate")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeactivateUser(int id)
         {
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
-            {
+            if (id == User.GetId())
+                return BadRequest(new { message = "不能停用自己的帳號" });
+
+            if (!await _userService.SetActiveAsync(id, false))
                 return NotFound();
-            }
 
-            _context.User.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(new { message = "已停用帳號" });
         }
 
-        private bool UserExists(int id)
+        // POST: api/User/5/activate  恢復帳號 (僅限管理員)
+        [HttpPost("{id}/activate")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ActivateUser(int id)
         {
-            return _context.User.Any(e => e.UserId == id);
+            if (!await _userService.SetActiveAsync(id, true))
+                return NotFound();
+
+            return Ok(new { message = "已恢復帳號" });
         }
 
         // GET: api/User/41/stats  公開個人頁的統計數字

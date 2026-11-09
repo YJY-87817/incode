@@ -94,6 +94,9 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.SlidingExpiration = true;
 
+      // 帳號被停用 / 刪除時，已登入的人下一個請求就登出（見 MemberCookieValidator）
+      options.Events.OnValidatePrincipal = MemberCookieValidator.ValidateAsync;
+
       options.Events.OnRedirectToLogin = context =>
       {
         // 如果是 API 請求，回傳 401 狀態碼，不要跳轉 HTML 頁面
@@ -154,6 +157,9 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 //tim
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();

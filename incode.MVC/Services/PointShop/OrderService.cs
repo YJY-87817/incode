@@ -31,6 +31,16 @@ namespace incode.MVC.Services.PointShop
         // 查詢
         // ======================================================================
 
+        public Task<Orders?> GetOwnOrderAsync(int orderId, int userId)
+            => _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);
+
+        public Task<Orders?> GetOwnOrderByShippedDetailAsync(int shippedDetailId, int userId)
+            => _context.ShippedDetail
+                .AsNoTracking()
+                .Where(s => s.ShippedDetailId == shippedDetailId && s.Order.UserId == userId)
+                .Select(s => s.Order)
+                .FirstOrDefaultAsync();
+
         // 取得UserId的訂單資料
         public async Task<ResultDTO<IEnumerable<OrderDTO>>> GetOrderAsync(int userId)
         {

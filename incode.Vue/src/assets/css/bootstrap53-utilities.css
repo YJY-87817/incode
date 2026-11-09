@@ -1,0 +1,73 @@
+/* Bootstrap 5.3 才有、Material Kit 內建的 Bootstrap 5.2 沒有的工具類別（專案有用到的部分）。
+   原本整份載入 Bootstrap 5.3 CSS 才有這些；改為只保留實際用到的，新用到 5.3 專屬類別時補在這裡。
+   圓角用 var(--bs-border-radius-*)：Material Kit 的 :root 有自己的值（例如 xl = .75rem），要維持與原本相同的結果 */
+.object-fit-cover {
+  -o-object-fit: cover !important;
+  object-fit: cover !important;
+}
+.opacity-25 {
+  opacity: 0.25 !important;
+}
+.opacity-75 {
+  opacity: 0.75 !important;
+}
+.border-secondary-subtle {
+  border-color: #c4c8cb !important;
+}
+.border-success-subtle {
+  border-color: #a3cfbb !important;
+}
+.border-info-subtle {
+  border-color: #9eeaf9 !important;
+}
+.border-warning-subtle {
+  border-color: #ffe69c !important;
+}
+.border-danger-subtle {
+  border-color: #f1aeb5 !important;
+}
+.fw-medium {
+  font-weight: 500 !important;
+}
+.fw-semibold {
+  font-weight: 600 !important;
+}
+.text-info-emphasis {
+  color: #055160 !important;
+}
+.text-warning-emphasis {
+  color: #664d03 !important;
+}
+.bg-secondary-subtle {
+  background-color: #e2e3e5 !important;
+}
+.bg-success-subtle {
+  background-color: #d1e7dd !important;
+}
+.bg-info-subtle {
+  background-color: #cff4fc !important;
+}
+.bg-warning-subtle {
+  background-color: #fff3cd !important;
+}
+.bg-danger-subtle {
+  background-color: #f8d7da !important;
+}
+.bg-light-subtle {
+  background-color: #fcfcfd !important;
+}
+.rounded-4 {
+  border-radius: var(--bs-border-radius-xl) !important;
+}
+.rounded-end-4 {
+  border-top-right-radius: var(--bs-border-radius-xl) !important;
+  border-bottom-right-radius: var(--bs-border-radius-xl) !important;
+}
+.rounded-end-pill {
+  border-top-right-radius: var(--bs-border-radius-pill) !important;
+  border-bottom-right-radius: var(--bs-border-radius-pill) !important;
+}
+.rounded-start-pill {
+  border-bottom-left-radius: var(--bs-border-radius-pill) !important;
+  border-top-left-radius: var(--bs-border-radius-pill) !important;
+}

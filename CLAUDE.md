@@ -71,6 +71,7 @@ incode/
 - 前台 API 未登入回 401 / 403（不轉址）
 - **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
   伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
+- **停用帳號**：用 `UserService.SetActiveAsync`（不刪除會員；已登入的人由 `MemberCookieValidator` 在下個請求登出）
 - **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
   ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
@@ -80,6 +81,9 @@ incode/
 ## 開發慣例（新程式請遵守）
 
 - **擁有者檢查**：前台 API 讀寫資料時必須確認屬於 `User.GetId()`，找不到或非本人一律回 404。
+- **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
+  （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
+  後台 MVC 的 CRUD 頁面（`Controllers/`）暫時直接用 DbContext
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -273,10 +277,36 @@ incode/
       內容在顯示前已經過 DOMPurify（會移除 script / iframe），所以原本的 `allow-scripts` 沒有實際用途
 25. 儲值方案點數：`Recharge.vue` 的方案原本寫「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點）。
     前端改為依後端規則由金額計算點數，方案價格改為整數（50 元 = 500、100 元 = 1000、300 元 = 3000），移除不存在的贈點顯示
+26. 前端重複的 Bootstrap CSS（全專案檢查 22 的一部分）：`main.js` 原本在 Material Kit（內含自己編譯的 Bootstrap 5.2）之外又載入一整份
+    Bootstrap 5.3 CSS。移除後主 CSS 1,049 KB → 876 KB；5.3 才有、專案有用到的 22 個工具類別（`bg-*-subtle`、`fw-semibold`、`rounded-4`、
+    `object-fit-cover` 等）收進 `src/assets/css/bootstrap53-utilities.css`。以改前 / 改後兩份建置、12 個頁面與表單驗證狀態截圖逐像素比對，
+    結果完全一致（一開始 `rounded-4` 寫死 1rem 差了 4px：Material Kit 的 `:root` 把 `--bs-border-radius-xl` 設成 .75rem，改為引用變數後一致）。
+    Bootstrap JS（offcanvas 等 `data-bs-*`）與 `bootstrap-icons` 仍使用
+27. 後端分層（全專案檢查 25）：前台 API Controller 與 `ChatHub` 全部改為只呼叫服務，不再使用 `incodedatabaseContext`
+    （後台 MVC 的 15 個 CRUD 頁面維持原樣）。
+    - 新增 `ChatService`（聊天：對話擁有者判斷、取得 / 建立對話、訊息存檔、客服列表、歷史、命名、刪除）、`CategoryService`（分類與統計）、
+      `PointRechargeService`（儲值訂單建立、失敗標記、會員查詢；金額換點數的比率 `PointsPerCash` 只定義在這裡）
+    - 補強既有服務：`UserService`（管理員列表、依暱稱查詢、更新個人資料、刪除）、`FollowService`（粉絲 / 追蹤名單、追蹤結果 `FollowResult`）、
+      `OrderService`（`GetOwnOrderAsync` 等擁有者查詢）；`NotificationController`、`StatusController`、`EntrustMissionApiController` 改用原本
+      寫好卻沒人使用的服務
+    - 行為變動：他人對話上傳圖片原本因空值例外回 500（回應帶出 `NullReferenceException`）→ 401；追蹤不存在的會員 500 → 404；
+      標記別人的通知 403 → 404（與「非本人一律 404」一致）；`GET api/EntrustMissionApi/{id}` 不再回傳已下架的委託
+    - 刪除 `EntrustMissionProgressApiController` 與 `IEntrustMissionProgressService`、`EntrustMissionProgressDTO`：服務從來沒有實作也沒有註冊，
+      API 一律 500，前端沒有使用
+    - 驗證：聊天 25 項、其餘前台 API 52 項（User / Follow / Notification / Status / Category / 儲值含綠界回呼 / 委託）在 main 與分支各跑一次，
+      結果相同（上述行為變動除外）；併發 18、互動 16、委託取消 17、後台委託 14、例外訊息 8、權限與訂單 35 項回歸測試通過；
+      SignalR `JoinSessionGroup` 以 Hub 連線實測
+28. 停用帳號與 AI 命名（低優先清單）：
+    - 管理員停用會員：原本 `DELETE api/User/{id}` 因外鍵（註冊就有任務進度等資料）一律 500，已移除；改為 `POST api/User/{id}/deactivate`
+      與 `/activate`（不能停用自己、找不到 404），只改 `IsActive`，資料保留。停用後無法登入（原有檢查），
+      **已登入的人也會立刻被登出**：`Extensions/MemberCookieValidator` 在會員 Cookie 驗證時檢查帳號是否仍啟用（查無會員視為無效），
+      結果快取 60 秒，`UserService.SetActiveAsync` / `UpdateUserAsync`（後台會員編輯）會清除快取，直接改資料庫最慢 60 秒後生效。
+      原本停用只擋登入，已登入的 Cookie 效期 7 天且自動延長，停用形同無效
+    - `ChatSessionsApi/AutoTitle`：Gemini 無法回覆時不再把「AI 客服暫時無法回覆…」存成對話標題，改回 503、標題不變
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～24），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～28），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -313,9 +343,8 @@ incode/
 21. **上傳檔案在 git 與 wwwroot**（部分修正，見修正紀錄 21）：~~新的上傳檔寫進 wwwroot~~。
     尚未處理：改版前約 93 MB 的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中。
     移除前要先把這些檔案複製到各環境的 `App:UploadRoot`（否則 pull 後檔案被刪、網址失效）；git 歷史中的檔案要改寫歷史才會變小。
-22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
-    尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
-    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
+22. **前端效能 / 結構**（部分修正，見修正紀錄 15、26）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
+    尚未處理：`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
-25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
+25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）

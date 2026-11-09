@@ -7,7 +7,7 @@
 ## 專案概觀
 
 - Vue 3（`<script setup>`）+ Vite + Pinia（`pinia-plugin-persistedstate`）+ Vue Router
-- UI：Bootstrap 5、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
+- UI：Bootstrap 5（CSS 只來自 Material Kit 內建的 5.2，**不要再 import `bootstrap/dist/css`**；5.3 專屬的工具類別補在 `src/assets/css/bootstrap53-utilities.css`。JS 與 bootstrap-icons 仍由 `main.js` 載入）、Vuetify、SweetAlert2、Material Kit 套版（樣式 `src/assets/scss/`、外掛 `src/material-kit.js`、版面 `src/components/layout/`）
 - 後端 API：`VITE_API_BASE_URL`（開發為 `https://localhost:7190/api`），圖片等靜態檔：`VITE_BASE_URL`
   （**不要在程式中寫死後端網址**，一律讀這兩個變數；正式環境以 `.env.production` 覆寫）
 - 登入：後端 Cookie 驗證，axios 必須帶 `withCredentials: true`
