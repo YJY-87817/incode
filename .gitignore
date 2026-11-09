@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# 會員 / 後台上傳的檔案（App:UploadRoot 預設位置），不提交進 git
+incode.MVC/App_Data/uploads/

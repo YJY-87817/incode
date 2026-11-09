@@ -158,6 +158,7 @@ builder.Services.AddScoped<IContentInteractionService, ContentInteractionService
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy
+builder.Services.AddSingleton<UploadStorage>(); // 上傳檔案存放處（App:UploadRoot，網站目錄外）
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
@@ -194,6 +195,12 @@ app.UseCors("VueApp");
 // CSRF：API 的寫入請求與 SignalR 只接受自己與 CORS 允許來源的 Origin（見 Extensions/OriginCheckExtensions.cs）
 app.UseApiOriginCheck(builder.Configuration.GetCorsOrigins());
 app.UseStaticFiles();
+// 上傳檔案（App:UploadRoot）掛在網站根目錄：/img/chat/xxx、/contents/xxx.html 等網址不變。
+// 改版前的上傳檔仍在 wwwroot，由上一行提供；找不到才會到這裡
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = app.Services.GetRequiredService<UploadStorage>().CreateFileProvider()
+});
 
 app.UseAuthentication(); // Cookie
 app.UseAuthorization();  // Role

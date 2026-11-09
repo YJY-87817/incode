@@ -25,6 +25,7 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly string _frontendUrl; // 前端網址 (App:FrontendUrl)，AI 回覆中產生連結用
         private readonly ILogger<ChatMessagesApiController> _logger;
+        private readonly UploadStorage _storage;
 
         public ChatMessagesApiController(
           incodedatabaseContext context,
@@ -32,9 +33,11 @@ namespace incode.MVC.ApiControllers.Chat
           IHubContext<ChatHub> hubContext,
           IWebHostEnvironment webHostEnvironment,
           IConfiguration configuration,
-          ILogger<ChatMessagesApiController> logger)
+          ILogger<ChatMessagesApiController> logger,
+          UploadStorage storage)
         {
             _logger = logger;
+            _storage = storage;
             _context = context;
             _geminiService = geminiService;
             _hubContext = hubContext;
@@ -545,14 +548,10 @@ namespace incode.MVC.ApiControllers.Chat
 
             try
             {
-                // 圖片實體存檔 
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img", "chat");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                // 圖片實體存檔（UploadStorage，網站目錄外）
                 // 檔名只用 Guid + 正規化副檔名，不使用使用者提供的檔名（原本可用 ..\ 寫到其他目錄）
                 string uniqueFileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(request.Image)}";
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                using (var fileStream = new FileStream(filePath, FileMode.CreateNew)) { await request.Image.CopyToAsync(fileStream); }
-                string dbRelativeUrl = $"/img/chat/{uniqueFileName}";
+                string dbRelativeUrl = await _storage.SaveAsync(UploadFolders.ChatImages, uniqueFileName, request.Image);
 
                 // 存入 User 圖片訊息
                 await EnsureGroupAsync(request.ConnectionId, validSessionIdStr);

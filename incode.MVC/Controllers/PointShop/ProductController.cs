@@ -9,13 +9,13 @@ namespace incode.MVC.Controllers.PointShop
     public class ProductController : Controller
     {
         private readonly incodedatabaseContext _context;
-        private readonly IWebHostEnvironment _webHostEnvironment; // 用於取得 wwwroot 路徑
+        private readonly UploadStorage _storage; // 商品圖片存放處（網站目錄外，網址仍是 /img/product/xxx）
 
         // 建構函式注入
-        public ProductController(incodedatabaseContext context, IWebHostEnvironment webHostEnvironment)
+        public ProductController(incodedatabaseContext context, UploadStorage storage)
         {
             _context = context;
-            _webHostEnvironment = webHostEnvironment; // 用於取得 wwwroot 路徑
+            _storage = storage;
         }
 
         // GET: Product
@@ -43,16 +43,7 @@ namespace incode.MVC.Controllers.PointShop
                 // --- 圖片處理開始 ---
                 if (imageFile != null && imageFile.Length > 0)
                 {
-                    // 1. 設定儲存路徑 (wwwroot/imag/product)
-                    string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img/product");
-
-                    // 確保資料夾存在
-                    if (!Directory.Exists(uploadsFolder))
-                    {
-                        Directory.CreateDirectory(uploadsFolder);
-                    }
-
-                    // 2. 產生唯一檔名 (避免使用者上傳同名檔案導致覆蓋)
+                    // 1. 產生唯一檔名 (避免使用者上傳同名檔案導致覆蓋)
                     //  取得副檔名 (例如 .jpg)
                     string extension = ImageFileValidator.NormalizedExtension(imageFile);
 
@@ -66,15 +57,10 @@ namespace incode.MVC.Controllers.PointShop
                         // 如果檔名還是太長，強制截斷或更換命名邏輯
                         shortFileName = Guid.NewGuid().ToString().Substring(0, 20) + extension;
                     }
-                    string filePath = Path.Combine(uploadsFolder, shortFileName);
+                    // 2. 儲存檔案（UploadStorage）
+                    await _storage.SaveAsync(UploadFolders.Products, shortFileName, imageFile);
 
-                    // 3. 儲存檔案到實體路徑
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(fileStream);
-                    }
-
-                    // 4. 將檔名存入 Model 的 ImageName 屬性
+                    // 3. 將檔名存入 Model 的 ImageName 屬性
                     product.ImageName = shortFileName;
                 }
                 // --- 圖片處理結束 ---
@@ -121,30 +107,20 @@ namespace incode.MVC.Controllers.PointShop
                     // 如果使用者上傳了新圖片
                     if (imageFile != null && imageFile.Length > 0)
                     {
-                        string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "img/product");
-
                         // 1. 刪除舊圖片：以資料庫內的檔名為準 (不信任表單傳入的 ImageName，避免路徑穿越刪除任意檔案)，
                         //    且不刪除共用的預設圖
                         var oldImageName = Path.GetFileName(originalProduct.ImageName ?? "");
                         if (!string.IsNullOrEmpty(oldImageName) &&
                             !oldImageName.Equals(DefaultImageName, StringComparison.OrdinalIgnoreCase))
                         {
-                            string oldPath = Path.Combine(uploadsFolder, oldImageName);
-                            if (System.IO.File.Exists(oldPath))
-                            {
-                                System.IO.File.Delete(oldPath);
-                            }
+                            // 新舊兩個位置（上傳資料夾 / 改版前的 wwwroot）都會找
+                            _storage.Delete(UploadFolders.Products, oldImageName);
                         }
 
                         // 2. 儲存新圖片 (同樣限制在 50 字元內)
                         string extension = ImageFileValidator.NormalizedExtension(imageFile);
                         string newFileName = $"{DateTime.Now:yyyyMMddHHss}{Guid.NewGuid().ToString().Substring(0, 4)}{extension}";
-                        string newPath = Path.Combine(uploadsFolder, newFileName);
-
-                        using (var fileStream = new FileStream(newPath, FileMode.Create))
-                        {
-                            await imageFile.CopyToAsync(fileStream);
-                        }
+                        await _storage.SaveAsync(UploadFolders.Products, newFileName, imageFile);
 
                         // 3. 更新 Model 中的檔名
                         product.ImageName = newFileName;
