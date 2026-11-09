@@ -33,7 +33,7 @@ jobs:
         run: dotnet build incode.sln --no-restore --configuration Release
 
   frontend:
-    name: 前端 (npm run build)
+    name: 前端 (test + build)
     runs-on: ubuntu-latest
     defaults:
       run:
