@@ -12,12 +12,14 @@ namespace incode.MVC.Services.Point
         private readonly incodedatabaseContext _context;
         private readonly IPointLogService _pointLogService;
         private readonly IMissionService _missionService;
+        private readonly ILogger<MissionProgressService> _logger;
 
-        public MissionProgressService(incodedatabaseContext context, IPointLogService pointLogService, IMissionService missionService)
+        public MissionProgressService(incodedatabaseContext context, IPointLogService pointLogService, IMissionService missionService, ILogger<MissionProgressService> logger)
         {
             _context = context;
             _pointLogService = pointLogService;
             _missionService = missionService;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<MissionProgressDTO>> GetAllProgressAsync()
@@ -230,7 +232,8 @@ namespace incode.MVC.Services.Point
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                return new ResultDTO { Ok = false, Code = 500, Message = $"領取失敗：{ex.Message}" };
+                _logger.LogError(ex, "任務領獎失敗 - UserId: {UserId}", userId);
+                return new ResultDTO { Ok = false, Code = 500, Message = "領取失敗，請稍後再試" };
             }
         }
 

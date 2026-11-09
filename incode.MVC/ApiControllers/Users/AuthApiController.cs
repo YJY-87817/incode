@@ -15,12 +15,14 @@ namespace incode.MVC.ApiControllers.Users
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
         private readonly string _frontendUrl;
+        private readonly ILogger<AuthApiController> _logger;
 
-        public AuthApiController(IAuthService authService, IUserService userService, IConfiguration configuration)
+        public AuthApiController(IAuthService authService, IUserService userService, IConfiguration configuration, ILogger<AuthApiController> logger)
         {
             _authService = authService;
             _userService = userService;
             _frontendUrl = configuration.GetFrontendUrl();
+            _logger = logger;
         }
 
         ///AuthApi/Register
@@ -70,11 +72,8 @@ namespace incode.MVC.ApiControllers.Users
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    message = "伺服器內部錯誤",
-                    error = ex.Message
-                });
+                _logger.LogError(ex, "註冊失敗");
+                return StatusCode(500, new { message = "伺服器內部錯誤，請稍後再試" });
             }
         }
 
