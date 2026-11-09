@@ -114,18 +114,8 @@ namespace incode.MVC.ApiControllers.Point
 
             if (!result.Ok)
             {
-                return result.Code switch
-                {
-                    400 => BadRequest(result),
-                    404 => NotFound(result),
-                    500 => StatusCode(500, result),
-                    _ => StatusCode(500, new ResultDTO
-                    {
-                        Ok = false,
-                        Code = 500,
-                        Message = result.Message ?? "伺服器內部錯誤，請稍後再試"
-                    })
-                };
+                // 失敗時以 Code 作為 HTTP 狀態碼（400 / 404 / 409 / 500）
+                return StatusCode(result.Code is >= 400 and <= 599 ? result.Code : 500, result);
             }
 
             return CreatedAtAction(nameof(GetEntrustMission), new { id = result.Data }, result);
