@@ -1,18 +1,22 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useTaskStore } from "@/stores/point/taskStore";
 import Swal from "sweetalert2";
 
 const store = useTaskStore();
 const router = useRouter();
-const emit = defineEmits(["claim"]);
 const list = computed(() => {
   return [...store.filteredList].sort((a, b) => a.id - b.id);
 });
 
-// 領取任務邏輯
+const claimingId = ref(null);
+
+// 領取任務：確認 → 等後端回應 → 成功才顯示「領取成功」
+// （原本送出後沒等結果就先顯示成功，失敗時會同時跳出成功與失敗兩個提示）
 async function handleClaim(mission) {
+  if (claimingId.value) return;
+
   const result = await Swal.fire({
     title: "確定領取？",
     text: `您即將開始任務：「${mission.title}」`,
@@ -24,39 +28,41 @@ async function handleClaim(mission) {
     cancelButtonText: "取消",
     reverseButtons: true,
   });
+  if (!result.isConfirmed) return;
 
-  if (result.isConfirmed) {
-    try {
-      // 觸發父組件的領取邏輯
-      emit("claim", { type: "platform", mission });
+  claimingId.value = mission.id;
+  try {
+    const res = await store.claimTask(mission.id);
+    if (!res?.ok) throw new Error(res?.message || "領取失敗，請稍後再試");
+  } catch (error) {
+    Swal.fire({
+      title: "領取失敗",
+      text: error.message || "暫時無法領取該任務，請稍後再試。",
+      icon: "error",
+      confirmButtonColor: "#145369",
+    });
+    return;
+  } finally {
+    claimingId.value = null;
+  }
 
-      // 2. 領取成功後的導引彈窗
-      const nextStep = await Swal.fire({
-        title: "領取成功！",
-        text: `任務「${mission.title}」已加入您的執行清單。`,
-        icon: "success",
-        showCancelButton: true,
-        confirmButtonColor: "#145369",
-        cancelButtonColor: "#86b0bd",
-        confirmButtonText: "前往我的任務",
-        cancelButtonText: "留在本頁",
-        reverseButtons: true,
-        footer:
-          '<span style="font-size: 0.8rem; color: #6c757d;">提示：您可以在「我的任務」中查看進度</span>',
-      });
+  // 領取成功後的導引彈窗
+  const nextStep = await Swal.fire({
+    title: "領取成功！",
+    text: `任務「${mission.title}」已加入您的執行清單。`,
+    icon: "success",
+    showCancelButton: true,
+    confirmButtonColor: "#145369",
+    cancelButtonColor: "#86b0bd",
+    confirmButtonText: "前往我的任務",
+    cancelButtonText: "留在本頁",
+    reverseButtons: true,
+    footer:
+      '<span style="font-size: 0.8rem; color: #6c757d;">提示：您可以在「我的任務」中查看進度</span>',
+  });
 
-      // 3. 跳轉邏輯
-      if (nextStep.isConfirmed) {
-        router.push("/mytask");
-      }
-    } catch (error) {
-      Swal.fire({
-        title: "領取失敗",
-        text: "暫時無法領取該任務，請稍後再試。",
-        icon: "error",
-        confirmButtonColor: "#145369",
-      });
-    }
+  if (nextStep.isConfirmed) {
+    router.push("/mytask");
   }
 }
 </script>
@@ -129,9 +135,10 @@ async function handleClaim(mission) {
             <button
               v-if="!m.claimed && !m.completed"
               class="btn-claim"
+              :disabled="claimingId === m.id"
               @click="handleClaim(m)"
             >
-              領取
+              {{ claimingId === m.id ? "領取中…" : "領取" }}
             </button>
             <span v-else-if="m.claimed" class="status-label text-success">
               <i class="fas fa-check-circle me-1"></i>已領取
