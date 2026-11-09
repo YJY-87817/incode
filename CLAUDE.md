@@ -263,10 +263,18 @@ incode/
       不限發起人、已有回覆也可取消）；徵求中的委託不能直接刪除
     - 任務大廳（`MissionList.vue`）改為等後端回應才顯示「領取成功」，失敗只顯示失敗訊息（原本兩個提示都會跳出）；領取中按鈕停用
     - 論壇編輯器工具列的粗體 / 斜體 / 底線「啟用中」狀態可以正常顯示（模板原本寫成 `editor?.value?.isActive`）
+24. 重設密碼與論壇內容 sandbox（低優先清單）：
+    - `ResetPasswordAsync`：沒有申請過重設（`ResetToken` / 期限為 null）一律失敗，token 以固定時間比對；新密碼與註冊同規則
+      （`PasswordRules`，6～100 碼，DTO 與 Service 都檢查；原本 5 碼也能重設成功）；重設成功後解除登入失敗暫停
+    - 重設 token 改為 32 bytes 密碼學亂數；信件連結的 email / token 做 URL 編碼並 HTML 編碼；`ForgotPasswordRequest` 檢查 email 格式
+    - 寄信失敗（SMTP）改為記錄 log 並回通用訊息（原本回傳完整的 `SmtpException`）
+    - `HtmlIframe.vue`：原本傳入 `allow-scripts` 時會直接移除 sandbox（論壇內文等於沒有 sandbox，漏網的腳本可以存取整個網站）。
+      改為一律保留 `sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"`、不允許腳本；
+      內容在顯示前已經過 DOMPurify（會移除 script / iframe），所以原本的 `allow-scripts` 沒有實際用途
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～23），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，21、22 部分修正（見修正紀錄 6～9、12～24），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
@@ -312,8 +320,4 @@ incode/
 
 ### ⚪ 低 / 程式品質
 
-- 重設密碼：`ResetPasswordAsync` 沒有檢查 `ResetToken` 是否為 null（目前靠 `[ApiController]` 隱含的必填驗證擋住），
-  新密碼沒有長度規則；信件連結中的 email 沒有 URL encode；前端網址寫死 `https://localhost:5173`（Google 登入導回也是）。
-- 論壇內容在前端以 `HtmlIframe` 顯示，`allow-scripts` + `allow-same-origin` 時會移除 sandbox；內容已用 DOMPurify 過濾，
-  但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
 - 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。
