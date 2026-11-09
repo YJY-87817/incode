@@ -15,12 +15,14 @@ namespace incode.MVC.ApiControllers.Users
     private readonly incodedatabaseContext _context;
         private readonly IUserService _userService;
         private readonly IImageService _imageService;
+        private readonly UploadStorage _storage;
 
-        public UserController(incodedatabaseContext context, IUserService userService, IImageService imageService)
+        public UserController(incodedatabaseContext context, IUserService userService, IImageService imageService, UploadStorage storage)
         {
       _context = context;
             _userService = userService;
             _imageService = imageService;
+            _storage = storage;
         }
 
         private const int MaxAvatarFiles = 5;
@@ -45,18 +47,11 @@ namespace incode.MVC.ApiControllers.Users
                 if (error != null) return BadRequest(new { message = error });
             }
 
-            string storagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/user");
-            Directory.CreateDirectory(storagePath);
-
             var urls = new List<string>();
             foreach (var file in list)
             {
                 var fileName = $"{Guid.NewGuid()}{ImageFileValidator.NormalizedExtension(file)}";
-                using (var stream = new FileStream(Path.Combine(storagePath, fileName), FileMode.CreateNew))
-                {
-                    await file.CopyToAsync(stream);
-                }
-                urls.Add($"/img/user/{fileName}");
+                urls.Add(await _storage.SaveAsync(UploadFolders.Avatars, fileName, file));
             }
 
             return Ok(new { imageUrls = urls });
