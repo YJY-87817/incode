@@ -24,6 +24,8 @@
 - **論壇編輯器**：`components/contents/TiptapEditor.vue`（Tiptap 3）。ProseMirror 相關 import 一律用 `@tiptap/pm/*`，
   不要直接 import `prosemirror-*`（版本不同時 `instanceof` 會失效）；StarterKit 已內含 Underline / Link，不要重複加入
 - **路由**：新頁面一律 `component: () => import("@/views/...")` 延遲載入（只有首頁直接 import）
+- 論壇內文以 `components/common/HtmlIframe.vue` 顯示（sandbox 固定為 `allow-same-origin allow-popups allow-popups-to-escape-sandbox`）。
+  **不要加 `allow-scripts`**：與 `allow-same-origin` 同時存在時 sandbox 形同無效
 - `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
   元件中請用 `computed(() => authStore.isAuthenticated)`，**不要**存成常數（會失去響應式）
@@ -98,7 +100,6 @@ src/
 
 - `src/api/imageApi.js` 的 `deleteImage` 呼叫 `/image`，後端實際是 `DELETE /api/images/delete?path=`（且僅限後台管理員），目前無作用。
 - 匯入路徑請與實際檔名大小寫一致（Windows / macOS 不分大小寫，但 Linux build 會失敗）。
-- `src/components/common/HtmlIframe.vue`：`allow-scripts` + `allow-same-origin` 時會移除 sandbox，論壇內容雖已用 DOMPurify 過濾，仍建議保留 sandbox。
 - 完整問題清單見根目錄 `CLAUDE.md` 的「全專案檢查結果」。
 
 ## 修正紀錄
