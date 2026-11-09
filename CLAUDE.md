@@ -271,6 +271,8 @@ incode/
     - `HtmlIframe.vue`：原本傳入 `allow-scripts` 時會直接移除 sandbox（論壇內文等於沒有 sandbox，漏網的腳本可以存取整個網站）。
       改為一律保留 `sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"`、不允許腳本；
       內容在顯示前已經過 DOMPurify（會移除 script / iframe），所以原本的 `allow-scripts` 沒有實際用途
+25. 儲值方案點數：`Recharge.vue` 的方案原本寫「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點）。
+    前端改為依後端規則由金額計算點數（50 元 = 500、95 元 = 950、270 元 = 2700），移除不存在的贈點顯示
 
 ## 全專案檢查結果（2026-11）
 
@@ -317,7 +319,3 @@ incode/
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
-
-### ⚪ 低 / 程式品質
-
-- 儲值頁 `Recharge.vue` 的方案顯示「1000 點 + 贈 50」等，但後端一律以金額 × 10 給點（95 元 = 950 點），方案與實際點數不符。

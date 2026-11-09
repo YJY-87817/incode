@@ -5,18 +5,20 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { RECHARGE_ORDER_KEY } from "@/utils/rechargeOrder.js";
 
-// 儲值方案設定
-const plans = ref([
-  { id: 1, points: 500, price: 50, popular: false, bonus: 0 },
-  { id: 2, points: 1000, price: 95, popular: true, bonus: 50 },
-  { id: 3, points: 3000, price: 270, popular: false, bonus: 300 },
-]);
+// 後端一律以「金額 × 10」給點（無贈點），方案的點數由金額計算，與實際入帳一致
+const exchangeRate = 10;
+const plans = ref(
+  [
+    { id: 1, price: 50, popular: false },
+    { id: 2, price: 95, popular: true },
+    { id: 3, price: 270, popular: false },
+  ].map((p) => ({ ...p, points: p.price * exchangeRate })),
+);
 
 // 狀態控制
 const selectedPlan = ref(2); // 預設選中熱門方案
 const customAmount = ref(null);
 const isLoading = ref(false);
-const exchangeRate = 10;
 // 自訂金額範圍（與後端 PointRechargeDTO 的 [Range] 一致）
 const MIN_AMOUNT = 10;
 const MAX_AMOUNT = 50000;
@@ -28,11 +30,10 @@ const finalDetails = computed(() => {
     return {
       points: Math.floor(amt * exchangeRate), // 金額轉點數
       price: amt,
-      bonus: 0,
     };
   }
   const plan = plans.value.find((p) => p.id === selectedPlan.value);
-  return plan || { points: 0, price: 0, bonus: 0 };
+  return plan || { points: 0, price: 0 };
 });
 
 // 自訂金額的錯誤訊息（null 表示可送出）
@@ -180,13 +181,6 @@ const handleCheckout = async () => {
                     <h2 class="font-weight-bolder mb-0">
                       NT$ {{ plan.price }}
                     </h2>
-                    <small
-                      v-if="plan.bonus > 0"
-                      class="text-success font-weight-bold"
-                    >
-                      額外贈送 {{ plan.bonus }} 點
-                    </small>
-                    <small v-else class="text-transparent">N/A</small>
                   </div>
                 </div>
               </div>
@@ -250,15 +244,6 @@ const handleCheckout = async () => {
                     <span class="text-secondary">儲值點數：</span>
                     <span class="font-weight-bold text-dark"
                       >{{ finalDetails.points }} Pts</span
-                    >
-                  </div>
-                  <div
-                    class="d-flex justify-content-between mb-2"
-                    v-if="finalDetails.bonus > 0"
-                  >
-                    <span class="text-secondary">贈送獎勵：</span>
-                    <span class="font-weight-bold text-success"
-                      >+{{ finalDetails.bonus }} Pts</span
                     >
                   </div>
                   <div class="d-flex justify-content-between mb-3">
