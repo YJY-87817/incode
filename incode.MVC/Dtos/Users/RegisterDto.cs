@@ -9,7 +9,7 @@ namespace incode.MVC.Dtos.Users
         public string Email { get; set; } 
 
         [Required]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "密碼至少需要 6 碼")]
+        [StringLength(PasswordRules.MaxLength, MinimumLength = PasswordRules.MinLength, ErrorMessage = "密碼至少需要 6 碼")]
         public string Password { get; set; }
 
         public string? Username { get; set; }

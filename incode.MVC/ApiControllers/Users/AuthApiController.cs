@@ -245,7 +245,16 @@ namespace incode.MVC.ApiControllers.Users
             string frontendUrl = $"{_frontendUrl}/reset-password";
 
             // 呼叫 Service (Service 內寄信時，會把 token 拼在 frontendUrl 後面)
-            await _authService.ForgotPasswordAsync(request.Email, frontendUrl);
+            try
+            {
+                await _authService.ForgotPasswordAsync(request.Email, frontendUrl);
+            }
+            catch (Exception ex)
+            {
+                // 寄信失敗（SMTP 設定錯誤、網路）：原本例外直接拋出，開發環境會回傳完整的例外頁面
+                _logger.LogError(ex, "寄送重設密碼信失敗");
+                return StatusCode(500, new { message = "重設密碼信寄送失敗，請稍後再試" });
+            }
 
             // API 永遠只回傳狀態，不回傳畫面
             return Ok(new { message = "若 Email 存在，信件已發送。" });

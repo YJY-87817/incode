@@ -43,13 +43,12 @@ const props = defineProps({
     type: String,
     default: "",
   },
-  allowScripts: {
-    type: Boolean,
-    default: false,
-  },
+  // sandbox 一律保留，且不允許執行腳本（第二層防護：內容已先經 DOMPurify 過濾，萬一漏網也不會執行）。
+  // allow-same-origin：讓父頁面能讀取內容高度；allow-popups(-to-escape-sandbox)：內文連結（target=_blank）可以開新分頁。
+  // 不要加 allow-scripts：與 allow-same-origin 同時存在時，iframe 內的腳本可以自行移除 sandbox。
   sandbox: {
     type: String,
-    default: "allow-same-origin",
+    default: "allow-same-origin allow-popups allow-popups-to-escape-sandbox",
   },
   includeFontAwesome: {
     type: Boolean,
@@ -151,9 +150,7 @@ const stripScripts = (html) => {
   return doc.body.innerHTML;
 };
 
-const bodyHtml = computed(() =>
-  props.allowScripts ? props.html || "" : stripScripts(props.html || ""),
-);
+const bodyHtml = computed(() => stripScripts(props.html || ""));
 
 const srcdoc = computed(() => {
   const faLink = props.includeFontAwesome
@@ -215,21 +212,13 @@ const iframeStyle = computed(() => {
   return style;
 });
 
-const effectiveSandbox = computed(() => {
-  const rawSandbox = (props.sandbox || "").trim();
-
-  if (!props.allowScripts) return rawSandbox;
-
-  const tokens = rawSandbox.split(/\s+/).filter(Boolean);
-  const hasSameOrigin = tokens.includes("allow-same-origin");
-
-  // 若需要腳本且同源存取（例如量測 iframe 高度），
-  // 直接移除 sandbox 屬性以避免瀏覽器警告。
-  if (hasSameOrigin || tokens.length === 0) return null;
-
-  if (!tokens.includes("allow-scripts")) tokens.push("allow-scripts");
-  return tokens.join(" ");
-});
+// 原本傳入 allow-scripts 時會「直接移除 sandbox 屬性」，論壇內容等於沒有 sandbox；現在一律保留且移除 allow-scripts
+const effectiveSandbox = computed(() =>
+  (props.sandbox || "")
+    .split(/\s+/)
+    .filter((token) => token && token !== "allow-scripts")
+    .join(" "),
+);
 </script>
 
 <style scoped>
