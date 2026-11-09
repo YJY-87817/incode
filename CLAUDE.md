@@ -228,12 +228,18 @@ incode/
     - 狀態改為 `cancelled` 並以 `IPointReserveService.ReleaseAsync` 退回預扣點數（同一交易、鎖定委託人）；
       `ReleaseAsync` 改為回傳退點結果（原本忽略失敗）；例外不再回傳 `ex.Message`
     - 前端「我的任務」（`MyTask.vue`）：自己發起且徵求中的委託顯示「取消委託」，已取消的委託列在「已完結」並在歷程顯示退款
+19. 前端套件（全專案檢查 24）：
+    - Tiptap 2.27 → 3.33（修正 `mergeAttributes()` 原型污染 GHSA-cp6q-959q-f8rh），`npm audit` 0 個漏洞。
+      `@tiptap/extension-underline` 移除（StarterKit 3 已內含），新增 `@tiptap/pm`；`TiptapEditor.vue` 的 ProseMirror 改從
+      `@tiptap/pm/state` 匯入；StarterKit 3 新增的 Link、TrailingNode 關閉，產生的 HTML 與升級前相同
+      （以同一組瀏覽器操作實測升級前後 13 個步驟的輸出完全一致）
+    - 前端提交 `package-lock.json`（原本被 `.gitignore` 排除），CI 改用 `npm ci`
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23 已修正，22 部分修正（見修正紀錄 6～9、12～18），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，22 部分修正（見修正紀錄 6～9、12～19），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：套件（24）→ 低優先清單中的 `[Authorize]` 與 `ex.Message` → 其餘。
+建議修正順序：低優先清單中的 `[Authorize]` 與 `ex.Message` → 上傳檔案（21）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -269,9 +275,9 @@ incode/
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
     尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
-    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
+    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
-24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。
+24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
 
 ### ⚪ 低 / 程式品質

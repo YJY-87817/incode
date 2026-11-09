@@ -21,6 +21,8 @@
 - **儲值流程**：`Recharge.vue` 建立訂單後把訂單編號存到 sessionStorage（`utils/rechargeOrder.js`）再送出綠界表單；
   綠界導回 `/recharge-result`，以 `GET PointRechargeApi/order/{orderNo}` 輪詢實際狀態（不要假設付款成功）
 - **任務**：只有平台任務可以「接取」（`taskStore.claimTask`）；委託任務是到討論串回覆，由委託人選最佳解答
+- **論壇編輯器**：`components/contents/TiptapEditor.vue`（Tiptap 3）。ProseMirror 相關 import 一律用 `@tiptap/pm/*`，
+  不要直接 import `prosemirror-*`（版本不同時 `instanceof` 會失效）；StarterKit 已內含 Underline / Link，不要重複加入
 - **路由**：新頁面一律 `component: () => import("@/views/...")` 延遲載入（只有首頁直接 import）
 - `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
@@ -86,9 +88,9 @@ src/
 
 ## 建置與驗證
 
-- `npm install`（repo 沒有 lockfile）、`npm run dev`、`npm run build`
+- `npm ci`（依 `package-lock.json` 安裝；新增 / 升級套件用 `npm install <套件>` 並一併提交 lockfile）、`npm run dev`、`npm run build`
 - `vite.config.js`：`incode.Vue/` 下有 `key.pem` / `cert.pem`（已 gitignore）時 dev server 使用 HTTPS，沒有時改為 HTTP；`npm run build` 不需要憑證
-- CI（repo 根目錄 `.github/workflows/ci.yml`）在 Linux 執行 `npm install` + `npm run build`，匯入路徑大小寫錯誤會讓 PR 檢查失敗
+- CI（repo 根目錄 `.github/workflows/ci.yml`）在 Linux 執行 `npm ci` + `npm run build`，匯入路徑大小寫錯誤會讓 PR 檢查失敗
 - ESLint 9 沒有 `eslint.config.js`，`npm run lint` 目前無法執行
 - 沒有自動化測試。曾以 Playwright（環境內建 Chromium）+ 攔截 API 回應的方式做瀏覽器冒煙測試
 
