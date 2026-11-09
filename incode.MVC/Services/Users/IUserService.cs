@@ -20,5 +20,27 @@ namespace incode.MVC.Services.Users
         Task<User> CreateGoogleUserAsync(string email, string name);
         Task AddLoginLogAsync(int userId, string ipAddress);
         Task<UserProfileStatsDto> GetUserStatsAsync(int userId);
+
+        /// <summary>管理員用的會員列表（不含密碼等敏感欄位）。</summary>
+        Task<List<UserDto>> GetUserListAsync();
+
+        Task<User?> GetUserByUsernameAsync(string username);
+
+        /// <summary>
+        /// 更新會員自己的資料：暱稱有填才改（不可與其他人重複），其他欄位為 null 時保持原值。
+        /// </summary>
+        Task<(UpdateProfileResult Result, User? User)> UpdateProfileAsync(int userId, UpdateUserDto dto);
+
+        /// <summary>
+        /// 停用 / 啟用帳號（不刪除資料）；停用後無法登入，已登入的人也會被登出。找不到回傳 false。
+        /// </summary>
+        Task<bool> SetActiveAsync(int userId, bool isActive);
+    }
+
+    public enum UpdateProfileResult
+    {
+        Success,
+        NotFound,
+        UsernameTaken
     }
 }

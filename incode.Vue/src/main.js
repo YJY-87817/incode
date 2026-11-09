@@ -19,9 +19,9 @@ const vuetify = createVuetify({ icons: iconsOptions });
 import "@/assets/css/nucleo-icons.css";
 import "@/assets/css/nucleo-svg.css";
 
-//Bootstrap
-import "bootstrap/dist/css/bootstrap.css";
+//Bootstrap（CSS 由 Material Kit 內建的 Bootstrap 5.2 提供；5.3 專屬類別見 bootstrap53-utilities.css）
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "@/assets/css/bootstrap53-utilities.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 import materialKit from "@/material-kit";

@@ -8,32 +8,16 @@ namespace incode.MVC.ApiControllers.Users
     [Authorize]
     public class StatusController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IStatusService _statusService;
 
-        public StatusController(incodedatabaseContext context)
+        public StatusController(IStatusService statusService)
         {
-            _context = context;
+            _statusService = statusService;
         }
-        //
+
+        // 取得自己的等級 / 經驗 / 點數（沒有紀錄時回傳預設值，不寫入資料庫）
         [HttpGet]
         public async Task<ActionResult<UserStatus>> GetMyStatus()
-        {
-            int userId = User.GetId(); 
-
-            var status = await _context.UserStatus.FindAsync(userId);
-
-            if (status == null)
-            {
-                return Ok(new UserStatus
-                {
-                    UserId = userId,
-                    Experience = 0,
-                    Rank = 1,
-                    Points = 0
-                });
-            }
-
-            return Ok(status);
-        }
+            => Ok(await _statusService.GetUserStatusAsync(User.GetId()));
     }
 }

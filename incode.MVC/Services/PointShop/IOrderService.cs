@@ -9,6 +9,12 @@ namespace incode.MVC.Services.PointShop
         Task<ResultDTO<IEnumerable<ShippedDTO>>> GetShippedDetailAsync(int orderId);
         Task<ResultDTO<IEnumerable<ShipAddressDTO>>> GetHasShippedDetailAsync(int userId);
 
+        /// <summary>取得會員自己的訂單（唯讀）；不存在或不是自己的一律回傳 null，呼叫端回 404 以免透露訂單是否存在。</summary>
+        Task<Orders?> GetOwnOrderAsync(int orderId, int userId);
+
+        /// <summary>依寄送資料編號取得其所屬、且屬於該會員的訂單；找不到或不是自己的回傳 null。</summary>
+        Task<Orders?> GetOwnOrderByShippedDetailAsync(int shippedDetailId, int userId);
+
         // ===== 異動 (皆在交易內完成：庫存原子扣減、點數同步、失敗整筆 rollback) =====
         // 擁有者 / 訂單狀態等權限檢查由呼叫端 (前台 API、後台) 負責
 

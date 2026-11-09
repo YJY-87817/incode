@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Hosting;
 using System;
@@ -19,7 +18,7 @@ namespace incode.MVC.ApiControllers.Chat
     {
         private const long MaxChatImageBytes = 10L * 1024 * 1024; // 聊天圖片單檔 10 MB
 
-        private readonly incodedatabaseContext _context;
+        private readonly IChatService _chat;
         private readonly GeminiService _geminiService;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -28,7 +27,7 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly UploadStorage _storage;
 
         public ChatMessagesApiController(
-          incodedatabaseContext context,
+          IChatService chat,
           GeminiService geminiService,
           IHubContext<ChatHub> hubContext,
           IWebHostEnvironment webHostEnvironment,
@@ -38,7 +37,7 @@ namespace incode.MVC.ApiControllers.Chat
         {
             _logger = logger;
             _storage = storage;
-            _context = context;
+            _chat = chat;
             _geminiService = geminiService;
             _hubContext = hubContext;
             _webHostEnvironment = webHostEnvironment;
@@ -82,51 +81,6 @@ namespace incode.MVC.ApiControllers.Chat
             {
                 await _hubContext.Groups.AddToGroupAsync(connectionId, sessionIdStr); // 就等待將這個「連線(Connection)」加入到指定的「群組(Session)」中
             }
-        }
-
-        // 當前端給我 [使用者ID] 和 [房間ID] 時
-        // 我會去處理(找舊的或開新的)，最後打包回傳兩樣結果 (聊天室物件, 是否為新建)
-        private async Task<(ChatSession Session, bool IsNew)> GetOrInitSessionAsync(int userId, int requestedSessionId, string initialTitle = "我的對話")
-        {
-            ChatSession session = null; // 宣告一個變數 session 用來存放等一下抓到的聊天室資料，預設為空
-
-            // 如果前端有傳 SessionId，先試著找找看
-            if (requestedSessionId > 0)  // 檢查使用者是否指定大於0的聊天室ID
-            {
-                session = await _context.ChatSession.FindAsync(requestedSessionId); //去資料庫根據 requestedSessionId 尋找對應的聊天室物件session (等待非同步查詢結果)
-
-                // 安全檢查：如果有找到聊天室，但這個聊天室的主人不是當前使用者，就視為沒找到 (回傳 null 讓下面邏輯去開新的)
-                if (session != null && session.UserId != userId) return (null, false);
-            }
-
-            // 如果沒傳 ID (0) 或者上面沒找到，就自動找該用戶「最新」的 Session (接續上次)
-            if (session == null)
-            {
-                session = await _context.ChatSession
-                  .Where(s => s.UserId == userId)
-                  .OrderByDescending(s => s.UpdatedAt)
-                  .FirstOrDefaultAsync();
-            }
-
-            // 真的沒有 (第一次使用 / 資料庫空的) -> 建立新的
-            if (session == null)
-            {
-                session = new ChatSession
-                {
-                    UserId = userId,
-                    Title = initialTitle,
-                    Ishumanmode = false,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-                _context.ChatSession.Add(session);
-                await _context.SaveChangesAsync();
-                return (session, true); // 回傳：是新的 (IsNew = true)
-            }
-
-            session.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync(); // 儲存時間與模式重設
-            return (session, false);
         }
 
         // Function Calling 的資料庫查詢方法 (商品)
@@ -203,7 +157,7 @@ namespace incode.MVC.ApiControllers.Chat
             try
             {
                 // 自動找舊的，沒有就開新的
-                var result = await GetOrInitSessionAsync(userId, 0);
+                var result = await _chat.GetOrInitSessionAsync(userId, 0);
 
                 return Ok(new { sessionId = result.Session.ChatSessionId, isNew = result.IsNew });
             }
@@ -226,7 +180,7 @@ namespace incode.MVC.ApiControllers.Chat
             try
             {
                 // Session 處理
-                var (currentSession, _) = await GetOrInitSessionAsync(userId, request.SessionId,
+                var (currentSession, _) = await _chat.GetOrInitSessionAsync(userId, request.SessionId,
                     request.UserContent.Length > 20 ? request.UserContent.Substring(0, 20) : request.UserContent);
 
                 if (currentSession == null) return Unauthorized("您無權存取此對話");
@@ -235,15 +189,7 @@ namespace incode.MVC.ApiControllers.Chat
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
 
                 // 存 User 訊息
-                var userMsg = new ChatMessage
-                {
-                    SessionId = currentSession.ChatSessionId,
-                    Role = "user",
-                    Body = request.UserContent,
-                    CreatedAt = DateTime.Now
-                };
-                _context.ChatMessage.Add(userMsg);
-                await _context.SaveChangesAsync();
+                await _chat.AddMessageAsync(currentSession.ChatSessionId, "user", request.UserContent);
 
                 var sessionGroup = _hubContext.Clients.Group(sessionIdStr);
                 await sessionGroup.SendAsync("ReceiveMessage", "User", request.UserContent);
@@ -362,15 +308,7 @@ namespace incode.MVC.ApiControllers.Chat
                 }
 
                 // 存 AI 訊息 (您可能漏了這一段)
-                var aiMsg = new ChatMessage
-                {
-                    SessionId = currentSession.ChatSessionId,
-                    Role = "assistant",
-                    Body = aiResponseText,
-                    CreatedAt = DateTime.Now
-                };
-                _context.ChatMessage.Add(aiMsg);
-                await _context.SaveChangesAsync();
+                await _chat.AddMessageAsync(currentSession.ChatSessionId, "assistant", aiResponseText);
 
                 // 廣播 AI 回應
                 await sessionGroup.SendAsync("ReceiveMessage", messageType, aiResponseText);
@@ -395,23 +333,7 @@ namespace incode.MVC.ApiControllers.Chat
             try
             {
                 // 客服不需要自動建立 Session，而是撈取已經存在的、且 Ishumanmode 為 true 的 Session
-                var sessions = await _context.ChatSession
-          .Where(s => s.Ishumanmode == true) // 取正在請求真人支援的
-                    .OrderByDescending(s => s.UpdatedAt) // 最新的在上面
-                    .Select(s => new
-                    {
-                        s.ChatSessionId,
-                        s.UserId,
-                        s.Title,
-                        LastUpdate = s.UpdatedAt.HasValue ? s.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm") : "",
-                        // 順便撈最後一則訊息當預覽，讓客服知道客戶在問什麼
-                        LastMessage = _context.ChatMessage
-                      .Where(m => m.SessionId == s.ChatSessionId)
-                      .OrderByDescending(m => m.CreatedAt)
-                      .Select(m => m.Body)
-                      .FirstOrDefault()
-                    })
-          .ToListAsync();
+                var sessions = await _chat.GetSupportSessionsAsync();
 
                 return Ok(sessions);
             }
@@ -437,15 +359,8 @@ namespace incode.MVC.ApiControllers.Chat
                 await EnsureGroupAsync(request.ConnectionId, sessionIdStr);
 
                 // 客服回覆存檔 
-                var adminMsg = new ChatMessage
-                {
-                    SessionId = request.SessionId,
-                    Role = "assistant", // 客服與 AI 統一使用 assistant 角色
-                    Body = request.UserContent,
-                    CreatedAt = DateTime.Now
-                };
-                _context.ChatMessage.Add(adminMsg);
-                await _context.SaveChangesAsync();
+                // 客服與 AI 統一使用 assistant 角色
+                await _chat.AddMessageAsync(request.SessionId, "assistant", request.UserContent);
 
                 await _hubContext.Clients.Group(sessionIdStr)
                   .SendAsync("ReceiveMessage", "Live", request.UserContent);
@@ -471,13 +386,13 @@ namespace incode.MVC.ApiControllers.Chat
 
             try
             {
-                var session = await _context.ChatSession.FindAsync(request.SessionId);
+                var session = await _chat.FindSessionAsync(request.SessionId);
 
                 // Session 處理與權限檢查
                 if (session == null)
                 {
-                    var result = await GetOrInitSessionAsync(userId, request.SessionId);
-                    session = result.Session;
+                    var result = await _chat.GetOrInitSessionAsync(userId, request.SessionId);
+                    session = result.Session!;
                 }
                 else if (session.UserId != userId)
                 {
@@ -485,9 +400,7 @@ namespace incode.MVC.ApiControllers.Chat
                 }
 
                 // 更新模式與時間
-                session.Ishumanmode = request.Ishumanmode;
-                session.UpdatedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
+                await _chat.SetHumanModeAsync(session, request.Ishumanmode);
 
                 string modeName = request.Ishumanmode ? "客服" : "AI";
                 string sessionIdStr = session.ChatSessionId.ToString();
@@ -504,14 +417,7 @@ namespace incode.MVC.ApiControllers.Chat
                 {
                     string autoReplyText = "收到您的請求，請稍等1-2分鐘，客服人員將為您服務。";
 
-                    _context.ChatMessage.Add(new ChatMessage
-                    {
-                        SessionId = session.ChatSessionId,
-                        Role = "assistant",
-                        Body = autoReplyText,
-                        CreatedAt = DateTime.Now
-                    });
-                    await _context.SaveChangesAsync();
+                    await _chat.AddMessageAsync(session.ChatSessionId, "assistant", autoReplyText);
 
                     await sessionGroup.SendAsync("ReceiveMessage", "Live", autoReplyText);
                     await _hubContext.Clients.Group("SupportAgents").SendAsync("RefreshSessions");
@@ -542,7 +448,8 @@ namespace incode.MVC.ApiControllers.Chat
             var imageError = ImageFileValidator.Validate(request.Image, MaxChatImageBytes);
             if (imageError != null) return BadRequest(imageError);
 
-            var (currentSession, isNew) = await GetOrInitSessionAsync(userId, request.SessionId, "圖片對話");
+            var (currentSession, isNew) = await _chat.GetOrInitSessionAsync(userId, request.SessionId, "圖片對話");
+            if (currentSession == null) return Unauthorized("您無權存取此對話");
             int validSessionId = currentSession.ChatSessionId;
             string validSessionIdStr = validSessionId.ToString();
 
@@ -555,14 +462,8 @@ namespace incode.MVC.ApiControllers.Chat
 
                 // 存入 User 圖片訊息
                 await EnsureGroupAsync(request.ConnectionId, validSessionIdStr);
-                _context.ChatMessage.Add(new ChatMessage
-                {
-                    SessionId = validSessionId,
-                    Role = "user",
-                    Body = $"<img src='{dbRelativeUrl}' /> {System.Net.WebUtility.HtmlEncode(request.UserContent)}",
-                    CreatedAt = DateTime.Now
-                });
-                await _context.SaveChangesAsync();
+                await _chat.AddMessageAsync(validSessionId, "user",
+                    $"<img src='{dbRelativeUrl}' /> {System.Net.WebUtility.HtmlEncode(request.UserContent)}");
 
                 // 推播圖片給前端
                 await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "User_Image", dbRelativeUrl);
@@ -664,14 +565,7 @@ namespace incode.MVC.ApiControllers.Chat
                 }
 
                 // 存入 AI 回覆
-                _context.ChatMessage.Add(new ChatMessage
-                {
-                    SessionId = validSessionId,
-                    Role = "assistant",
-                    Body = aiReplyText,
-                    CreatedAt = DateTime.Now
-                });
-                await _context.SaveChangesAsync();
+                await _chat.AddMessageAsync(validSessionId, "assistant", aiReplyText);
 
                 // 推播 AI 回覆
                 await _hubContext.Clients.Group(validSessionIdStr).SendAsync("ReceiveMessage", "AI", aiReplyText);
@@ -691,23 +585,12 @@ namespace incode.MVC.ApiControllers.Chat
 
             // 只能讀自己的對話 (客服 / 管理員可讀全部)
             if (!User.IsInRole("Admin") &&
-                !await _context.ChatSession.AnyAsync(s => s.ChatSessionId == sessionId && s.UserId == userId))
+                !await _chat.IsOwnerAsync(sessionId, userId))
                 return NotFound("找不到該對話");
 
             try
             {
-                var history = await _context.ChatMessage
-                  .Where(m => m.SessionId == sessionId)
-                  .OrderBy(m => m.CreatedAt)
-                  .Select(m => new ChatMessageDto
-                  {
-                      ChatMessageId = m.ChatMessageId,
-                      SessionId = m.SessionId,
-                      Role = m.Role,
-                      Body = m.Body, 
-                      CreatedAt = m.CreatedAt.HasValue ? m.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""
-                  })
-                  .ToListAsync();
+                var history = await _chat.GetHistoryAsync(sessionId);
                 return Ok(history);
             }
             catch (Exception ex) { return ServerError(ex, "取得聊天紀錄"); }

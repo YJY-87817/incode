@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,18 +12,18 @@ namespace incode.MVC.ApiControllers.Point
     [ApiController]
     public class PointRechargeApiController : ControllerBase
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IPointRechargeService _rechargeService;
         private readonly EcpayService _ecpay;
         private readonly IPointLogService _pointLogService;
         private readonly ILogger<PointRechargeApiController> _logger;
 
         public PointRechargeApiController(
-            incodedatabaseContext context,
+            IPointRechargeService rechargeService,
             EcpayService ecpay,
             IPointLogService pointLogService,
             ILogger<PointRechargeApiController> logger)
         {
-            _context = context;
+            _rechargeService = rechargeService;
             _ecpay = ecpay;
             _pointLogService = pointLogService;
             _logger = logger;
@@ -40,18 +39,8 @@ namespace incode.MVC.ApiControllers.Point
             // 金額範圍由 PointRechargeDTO 的 [Range] 驗證（[ApiController] 不通過時自動回 400）
             int userId = User.GetId();
 
-            var order = new PointRecharge
-            {
-                UserId = userId,
-                OrderNo = "PR" + DateTime.Now.Ticks,
-                CashAmount = dto.CashAmount,
-                PointsGranted = dto.CashAmount * 10,
-                PaymentMethod = dto.PaymentMethod,
-                Status = "pending"
-            };
-
-            _context.PointRecharge.Add(order);
-            await _context.SaveChangesAsync();
+            // 點數由後端依金額計算（IPointRechargeService.PointsPerCash）
+            var order = await _rechargeService.CreateOrderAsync(userId, dto.CashAmount, dto.PaymentMethod);
 
             var ecpayParams = _ecpay.CreatePayment(order);
 
@@ -105,11 +94,7 @@ namespace incode.MVC.ApiControllers.Point
             // 付款失敗、取消等：只更新尚未成功的訂單（已成功的不會被後到的失敗通知覆蓋）
             try
             {
-                var updated = await _context.PointRecharge
-                    .Where(r => r.OrderNo == orderNo && r.Status != "success")
-                    .ExecuteUpdateAsync(x => x
-                        .SetProperty(r => r.Status, "failed")
-                        .SetProperty(r => r.PaymentTradeNo, tradeNo));
+                var updated = await _rechargeService.MarkFailedAsync(orderNo, tradeNo);
                 _logger.LogInformation("付款未成功 - OrderNo: {OrderNo}, RtnCode: {RtnCode}, 更新 {Count} 筆",
                     orderNo, rtnCode, updated);
             }
@@ -131,18 +116,7 @@ namespace incode.MVC.ApiControllers.Point
         {
             int userId = User.GetId();
 
-            var order = await _context.PointRecharge
-                .AsNoTracking()
-                .Where(r => r.OrderNo == orderNo && r.UserId == userId)
-                .Select(r => new
-                {
-                    r.OrderNo,
-                    r.Status,
-                    r.CashAmount,
-                    r.PointsGranted,
-                    r.CreatedAt
-                })
-                .FirstOrDefaultAsync();
+            var order = await _rechargeService.GetUserOrderAsync(userId, orderNo);
 
             // 不存在或不是自己的訂單一律 404
             if (order == null)

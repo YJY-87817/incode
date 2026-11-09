@@ -1,15 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace incode.MVC.Services.Users
 {
     public class UserService : IUserService
     {
         private readonly incodedatabaseContext _context;
+        private readonly IMemoryCache _cache;
 
-        public UserService(incodedatabaseContext context)
+        public UserService(incodedatabaseContext context, IMemoryCache cache)
         {
             _context = context;
-          
+            _cache = cache;
         }
 
         public async Task<User?> GetUserByEmailAsync(string email)
@@ -103,10 +105,65 @@ namespace incode.MVC.Services.Users
                                  .ToListAsync();
         }               
 
+        public async Task<List<UserDto>> GetUserListAsync()
+        {
+            return await _context.User
+                .Include(u => u.Role)
+                .Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    Username = u.Username,
+                    ImageUrl = u.ImageUrl,
+                    Role = u.Role.RoleName ?? "Member"
+                })
+                .ToListAsync();
+        }
+
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            return await _context.User.FirstOrDefaultAsync(u => u.Username == username);
+        }
+
+        public async Task<(UpdateProfileResult Result, User? User)> UpdateProfileAsync(int userId, UpdateUserDto dto)
+        {
+            var user = await _context.User.FindAsync(userId);
+            if (user == null) return (UpdateProfileResult.NotFound, null);
+
+            // Username 不能是空字串；有填才改，且不能與其他人重複
+            if (!string.IsNullOrWhiteSpace(dto.Username))
+            {
+                if (await _context.User.AnyAsync(u => u.Username == dto.Username && u.UserId != userId))
+                    return (UpdateProfileResult.UsernameTaken, null);
+                user.Username = dto.Username;
+            }
+
+            // 其他欄位：有值就更新，null 保持原值
+            if (dto.ImageUrl != null) user.ImageUrl = dto.ImageUrl;
+            if (dto.Phone != null) user.Phone = dto.Phone;
+            if (dto.Address != null) user.Address = dto.Address;
+            if (dto.Birthday != null) user.Birthday = dto.Birthday;
+
+            await _context.SaveChangesAsync();
+            return (UpdateProfileResult.Success, user);
+        }
+
+        public async Task<bool> SetActiveAsync(int userId, bool isActive)
+        {
+            var user = await _context.User.FindAsync(userId);
+            if (user == null) return false;
+
+            user.IsActive = isActive;
+            await _context.SaveChangesAsync();
+            MemberCookieValidator.Evict(_cache, userId); // 讓登入狀態檢查立即看到新狀態
+            return true;
+        }
+
         public async Task UpdateUserAsync(User user)
         {
             _context.User.Update(user);
             await _context.SaveChangesAsync();
+            MemberCookieValidator.Evict(_cache, user.UserId); // 後台會員編輯可能改了 IsActive
         }
         public async Task AddLoginLogAsync(int userId, string ipAddress)
         {
