@@ -13,12 +13,14 @@ namespace incode.MVC.ApiControllers.Contents
     private readonly IContentService _contentService;
     private readonly IContentEntrustMissionService _contentEntrustMissionService;
     private readonly IPointLogService _pointLogService;
+    private readonly ILogger<ContentApiController> _logger;
 
-    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService, IPointLogService pointLogService)
+    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService, IPointLogService pointLogService, ILogger<ContentApiController> logger)
     {
       _contentService = contentService;
       _contentEntrustMissionService = contentEntrustMissionService;
       _pointLogService = pointLogService;
+      _logger = logger;
     }
 
     //所有content
@@ -48,11 +50,12 @@ namespace incode.MVC.ApiControllers.Contents
     // POST https://localhost:7190/api/ContentApi
     // Body: CreateContentDto
     [HttpPost]
-    //[Authorize]
+    [Authorize] // 原本被註解掉，未登入時以 UserId 0 寫入而 500；現在未登入回 401
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
       //這行可以取得當下登入的user所有資料
       var userId = User.GetId();
+      if (userId <= 0) return Unauthorized(new { message = "請先登入" });
       dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -313,12 +316,15 @@ namespace incode.MVC.ApiControllers.Contents
                     contentId = id
                 });
             }
+            catch (BusinessException ex)
+            {
+                // 點數不足等業務規則：訊息可以直接給使用者
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
+                _logger.LogError(ex, "打賞失敗 - ContentId: {ContentId}, FromUserId: {FromUserId}", id, fromUserId);
+                return StatusCode(500, new { message = "打賞失敗，請稍後再試" });
             }
         }
     }

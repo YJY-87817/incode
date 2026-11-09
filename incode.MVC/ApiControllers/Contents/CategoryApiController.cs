@@ -14,10 +14,12 @@ namespace incode.MVC.ApiControllers.Contents
   public class CategoryApiController : ControllerBase
   {
     private readonly incodedatabaseContext _context;
+    private readonly ILogger<CategoryApiController> _logger;
 
-    public CategoryApiController(incodedatabaseContext context)
+    public CategoryApiController(incodedatabaseContext context, ILogger<CategoryApiController> logger)
     {
       _context = context;
+      _logger = logger;
     }
 
     // 取得所有分類（包含分類統計信息）
@@ -82,7 +84,8 @@ namespace incode.MVC.ApiControllers.Contents
       }
       catch (Exception ex)
       {
-        return StatusCode(500, new { message = "伺服器錯誤", error = ex.Message });
+        _logger.LogError(ex, "取得論壇分類失敗");
+        return StatusCode(500, new { message = "伺服器錯誤，請稍後再試" });
       }
     }
 

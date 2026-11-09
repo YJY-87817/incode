@@ -83,6 +83,7 @@ incode/
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
 - **不外洩例外**：catch 後用 `ILogger` 記錄，回傳通用訊息，不要把 `ex.Message` 回給前端。
+  要讓使用者看到的業務錯誤丟 `BusinessException`（`Services/Common/`），只有它的 `Message` 可以直接回傳。
 - **點數異動**：透過 `IPointLogService.ChangePointsAsync`，必須在交易內呼叫（沒有交易會丟例外），不會自己 SaveChanges。
   它會以 `sp_getapplock`（`point-user-{userId}`）鎖定該會員到交易結束。**讀取會決定能不能異動的資料之前**
   （餘額、任務是否已領獎、委託狀態…）先呼叫 `LockUsersAsync(userId, ...)`，同一會員的請求才會排隊、不會讀到舊狀態；
@@ -228,12 +229,25 @@ incode/
     - 狀態改為 `cancelled` 並以 `IPointReserveService.ReleaseAsync` 退回預扣點數（同一交易、鎖定委託人）；
       `ReleaseAsync` 改為回傳退點結果（原本忽略失敗）；例外不再回傳 `ex.Message`
     - 前端「我的任務」（`MyTask.vue`）：自己發起且徵求中的委託顯示「取消委託」，已取消的委託列在「已完結」並在歷程顯示退款
+19. 前端套件（全專案檢查 24）：
+    - Tiptap 2.27 → 3.33（修正 `mergeAttributes()` 原型污染 GHSA-cp6q-959q-f8rh），`npm audit` 0 個漏洞。
+      `@tiptap/extension-underline` 移除（StarterKit 3 已內含），新增 `@tiptap/pm`；`TiptapEditor.vue` 的 ProseMirror 改從
+      `@tiptap/pm/state` 匯入；StarterKit 3 新增的 Link、TrailingNode 關閉，產生的 HTML 與升級前相同
+      （以同一組瀏覽器操作實測升級前後 13 個步驟的輸出完全一致）
+    - 前端提交 `package-lock.json`（原本被 `.gitignore` 排除），CI 改用 `npm ci`
+20. 發文登入檢查與錯誤訊息外洩（低優先清單）：
+    - `POST api/ContentApi` 恢復 `[Authorize]`：原本未登入發文以 UserId 0 寫入而 500，回應中是完整的 `DbUpdateException`；現在回 401
+    - 不再把例外細節回給前端（論壇分類、註冊、打賞、聊天 7 處、AI 命名、任務領獎、建立委託）：改為 `ILogger` 記錄 + 通用訊息。
+      `GeminiService` 原本把錯誤（含「API Key 未設定」、API 回應內容、連線例外）當成 AI 回覆存進聊天紀錄並顯示給會員，
+      改為固定回覆「AI 客服暫時無法回覆…」
+    - 新增 `Services/Common/BusinessException`：給使用者看的業務錯誤（例如打賞「點數不足」）丟這個，Controller 才回傳 `Message`；
+      其他例外一律回通用訊息
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23 已修正，22 部分修正（見修正紀錄 6～9、12～18），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23、24 已修正，22 部分修正（見修正紀錄 6～9、12～20），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：套件（24）→ 低優先清單中的 `[Authorize]` 與 `ex.Message` → 其餘。
+建議修正順序：上傳檔案（21）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -269,19 +283,17 @@ incode/
     → 上傳目錄移到網站目錄外或雲端儲存，並加入 `.gitignore`。
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~。
     尚未處理：同時使用 Bootstrap、Vuetify、Material Kit（Material Kit 內含自己編譯的 Bootstrap 5.2，`main.js` 又載入一份
-    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 500 KB，含 Tiptap）。
+    Bootstrap 5.3 CSS，要移除需逐頁確認樣式）；`TopicListView.vue`、`forumStore.js` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
-24. **套件**：`@tiptap/*` 有中等風險漏洞（`mergeAttributes()` 原型污染），修正需升級 Tiptap 3；前端沒有 lockfile。
+24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. **後端分層**：39 個 Controller 中 29 個直接操作 DbContext（例如 `ChatMessagesApiController` 700 行），權限檢查分散。
 
 ### ⚪ 低 / 程式品質
 
 - 重設密碼：`ResetPasswordAsync` 沒有檢查 `ResetToken` 是否為 null（目前靠 `[ApiController]` 隱含的必填驗證擋住），
   新密碼沒有長度規則；信件連結中的 email 沒有 URL encode；前端網址寫死 `https://localhost:5173`（Google 登入導回也是）。
-- `CreateContent` 的 `[Authorize]` 被註解掉，未登入時會以 UserId 0 寫入而失敗（500）。
 - 論壇內容在前端以 `HtmlIframe` 顯示，`allow-scripts` + `allow-same-origin` 時會移除 sandbox；內容已用 DOMPurify 過濾，
   但建議保留 sandbox（不允許腳本或不同源）作為第二層防護。
-- 錯誤訊息直接回傳 `ex.Message`：聊天、打賞、會員上傳等多處。
 - `wwwroot/img/` 下的使用者上傳圖片被提交進 git，建議加入 `.gitignore`。
 - 建立委託（`CreateEntrustMissionAsync`）沒有檢查關聯的內容是否為自己的文章，可以把委託掛在別人的文章上。
 - 後台 `EntrustMission/Edit` 可以直接把狀態改成 cancelled，但不會退還預扣點數（取消請走前台 API 的流程）。
