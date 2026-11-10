@@ -133,8 +133,11 @@ export const extractLikeCount = (item) => {
     item?.interaction_like_count ??
     null;
 
-  const value = Number(candidate);
-  if (Number.isFinite(value)) return Math.max(0, value);
+  // 欄位不存在（null / 空字串）時不能直接 Number()：Number(null) 是 0，會讓下面的備援永遠不會執行
+  if (candidate !== null && candidate !== "") {
+    const value = Number(candidate);
+    if (Number.isFinite(value)) return Math.max(0, value);
+  }
 
   // 若 straightforward 方法不可行，當作最後的 fallback 兜底策略：
   // 依據使用者互動資料一筆一筆計算點讚數。
