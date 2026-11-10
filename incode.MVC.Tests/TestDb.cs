@@ -7,7 +7,7 @@ namespace incode.MVC.Tests;
 /// 模型裡的 <c>HasDefaultValueSql("(getdate())")</c> 是 SQL Server 專用，SQLite 沒有 getdate()，所以在測試中移除。
 /// SQLite 不會執行 sp_getapplock（<c>PointLogService.LockUsersAsync</c> 會略過），所以併發問題不在這裡驗證。
 /// </summary>
-public sealed class TestDb : IDisposable
+public sealed class TestDb : TestDbBase
 {
     private readonly SqliteConnection _connection;
 
@@ -21,7 +21,7 @@ public sealed class TestDb : IDisposable
     }
 
     /// <summary>每次呼叫回傳新的 context（共用同一個資料庫），可模擬不同請求。</summary>
-    public incodedatabaseContext NewContext()
+    public override incodedatabaseContext NewContext()
     {
         var options = new DbContextOptionsBuilder<incodedatabaseContext>()
             .UseSqlite(_connection)
@@ -29,33 +29,7 @@ public sealed class TestDb : IDisposable
         return new SqliteTestContext(options);
     }
 
-    /// <summary>建立會員與點數類型（點數流水帳需要）。</summary>
-    public int SeedUser(string email = "user@example.com")
-    {
-        using var context = NewContext();
-
-        if (!context.PointTypeDefinition.Any())
-        {
-            foreach (var type in Enum.GetValues<PointType>())
-            {
-                context.PointTypeDefinition.Add(new PointTypeDefinition
-                {
-                    PointTypeDefinitionId = (int)type,
-                    TypeName = type.ToString(),
-                    DisplayName = type.ToString(),
-                    Category = "test",
-                    IsActive = true,
-                });
-            }
-        }
-
-        var user = new User { Email = email, Username = email, Password = "x", IsActive = true };
-        context.User.Add(user);
-        context.SaveChanges();
-        return user.UserId;
-    }
-
-    public void Dispose() => _connection.Dispose();
+    public override void Dispose() => _connection.Dispose();
 }
 
 /// <summary>SQLite 測試用 context：移除模型中 SQL Server 專用的 getdate() 預設值。</summary>
