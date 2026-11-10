@@ -1,7 +1,8 @@
 import { TOPIC_PAGE_CACHE_TTL_MS, topicPageCache, topicPagePending } from "@/stores/forum/caches.js";
 
+// key 一律小寫（normalizeTopicSortOption 比對前會轉小寫），value 是送給後端的 sortBy
 export const TOPIC_SORT_OPTION_TO_API = {
-  createdAt_desc: "latest",
+  createdat_desc: "latest", // 舊名稱，等同「最新發佈時間」
   latest: "latest",
   "latest-reply": "latest-reply",
   "most-replies": "most-replies",
@@ -12,7 +13,8 @@ export const normalizeTopicSortOption = (option) => {
   const normalized = String(option || "")
     .trim()
     .toLowerCase();
-  return TOPIC_SORT_OPTION_TO_API[normalized] ? normalized : "latest";
+  // 回傳正規化後的排序選項：舊名稱（createdAt_desc）會換成 latest，不認得的值也是 latest
+  return TOPIC_SORT_OPTION_TO_API[normalized] ?? "latest";
 };
 
 export const buildTopicsCacheKey = ({

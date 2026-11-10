@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { topicPageCache } from "@/stores/forum/caches.js";
 import {
+  TOPIC_SORT_OPTION_TO_API,
   buildTopicsCacheKey,
   clearTopicPageCache,
   getCachedTopicPage,
@@ -18,6 +19,8 @@ describe("normalizeTopicSortOption", () => {
     ["Most-Likes", "most-likes"],
     ["  latest-reply ", "latest-reply"],
     ["most-replies", "most-replies"],
+    ["createdAt_desc", "latest"], // 舊名稱
+    ["CREATEDAT_DESC", "latest"],
   ])("%s → %s", (input, expected) => {
     expect(normalizeTopicSortOption(input)).toBe(expected);
   });
@@ -27,6 +30,21 @@ describe("normalizeTopicSortOption", () => {
     expect(normalizeTopicSortOption("")).toBe("latest");
     expect(normalizeTopicSortOption(null)).toBe("latest");
     expect(normalizeTopicSortOption(undefined)).toBe("latest");
+  });
+});
+
+describe("TOPIC_SORT_OPTION_TO_API", () => {
+  it("每個正規化後的排序選項都對得到後端的 sortBy", () => {
+    for (const input of ["latest", "latest-reply", "most-replies", "most-likes", "createdAt_desc", "unknown", ""]) {
+      expect(TOPIC_SORT_OPTION_TO_API[normalizeTopicSortOption(input)]).toBeTruthy();
+    }
+  });
+
+  it("舊名稱與 latest 會產生相同的快取 key（不會重複請求同一份資料）", () => {
+    const base = { categoryId: 1, keyword: "", page: 1, pageSize: 10 };
+    expect(buildTopicsCacheKey({ ...base, sortOption: normalizeTopicSortOption("createdAt_desc") })).toBe(
+      buildTopicsCacheKey({ ...base, sortOption: normalizeTopicSortOption("latest") }),
+    );
   });
 });
 
