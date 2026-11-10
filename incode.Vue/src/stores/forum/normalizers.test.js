@@ -19,6 +19,21 @@ describe("extractLikeCount", () => {
     expect(extractLikeCount(item)).toBe(expected);
   });
 
+  it("沒有按讚欄位（null / 空字串）時改用互動資料計算，而不是直接當成 0", () => {
+    const interactions = [{ interactionCategoryId: 1 }, { interactionCategoryId: 1 }, { categoryId: 3 }];
+    expect(extractLikeCount({ interactions })).toBe(2);
+    expect(extractLikeCount({ likeCount: null, interactions })).toBe(2);
+    expect(extractLikeCount({ likeCount: "", interactions })).toBe(2);
+  });
+
+  it("有按讚欄位時以欄位為準，包含 0", () => {
+    expect(extractLikeCount({ likeCount: 0, interactions: [{ interactionCategoryId: 1 }] })).toBe(0);
+  });
+
+  it("欄位不是數字時也會改用互動資料", () => {
+    expect(extractLikeCount({ likeCount: "abc", interactions: [{ interactionCategoryId: 1 }] })).toBe(1);
+  });
+
   it("負數視為 0", () => {
     expect(extractLikeCount({ likeCount: -3 })).toBe(0);
   });
