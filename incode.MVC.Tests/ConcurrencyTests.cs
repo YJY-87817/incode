@@ -230,13 +230,16 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
     {
         var userId = NewUser();
         await GivePoints(userId, 100);
-        var productId = await AddProduct(point: 30, stock: 100);
+        // 每個請求買不同的商品：扣庫存的 UPDATE 只會鎖住各自的商品，請求之間不會因商品列鎖而排隊，
+        // 所以只有「會員點數鎖」（sp_getapplock）能防止每個請求都讀到 100 點的舊餘額
+        var productIds = new List<int>();
+        for (var i = 0; i < Parallel; i++) productIds.Add(await AddProduct(point: 30, stock: 100));
 
-        var results = await RunTogether(Parallel, async _ =>
+        var results = await RunTogether(Parallel, async i =>
         {
             await using var context = _db.NewContext();
             return await CreateOrderService(context).CreateOrderAsync(
-                userId, new[] { new OrderItemRequest { ProductId = productId, Quantity = 1 } }, null, null, requireRecipient: false);
+                userId, new[] { new OrderItemRequest { ProductId = productIds[i], Quantity = 1 } }, null, null, requireRecipient: false);
         });
 
         Assert.Equal(3, results.Count(r => r.Ok)); // 100 點最多買 3 件
@@ -245,8 +248,10 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         await AssertLedgerIsConsistent(userId);
 
         await using var verify = _db.NewContext();
-        Assert.Equal(97, (await verify.Product.AsNoTracking().SingleAsync(p => p.ProductId == productId)).Stock);
         Assert.Equal(3, await verify.Orders.CountAsync(o => o.UserId == userId));
+        var stocks = await verify.Product.AsNoTracking().Where(p => productIds.Contains(p.ProductId)).Select(p => p.Stock).ToListAsync();
+        Assert.Equal(3, stocks.Count(stock => stock == 99)); // 成功的訂單扣了庫存，失敗的已回復
+        Assert.Equal(7, stocks.Count(stock => stock == 100));
     }
 
     // ---------- 商城：多位會員搶最後的庫存不會超賣 ----------
