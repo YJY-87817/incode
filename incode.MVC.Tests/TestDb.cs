@@ -56,20 +56,21 @@ public sealed class TestDb : IDisposable
     }
 
     public void Dispose() => _connection.Dispose();
+}
 
-    private sealed class SqliteTestContext : incodedatabaseContext
+/// <summary>SQLite 測試用 context：移除模型中 SQL Server 專用的 getdate() 預設值。</summary>
+internal sealed class SqliteTestContext : incodedatabaseContext
+{
+    public SqliteTestContext(DbContextOptions<incodedatabaseContext> options) : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public SqliteTestContext(DbContextOptions<incodedatabaseContext> options) : base(options) { }
+        base.OnModelCreating(modelBuilder);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetProperties()))
         {
-            base.OnModelCreating(modelBuilder);
-
-            foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetProperties()))
-            {
-                if (property.GetDefaultValueSql() != null)
-                    property.SetDefaultValueSql(null);
-            }
+            if (property.GetDefaultValueSql() != null)
+                property.SetDefaultValueSql(null);
         }
     }
 }

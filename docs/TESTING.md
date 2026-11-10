@@ -1,7 +1,8 @@
 # 建置與測試
 
 後端有 xUnit 測試專案 `incode.MVC.Tests/`（SQLite 記憶體資料庫，`dotnet test incode.sln`），前端有 Vitest（`npm test`）。
-尚未涵蓋：API 權限（`WebApplicationFactory`）與 `sp_getapplock` 併發。目前的品質把關是：
+API 權限測試（`ApiAuthorizationTests`）以 `WebApplicationFactory` 啟動整個網站、資料庫換成 SQLite，並用測試專用的 `/__test/login` 以真正的 Cookie 驗證方案登入；
+尚未涵蓋：`sp_getapplock` 併發（SQLite 無法驗證）。目前的品質把關是：
 
 1. CI 建置與測試（每個 PR 自動執行）
 2. 前端 lint
@@ -151,6 +152,6 @@ done; wait
 目前沒有測試專案，若要開始建立，建議優先順序（依過去出問題的地方）：
 
 1. （`PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`、`EntrustMissionService` 已完成）其餘服務的整合測試——以 SQLite 記憶體資料庫即可（`OrderService` 已為此略過 SQL Server 專用的 `sp_getapplock`），但併發鎖定行為仍須用真實 SQL Server 驗證。
-2. API 權限測試（`WebApplicationFactory`）：未登入 401、非本人 404、非管理員被拒。
+2. ~~API 權限測試（`WebApplicationFactory`）~~：已完成（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查）。
 3. 前端 Vitest：`utils/sanitizeHtml.js`、`toSafeHtml` 等安全相關的純函式。
 4. 建好後把 `dotnet test` / `npm test` 加入 `.github/workflows/ci.yml`。
