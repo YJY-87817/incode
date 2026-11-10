@@ -1,8 +1,9 @@
 # 建置與測試
 
-本專案**沒有自動化測試**（沒有單元測試 / 整合測試專案）。目前的品質把關是：
+後端有 xUnit 測試專案 `incode.MVC.Tests/`（SQLite 記憶體資料庫，`dotnet test incode.sln`），前端有 Vitest（`npm test`）。
+尚未涵蓋：`OrderService`、`MissionService`、`EntrustMissionService`、API 權限（`WebApplicationFactory`）與 `sp_getapplock` 併發。目前的品質把關是：
 
-1. CI 建置檢查（每個 PR 自動執行）
+1. CI 建置與測試（每個 PR 自動執行）
 2. 前端 lint
 3. 以 Docker 資料庫實際啟動後端，手動 / 用 API 做端對端驗證
 
@@ -149,7 +150,7 @@ done; wait
 
 目前沒有測試專案，若要開始建立，建議優先順序（依過去出問題的地方）：
 
-1. `OrderService`、`PointLogService`、`EntrustMissionService` 的整合測試——以 SQLite 記憶體資料庫即可（`OrderService` 已為此略過 SQL Server 專用的 `sp_getapplock`），但併發鎖定行為仍須用真實 SQL Server 驗證。
+1. （`PointLogService`、`PointRechargeService` 已完成）`OrderService`、`MissionService`、`EntrustMissionService` 的整合測試——以 SQLite 記憶體資料庫即可（`OrderService` 已為此略過 SQL Server 專用的 `sp_getapplock`），但併發鎖定行為仍須用真實 SQL Server 驗證。
 2. API 權限測試（`WebApplicationFactory`）：未登入 401、非本人 404、非管理員被拒。
 3. 前端 Vitest：`utils/sanitizeHtml.js`、`toSafeHtml` 等安全相關的純函式。
 4. 建好後把 `dotnet test` / `npm test` 加入 `.github/workflows/ci.yml`。
