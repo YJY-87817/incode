@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using incode.MVC.Dtos.Point;
 using incode.MVC.Dtos.PointShop;
 using incode.MVC.Services.PointShop;
 
@@ -7,17 +6,6 @@ namespace incode.MVC.Tests;
 
 public class OrderServiceTests
 {
-    private sealed class FakeMissionService : IMissionService
-    {
-        public int Triggered;
-        public Task TriggerMissionAsync(int userId, string actionType, int increment = 1) { Triggered++; return Task.CompletedTask; }
-        public Task<IEnumerable<MissionDTO>> GetAllMissionAsync() => throw new NotSupportedException();
-        public Task<ResultDTO> ClaimMissionAsync(int missionId, int userId) => throw new NotSupportedException();
-        public Task<MissionDTO> GetMissionByIdAsync(int id) => throw new NotSupportedException();
-        public Task<ResultDTO> CreateMissionAsync(MissionDTO dto) => throw new NotSupportedException();
-        public Task SyncMissionCountAsync(int userId, string actionType, Func<DateTime, DateTime, Task<int>> countInCycle) => throw new NotSupportedException();
-    }
-
     private static OrderService Create(incodedatabaseContext context, FakeMissionService? missions = null)
         => new(context, new PointLogService(context), missions ?? new FakeMissionService(), NullLogger<OrderService>.Instance);
 
