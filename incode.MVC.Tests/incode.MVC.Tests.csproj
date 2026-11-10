@@ -14,6 +14,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <!-- 測試用資料庫：SQLite 記憶體（支援交易與 ExecuteUpdate；InMemory 不支援交易） -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+    <!-- API 整合測試：以 WebApplicationFactory 啟動整個網站（資料庫換成 SQLite） -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>
