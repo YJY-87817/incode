@@ -35,6 +35,48 @@ jobs:
       - name: Test
         run: dotnet test incode.sln --no-build --configuration Release
 
+  # 併發測試需要真正的 SQL Server（sp_getapplock 與列鎖在 SQLite 不存在）。
+  # 其他測試遇到 INCODE_TEST_SQLSERVER 未設定時會略過這些測試，所以一般的 backend job 不受影響。
+  backend-concurrency:
+    name: 後端併發 (SQL Server)
+    runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: Incode_Ci_2026!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Incode_Ci_2026! -C -Q 'SELECT 1'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 10s
+    env:
+      INCODE_TEST_SQLSERVER: "Server=localhost,1433;User Id=sa;Password=Incode_Ci_2026!;TrustServerCertificate=True"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore incode.sln
+
+      - name: Build
+        run: dotnet build incode.sln --no-restore --configuration Release
+
+      - name: Concurrency tests
+        run: |
+          set -o pipefail
+          dotnet test incode.sln --no-build --configuration Release --filter "Category=Concurrency" | tee test.log
+          # 被略過等於沒有驗證：確認沒有任何測試被略過
+          grep -E "Skipped:\s+0," test.log
+
   frontend:
     name: 前端 (test + build)
     runs-on: ubuntu-latest
