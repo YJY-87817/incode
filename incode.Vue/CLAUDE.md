@@ -60,10 +60,13 @@ src/
 │   ├── layout/             NavbarDefault / FooterCentered (套版)
 │   ├── common/             HtmlIframe
 │   ├── chat/               ChatWidget (全站客服)
-│   ├── contents/  point/  users/
+│   ├── contents/           論壇：TopicListView（外層卡片，量測寬度）→ ThreadDetailView（詳情）/ TopicList（列表）；其餘為 ThreadPost、InteractionButtons、NewTopicModal 等
+│   ├── point/  users/
 │   └── pointshop/          Cart (全站購物車側欄，掛在 App.vue) 與商城元件
-├── composables/            useForumPost / useLoginGuardAlert / useWindowsWidth / useAddToCart / useDesktopExpand
-├── utils/                  contentBody / sanitizeHtml / pointShopUtils / pointShopSwal
+├── composables/            useForumPost / useLoginGuardAlert / useWindowsWidth / useAddToCart / useDesktopExpand；
+│                           論壇列表與詳情：useForumNavigation / useTopicListLayout / useTopicSort / useTopicInteractionHandlers /
+│                           useForumInteractionSync / useThreadReply / useThreadPagination / useBestAnswer
+├── utils/                  contentBody / sanitizeHtml / pointShopUtils / pointShopSwal / avatar / pagination
 └── assets/                 css (含 pointshop.css) / scss (Material Kit) / js (Material Kit 外掛) / fonts / img
 ```
 
