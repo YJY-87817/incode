@@ -46,7 +46,9 @@ src/
 │   ├── pointClient.js      點數模組用的 axios (baseURL = VITE_BASE_URL，呼叫路徑自帶 /api)
 │   └── contentApi.js / contentInteractionApi.js / imageApi.js / pointShopApi.js
 ├── stores/                 Pinia
-│   ├── chatStore.js / forumStore.js
+│   ├── chatStore.js / forumStore.js   forumStore 只放 state / getters，actions 與輔助函式在 forum/
+│   ├── forum/              論壇 store 的輔助模組（caches 快取 Map、topicQuery、bestAnswerCache、contentHtml、avatars、normalizers、entrustMeta、constants）
+│   │   └── actions/        依功能分組的 actions（category / topic / thread / compose / interaction / ui），在 forumStore.js 以 `...xxxActions` 展開
 │   ├── point/              missionStore / pointStore / taskStore
 │   ├── pointshop/          cartStore (persist)
 │   └── users/              auth / user
