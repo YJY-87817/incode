@@ -345,8 +345,9 @@ incode/
     尚未處理：改版前約 93 MB 的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中。
     移除前要先把這些檔案複製到各環境的 `App:UploadRoot`（否則 pull 後檔案被刪、網址失效）；git 歷史中的檔案要改寫歷史才會變小。
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15、26）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
-    `forumStore.js` 已拆分（2,744 行 → 約 230 行的 state / getters + `stores/forum/` 底下的輔助模組與 6 組 actions，見 `incode.Vue/CLAUDE.md`）。
-    尚未處理：`TopicListView.vue` 超過 2700 行（論壇頁 JS 約 615 KB，含 Tiptap 3）。
+    `forumStore.js` 已拆分（2,744 行 → 約 230 行的 state / getters + `stores/forum/` 底下的輔助模組與 6 組 actions），
+    `TopicListView.vue` 已拆分（2,755 行 → 外層 82 行 + `ThreadDetailView.vue`、`TopicList.vue` 兩個視圖元件與 8 個 composable，見 `incode.Vue/CLAUDE.md`）。
+    論壇頁 JS 約 615 KB（含 Tiptap 3），尚未再縮小。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
