@@ -130,8 +130,9 @@ incode/
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
-- **CI**：`.github/workflows/ci.yml`（只做建置，沒有測試）。PR 合併前請確認兩個 job 都通過
-- 專案沒有自動化測試。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
+- **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
+- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查等；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
+  SQLite 不支援 `sp_getapplock`，併發行為不在其中，仍須用真實 SQL Server 驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
 - 改版前的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中，新的上傳檔在 `App:UploadRoot`（已 gitignore）

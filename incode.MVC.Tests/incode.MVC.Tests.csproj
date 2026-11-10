@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- 測試用資料庫：SQLite 記憶體（支援交易與 ExecuteUpdate；InMemory 不支援交易） -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\incode.MVC\incode.MVC.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+    <Using Include="incode.MVC.Models" />
+    <Using Include="incode.MVC.Constants" />
+    <Using Include="incode.MVC.Dtos" />
+    <Using Include="incode.MVC.Extensions" />
+    <Using Include="incode.MVC.Services.Common" />
+    <Using Include="incode.MVC.Services.Point" />
+    <Using Include="incode.MVC.Services.Users" />
+  </ItemGroup>
+
+</Project>
