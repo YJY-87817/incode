@@ -309,7 +309,7 @@ incode/
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～28），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
+建議修正順序：第二次檢查的 26～28（見下方「第二次全專案檢查」）→ 29～31 → 把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -351,3 +351,60 @@ incode/
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
+
+## 第二次全專案檢查（2026-11-11）
+
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題，**全部尚未修正**。
+編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
+前端當時 `npm test` 76 項通過、`npm run build` 成功。
+
+### 🔴 高（一般會員可直接利用，優先修）
+
+26. **論壇內文 HTML 檔可在後端網域執行腳本（儲存型 XSS）**：`ContentService.SaveContentBodyAsync` 把會員送來的 HTML 原樣寫成
+    `/contents/content-xxx.html`，由後端以靜態檔提供。前端顯示有經 DOMPurify，但直接開啟該檔案網址不會過濾，腳本在後端網域執行：
+    同源請求會帶後台 Cookie、Origin 檢查也視為自己，誘導管理員點連結即可操作後台（對會員同樣有效）。
+    方向：存檔前在伺服器端過濾，或對 `/contents/` 回應加 `Content-Security-Policy: sandbox` 與 `X-Content-Type-Options: nosniff`
+    （改版前留在 wwwroot 與 `App:UploadRoot` 的舊檔也要涵蓋）。
+27. **後台首頁可被會員暱稱注入腳本**：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
+    輸出到 `<script>` 內；暱稱沒有格式限制（`RegisterDto` / `UpdateUserDto`，最長 150 字），Newtonsoft 預設不跳脫 `<`，
+    暱稱含 `</script><script>…` 會在管理員登入後的首頁執行。方向：改用 `Json.Serialize` 或跳脫 HTML，並限制暱稱字元與長度。
+28. **並行取消 / 修改訂單會重複退點**：`OrderService.CancelOrderAsync`、`UpdateOrderItemsAsync` 在交易與點數鎖之前就讀取訂單狀態與明細
+    （`OrderApiController` 的狀態檢查也在鎖之前）。兩個並行的取消請求都讀到「待處理」，第二個拿到鎖後用舊資料再退一次點、再加一次庫存；
+    並行修改數量同理。`Orders` 沒有 rowversion，`ConcurrencyTests` 沒有涵蓋這條路徑。方向：拿到鎖後在交易內重新讀取訂單再判斷，並補併發測試。
+
+### 🟡 中
+
+29. **打賞紀錄洩漏 Email**：`PointLogService.TipAsync` 把對方的 Email 寫進點數紀錄副標（「給 xxx@…」「來自 xxx@…」），
+    打賞 1 點就能取得任何發文者的 Email。改用暱稱；已寫入的舊紀錄也要處理。
+30. **「我的收藏」顯示的是隱藏的文章**：`ContentApiController.GetMyBookmarkedContents` 以分類 ID 2（隱藏）查詢，收藏是 3。
+    改用 `InteractionCategoryIds.Bookmark`（`ContentService.GetContents` 裡寫死的 `hideCategoryId = 2` 等也一併改用常數）。
+31. **互動紀錄可匿名查詢**：`GET api/ContentInteractionApi?userId=`、`GET api/ContentInteractionApi/content/{id}` 不需登入，
+    回傳每筆互動的 UserId，可查出誰檢舉、隱藏、收藏了什麼。
+32. **AI 客服的「查詢」是寫死的假資料**：`ChatMessagesApiController` 的 `GetProductInfo` / `SearchContents` / `PointLogs` 回固定內容
+    （例如餘額 1500、userId 1），會員問點數會得到錯的答案。另外 `firstResponse.Split('|')[1]` 沒有檢查長度（AI 回覆格式不符時 500）。
+33. **請求大小沒有限制**：全站上限 500 MB（`Program.cs` 的 Kestrel / FormOptions），文章標題、內文、聊天訊息沒有長度限制；
+    `POST api/User/images`（大頭貼）允許匿名且沒有速率限制，可塞滿磁碟。
+34. **聊天沒有速率限制**：每則訊息最多呼叫 2 次 Gemini，「生圖」另呼叫付費 API（`GeminiService.GenerateImageAsync`），可被刷費用。
+35. **Google 登入同名會 500**：`username` 有唯一索引，`UserService.CreateGoogleUserAsync` 直接用 Google 顯示名稱，
+    第二位同名（或都沒有名稱）的使用者建立帳號失敗。
+36. **委託過期沒有處理**：有人回覆後不能取消，委託人不選最佳解答時預扣點數永遠卡住；截止日期過後也不會退款或結案。
+37. **綠界測試金鑰是公開的**：以 `appsettings.json` 的測試 HashKey / HashIV，任何人都能偽造付款成功通知替自己加點；
+    對外公開的環境不可使用這組（回呼也沒有檢查 `SimulatePaid`）。
+38. **分頁參數沒有檢查**：`ContentService.GetContents` / `GetChildrenByContentId` 等，`pageSize=0`、`page=0` 會 500，極大的 `pageSize` 會一次撈全部。
+39. **前端測試套件漏洞**：`npm audit` 回報 3 個（2 個 critical：`tinypool`；1 個 moderate：`@vitest/mocker`），只影響開發與 CI、不進正式建置；
+    修正需升級 vitest 5（破壞性更新）。
+
+### ⚪ 低 / 功能缺口
+
+40. 帳號：註冊不驗證 Email（可先用別人的 Email 註冊，對方之後用 Google 登入會進到同一個帳號）；重設密碼後舊的登入 Cookie 仍有效；
+    後台 Cookie 沒有停用檢查（被停用的管理員最長還能用 10 小時）；會員沒有「修改密碼」功能；
+    Google 帳號用密碼登入會 500（密碼欄存的是字串 `GOOGLE_AUTH`，BCrypt 驗證丟例外）；
+    瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入（`SmartScheme` 把外部登入轉給 `AdminAuth`）。
+41. 發文：`Type`、父文章、分類都不驗證；「發文 + 委託」（`ContentEntrustMissionService`）不是同一個交易，點數不足時文章已建立但沒有委託，
+    且委託標題 / 詳情未編碼就接進內文；`CategoryService` 的統計把已刪除的文章也算進去（排除的是狀態 3，刪除是 2）；
+    內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；可以編輯已刪除的文章。
+42. `content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）。
+43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
+    沒有檢舉清單、不能下架文章；`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複。
+44. 其他：公開個人頁（`GET api/User/{id}/stats`）顯示點數餘額；大頭貼網址（`ImageUrl`）可填任意外部網址；
+    `SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用（`InventoryService.UseItemAsync`）不是原子扣減。
