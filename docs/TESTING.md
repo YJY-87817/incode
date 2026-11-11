@@ -150,7 +150,7 @@ done; wait
 - [ ] 改到 API 時，用 Docker 資料庫實際啟動並驗證過（至少測過正常流程與「未登入 / 非本人」兩種情況）
 - [ ] 改到點數 / 庫存時，測過併發與失敗 rollback
 - [ ] 改到資料表時，更新 `docs/database/schema.sql`（做法見 [`database/README.md`](database/README.md)）
-- [ ] 沒有提交機密設定或使用者上傳的檔案（`wwwroot/img/`）
+- [ ] 沒有提交機密設定或使用者上傳的檔案（上傳檔在 `App:UploadRoot`，`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents` 已 gitignore）
 - [ ] 前後端同一個功能在同一個 PR
 - [ ] GitHub Actions 兩個 job 都通過
 

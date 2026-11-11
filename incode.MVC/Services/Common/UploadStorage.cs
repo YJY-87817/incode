@@ -18,7 +18,8 @@ namespace incode.MVC.Services.Common
     /// - 位置：appsettings 的 App:UploadRoot（相對路徑以專案目錄 ContentRoot 為準），預設 App_Data/uploads。
     ///   正式環境請設成部署資料夾以外的絕對路徑，例如 App__UploadRoot=D:\incode-uploads 或 /var/incode/uploads
     /// - 網址不變：Program.cs 以 UseStaticFiles 把這個資料夾掛在網站根目錄，/img/chat/xxx.png 會讀 {UploadRoot}/img/chat/xxx.png
-    /// - 舊檔：改版前上傳的檔案還在 wwwroot 底下（已提交進 git），仍由 wwwroot 提供；刪除時兩處都會找
+    /// - 舊檔：改版前上傳到 wwwroot 的檔案已從 git 移除，以 scripts/copy-legacy-uploads.sh 搬到 UploadRoot。
+    ///   尚未搬檔的環境 wwwroot 可能還有舊檔，所以刪除時兩處都會找
     /// </summary>
     public class UploadStorage
     {
