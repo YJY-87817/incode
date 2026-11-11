@@ -364,3 +364,10 @@ FodyWeavers.xsd
 
 # 會員 / 後台上傳的檔案（App:UploadRoot 預設位置），不提交進 git
 incode.MVC/App_Data/uploads/
+# 改版前提交在 wwwroot 的上傳檔已移到 App:UploadRoot（見 scripts/copy-legacy-uploads.sh），不要再提交
+incode.MVC/wwwroot/img/fromApi/
+incode.MVC/wwwroot/img/chat/
+incode.MVC/wwwroot/img/user/
+incode.MVC/wwwroot/contents/
+incode.MVC/wwwroot/img/product/*
+!incode.MVC/wwwroot/img/product/NoImage.png
