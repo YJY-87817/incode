@@ -47,7 +47,7 @@ incode/
     ├── Validation/             自訂驗證屬性
     ├── Prompts/Prompts.md      AI 客服系統提示詞（執行時讀取，路徑不可改）
     ├── App_Data/uploads/       上傳檔案預設位置（App:UploadRoot，已 gitignore），網址 /img/...、/contents/... 不變
-    └── wwwroot/                靜態檔；contents/ 與 img/fromApi、chat、user、product 下是改版前的上傳檔（仍在 git 中）
+    └── wwwroot/                靜態檔（`img/product/NoImage.png` 是商品預設圖，不是上傳檔）；上傳檔一律在 App:UploadRoot
 ```
 
 - 模組名稱統一：`Chat`、`Contents`、`Point`、`PointShop`、`Users`，**命名空間 = `incode.MVC.<資料夾路徑>`**
@@ -135,7 +135,8 @@ incode/
   SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
-- 改版前的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中，新的上傳檔在 `App:UploadRoot`（已 gitignore）
+- 上傳檔只放在 `App:UploadRoot`（已 gitignore）。改版前的上傳檔已從 git 移除，**新環境 / pull 之後**要先執行
+  `scripts/copy-legacy-uploads.sh [UploadRoot]`（Windows 用 Git Bash）把它們從 git 歷史還原到 `UploadRoot`，否則舊文章的圖片與內文會 404
 
 ## 修正紀錄
 
@@ -304,12 +305,21 @@ incode/
       結果快取 60 秒，`UserService.SetActiveAsync` / `UpdateUserAsync`（後台會員編輯）會清除快取，直接改資料庫最慢 60 秒後生效。
       原本停用只擋登入，已登入的 Cookie 效期 7 天且自動延長，停用形同無效
     - `ChatSessionsApi/AutoTitle`：Gemini 無法回覆時不再把「AI 客服暫時無法回覆…」存成對話標題，改回 503、標題不變
+29. 舊上傳檔移出 git（全專案檢查 21 的其餘部分）：
+    - `wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents` 共 276 個會員上傳的檔案（約 90 MB）從 git 移除，並加進 `.gitignore`；
+      `img/product/NoImage.png` 是商品預設圖（前端 `pointShopUtils.js`、後台 `ProductController` 會用到），保留在 repo
+    - `scripts/copy-legacy-uploads.sh [UploadRoot] [來源]`：把這些檔案複製到 `UploadRoot`（網址不變），預設從 git 歷史（commit `a1199c9`）
+      取出，也可以指定備份資料夾；已存在的檔案不覆蓋，可重複執行。**每個環境都要先執行一次**，否則 pull 後舊文章圖片與內文會 404
+    - 實測：腳本還原的 277 個檔案（含 `NoImage.png`）與 git 內容逐檔相同；以還原的資料夾當 `UploadRoot` 啟動後端，
+      277 個舊網址全部回 200 且內容一致（含中文與空白檔名）
+    - **git 歷史沒有改寫**，clone 的大小不變；要縮小需改寫歷史並強制推送 main（所有人重新 clone），尚未進行
+    - 後台商品列表的預設圖寫成小寫 `noimage.png`，實際檔名是 `NoImage.png`（Linux 大小寫敏感會 404），已修正
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～20、23～25 已修正，25 已修正，21、22 部分修正（見修正紀錄 6～9、12～28），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 26～28（見下方「第二次全專案檢查」）→ 29～31 → 把舊上傳檔移出 git（21 的其餘部分，需先搬檔）→ 其餘。
+建議修正順序：第二次檢查的 26～28（見下方「第二次全專案檢查」）→ 29～31 → 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -341,9 +351,8 @@ incode/
 18. ~~網址寫死~~（已修正，見修正紀錄 7）
 19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql` 與 Docker 資料庫，見修正紀錄 7、8）
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
-21. **上傳檔案在 git 與 wwwroot**（部分修正，見修正紀錄 21）：~~新的上傳檔寫進 wwwroot~~。
-    尚未處理：改版前約 93 MB 的上傳檔（`wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`）仍在 git 中。
-    移除前要先把這些檔案複製到各環境的 `App:UploadRoot`（否則 pull 後檔案被刪、網址失效）；git 歷史中的檔案要改寫歷史才會變小。
+21. ~~上傳檔案在 git 與 wwwroot~~（見修正紀錄 21、29：新的上傳檔寫到 `App:UploadRoot`，舊檔已從 git 移除，以 `scripts/copy-legacy-uploads.sh` 搬到 `UploadRoot`）。
+    git 歷史沒有改寫，clone 大小不變。
 22. **前端效能 / 結構**（部分修正，見修正紀錄 15、26）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
     `forumStore.js` 已拆分（2,744 行 → 約 230 行的 state / getters + `stores/forum/` 底下的輔助模組與 6 組 actions），
     `TopicListView.vue` 已拆分（2,755 行 → 外層 82 行 + `ThreadDetailView.vue`、`TopicList.vue` 兩個視圖元件與 8 個 composable，見 `incode.Vue/CLAUDE.md`）。
@@ -364,7 +373,7 @@ incode/
     `/contents/content-xxx.html`，由後端以靜態檔提供。前端顯示有經 DOMPurify，但直接開啟該檔案網址不會過濾，腳本在後端網域執行：
     同源請求會帶後台 Cookie、Origin 檢查也視為自己，誘導管理員點連結即可操作後台（對會員同樣有效）。
     方向：存檔前在伺服器端過濾，或對 `/contents/` 回應加 `Content-Security-Policy: sandbox` 與 `X-Content-Type-Options: nosniff`
-    （改版前留在 wwwroot 與 `App:UploadRoot` 的舊檔也要涵蓋）。
+    （改版前的舊檔已搬到 `App:UploadRoot`，見修正紀錄 29；尚未執行搬檔腳本的環境，wwwroot 可能還有舊檔）。
 27. **後台首頁可被會員暱稱注入腳本**：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
     輸出到 `<script>` 內；暱稱沒有格式限制（`RegisterDto` / `UpdateUserDto`，最長 150 字），Newtonsoft 預設不跳脫 `<`，
     暱稱含 `</script><script>…` 會在管理員登入後的首頁執行。方向：改用 `Json.Serialize` 或跳脫 HTML，並限制暱稱字元與長度。
