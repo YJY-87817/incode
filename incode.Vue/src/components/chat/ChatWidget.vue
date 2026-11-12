@@ -549,6 +549,7 @@ onUnmounted(() => {
               <div class="input-field-wrapper">
                 <input 
                   v-model="userInput" 
+                  maxlength="2000"
                   @keyup.enter="handleSend" 
                   :placeholder="isHumanMode ? '傳送給客服人員...' : '輸入訊息...'" 
                   type="text" 

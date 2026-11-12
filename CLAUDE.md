@@ -101,6 +101,8 @@ incode/
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
 - **圖片上傳**：先用 `Services/Common/ImageFileValidator.Validate()` 檢查（僅 jpg/png/gif/webp + 檔頭比對，單檔 20 MB）；
   刪除檔案時檔名以資料庫為準並 `Path.GetFileName()`，不可使用表單傳入的路徑。
+- **請求大小 / 長度**：全站請求上限 30 MB（`Program.cs`），需要更大的端點個別加 `[RequestSizeLimit]`；前台 DTO 的字串欄位加 `[StringLength]`
+  （對照資料庫欄位長度，長度常數放 `ContentLimits` / `ChatLimits` 這類類別，前端輸入框用同樣的 `maxlength`）。允許匿名寫入或會呼叫付費 API 的端點要加速率限制
 - **檔案存放**：上傳檔一律透過 `UploadStorage`（`Services/Common/UploadStorage.cs`）寫入 / 刪除，資料夾用 `UploadFolders` 常數，
   檔名由伺服器產生（Guid）。**不要寫進 `wwwroot`**（會被提交進 git、重新部署會被覆蓋）。
   位置由 `App:UploadRoot` 設定（預設 `App_Data/uploads`），正式環境設成部署資料夾以外的絕對路徑
@@ -334,12 +336,25 @@ incode/
       我的按讚、`ContentService` 排除隱藏文章也改用常數
     - **31 互動紀錄可匿名查詢**：`GET api/ContentInteractionApi` 只能查自己的互動（`userId` 為本人）、公開的分類（最佳解答，
       前端詳情頁的備援查詢會用到）或由管理員查詢，其餘 403；`GET api/ContentInteractionApi/content/{id}` 限管理員（前端沒有使用）
+32. 第二次全專案檢查 33、34、37、38（都先寫測試重現）：
+    - **37 綠界測試金鑰**：`appsettings.json` 的 ECPay 設定改為空字串，公開測試帳號只放 `appsettings.Development.json`；
+      非 Development 環境使用測試商店（`3002607`）時拒絕啟動（`EcpayService.CheckSettings`），展示環境需明確設 `ECPay__AllowTestMerchant=true`；
+      回呼的 `SimulatePaid=1`（綠界後台模擬付款）只在測試商店接受，正式商店回 `1|OK` 但不加點。
+      **正式環境要以環境變數設定** `ECPay__MerchantID`、`ECPay__HashKey`、`ECPay__HashIV`、`ECPay__ReturnUrl`
+    - **38 分頁參數**：`Services/Common/Paging.Normalize`（page 最小 1、pageSize ≤ 0 用預設值、最大 100），`ContentService` 的 4 個分頁查詢使用。
+      修正前 SQL Server 上 `page=0` / `pageSize=0` 會 500（`SqlServerPagingTests` 在 CI 重現），`pageSize=1000000` 一次撈全部；
+      前端新增主題時選擇主題原本以 `pageSize=9999` 取全部，改為每頁 100 逐頁取
+    - **34 聊天速率限制**：`RateLimitPolicies.AiChat`（每位會員每分鐘 10 次，未登入依 IP），套用在 `SendMessage`、`UploadImage`、`AutoTitle`；
+      前端收到 429 顯示「訊息送出太頻繁」
+    - **33 請求大小與長度**：全站請求上限 500 MB → 30 MB（論壇多圖上傳 100 MB）；文章標題 200 字、內文 500 萬字元（`ContentLimits`，
+      編輯器上傳失敗時會內嵌 base64 圖片，不能太小）、聊天訊息 2000 字（`ChatLimits`），超過回 400（原本標題過長在 SQL Server 會 500）；
+      匿名可用的大頭貼上傳加上 `RateLimitPolicies.Upload`（每 10 分鐘 10 次）；前端標題 / 聊天輸入框加 `maxlength`
 
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 32～39（見下方「第二次全專案檢查」）→ 其餘。
+建議修正順序：第二次檢查的 35、32、36、39（見下方「第二次全專案檢查」）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -383,7 +398,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～31 已修正（見修正紀錄 30、31），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～31、33、34、37、38 已修正（見修正紀錄 30～32），其餘尚未修正。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -411,15 +426,15 @@ incode/
     回傳每筆互動的 UserId，可查出誰檢舉、隱藏、收藏了什麼。
 32. **AI 客服的「查詢」是寫死的假資料**：`ChatMessagesApiController` 的 `GetProductInfo` / `SearchContents` / `PointLogs` 回固定內容
     （例如餘額 1500、userId 1），會員問點數會得到錯的答案。另外 `firstResponse.Split('|')[1]` 沒有檢查長度（AI 回覆格式不符時 500）。
-33. **請求大小沒有限制**：全站上限 500 MB（`Program.cs` 的 Kestrel / FormOptions），文章標題、內文、聊天訊息沒有長度限制；
+33. ~~**請求大小沒有限制**~~（見修正紀錄 32）：全站上限 500 MB（`Program.cs` 的 Kestrel / FormOptions），文章標題、內文、聊天訊息沒有長度限制；
     `POST api/User/images`（大頭貼）允許匿名且沒有速率限制，可塞滿磁碟。
-34. **聊天沒有速率限制**：每則訊息最多呼叫 2 次 Gemini，「生圖」另呼叫付費 API（`GeminiService.GenerateImageAsync`），可被刷費用。
+34. ~~**聊天沒有速率限制**~~（見修正紀錄 32）：每則訊息最多呼叫 2 次 Gemini，「生圖」另呼叫付費 API（`GeminiService.GenerateImageAsync`），可被刷費用。
 35. **Google 登入同名會 500**：`username` 有唯一索引，`UserService.CreateGoogleUserAsync` 直接用 Google 顯示名稱，
     第二位同名（或都沒有名稱）的使用者建立帳號失敗。
 36. **委託過期沒有處理**：有人回覆後不能取消，委託人不選最佳解答時預扣點數永遠卡住；截止日期過後也不會退款或結案。
-37. **綠界測試金鑰是公開的**：以 `appsettings.json` 的測試 HashKey / HashIV，任何人都能偽造付款成功通知替自己加點；
+37. ~~**綠界測試金鑰是公開的**~~（見修正紀錄 32）：以 `appsettings.json` 的測試 HashKey / HashIV，任何人都能偽造付款成功通知替自己加點；
     對外公開的環境不可使用這組（回呼也沒有檢查 `SimulatePaid`）。
-38. **分頁參數沒有檢查**：`ContentService.GetContents` / `GetChildrenByContentId` 等，`pageSize=0`、`page=0` 會 500，極大的 `pageSize` 會一次撈全部。
+38. ~~**分頁參數沒有檢查**~~（見修正紀錄 32）：`ContentService.GetContents` / `GetChildrenByContentId` 等，`pageSize=0`、`page=0` 會 500，極大的 `pageSize` 會一次撈全部。
 39. **前端測試套件漏洞**：`npm audit` 回報 3 個（2 個 critical：`tinypool`；1 個 moderate：`@vitest/mocker`），只影響開發與 CI、不進正式建置；
     修正需升級 vitest 5（破壞性更新）。
 

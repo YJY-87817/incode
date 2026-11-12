@@ -30,9 +30,11 @@ namespace incode.MVC.Dtos.Contents
     public int? CategoryId { get; set; }
 
     [Required]
+    [StringLength(ContentLimits.MaxTitleLength)]
     public string Title { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(ContentLimits.MaxBodyLength)]
     public string Body { get; set; } = string.Empty;
 
     public int Type { get; set; }

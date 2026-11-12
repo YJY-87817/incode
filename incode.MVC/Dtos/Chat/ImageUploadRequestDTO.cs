@@ -11,9 +11,11 @@ namespace incode.MVC.Dtos.Chat
         public IFormFile Image { get; set; } 
 
         [Required]
+        [StringLength(ChatLimits.MaxConnectionIdLength)]
         public string ConnectionId { get; set; } // SignalR ID
 
-        public string UserContent { get; set; }  // 用來接收前端使用者輸入的文字 (例如幫我分析這張圖)
+        [StringLength(ChatLimits.MaxMessageLength, ErrorMessage = "訊息最多 {1} 字")]
+        public string? UserContent { get; set; }  // 用來接收前端使用者輸入的文字 (例如幫我分析這張圖)
     }
 }
     

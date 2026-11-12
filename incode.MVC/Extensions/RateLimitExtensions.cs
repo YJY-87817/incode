@@ -17,6 +17,9 @@ namespace incode.MVC.Extensions
         /// 每則訊息最多呼叫 2 次 Gemini，「生圖」另外呼叫付費 API，沒有限制會被刷費用
         /// </summary>
         public const string AiChat = "ai-chat";
+
+        /// <summary>允許匿名的檔案上傳（註冊時的大頭貼）：每位會員 / 每個 IP 每 10 分鐘 10 次</summary>
+        public const string Upload = "upload";
     }
 
     public static class RateLimitExtensions
@@ -33,6 +36,7 @@ namespace incode.MVC.Extensions
                 options.AddPolicy(RateLimitPolicies.Auth, context => FixedWindowByIp(context, 20, TimeSpan.FromMinutes(1)));
                 options.AddPolicy(RateLimitPolicies.PasswordReset, context => FixedWindowByIp(context, 5, TimeSpan.FromMinutes(15)));
                 options.AddPolicy(RateLimitPolicies.AiChat, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(1)));
+                options.AddPolicy(RateLimitPolicies.Upload, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(10)));
 
                 options.OnRejected = async (context, cancellationToken) =>
                 {
