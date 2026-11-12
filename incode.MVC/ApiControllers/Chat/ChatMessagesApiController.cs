@@ -20,6 +20,7 @@ namespace incode.MVC.ApiControllers.Chat
         private const long MaxChatImageBytes = 10L * 1024 * 1024; // 聊天圖片單檔 10 MB
 
         private readonly IChatService _chat;
+        private readonly IChatToolService _tools;
         private readonly GeminiService _geminiService;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -29,6 +30,7 @@ namespace incode.MVC.ApiControllers.Chat
 
         public ChatMessagesApiController(
           IChatService chat,
+          IChatToolService tools,
           GeminiService geminiService,
           IHubContext<ChatHub> hubContext,
           IWebHostEnvironment webHostEnvironment,
@@ -39,6 +41,7 @@ namespace incode.MVC.ApiControllers.Chat
             _logger = logger;
             _storage = storage;
             _chat = chat;
+            _tools = tools;
             _geminiService = geminiService;
             _hubContext = hubContext;
             _webHostEnvironment = webHostEnvironment;
@@ -83,68 +86,6 @@ namespace incode.MVC.ApiControllers.Chat
                 await _hubContext.Groups.AddToGroupAsync(connectionId, sessionIdStr); // 就等待將這個「連線(Connection)」加入到指定的「群組(Session)」中
             }
         }
-
-        // Function Calling 的資料庫查詢方法 (商品)
-        private string GetProductInfo(string keyword)
-        {
-            // 簡單模擬：如果關鍵字包含以下詞彙，就回傳該商品資料
-            if (keyword.Contains("電影") || keyword.Contains("票") || keyword.Contains("兌換"))
-            {
-                var productData = new
-                {
-                    productId = 1,
-                    name = "電影兌換卷*1",
-                    description = "全台通用電影兌換券，不限平假日皆可使用。適用於首輪電影，提供最震撼的感官體驗，是下班休閒或週末約會的最佳選擇。",
-                    imageName = "2026010611432290af.jpg",
-                    type = "兌換票券",
-                    point = 2000
-                };
-                return JsonSerializer.Serialize(productData);
-            }
-            return "查無相關商品資料。";
-        }
-
-        // Function Calling 的資料庫查詢方法 (文章) 
-        private string SearchContents(string keyword)
-        {
-            // 如果關鍵字包含以下詞彙，就回傳文章資料
-            if (keyword.Contains("寄生上流") || keyword.Contains("亞洲") || keyword.Contains("電影"))
-            {
-                var contentData = new
-                {
-                    contentId = 3,
-                    title = "寄生上流這部片",
-                    categoryName = "亞洲電影",
-                    username = "吳建豪",
-                    body = "/contents/content-3.html",
-                };
-                return JsonSerializer.Serialize(contentData);
-            }
-            return "查無相關文章。";
-        }
-
-        // Function Calling 的資料庫查詢方法 (點數)
-        private string PointLogs(string keyword)
-        {
-            // 如果關鍵字包含以下詞彙，就回傳點數資料
-            if (keyword.Contains("點數") || keyword.Contains("紀錄") || keyword.Contains("剩餘"))
-            {
-                var pointData = new
-                {
-                    pointLogId = 2,
-                    userId = 1,
-                    sourceType = "entrust_mission_point_reserve",
-                    sourceId = 1,
-                    pointTypeDefinitionId = 0,
-                    changeAmount = -500,
-                    balanceAfter = 1500,
-                    displayName = "委託發布預扣"
-                };
-                return JsonSerializer.Serialize(pointData);
-            }
-            return "查無相關點數。";
-        }
-
 
         // 取得或建立唯一對話
         [HttpPost]
@@ -228,14 +169,16 @@ namespace incode.MVC.ApiControllers.Chat
 
                     string firstResponse = await _geminiService.GetGeminiReplyAsync(toolSystemPrompt);
 
-                    // 檢查 AI 是否回傳了呼叫指令
-                    if (firstResponse.Contains("CALL_FUNCTION:GetProductInfo"))
+                    // 檢查 AI 是否回傳了呼叫指令（格式不符就把回覆當成答案）
+                    var toolCall = ChatToolService.ParseToolCall(firstResponse);
+                    string frontendUrl = _frontendUrl;
+
+                    if (toolCall?.Tool == ChatTool.GetProductInfo)
                     {
                         // --- 呼叫商品工具 ---
-                        string keyword = firstResponse.Split('|')[1].Trim();
-                        string productDataJson = GetProductInfo(keyword);
+                        string keyword = toolCall.Value.Keyword;
+                        string productDataJson = await _tools.SearchProductsAsync(keyword);
                         string imagePathPrefix = "/img/product/";
-                        string frontendUrl = _frontendUrl;
 
                         string finalPrompt = $@"{basePrompt}
                         ---
@@ -243,27 +186,26 @@ namespace incode.MVC.ApiControllers.Chat
                         【查詢結果 JSON】:
                         {productDataJson}
 
-                        請根據上述 JSON 資料，親切地回答使用者的問題 (包含商品點數)。
-                        
+                        請根據上述 JSON 資料，親切地回答使用者的問題 (包含商品點數)。查詢結果沒有的商品不要自行捏造。
+                        如果有多項商品，只介紹最符合使用者問題的一項。
+
                         【圖片顯示強制規則】：
                         資料中包含 'imageName' 欄位 (例如 'xxx.jpg')。
                         請務必在回答的最後面，換行並插入一張圖片，使用 Markdown 語法：
                         ![商品圖片]({imagePathPrefix}<這裡填入 imageName>)
                         (注意：請直接將 JSON 中的 imageName 填入，不要自行捏造網址)
                         【連結顯示規則】：
-                        請使用 Markdown 格式產生連結：[商品標題]({frontendUrl}/PointShop/product/{{productId}})
-                        例如：[電影票卷]({frontendUrl}PointShop/product/1)
+                        請使用 Markdown 格式產生連結：[商品名稱]({frontendUrl}/PointShop/product/<這裡填入 productId>)
                         ---
                         使用者問題: {request.UserContent}";
 
                         aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
                     }
-                    else if (firstResponse.Contains("CALL_FUNCTION:SearchContents"))
+                    else if (toolCall?.Tool == ChatTool.SearchContents)
                     {
                         // --- 呼叫文章工具 ---
-                        string keyword = firstResponse.Split('|')[1].Trim();
-                        string contentDataJson = SearchContents(keyword);
-                        string frontendUrl = _frontendUrl;
+                        string keyword = toolCall.Value.Keyword;
+                        string contentDataJson = await _tools.SearchContentsAsync(keyword);
 
                         string finalPrompt = $@"{basePrompt}
                         ---
@@ -271,32 +213,30 @@ namespace incode.MVC.ApiControllers.Chat
                         【查詢結果 JSON】:
                         {contentDataJson}
 
-                        請根據上述 JSON 資料回答，並務必提供文章連結。
+                        請根據上述 JSON 資料回答，並務必提供文章連結。查詢結果沒有的文章不要自行捏造。
                         【連結顯示規則】：
-                        請使用 Markdown 格式產生連結：[文章標題]({frontendUrl}/forum/{{contentId}})
-                        例如：[寄生上流這部片]({frontendUrl}/forum/3)
+                        請使用 Markdown 格式產生連結：[文章標題]({frontendUrl}/forum/<這裡填入 contentId>)
                         ---
                         使用者問題: {request.UserContent}";
 
                         aiResponseText = await _geminiService.GetGeminiReplyAsync(finalPrompt);
                     }
-                    else if (firstResponse.Contains("CALL_FUNCTION:PointLogs"))
+                    else if (toolCall?.Tool == ChatTool.PointLogs)
                     {
-                        // --- 呼叫點數工具 ---
-                        string keyword = firstResponse.Split('|')[1].Trim();
-                        string pointDataJson = PointLogs(keyword);
-                        string frontendUrl = _frontendUrl;
+                        // --- 呼叫點數工具：只查詢登入者本人的點數 ---
+                        string keyword = toolCall.Value.Keyword;
+                        string pointDataJson = await _tools.GetPointSummaryAsync(userId);
 
                         string finalPrompt = $@"{basePrompt}
                         ---
-                        你剛剛針對關鍵字「{keyword}」查詢了點數資料庫。
+                        你剛剛查詢了這位會員的點數資料（關鍵字「{keyword}」）。
                         【查詢結果 JSON】:
                         {pointDataJson}
 
+                        currentBalance 是目前的點數餘額，recentLogs 是最近的點數紀錄（changeAmount 正數為增加、負數為扣除）。
                         請根據上述 JSON 資料回答，並務必提供點數連結。
                         【連結顯示規則】：
                         請使用 Markdown 格式產生連結：[查看點數紀錄]({frontendUrl}/point-log)
-                        (即使 JSON 中有 pointLogId，也不要把它加到網址裡，因為該頁面是列表頁)
                         ---
                         使用者問題: {request.UserContent}";
 
@@ -304,7 +244,7 @@ namespace incode.MVC.ApiControllers.Chat
                     }
                     else
                     {
-                        // --- 沒有點數工具，直接回覆 ---
+                        // --- 沒有呼叫工具，直接回覆 ---
                         aiResponseText = firstResponse;
                     }
                 }
@@ -517,14 +457,15 @@ namespace incode.MVC.ApiControllers.Chat
                 // 呼叫新寫的 Service 方法 (傳入圖片 + Prompt)
                 string firstResponse = await _geminiService.AnalyzeImageWithToolAsync(request.Image, toolSystemPrompt);
 
-                // Step 2: 檢查是否觸發 Function Calling (SearchContents 判斷)
-                if (firstResponse.Contains("CALL_FUNCTION:GetProductInfo"))
+                // Step 2: 檢查是否觸發 Function Calling（看圖流程只提供商品與文章查詢）
+                var toolCall = ChatToolService.ParseToolCall(firstResponse);
+                if (toolCall?.Tool == ChatTool.GetProductInfo)
                 {
                     // A. 解析關鍵字
-                    string keyword = firstResponse.Split('|')[1].Trim();
+                    string keyword = toolCall.Value.Keyword;
 
-                    // B. 查資料庫 (模擬)
-                    string productDataJson = GetProductInfo(keyword);
+                    // B. 查資料庫
+                    string productDataJson = await _tools.SearchProductsAsync(keyword);
                     string imagePathPrefix = "/img/product/";
 
                     // C. 帶著資料 + 圖片 + 原始問題，再次問 AI
@@ -535,18 +476,18 @@ namespace incode.MVC.ApiControllers.Chat
                     【查詢結果 JSON】:
                     {productDataJson}
 
-                    請根據圖片內容以及上述 JSON 資料，回答使用者的問題。
-                    如果資料中有 'imageName'，請在最後插入圖片：![商品圖片]({imagePathPrefix}{{imageName}})
+                    請根據圖片內容以及上述 JSON 資料，回答使用者的問題。查詢結果沒有的商品不要自行捏造。
+                    如果資料中有 'imageName'，請在最後插入圖片：![商品圖片]({imagePathPrefix}<這裡填入 imageName>)
                     ---
                     使用者文字: {userText}";
 
                     // 這裡第二次呼叫也建議把圖片帶進去，讓 AI 可以對照圖片細節與資料庫描述
                     aiReplyText = await _geminiService.AnalyzeImageWithToolAsync(request.Image, finalPrompt);
                 }
-                else if (firstResponse.Contains("CALL_FUNCTION:SearchContents")) // 處理文章查詢
+                else if (toolCall?.Tool == ChatTool.SearchContents) // 處理文章查詢
                 {
-                    string keyword = firstResponse.Split('|')[1].Trim();
-                    string contentDataJson = SearchContents(keyword);
+                    string keyword = toolCall.Value.Keyword;
+                    string contentDataJson = await _tools.SearchContentsAsync(keyword);
                     string frontendUrl = _frontendUrl;
 
                     string finalPrompt = $@"{basePrompt}
@@ -556,7 +497,7 @@ namespace incode.MVC.ApiControllers.Chat
                     【查詢結果 JSON】:
                     {contentDataJson}
 
-                    請根據 JSON 資料回答，並提供文章連結：[文章標題]({frontendUrl}/forum/{{contentId}})
+                    請根據 JSON 資料回答，並提供文章連結：[文章標題]({frontendUrl}/forum/<這裡填入 contentId>)。查詢結果沒有的文章不要自行捏造。
                     ---
                     使用者文字: {userText}";
 

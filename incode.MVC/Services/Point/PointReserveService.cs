@@ -69,7 +69,7 @@ public class PointReserveService : IPointReserveService
     }
 
     // 任務取消時呼叫 → 退回發起人
-    public async Task<bool> ReleaseAsync(int userId, int entrustMissionId)
+    public async Task<bool> ReleaseAsync(int userId, int entrustMissionId, string displaySource = "委託取消退款")
     {
         var reserve = await _context.EntrustMissionPointReserve
             .FirstOrDefaultAsync(r =>
@@ -95,7 +95,7 @@ public class PointReserveService : IPointReserveService
             "entrust_mission_refund",
             entrustMissionId,
             PointType.IncomeEntrustMissionRefund,
-            displaySource: "委託取消退款",
+            displaySource: displaySource,
             displaySubTitle: $"任務 #{entrustMissionId} - {missionTitle}"
         );
     }

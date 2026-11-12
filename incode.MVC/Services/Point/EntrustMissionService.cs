@@ -156,7 +156,7 @@ namespace incode.MVC.Services.Point
                 return new ResultDTO { Ok = false, Code = 400, Message = "委託只能建立在自己的主題文章上" };
 
             bool hasMission = await _context.EntrustMission
-                .AnyAsync(em => em.ContentId == dto.ContentId && em.IsActive && em.Status != "cancelled");
+                .AnyAsync(em => em.ContentId == dto.ContentId && em.IsActive && em.Status != "cancelled" && em.Status != "expired");
             if (hasMission)
                 return new ResultDTO { Ok = false, Code = 409, Message = "這篇文章已經有委託" };
 
@@ -315,6 +315,77 @@ namespace incode.MVC.Services.Point
             }
 
             return false;
+        }
+
+        // 截止後還有回覆的委託，留給委託人選最佳解答的時間；過了就退款並結案
+        public static readonly TimeSpan ExpiryGracePeriod = TimeSpan.FromDays(7);
+
+        // 過期處理（由 EntrustMissionExpiryWorker 定期呼叫）：徵求中、有截止日期且已過期的委託
+        //   - 討論串沒有其他會員回覆 → 截止後立即結案
+        //   - 已有回覆 → 截止後再等 ExpiryGracePeriod，委託人仍沒選最佳解答才結案
+        // 結案：狀態改為 expired、退還預扣點數。沒有截止日期的委託不會過期
+        public async Task<int> ExpireOverdueMissionsAsync(DateTime now)
+        {
+            var candidates = await _context.EntrustMission
+                .AsNoTracking()
+                .Where(em => em.Status == "open" && em.BestContentId == null
+                    && em.Deadline.HasValue && em.Deadline.Value < now)
+                .Select(em => new { em.EntrustMissionId, em.UserId })
+                .ToListAsync();
+
+            int expired = 0;
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    if (await ExpireAsync(candidate.EntrustMissionId, candidate.UserId, now))
+                        expired++;
+                }
+                catch (Exception ex)
+                {
+                    // 一筆失敗不影響其他委託，下次執行會再處理
+                    _logger.LogError(ex, "委託過期處理失敗 - EntrustMissionId: {Id}", candidate.EntrustMissionId);
+                }
+                finally
+                {
+                    _context.ChangeTracker.Clear();
+                }
+            }
+
+            return expired;
+        }
+
+        private async Task<bool> ExpireAsync(int entrustMissionId, int userId, DateTime now)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            // 與選擇最佳解答 / 取消鎖定同一位委託人，鎖定後重新讀取，避免委託人同時選了最佳解答又被退款
+            await _pointLogService.LockUsersAsync(userId);
+
+            var mission = await _context.EntrustMission
+                .FirstOrDefaultAsync(em => em.EntrustMissionId == entrustMissionId);
+            if (mission == null || mission.UserId != userId || mission.Status != "open"
+                || mission.BestContentId.HasValue || !mission.Deadline.HasValue || mission.Deadline.Value >= now)
+                return false;
+
+            bool inGracePeriod = mission.Deadline.Value + ExpiryGracePeriod > now;
+            if (inGracePeriod && await HasRepliesFromOthersAsync(mission.ContentId, userId))
+                return false;
+
+            mission.Status = "expired";
+            mission.UpdatedAt = now;
+
+            if (!await _pointReserveService.ReleaseAsync(mission.UserId, entrustMissionId, "委託過期退款"))
+            {
+                await transaction.RollbackAsync();
+                _logger.LogWarning("委託過期時找不到可退還的預扣點數 - EntrustMissionId: {Id}", entrustMissionId);
+                return false;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            _logger.LogInformation("委託已過期並退款 - EntrustMissionId: {Id}, Points: {Points}", entrustMissionId, mission.RewardPoints);
+            return true;
         }
 
         // 已移除的方法（可直接刪除或註解）
