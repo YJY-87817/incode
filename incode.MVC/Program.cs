@@ -154,6 +154,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 //tim
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IChatToolService, ChatToolService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
@@ -170,6 +171,7 @@ builder.Services.AddScoped<IMissionService, MissionService>();
 builder.Services.AddScoped<IMissionProgressService, MissionProgressService>();
 builder.Services.AddScoped<IEntrustMissionService, EntrustMissionService>();
 builder.Services.AddScoped<IPointReserveService, PointReserveService>();
+builder.Services.AddHostedService<EntrustMissionExpiryWorker>(); // 定期結案過期委託並退款（App:EntrustExpiryIntervalMinutes）
 builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();

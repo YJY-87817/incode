@@ -231,6 +231,9 @@ namespace incode.MVC.Services.Contents
                 if (!mission.IsActive)
                     return new ResultDTO { Ok = false, Code = 410, Message = "該委託任務已下架" };
 
+                if (mission.Status == "expired")
+                    return new ResultDTO { Ok = false, Code = 409, Message = "委託已過期，預扣點數已退回，無法再選擇最佳解答" };
+
                 if (mission.Status != "open")
                     return new ResultDTO { Ok = false, Code = 400, Message = $"任務狀態為 {mission.Status}，無法選擇最佳解答" };
 

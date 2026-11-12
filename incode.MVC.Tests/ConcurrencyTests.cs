@@ -1,3 +1,4 @@
+using incode.MVC.Services.Contents;
 using Microsoft.Extensions.Logging.Abstractions;
 using incode.MVC.Dtos.Point;
 using incode.MVC.Dtos.PointShop;
@@ -410,6 +411,71 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         Assert.Equal(1, results.Count(r => r.Ok));
         Assert.All(results.Where(r => !r.Ok), r => Assert.Equal(409, r.Code));
         Assert.Equal(500, await Balance(owner)); // 預扣的 100 點只退一次
+        await AssertLedgerIsConsistent(owner);
+    }
+    [SqlServerFact]
+    public async Task Expiry_racing_with_best_answer_settles_the_reward_once()
+    {
+        var owner = NewUser();
+        var helper = NewUser();
+        await GivePoints(owner, 500);
+        var topic = await AddContent(owner);
+
+        await using (var context = _db.NewContext())
+        {
+            var points = new PointLogService(context);
+            var service = new EntrustMissionService(context, points, new PointReserveService(context, points),
+                NullLogger<EntrustMissionService>.Instance);
+            var created = await service.CreateEntrustMissionAsync(new EntrustMissionDTO
+            {
+                UserId = owner, ContentId = topic, Title = "委託", Detail = "d", RewardPoints = 100, Category = "其他",
+            });
+            Assert.True(created.Ok, created.Message);
+        }
+
+        int replyId;
+        await using (var context = _db.NewContext())
+        {
+            var reply = new Content { UserId = helper, ParentContentId = topic, Title = "r", Body = "b", Type = 0, IsActive = 1 };
+            context.Content.Add(reply);
+            // 截止後寬限期也過了：背景處理會退款，委託人同時選最佳解答
+            var mission = await context.EntrustMission.SingleAsync(m => m.UserId == owner);
+            mission.Deadline = DateTime.Now - EntrustMissionService.ExpiryGracePeriod - TimeSpan.FromHours(1);
+            await context.SaveChangesAsync();
+            replyId = reply.ContentId;
+        }
+        int missionId;
+        await using (var read = _db.NewContext())
+            missionId = (await read.EntrustMission.AsNoTracking().SingleAsync(m => m.UserId == owner)).EntrustMissionId;
+
+        var results = await RunTogether(Parallel, async i =>
+        {
+            await using var context = _db.NewContext();
+            var points = new PointLogService(context);
+            var reserve = new PointReserveService(context, points);
+            if (i % 2 == 0)
+            {
+                var service = new EntrustMissionService(context, points, reserve, NullLogger<EntrustMissionService>.Instance);
+                return await service.ExpireOverdueMissionsAsync(DateTime.Now) > 0;
+            }
+            var interactions = new ContentInteractionService(context, points, reserve, new FakeMissionService());
+            return (await interactions.SelectBestAnswerAsync(missionId, replyId, owner)).Ok;
+        });
+
+        Assert.Equal(1, results.Count(ok => ok));
+        await using var verify = _db.NewContext();
+        var status = (await verify.EntrustMission.AsNoTracking().SingleAsync(m => m.EntrustMissionId == missionId)).Status;
+        if (status == "expired")
+        {
+            Assert.Equal(500, await Balance(owner));
+            Assert.Equal(0, await Balance(helper));
+        }
+        else
+        {
+            Assert.Equal("completed", status);
+            Assert.Equal(400, await Balance(owner));
+            Assert.Equal(100, await Balance(helper));
+        }
         await AssertLedgerIsConsistent(owner);
     }
 }
