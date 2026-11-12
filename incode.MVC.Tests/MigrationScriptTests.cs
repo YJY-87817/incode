@@ -16,6 +16,17 @@ public class MigrationScriptTests : IClassFixture<SqlServerFixture>
         return File.ReadAllText(Path.Combine(dir!.FullName, "docs", "database", "migrations", name));
     }
 
+    // 用 ADO.NET 直接送出整段 SQL（與 sqlcmd 相同）。不用 EF 的 ExecuteSqlRaw：它會把註解裡的 { } 當成參數佔位符而丟 FormatException
+    private async Task RunScriptAsync(string script)
+    {
+        await using var context = _db.NewContext();
+        var connection = context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = script;
+        await command.ExecuteNonQueryAsync();
+    }
+
     [SqlServerFact]
     public async Task Tip_log_migration_replaces_emails_with_nicknames()
     {
@@ -39,12 +50,9 @@ public class MigrationScriptTests : IClassFixture<SqlServerFixture>
             await seed.SaveChangesAsync();
         }
 
-        await using (var context = _db.NewContext())
-        {
-            var script = ReadScript("2026-11-12-tip-log-remove-email.sql");
-            await context.Database.ExecuteSqlRawAsync(script);
-            await context.Database.ExecuteSqlRawAsync(script); // 可重複執行
-        }
+        var script = ReadScript("2026-11-12-tip-log-remove-email.sql");
+        await RunScriptAsync(script);
+        await RunScriptAsync(script); // 可重複執行
 
         await using var verify = _db.NewContext();
         var logs = await verify.PointLog.AsNoTracking().Where(l => l.UserId == sender || l.UserId == author).ToListAsync();
