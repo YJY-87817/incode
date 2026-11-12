@@ -130,9 +130,11 @@
 @section Scripts
 {
     <script>
-        var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay));
+        @* 會員暱稱寫進 <script>：EscapeHtml 會把 < > & ' " 轉成 \u003c 等，暱稱含 </script> 也不會跳出 script 區塊。
+           屬性名稱維持 PascalCase（下方圖表讀 UserName / ContentCount），所以不改用 Json.Serialize *@
+        var userDisplayData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userdisplay, ScriptJsonSettings));
 
-        var userContentCount = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userContentCounts));
+        var userContentCount = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.userContentCounts, ScriptJsonSettings));
 
         // console.log(userContentCount);
 
@@ -174,4 +176,11 @@
         });
     </script>
     <script src="~/js/chart-area.js"></script>
+}
+
+@functions {
+    private static readonly Newtonsoft.Json.JsonSerializerSettings ScriptJsonSettings = new()
+    {
+        StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml,
+    };
 }
