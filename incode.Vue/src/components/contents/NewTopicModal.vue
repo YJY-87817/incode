@@ -1326,6 +1326,7 @@ const handleModalCancel = () => {
                 <input
                   v-model="newTopicState.title"
                   class="form-control"
+                  maxlength="200"
                   autofocus
                   @keydown.enter.prevent
                 />
@@ -1357,6 +1358,7 @@ const handleModalCancel = () => {
                     <input
                       v-model="entrustMissionState.title"
                       class="form-control"
+                      maxlength="150"
                       placeholder="請輸入任務標題"
                     />
                   </div>

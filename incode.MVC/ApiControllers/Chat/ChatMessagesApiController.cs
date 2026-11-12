@@ -443,6 +443,7 @@ namespace incode.MVC.ApiControllers.Chat
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> UploadImage([FromForm] ImageUploadRequest request)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
             int userId = GetCurrentUserId();
             if (userId == 0) return Unauthorized();
             if (request.Image == null || request.Image.Length == 0) return BadRequest("未上傳圖片");
