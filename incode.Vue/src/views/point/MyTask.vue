@@ -38,9 +38,9 @@ const filteredMissions = computed(() => {
     if (activeTab.value === "completed") {
       // 已領取，或是處於冷卻期（completed 但不能領）
       // 平台任務：已領取或冷卻期
-      // 委託任務：已結案 (status === "completed") 或已取消
+      // 委託任務：已結案 (status === "completed")、已取消或已過期（截止後自動退款）
       if (isEntrust) {
-        return m.status === "completed" || m.status === "cancelled";
+        return isEntrustClosedWithRefund(m) || m.status === "completed";
       }
       return (
         m.status === "rewarded" ||
@@ -61,8 +61,8 @@ const viewDetail = (mission) => {
 // 計算進度條寬度
 const calculateWidth = (mission) => {
   if (mission.entrustMissionId) {
-    // 委託任務：徵求中 20%，已結案 100%，已取消 0%
-    if (mission.status === "cancelled") return 0;
+    // 委託任務：徵求中 20%，已結案 100%，已取消 / 已過期 0%
+    if (isEntrustClosedWithRefund(mission)) return 0;
     return mission.hasBestAnswer ? 100 : 20;
   }
   // 平台任務維持原邏輯
@@ -154,9 +154,14 @@ const claimReward = async (mission) => {
   }
 };
 
+// 委託已取消，或截止後無人得獎而自動過期（兩者都已退回預扣點數）
+const isEntrustClosedWithRefund = (mission) =>
+  mission.status === "cancelled" || mission.status === "expired";
+
 // 委託狀態文字
 const entrustStatusText = (mission) => {
   if (mission.status === "cancelled") return "已取消";
+  if (mission.status === "expired") return "已過期";
   return mission.hasBestAnswer ? "已結案" : "徵求解答中";
 };
 
@@ -508,7 +513,7 @@ onMounted(() => {
             </div>
 
             <div
-              v-if="selectedMission.status === 'cancelled'"
+              v-if="isEntrustClosedWithRefund(selectedMission)"
               class="timeline-block mb-3"
             >
               <span class="timeline-step bg-secondary text-white">
@@ -516,7 +521,11 @@ onMounted(() => {
               </span>
               <div class="timeline-content">
                 <h6 class="text-dark text-sm font-weight-bold mb-0">
-                  委託已取消
+                  {{
+                    selectedMission.status === "expired"
+                      ? "委託已過期"
+                      : "委託已取消"
+                  }}
                 </h6>
                 <p class="text-secondary text-xs mt-1">
                   {{ formatDate(selectedMission.updatedAt) }}

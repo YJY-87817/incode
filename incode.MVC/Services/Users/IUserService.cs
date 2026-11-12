@@ -17,7 +17,7 @@ namespace incode.MVC.Services.Users
 
         // 更新使用者 (存檔用)
         Task UpdateUserAsync(User user);
-        Task<User> CreateGoogleUserAsync(string email, string name);
+        Task<User> CreateGoogleUserAsync(string email, string? name);
         Task AddLoginLogAsync(int userId, string ipAddress);
         Task<UserProfileStatsDto> GetUserStatsAsync(int userId);
 

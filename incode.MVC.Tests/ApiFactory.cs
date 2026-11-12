@@ -59,6 +59,10 @@ public class ApiFactory : WebApplicationFactory<Program>
             services.AddScoped<incodedatabaseContext>(_ => Db.NewContext());
 
             services.AddSingleton<IStartupFilter, TestLoginStartupFilter>();
+
+            // 背景的過期委託處理會在測試進行中改動資料，API 測試不執行（服務本身由 EntrustMissionServiceTests 測試）
+            foreach (var worker in services.Where(s => s.ImplementationType == typeof(EntrustMissionExpiryWorker)).ToList())
+                services.Remove(worker);
         });
     }
 
