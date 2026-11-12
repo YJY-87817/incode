@@ -348,6 +348,31 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         await AssertLedgerIsConsistent(userId);
     }
 
+    // ---------- 商城：會員只能取消「待處理」的訂單，狀態要在鎖內判斷（第二次檢查 28） ----------
+
+    [SqlServerFact]
+    public async Task Member_cancel_is_rejected_when_order_was_shipped_meanwhile()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 100);
+        var productId = await AddProduct(point: 30, stock: 10);
+        var orderId = await CreateOrder(userId, productId, 1);
+
+        // 會員在畫面上看到「待處理」，送出取消前管理員已經出貨
+        await using (var admin = _db.NewContext())
+        {
+            var order = await admin.Orders.SingleAsync(o => o.OrderId == orderId);
+            order.Status = OrderStatus.Shipped;
+            await admin.SaveChangesAsync();
+        }
+
+        await using var context = _db.NewContext();
+        var result = await CreateOrderService(context).CancelOrderAsync(orderId, requiredStatus: OrderStatus.Pending);
+
+        Assert.Equal(409, result.Code);
+        Assert.Equal(70, await Balance(userId)); // 沒有退點
+    }
+
     // ---------- 委託取消：只退款一次 ----------
 
     [SqlServerFact]

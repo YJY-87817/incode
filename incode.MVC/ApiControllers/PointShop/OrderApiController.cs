@@ -114,7 +114,7 @@ namespace incode.MVC.ApiControllers.PointShop
                 return this.ToActionResult(notEditable);
 
             return this.ToActionResult(
-                await _orderService.UpdateOrderItemsAsync(orderId, order.Items, order.Remark ?? ""));
+                await _orderService.UpdateOrderItemsAsync(orderId, order.Items, order.Remark ?? "", OrderStatus.Pending));
         }
 
         // 取消訂單
@@ -134,7 +134,8 @@ namespace incode.MVC.ApiControllers.PointShop
             if (notEditable != null)
                 return this.ToActionResult(notEditable);
 
-            return this.ToActionResult(await _orderService.CancelOrderAsync(orderId));
+            // 上面的檢查是為了快速回應；服務會在取得點數鎖後重新讀取訂單再判斷一次（同時送出的請求才不會重複退點）
+            return this.ToActionResult(await _orderService.CancelOrderAsync(orderId, OrderStatus.Pending));
         }
     }
 }
