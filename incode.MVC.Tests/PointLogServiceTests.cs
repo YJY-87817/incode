@@ -109,6 +109,33 @@ public class PointLogServiceTests
     }
 
     [Fact]
+    public async Task Tip_log_shows_nicknames_not_emails()
+    {
+        // 第二次檢查 29：點數紀錄原本寫入對方的 Email（「給 xxx@…」「來自 xxx@…」），打賞 1 點就能拿到對方 Email
+        using var db = new TestDb();
+        var from = db.SeedUser("sender@example.com");
+        var to = db.SeedUser("author@example.com");
+        await using (var seed = db.NewContext())
+        {
+            (await seed.User.SingleAsync(u => u.UserId == from)).Username = "打賞的人";
+            (await seed.User.SingleAsync(u => u.UserId == to)).Username = "發文的人";
+            seed.Content.Add(new Content { ContentId = 77, UserId = to, Title = "文章", Body = "b", Type = 1, IsActive = 1 });
+            await seed.SaveChangesAsync();
+        }
+        await ChangeAndCommit(db, from, 100);
+
+        await using (var context = db.NewContext())
+            await new PointLogService(context).TipAsync(from, to, 77, 10);
+
+        await using var verify = db.NewContext();
+        var subtitles = await verify.PointLog.AsNoTracking().Where(l => l.SourceType == "point_tip").Select(l => l.DisplaySourceSubTitle).ToListAsync();
+        Assert.Equal(2, subtitles.Count);
+        Assert.All(subtitles, s => Assert.DoesNotContain("@", s));
+        Assert.Contains("給 發文的人", subtitles);
+        Assert.Contains("來自 打賞的人", subtitles);
+    }
+
+    [Fact]
     public async Task Tip_to_self_or_non_positive_amount_is_rejected()
     {
         using var db = new TestDb();

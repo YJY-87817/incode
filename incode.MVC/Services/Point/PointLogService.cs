@@ -260,6 +260,15 @@ namespace incode.MVC.Services.Point
         }
 
 
+        private async Task<string> GetNicknameAsync(int userId)
+        {
+            var username = await _context.User
+                .Where(u => u.UserId == userId)
+                .Select(u => u.Username)
+                .FirstOrDefaultAsync();
+            return string.IsNullOrWhiteSpace(username) ? $"用戶{userId}" : username;
+        }
+
         public async Task TipAsync(int fromUserId, int toUserId, int contentId, int amount)
         {
             if (fromUserId == toUserId)
@@ -283,15 +292,9 @@ namespace incode.MVC.Services.Point
                     .Select(c => c.Title ?? "無標題內容")
                     .FirstOrDefaultAsync() ?? "內容";
 
-                var fromNickname = await _context.User
-                    .Where(u => u.UserId == fromUserId)
-                    .Select(u => u.Email ?? $"用戶{u.UserId}")
-                    .FirstOrDefaultAsync();
-
-                var toNickname = await _context.User
-                    .Where(u => u.UserId == toUserId)
-                    .Select(u => u.Email ?? $"用戶{u.UserId}")
-                    .FirstOrDefaultAsync();
+                // 點數紀錄雙方都看得到：只能放暱稱，不能放 Email（原本放 Email，打賞 1 點就能取得對方的 Email）
+                var fromNickname = await GetNicknameAsync(fromUserId);
+                var toNickname = await GetNicknameAsync(toUserId);
 
                 // ================================
                 // ⭐ 新增 point_tip 真實紀錄

@@ -42,8 +42,7 @@ namespace incode.MVC.Services.Contents
 
       if (userId.HasValue && userId.Value > 0)
       {
-        const int hideCategoryId = 2;
-        query = query.Where(c => !_context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId.Value && ci.CategoryId == hideCategoryId));
+        query = query.Where(c => !_context.ContentInteraction.Any(ci => ci.ContentId == c.ContentId && ci.UserId == userId.Value && ci.CategoryId == InteractionCategoryIds.Hide));
       }
 
       if (categoryId.HasValue)
