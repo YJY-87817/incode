@@ -19,6 +19,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     private readonly string _uploadRoot = Path.Combine(Path.GetTempPath(), "incode-test-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>測試用的 App:UploadRoot（會員上傳檔案的存放處）。</summary>
+    public string UploadRoot => _uploadRoot;
+
     public ApiFactory()
     {
         // Program.cs 在 Build 之前就讀取設定，所以用環境變數（ConfigureAppConfiguration 來不及）

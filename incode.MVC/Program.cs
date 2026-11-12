@@ -200,6 +200,8 @@ app.UseRouting();
 app.UseCors("VueApp");
 // CSRF：API 的寫入請求與 SignalR 只接受自己與 CORS 允許來源的 Origin（見 Extensions/OriginCheckExtensions.cs）
 app.UseApiOriginCheck(builder.Configuration.GetCorsOrigins());
+// 會員上傳的檔案（論壇內文 HTML、圖片）直接開啟時不能以本站來源執行腳本（見 Extensions/UploadSecurityHeadersExtensions.cs）
+app.UseUploadSecurityHeaders();
 app.UseStaticFiles();
 // 上傳檔案（App:UploadRoot）掛在網站根目錄：/img/chat/xxx、/contents/xxx.html 等網址不變。
 // 改版前的上傳檔仍在 wwwroot，由上一行提供；找不到才會到這裡
