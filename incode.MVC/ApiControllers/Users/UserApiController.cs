@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace incode.MVC.ApiControllers.Users
 {
@@ -29,6 +30,7 @@ namespace incode.MVC.ApiControllers.Users
         // 註冊流程會在登入前先上傳大頭貼，因此允許匿名；只接受檢查過的圖片 (格式 + 檔頭)，限制數量與大小
         [HttpPost("images")]
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitPolicies.Upload)] // 匿名也能上傳，限制次數避免塞滿磁碟
         [RequestSizeLimit(MaxAvatarFiles * MaxAvatarBytes)]
         public async Task<IActionResult> UploadImages([FromForm] List<IFormFile> files)
         {

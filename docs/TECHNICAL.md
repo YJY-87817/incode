@@ -81,7 +81,7 @@ incode.MVC/
 7. `UseAuthentication` → `UseAuthorization` → `UseRateLimiter`（放在 CORS 之後，429 回應也帶 CORS 標頭）
 8. `MapStaticAssets`、`MapControllerRoute`（`{controller=Home}/{action=Index}/{id?}`）、`MapControllers`、`MapHub<ChatHub>("/chatHub")`
 
-上傳大小：`FormOptions.MultipartBodyLengthLimit` 與 Kestrel `MaxRequestBodySize` 皆為 500 MB（整體請求上限），實際單檔大小由 `ImageFileValidator` 及各端點限制（§7.3）。
+上傳大小：`FormOptions.MultipartBodyLengthLimit` 與 Kestrel `MaxRequestBodySize` 皆為 30 MB（整體請求上限）；論壇多圖上傳 `api/images/upload` 個別放寬為 100 MB。實際單檔大小由 `ImageFileValidator` 及各端點限制（§7.3）。欄位長度：文章標題 200 字、內文 500 萬字元（`ContentLimits`）、聊天訊息 2000 字（`ChatLimits`）。
 
 ### 2.2 分層與依賴注入
 
@@ -128,7 +128,7 @@ ApiController / Controller  →  Service (介面)  →  incodedatabaseContext (E
 
 | 機制 | 位置 | 規則 |
 |---|---|---|
-| IP 速率限制 | `Extensions/RateLimitExtensions.cs`，端點加 `[EnableRateLimiting(...)]` | 登入 / 註冊 `auth`：每分鐘 20 次；忘記 / 重設密碼 `password-reset`：每 15 分鐘 5 次；超過回 429 |
+| IP 速率限制 | `Extensions/RateLimitExtensions.cs`，端點加 `[EnableRateLimiting(...)]` | 登入 / 註冊 `auth`：每分鐘 20 次；忘記 / 重設密碼 `password-reset`：每 15 分鐘 5 次；AI 聊天 `ai-chat`（送出訊息、聊天圖片、自動命名）：每位會員每分鐘 10 次；匿名可用的大頭貼上傳 `upload`：每位會員 / IP 每 10 分鐘 10 次；超過回 429 |
 | 帳號失敗次數 | `Services/Users/LoginAttemptLimiter.cs`（記憶體計數） | 同帳號 15 分鐘內失敗 5 次，暫停 15 分鐘；重啟清除 |
 
 部署在反向代理後面時需設定 ForwardedHeaders，否則所有人共用代理 IP 的額度。
@@ -162,7 +162,7 @@ ApiController / Controller  →  Service (介面)  →  incodedatabaseContext (E
 | `EmailSettings:*` | 寄信（忘記密碼）；`EmailService` 讀根層級 |
 | `GeminiApiKey` | AI 客服 |
 | `TmdbApiKey`、`imgapikey` | 其他選用服務 |
-| `ECPay:MerchantID / HashKey / HashIV / ReturnUrl` | 綠界；目前為公開測試帳號，正式金鑰不可進 repo |
+| `ECPay:MerchantID / HashKey / HashIV / ReturnUrl` | 綠界；`appsettings.json` 為空，公開測試帳號（`3002607`）只放在 `appsettings.Development.json`。非 Development 環境使用測試帳號會拒絕啟動（任何人都能以公開的 HashKey 偽造付款通知），展示環境要用測試帳號需設 `ECPay__AllowTestMerchant=true`；正式金鑰不可進 repo |
 
 取值統一用 `IConfiguration.GetFrontendUrl()`、`GetCorsOrigins()`（`Extensions/ConfigurationExtensions.cs`），不要寫死網址。正式環境用環境變數覆寫（`App__FrontendUrl`、`App__CorsOrigins__0`、`ConnectionStrings__incodedatabase`）。
 
