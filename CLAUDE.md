@@ -326,12 +326,20 @@ incode/
       **取得點數鎖之後才在交易內讀取訂單**、判斷狀態並計算差額；新增 `requiredStatus` 參數，會員 API 傳入「待處理」由服務在鎖內判斷
       （避免檢查後才被管理員出貨仍被取消）。以 SQL Server 實測修正前：同一筆訂單同時取消 10 次全部成功（退點 10 次），
       同時把數量 1 改成 2 共 10 次多扣 270 點；修正後只成立一次。`ConcurrencyTests` 新增 3 項
+31. 第二次全專案檢查 29～31（都先寫測試重現）：
+    - **29 打賞洩漏 Email**：`PointLogService.TipAsync` 的點數紀錄副標改用暱稱（原本「給 / 來自 {對方 Email}」）。
+      **已上線的資料庫要執行一次** `docs/database/migrations/2026-11-12-tip-log-remove-email.sql`（把舊紀錄換成暱稱，可重複執行；
+      `MigrationScriptTests` 在 CI 的 SQL Server 上執行這支腳本）
+    - **30「我的收藏」用錯分類**：`GetMyBookmarkedContents` 原本以分類 2（隱藏）查詢，改用 `InteractionCategoryIds.Bookmark`；
+      我的按讚、`ContentService` 排除隱藏文章也改用常數
+    - **31 互動紀錄可匿名查詢**：`GET api/ContentInteractionApi` 只能查自己的互動（`userId` 為本人）、公開的分類（最佳解答，
+      前端詳情頁的備援查詢會用到）或由管理員查詢，其餘 403；`GET api/ContentInteractionApi/content/{id}` 限管理員（前端沒有使用）
 
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 29～31（見下方「第二次全專案檢查」）→ 其餘。
+建議修正順序：第二次檢查的 32～39（見下方「第二次全專案檢查」）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -375,7 +383,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～28 已修正（見修正紀錄 30），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～31 已修正（見修正紀錄 30、31），其餘尚未修正。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -395,11 +403,11 @@ incode/
 
 ### 🟡 中
 
-29. **打賞紀錄洩漏 Email**：`PointLogService.TipAsync` 把對方的 Email 寫進點數紀錄副標（「給 xxx@…」「來自 xxx@…」），
+29. ~~**打賞紀錄洩漏 Email**~~（見修正紀錄 31）：`PointLogService.TipAsync` 把對方的 Email 寫進點數紀錄副標（「給 xxx@…」「來自 xxx@…」），
     打賞 1 點就能取得任何發文者的 Email。改用暱稱；已寫入的舊紀錄也要處理。
-30. **「我的收藏」顯示的是隱藏的文章**：`ContentApiController.GetMyBookmarkedContents` 以分類 ID 2（隱藏）查詢，收藏是 3。
+30. ~~**「我的收藏」顯示的是隱藏的文章**~~（見修正紀錄 31）：`ContentApiController.GetMyBookmarkedContents` 以分類 ID 2（隱藏）查詢，收藏是 3。
     改用 `InteractionCategoryIds.Bookmark`（`ContentService.GetContents` 裡寫死的 `hideCategoryId = 2` 等也一併改用常數）。
-31. **互動紀錄可匿名查詢**：`GET api/ContentInteractionApi?userId=`、`GET api/ContentInteractionApi/content/{id}` 不需登入，
+31. ~~**互動紀錄可匿名查詢**~~（見修正紀錄 31）：`GET api/ContentInteractionApi?userId=`、`GET api/ContentInteractionApi/content/{id}` 不需登入，
     回傳每筆互動的 UserId，可查出誰檢舉、隱藏、收藏了什麼。
 32. **AI 客服的「查詢」是寫死的假資料**：`ChatMessagesApiController` 的 `GetProductInfo` / `SearchContents` / `PointLogs` 回固定內容
     （例如餘額 1500、userId 1），會員問點數會得到錯的答案。另外 `firstResponse.Split('|')[1]` 沒有檢查長度（AI 回覆格式不符時 500）。

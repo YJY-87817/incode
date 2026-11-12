@@ -237,13 +237,13 @@ namespace incode.MVC.ApiControllers.Contents
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       // 交由 ContentService 查詢互動類別為 like 的內容
-      var result = await _contentService.GetUserInteractedContents(userId, 1, new[] { "like" }, page, pageSize);
+      var result = await _contentService.GetUserInteractedContents(userId, InteractionCategoryIds.Like, new[] { "like" }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
-        interactionCategoryId = 1,
+        interactionCategoryId = InteractionCategoryIds.Like,
         items = resultObj.items,
         count = resultObj.totalCount,
         totalCount = resultObj.totalCount,
@@ -263,13 +263,14 @@ namespace incode.MVC.ApiControllers.Contents
       if (userId <= 0) return Unauthorized(new { message = "無法取得使用者ID" });
 
       // 交由 ContentService 查詢互動類別為 bookmark 的內容
-      var result = await _contentService.GetUserInteractedContents(userId, 2, new[] { "bookmark" }, page, pageSize);
+      // 原本寫成 2（隱藏），「我的收藏」顯示的是隱藏的文章
+      var result = await _contentService.GetUserInteractedContents(userId, InteractionCategoryIds.Bookmark, new[] { "bookmark" }, page, pageSize);
       
       var resultObj = result as dynamic;
       return Ok(new
       {
         userId,
-        interactionCategoryId = 2,
+        interactionCategoryId = InteractionCategoryIds.Bookmark,
         items = resultObj.items,
         count = resultObj.totalCount,
         totalCount = resultObj.totalCount,

@@ -376,6 +376,12 @@ namespace incode.MVC.Services.Contents
         .FirstOrDefaultAsync();
     }
 
+    public async Task<bool> IsPublicInteractionCategoryAsync(int interactionCategoryId)
+    {
+      var bestCategoryId = await GetBestAnswerCategoryIdAsync();
+      return bestCategoryId != 0 && interactionCategoryId == bestCategoryId;
+    }
+
     public async Task<int?> GetBestAnswerContentId(int entrustMissionId)
     {
       var bestCategoryId = await GetBestAnswerCategoryIdAsync();
