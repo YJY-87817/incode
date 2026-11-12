@@ -282,6 +282,97 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         Assert.Equal(5, balances.Count(b => b == 100));
     }
 
+    // ---------- 商城：同一筆訂單同時取消只退一次（第二次檢查 28） ----------
+
+    private async Task<int> CreateOrder(int userId, int productId, int quantity)
+    {
+        await using var context = _db.NewContext();
+        var result = await CreateOrderService(context).CreateOrderAsync(
+            userId, new[] { new OrderItemRequest { ProductId = productId, Quantity = quantity } }, null, null, requireRecipient: false);
+        Assert.True(result.Ok, result.Message);
+        return result.Data;
+    }
+
+    private async Task<int> Stock(int productId)
+    {
+        await using var context = _db.NewContext();
+        return (await context.Product.AsNoTracking().SingleAsync(p => p.ProductId == productId)).Stock;
+    }
+
+    [SqlServerFact]
+    public async Task Concurrent_cancellations_of_one_order_refund_once()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 100);
+        var productId = await AddProduct(point: 30, stock: 10);
+        var orderId = await CreateOrder(userId, productId, 1);
+        Assert.Equal(70, await Balance(userId));
+
+        var results = await RunTogether(Parallel, async _ =>
+        {
+            await using var context = _db.NewContext();
+            return await CreateOrderService(context).CancelOrderAsync(orderId);
+        });
+
+        Assert.Equal(1, results.Count(r => r.Ok));
+        Assert.All(results.Where(r => !r.Ok), r => Assert.Equal(409, r.Code));
+        Assert.Equal(100, await Balance(userId)); // 只退一次 30 點
+        Assert.Equal(10, await Stock(productId)); // 庫存只加回一次
+        await AssertLedgerIsConsistent(userId);
+    }
+
+    // ---------- 商城：同時修改同一筆訂單的數量，只依實際差額扣點與庫存（第二次檢查 28） ----------
+
+    [SqlServerFact]
+    public async Task Concurrent_quantity_updates_charge_only_the_real_difference()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 1000);
+        var productId = await AddProduct(point: 30, stock: 100);
+        var orderId = await CreateOrder(userId, productId, 1);
+
+        // 10 個請求都把數量從 1 改成 2：最後應該只多扣 1 件的點數與庫存
+        await RunTogether(Parallel, async _ =>
+        {
+            await using var context = _db.NewContext();
+            return await CreateOrderService(context).UpdateOrderItemsAsync(
+                orderId, new[] { new OrderItemRequest { ProductId = productId, Quantity = 2 } }, null);
+        });
+
+        await using var verify = _db.NewContext();
+        var order = await verify.Orders.AsNoTracking().Include(o => o.Orderdetail).SingleAsync(o => o.OrderId == orderId);
+        Assert.Equal(2, order.Orderdetail.Sum(d => d.Quantity));
+        Assert.Equal(60, order.TotalPoint);
+        Assert.Equal(940, await Balance(userId));  // 1000 - 60
+        Assert.Equal(98, await Stock(productId));  // 100 - 2
+        await AssertLedgerIsConsistent(userId);
+    }
+
+    // ---------- 商城：會員只能取消「待處理」的訂單，狀態要在鎖內判斷（第二次檢查 28） ----------
+
+    [SqlServerFact]
+    public async Task Member_cancel_is_rejected_when_order_was_shipped_meanwhile()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 100);
+        var productId = await AddProduct(point: 30, stock: 10);
+        var orderId = await CreateOrder(userId, productId, 1);
+
+        // 會員在畫面上看到「待處理」，送出取消前管理員已經出貨
+        await using (var admin = _db.NewContext())
+        {
+            var order = await admin.Orders.SingleAsync(o => o.OrderId == orderId);
+            order.Status = OrderStatus.Shipped;
+            await admin.SaveChangesAsync();
+        }
+
+        await using var context = _db.NewContext();
+        var result = await CreateOrderService(context).CancelOrderAsync(orderId, requiredStatus: OrderStatus.Pending);
+
+        Assert.Equal(409, result.Code);
+        Assert.Equal(70, await Balance(userId)); // 沒有退點
+    }
+
     // ---------- 委託取消：只退款一次 ----------
 
     [SqlServerFact]

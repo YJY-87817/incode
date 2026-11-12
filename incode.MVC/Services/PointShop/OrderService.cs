@@ -289,42 +289,41 @@ namespace incode.MVC.Services.PointShop
         }
 
         // 修改訂單明細
-        public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark)
+        // requiredStatus：呼叫端要求訂單必須是這個狀態（會員只能改「待處理」），在鎖內判斷，避免判斷後狀態才被改掉
+        public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
+            string? requiredStatus = null)
         {
             var (newQty, itemError) = NormalizeItems(items);
             if (itemError != null)
                 return ResultDTO<int>.Failure(itemError);
 
-            var order = await _context.Orders
-                .Include(o => o.Orderdetail)
-                .Include(o => o.ShippedDetail)
-                .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-            if (order == null)
+            var userId = await FindOrderUserIdAsync(orderId);
+            if (userId == null)
                 return ResultDTO<int>.Failure("找不到該訂單", 404);
 
-            if (order.Status == OrderStatus.Canceled)
-                return ResultDTO<int>.Failure("訂單已取消，不能修改", 409);
-
-            // 舊明細依商品加總 (舊資料可能有同商品多筆)
-            var oldQty = order.Orderdetail
-                .GroupBy(d => d.ProductId)
-                .ToDictionary(g => g.Key, g => g.Sum(d => d.Quantity));
-
-            var allIds = newQty.Keys.Union(oldQty.Keys).ToList();
-            var products = await LoadProductsAsync(allIds);
-
-            // 新加入的商品必須存在且上架中；原本就有的商品即使下架也可調整數量
-            var addedIds = newQty.Keys.Where(id => !oldQty.ContainsKey(id)).ToList();
-            var productError = CheckProducts(newQty.Keys, products, mustBeOnSale: addedIds);
-            if (productError != null)
-                return productError;
-
-            if (addedIds.Any(id => products[id].IsPhysical) && !order.ShippedDetail.Any())
-                return ResultDTO<int>.Failure("此訂單沒有寄送資料，無法加入實體商品，請另外下單");
-
-            return await RunInTransactionAsync(order.UserId, $"修改訂單 {orderId}", async () =>
+            return await RunInTransactionAsync(userId.Value, $"修改訂單 {orderId}", async () =>
             {
+                // 拿到會員的點數鎖之後才讀取訂單：同時送出的修改會排隊，後面的請求看到的是前一個修改完的明細，
+                // 不會用舊明細算差額而重複扣點 / 扣庫存
+                var order = await LoadOrderForUpdateAsync(orderId, requiredStatus, "修改");
+
+                // 舊明細依商品加總 (舊資料可能有同商品多筆)
+                var oldQty = order.Orderdetail
+                    .GroupBy(d => d.ProductId)
+                    .ToDictionary(g => g.Key, g => g.Sum(d => d.Quantity));
+
+                var allIds = newQty.Keys.Union(oldQty.Keys).ToList();
+                var products = await LoadProductsAsync(allIds);
+
+                // 新加入的商品必須存在且上架中；原本就有的商品即使下架也可調整數量
+                var addedIds = newQty.Keys.Where(id => !oldQty.ContainsKey(id)).ToList();
+                var productError = CheckProducts(newQty.Keys, products, mustBeOnSale: addedIds);
+                if (productError != null)
+                    throw new OrderFailure(productError.Message ?? "商品資料錯誤", productError.Code);
+
+                if (addedIds.Any(id => products[id].IsPhysical) && !order.ShippedDetail.Any())
+                    throw new OrderFailure("此訂單沒有寄送資料，無法加入實體商品，請另外下單");
+
                 // 1. 庫存：增加的數量原子扣減，減少的數量歸還
                 foreach (var productId in allIds)
                 {
@@ -395,20 +394,18 @@ namespace incode.MVC.Services.PointShop
         }
 
         // 取消訂單
-        public async Task<ResultDTO<int>> CancelOrderAsync(int orderId)
+        // requiredStatus：呼叫端要求訂單必須是這個狀態（會員只能取消「待處理」），在鎖內判斷
+        public async Task<ResultDTO<int>> CancelOrderAsync(int orderId, string? requiredStatus = null)
         {
-            var order = await _context.Orders
-                .Include(o => o.Orderdetail)
-                .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-            if (order == null)
+            var userId = await FindOrderUserIdAsync(orderId);
+            if (userId == null)
                 return ResultDTO<int>.Failure("找不到該訂單", 404);
 
-            if (order.Status == OrderStatus.Canceled)
-                return ResultDTO<int>.Failure("訂單已取消", 409);
-
-            return await RunInTransactionAsync(order.UserId, $"取消訂單 {orderId}", async () =>
+            return await RunInTransactionAsync(userId.Value, $"取消訂單 {orderId}", async () =>
             {
+                // 拿到會員的點數鎖之後才讀取訂單：同時送出的取消會排隊，第二個看到的已經是「已取消」，不會再退一次點 / 庫存
+                var order = await LoadOrderForUpdateAsync(orderId, requiredStatus, "取消");
+
                 // 回復庫存
                 foreach (var group in order.Orderdetail.GroupBy(d => d.ProductId))
                     await IncreaseStockAsync(group.Key, group.Sum(d => d.Quantity));
@@ -488,6 +485,32 @@ namespace incode.MVC.Services.PointShop
         }
 
         // 讀取商品 (不追蹤：庫存一律以 ExecuteUpdate 原子更新，避免 SaveChanges 以舊值覆蓋)
+        // 訂單的會員（交易開始前要先知道鎖誰）；訂單不存在回傳 null
+        private Task<int?> FindOrderUserIdAsync(int orderId)
+            => _context.Orders
+                .AsNoTracking()
+                .Where(o => o.OrderId == orderId)
+                .Select(o => (int?)o.UserId)
+                .FirstOrDefaultAsync();
+
+        // 在交易內（已取得點數鎖）讀取要修改 / 取消的訂單並檢查狀態，不符合就丟 OrderFailure（整筆 rollback）
+        private async Task<Orders> LoadOrderForUpdateAsync(int orderId, string? requiredStatus, string action)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Orderdetail)
+                .Include(o => o.ShippedDetail)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId)
+                ?? throw new OrderFailure("找不到該訂單", 404);
+
+            if (order.Status == OrderStatus.Canceled)
+                throw new OrderFailure(action == "取消" ? "訂單已取消" : $"訂單已取消，不能{action}", 409);
+
+            if (requiredStatus != null && order.Status != requiredStatus)
+                throw new OrderFailure($"訂單狀態為「{order.Status}」，不能{action}", 409);
+
+            return order;
+        }
+
         private Task<Dictionary<int, Product>> LoadProductsAsync(IEnumerable<int> productIds)
         {
             var ids = productIds.Distinct().ToList();
