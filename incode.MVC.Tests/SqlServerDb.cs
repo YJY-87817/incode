@@ -58,6 +58,17 @@ public sealed class SqlServerFactAttribute : FactAttribute
     }
 }
 
+/// <summary>同 <see cref="SqlServerFactAttribute"/>，給有參數的測試用。</summary>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class SqlServerTheoryAttribute : TheoryAttribute
+{
+    public SqlServerTheoryAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(SqlServerDb.EnvVar)))
+            Skip = $"需要 SQL Server：設定環境變數 {SqlServerDb.EnvVar}（見 docs/TESTING.md）";
+    }
+}
+
 /// <summary>測試類別共用的 SQL Server 資料庫，第一次使用時才建立（全部略過時不會連線）。</summary>
 public sealed class SqlServerFixture : IDisposable
 {
