@@ -64,6 +64,13 @@ namespace incode.MVC.ApiControllers.Point
             var orderNo = form["MerchantTradeNo"].ToString();
             var tradeNo = form["TradeNo"].ToString();
 
+            // 2. 綠界後台「模擬付款」送出的通知（SimulatePaid=1）沒有實際收款，正式商店不能加點；只有測試商店允許（開發時用來測試流程）
+            if (form["SimulatePaid"].ToString() == "1" && !_ecpay.IsTestMerchant)
+            {
+                _logger.LogWarning("正式商店收到模擬付款通知，不處理 - OrderNo: {OrderNo}", orderNo);
+                return Content("1|OK"); // 回 OK 避免綠界重送
+            }
+
             if (rtnCode == "1")
             {
                 // 付款成功：狀態更新與加點在同一個交易，並以條件更新防止重複加點
