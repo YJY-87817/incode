@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const authStore = { isAuthenticated: true, user: { id: 1 } };
 const router = { currentRoute: { value: { name: "Home", fullPath: "/p" } }, push: vi.fn() };
@@ -17,11 +17,17 @@ function setup(opts) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  vi.advanceTimersByTime(3000); // 重置模組內的 2 秒去重旗標
   authStore.isAuthenticated = true;
   authStore.user = { id: 1 };
   router.push.mockClear();
   router.currentRoute.value = { name: "Home", fullPath: "/p" };
+});
+
+afterEach(() => {
+  // 執行模組內 2 秒去重旗標的計時器（重置旗標）後再換回真的計時器。
+  // vitest 5 重複呼叫 useFakeTimers 會丟棄尚未執行的計時器，不能只在 beforeEach 推進時間
+  vi.runOnlyPendingTimers();
+  vi.useRealTimers();
 });
 
 describe("installAuthInterceptor", () => {

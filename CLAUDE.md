@@ -133,7 +133,7 @@ incode/
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
-- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
+- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
   SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
@@ -350,11 +350,25 @@ incode/
       編輯器上傳失敗時會內嵌 base64 圖片，不能太小）、聊天訊息 2000 字（`ChatLimits`），超過回 400（原本標題過長在 SQL Server 會 500）；
       匿名可用的大頭貼上傳加上 `RateLimitPolicies.Upload`（每 10 分鐘 10 次）；前端標題 / 聊天輸入框加 `maxlength`
 
+33. 第二次全專案檢查 32、35、36、39（32、35、36 先寫測試重現）：
+    - **35 Google 登入同名**：`UserService.CreateGoogleUserAsync` 的 username 已被使用（同名、都沒有名稱、或與一般會員同名）時改用
+      「名稱_2」「名稱_3」…（超過欄位長度 150 時截短），同時建立撞名時重試。修正前第二位同名的使用者建立帳號失敗（唯一索引）→ 500
+    - **32 AI 客服查詢**：新增 `Services/Chat/ChatToolService`：商品（上架中，比對名稱 / 說明 / 類型 / 系列，不提供庫存數量）、
+      文章（公開的主題文章，比對標題）、點數（**登入者本人**的餘額與最近 5 筆紀錄）改為查資料庫，原本是寫死的假資料（餘額一律 1500）。
+      工具呼叫改由 `ChatToolService.ParseToolCall` 解析，AI 回覆沒有「|」或工具名稱不符時當成一般回覆（原本 `Split('|')[1]` 會 500）
+    - **36 委託過期**：`EntrustMissionService.ExpireOverdueMissionsAsync`，由背景服務 `EntrustMissionExpiryWorker` 每小時執行
+      （`App:EntrustExpiryIntervalMinutes`，0 = 停用）。徵求中、已過截止日期的委託：討論串沒有其他會員回覆 → 立即結案；
+      有回覆 → 截止後再等 7 天（`ExpiryGracePeriod`，期間委託人仍可選最佳解答）。結案時狀態改為 **`expired`** 並退還預扣點數
+      （點數紀錄「委託過期退款」），同樣鎖定委託人後在交易內重新讀取，與同時選最佳解答只會成立一個（`ConcurrencyTests`）。
+      **沒有截止日期的委託不會過期**。過期的委託可以重新在同一篇文章建立委託；「我的任務」列在「已完結」並顯示「已過期」
+    - **39 前端測試套件**：vitest 3 → 5.1（`npm audit` 0 個漏洞，需 Node 22.12 以上）。`authInterceptor.test.js` 改為在 `afterEach`
+      執行計時器重置去重旗標（vitest 5 重複呼叫 `useFakeTimers` 會丟棄尚未執行的計時器）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 35、32、36、39（見下方「第二次全專案檢查」）→ 其餘。
+建議修正順序：第二次檢查的 40～44（低優先，見下方「第二次全專案檢查」）。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -398,7 +412,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～31、33、34、37、38 已修正（見修正紀錄 30～32），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33），40～44 尚未修正。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -424,18 +438,18 @@ incode/
     改用 `InteractionCategoryIds.Bookmark`（`ContentService.GetContents` 裡寫死的 `hideCategoryId = 2` 等也一併改用常數）。
 31. ~~**互動紀錄可匿名查詢**~~（見修正紀錄 31）：`GET api/ContentInteractionApi?userId=`、`GET api/ContentInteractionApi/content/{id}` 不需登入，
     回傳每筆互動的 UserId，可查出誰檢舉、隱藏、收藏了什麼。
-32. **AI 客服的「查詢」是寫死的假資料**：`ChatMessagesApiController` 的 `GetProductInfo` / `SearchContents` / `PointLogs` 回固定內容
+32. ~~**AI 客服的「查詢」是寫死的假資料**~~（見修正紀錄 33）：`ChatMessagesApiController` 的 `GetProductInfo` / `SearchContents` / `PointLogs` 回固定內容
     （例如餘額 1500、userId 1），會員問點數會得到錯的答案。另外 `firstResponse.Split('|')[1]` 沒有檢查長度（AI 回覆格式不符時 500）。
 33. ~~**請求大小沒有限制**~~（見修正紀錄 32）：全站上限 500 MB（`Program.cs` 的 Kestrel / FormOptions），文章標題、內文、聊天訊息沒有長度限制；
     `POST api/User/images`（大頭貼）允許匿名且沒有速率限制，可塞滿磁碟。
 34. ~~**聊天沒有速率限制**~~（見修正紀錄 32）：每則訊息最多呼叫 2 次 Gemini，「生圖」另呼叫付費 API（`GeminiService.GenerateImageAsync`），可被刷費用。
-35. **Google 登入同名會 500**：`username` 有唯一索引，`UserService.CreateGoogleUserAsync` 直接用 Google 顯示名稱，
+35. ~~**Google 登入同名會 500**~~（見修正紀錄 33）：`username` 有唯一索引，`UserService.CreateGoogleUserAsync` 直接用 Google 顯示名稱，
     第二位同名（或都沒有名稱）的使用者建立帳號失敗。
-36. **委託過期沒有處理**：有人回覆後不能取消，委託人不選最佳解答時預扣點數永遠卡住；截止日期過後也不會退款或結案。
+36. ~~**委託過期沒有處理**~~（見修正紀錄 33）：有人回覆後不能取消，委託人不選最佳解答時預扣點數永遠卡住；截止日期過後也不會退款或結案。
 37. ~~**綠界測試金鑰是公開的**~~（見修正紀錄 32）：以 `appsettings.json` 的測試 HashKey / HashIV，任何人都能偽造付款成功通知替自己加點；
     對外公開的環境不可使用這組（回呼也沒有檢查 `SimulatePaid`）。
 38. ~~**分頁參數沒有檢查**~~（見修正紀錄 32）：`ContentService.GetContents` / `GetChildrenByContentId` 等，`pageSize=0`、`page=0` 會 500，極大的 `pageSize` 會一次撈全部。
-39. **前端測試套件漏洞**：`npm audit` 回報 3 個（2 個 critical：`tinypool`；1 個 moderate：`@vitest/mocker`），只影響開發與 CI、不進正式建置；
+39. ~~**前端測試套件漏洞**~~（見修正紀錄 33）：`npm audit` 回報 3 個（2 個 critical：`tinypool`；1 個 moderate：`@vitest/mocker`），只影響開發與 CI、不進正式建置；
     修正需升級 vitest 5（破壞性更新）。
 
 ### ⚪ 低 / 功能缺口

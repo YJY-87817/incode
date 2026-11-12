@@ -19,23 +19,70 @@ namespace incode.MVC.Services.Users
             return await _context.User.FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task<User> CreateGoogleUserAsync(string email, string name)
+        // username 欄位上限（資料庫 nvarchar(150)）
+        internal const int UsernameMaxLength = 150;
+        private const int GoogleUserCreateAttempts = 5;
+
+        public async Task<User> CreateGoogleUserAsync(string email, string? name)
         {
-            var newUser = new User
+            // username 有唯一索引：Google 顯示名稱重複（或都沒有名稱）時改用「名稱_數字」，
+            // 原本直接寫入，第二位同名的使用者建立帳號會 500
+            string baseName = string.IsNullOrWhiteSpace(name) ? "Google User" : name.Trim();
+
+            for (int attempt = 0; ; attempt++)
             {
-                Email = email,
-                Username = name ?? "Google User",
-                Password = "GOOGLE_AUTH", // 標記
-                CreatedAt = DateTime.Now,
-                IsActive = true,
-                RoleId = 2, 
-                ImageUrl = "https://cdn-icons-png.flaticon.com/512/847/847969.png"
-            };
+                var newUser = new User
+                {
+                    Email = email,
+                    Username = await GetAvailableUsernameAsync(baseName),
+                    Password = "GOOGLE_AUTH", // 標記
+                    CreatedAt = DateTime.Now,
+                    IsActive = true,
+                    RoleId = 2,
+                    ImageUrl = "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+                };
 
-            _context.User.Add(newUser);
-            await _context.SaveChangesAsync();
+                _context.User.Add(newUser);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return newUser;
+                }
+                catch (DbUpdateException) when (attempt < GoogleUserCreateAttempts - 1)
+                {
+                    // 同時有另一個請求搶先用了同一個名稱（或同一個 Email 同時登入）：移除這筆後重試
+                    _context.Entry(newUser).State = EntityState.Detached;
 
-            return newUser;
+                    var existing = await _context.User.FirstOrDefaultAsync(u => u.Email == email);
+                    if (existing != null) return existing;
+                }
+            }
+        }
+
+        // 回傳還沒被使用的 username：先用原名稱，被用掉就加上「_2」「_3」…（必要時截短，總長度不超過欄位上限）
+        private async Task<string> GetAvailableUsernameAsync(string baseName)
+        {
+            if (baseName.Length > UsernameMaxLength)
+                baseName = baseName[..UsernameMaxLength];
+
+            if (!await IsUsernameExistAsync(baseName))
+                return baseName;
+
+            for (int n = 2; n < 100; n++)
+            {
+                string candidate = WithSuffix(baseName, $"_{n}");
+                if (!await IsUsernameExistAsync(candidate))
+                    return candidate;
+            }
+
+            // 同名的人非常多：改用隨機字尾
+            return WithSuffix(baseName, "_" + Guid.NewGuid().ToString("N")[..8]);
+        }
+
+        private static string WithSuffix(string baseName, string suffix)
+        {
+            int keep = Math.Min(baseName.Length, UsernameMaxLength - suffix.Length);
+            return baseName[..keep] + suffix;
         }
 
         public async Task<List<User>> SearchUsersAsync(string keyword)

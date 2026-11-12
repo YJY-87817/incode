@@ -328,4 +328,158 @@ public class EntrustMissionServiceTests
 
         Assert.Equal(500, await Balance(db, owner));
     }
+    // ---------- 過期（第二次全專案檢查 36） ----------
+
+    private static readonly DateTime Now = new(2026, 11, 12, 12, 0, 0);
+
+    private static async Task SetDeadline(TestDb db, int missionId, DateTime? deadline)
+    {
+        await using var context = db.NewContext();
+        var mission = await context.EntrustMission.SingleAsync(m => m.EntrustMissionId == missionId);
+        mission.Deadline = deadline;
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task<int> Expire(TestDb db, DateTime now)
+    {
+        await using var context = db.NewContext();
+        return await Create(context).ExpireOverdueMissionsAsync(now);
+    }
+
+    private static async Task<EntrustMission> Mission(TestDb db, int missionId)
+    {
+        await using var context = db.NewContext();
+        return await context.EntrustMission.AsNoTracking().SingleAsync(m => m.EntrustMissionId == missionId);
+    }
+
+    [Fact]
+    public async Task Expire_without_replies_refunds_right_after_deadline()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var missionId = await CreateMission(db, owner, await AddContent(db, owner));
+        await SetDeadline(db, missionId, Now.AddMinutes(-1));
+
+        Assert.Equal(1, await Expire(db, Now));
+
+        Assert.Equal("expired", (await Mission(db, missionId)).Status);
+        Assert.Equal(500, await Balance(db, owner));
+        await using var verify = db.NewContext();
+        Assert.Equal("released", (await verify.EntrustMissionPointReserve.AsNoTracking().SingleAsync()).Status);
+        var refund = await verify.PointLog.AsNoTracking().OrderByDescending(l => l.PointLogId).FirstAsync();
+        Assert.Equal("委託過期退款", refund.DisplaySource);
+        Assert.Equal(100, refund.ChangeAmount);
+    }
+
+    [Fact]
+    public async Task Expire_twice_refunds_once()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var missionId = await CreateMission(db, owner, await AddContent(db, owner));
+        await SetDeadline(db, missionId, Now.AddDays(-1));
+
+        Assert.Equal(1, await Expire(db, Now));
+        Assert.Equal(0, await Expire(db, Now.AddDays(30)));
+
+        Assert.Equal(500, await Balance(db, owner));
+    }
+
+    [Fact]
+    public async Task Mission_before_deadline_or_without_deadline_is_not_expired()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var future = await CreateMission(db, owner, await AddContent(db, owner));
+        var noDeadline = await CreateMission(db, owner, await AddContent(db, owner));
+        await SetDeadline(db, future, Now.AddMinutes(1));
+        await SetDeadline(db, noDeadline, null);
+
+        Assert.Equal(0, await Expire(db, Now));
+
+        Assert.Equal("open", (await Mission(db, future)).Status);
+        Assert.Equal("open", (await Mission(db, noDeadline)).Status);
+        Assert.Equal(300, await Balance(db, owner));
+    }
+
+    [Fact]
+    public async Task Expire_with_replies_waits_for_grace_period_then_refunds()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser("owner@example.com");
+        var helper = db.SeedUser("helper@example.com");
+        await GivePoints(db, owner, 500);
+        var topic = await AddContent(db, owner);
+        var missionId = await CreateMission(db, owner, topic);
+        await AddContent(db, helper, parentId: topic);
+        await SetDeadline(db, missionId, Now);
+
+        // 寬限期內：仍在徵求中，委託人還可以選最佳解答
+        Assert.Equal(0, await Expire(db, Now.AddDays(6)));
+        Assert.Equal("open", (await Mission(db, missionId)).Status);
+        Assert.Equal(400, await Balance(db, owner));
+
+        // 寬限期後：退款給委託人
+        Assert.Equal(1, await Expire(db, Now + EntrustMissionService.ExpiryGracePeriod + TimeSpan.FromMinutes(1)));
+        Assert.Equal("expired", (await Mission(db, missionId)).Status);
+        Assert.Equal(500, await Balance(db, owner));
+    }
+
+    [Fact]
+    public async Task Owners_own_reply_does_not_delay_expiry()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var topic = await AddContent(db, owner);
+        var missionId = await CreateMission(db, owner, topic);
+        await AddContent(db, owner, parentId: topic);
+        await SetDeadline(db, missionId, Now.AddHours(-1));
+
+        Assert.Equal(1, await Expire(db, Now));
+        Assert.Equal(500, await Balance(db, owner));
+    }
+
+    [Fact]
+    public async Task Completed_or_cancelled_missions_are_not_expired()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var cancelled = await CreateMission(db, owner, await AddContent(db, owner));
+        await using (var context = db.NewContext())
+            Assert.True((await Create(context).CancelEntrustMissionAsync(cancelled, owner)).Ok);
+        var completed = await CreateMission(db, owner, await AddContent(db, owner));
+        await using (var context = db.NewContext())
+        {
+            var mission = await context.EntrustMission.SingleAsync(m => m.EntrustMissionId == completed);
+            mission.Status = "completed";
+            await context.SaveChangesAsync();
+        }
+        await SetDeadline(db, cancelled, Now.AddDays(-30));
+        await SetDeadline(db, completed, Now.AddDays(-30));
+
+        Assert.Equal(0, await Expire(db, Now));
+
+        Assert.Equal("cancelled", (await Mission(db, cancelled)).Status);
+        Assert.Equal("completed", (await Mission(db, completed)).Status);
+        Assert.Equal(400, await Balance(db, owner));
+    }
+
+    [Fact]
+    public async Task Expired_mission_allows_a_new_mission_on_the_same_topic()
+    {
+        using var db = new TestDb();
+        var owner = db.SeedUser();
+        await GivePoints(db, owner, 500);
+        var topic = await AddContent(db, owner);
+        var missionId = await CreateMission(db, owner, topic);
+        await SetDeadline(db, missionId, DateTime.Now.AddDays(-1));
+        Assert.Equal(1, await Expire(db, DateTime.Now));
+
+        await CreateMission(db, owner, topic);
+    }
 }
