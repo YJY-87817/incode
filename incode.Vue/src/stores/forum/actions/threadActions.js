@@ -262,7 +262,8 @@ export const threadActions = {
           const res = await contentApi.getChildren(id, {
             types: `${CONTENT_TYPES.REPLY},${CONTENT_TYPES.COMMENT},${CONTENT_TYPES.COMMENT_REPLY}`,
             page: 1,
-            pageSize: 200,
+            // 後端每頁最多 100 筆；回覆依時間由新到舊，最新回覆一定在第一頁，總數另由 totalCount 提供
+            pageSize: 100,
           });
           const replies = Array.isArray(res?.items) ? res.items : [];
           this.updateThreadReplyStats(id, replies, res?.totalCount);

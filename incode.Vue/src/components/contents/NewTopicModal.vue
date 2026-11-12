@@ -219,17 +219,26 @@ const effectiveCategoryId = computed(
   () => selectedSubCategoryId.value ?? newTopicState.categoryId ?? null,
 );
 
+// 後端每頁最多 100 筆（incode.MVC/Services/Common/Paging.cs），回文對象要能搜尋分類內的全部主題，所以逐頁取得
+const TOPICS_PAGE_SIZE = 100;
+const TOPICS_MAX_PAGES = 50;
+
+const fetchAllTopics = async (categoryId) => {
+  const allItems = [];
+  for (let page = 1; page <= TOPICS_MAX_PAGES; page += 1) {
+    const params = { page, pageSize: TOPICS_PAGE_SIZE };
+    if (categoryId) params.categoryId = categoryId;
+    const data = await apiClient.get("/ContentApi", { params });
+    allItems.push(...(data?.items || []));
+    if (page >= Number(data?.totalPages ?? 1)) break;
+  }
+  return allItems;
+};
+
 const fetchTopics = (categoryId = null) => {
-  const params = {};
-  if (categoryId) params.categoryId = categoryId;
-  // 後端現在直接提供回覆統計資訊
-  params.pageSize = 9999;
-
-  apiClient
-    .get("/ContentApi", { params })
-    .then((data) => {
-      const allItems = data.items || [];
-
+  // 後端直接提供回覆統計資訊
+  fetchAllTopics(categoryId)
+    .then((allItems) => {
       // 後端現在直接在 ContentDto 中提供回覆統計資訊
       // 不再需要前端計算，直接使用後端提供的資料
       newTopicState.topics = allItems.map((item) => {
