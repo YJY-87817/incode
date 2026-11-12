@@ -24,7 +24,9 @@ namespace incode.MVC.ApiControllers.Contents
     //   - contentId (int): 內容ID
     // Response: { contentId, interactions: [], count }
     // 範例: GET https://localhost:7190/api/contentinteractionapi/content/1
+    // 會列出每位會員的互動（含檢舉、隱藏），只限管理員（前端沒有使用）
     [HttpGet("content/{contentId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetContentInteractions(int contentId)
     {
       // 互動資料由 ContentInteractionService 統一查詢
@@ -234,6 +236,18 @@ namespace incode.MVC.ApiControllers.Contents
 
       if (entrustMissionId.HasValue && entrustMissionId <= 0)
         return BadRequest(new { message = "EntrustMissionId 必須大於 0" });
+
+      // 回應含每筆互動的 UserId：只能查自己的、公開的分類（最佳解答），或由管理員查詢。
+      // 原本不需登入就能查出誰檢舉、隱藏、收藏了什麼
+      var currentUserId = User.GetId();
+      var isOwnQuery = currentUserId > 0 && userId == currentUserId;
+      if (!User.IsInRole("Admin") && !isOwnQuery)
+      {
+        var isPublic = interactionCategoryId.HasValue
+          && await _contentInteractionService.IsPublicInteractionCategoryAsync(interactionCategoryId.Value);
+        if (!isPublic)
+          return StatusCode(StatusCodes.Status403Forbidden, new { message = "只能查詢自己的互動紀錄或最佳解答" });
+      }
 
       var interactions = await _contentInteractionService.GetInteractions(
         contentId,

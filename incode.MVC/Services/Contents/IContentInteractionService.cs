@@ -42,6 +42,9 @@ namespace incode.MVC.Services.Contents
     /// </summary>
     Task<int?> GetBestAnswerContentId(int entrustMissionId);
 
+    /// <summary>可以公開查詢的互動分類（目前只有最佳解答：本來就公開顯示在討論串上）。按讚、隱藏、收藏、檢舉等只有本人與管理員能查</summary>
+    Task<bool> IsPublicInteractionCategoryAsync(int interactionCategoryId);
+
     Task<List<ContentInteractionDto>> GetInteractions(
       int? contentId,
       int? userId,
