@@ -27,10 +27,12 @@ namespace incode.MVC.Services.PointShop
             string status = Constants.OrderStatus.Pending);
 
         /// <summary>修改訂單明細，依新舊總點數差額補扣或退還點數</summary>
-        Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark);
+        // requiredStatus：訂單必須是這個狀態才能修改 / 取消（會員傳 OrderStatus.Pending）；在交易內取得點數鎖後才判斷
+        Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
+            string? requiredStatus = null);
 
         /// <summary>取消訂單：退還庫存與點數</summary>
-        Task<ResultDTO<int>> CancelOrderAsync(int orderId);
+        Task<ResultDTO<int>> CancelOrderAsync(int orderId, string? requiredStatus = null);
 
         /// <summary>修改寄送資料</summary>
         Task<ResultDTO<int>> EditShippedAsync(int shippedDetailId, NewShippedRequest shipped);
