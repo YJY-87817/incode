@@ -314,12 +314,24 @@ incode/
       277 個舊網址全部回 200 且內容一致（含中文與空白檔名）
     - **git 歷史沒有改寫**，clone 的大小不變；要縮小需改寫歷史並強制推送 main（所有人重新 clone），尚未進行
     - 後台商品列表的預設圖寫成小寫 `noimage.png`，實際檔名是 `NoImage.png`（Linux 大小寫敏感會 404），已修正
+30. 第二次全專案檢查 26～28（三項都先寫測試重現，修正後通過）：
+    - **26 上傳檔案的儲存型 XSS**：`Extensions/UploadSecurityHeadersExtensions.cs`（`app.UseUploadSecurityHeaders()`，在 `UseStaticFiles` 之前）
+      對 `/contents`、`/img/fromApi|chat|user|product`（`UploadFolders`）的回應加上 `Content-Security-Policy: sandbox` 與
+      `X-Content-Type-Options: nosniff`：直接開啟會員上傳的內文 HTML 時，瀏覽器放在獨立來源（`null`）並禁止腳本。依網址判斷，
+      `UploadRoot` 與還沒搬檔的 wwwroot 舊檔都涵蓋；前端以 fetch 讀內文、以 `<img>` 顯示圖片，不受影響。
+      實測：含 `<script>` 的內文檔直接開啟，修正前以 `text/html` 原樣提供、沒有任何標頭；修正後腳本不執行、頁面來源為 `null`
+    - **27 後台首頁暱稱注入**：`Views/Home/Index.cshtml` 序列化進 `<script>` 的資料改用 `StringEscapeHandling.EscapeHtml`
+      （`<` `>` `&` 引號轉成 `\u003c` 等），屬性名稱不變。測試：暱稱含 `</script><script>…` 的會員，修正前原樣出現在管理員首頁的 HTML 中
+    - **28 並行取消 / 修改訂單**：`OrderService.CancelOrderAsync` / `UpdateOrderItemsAsync` 先只查出訂單的會員，
+      **取得點數鎖之後才在交易內讀取訂單**、判斷狀態並計算差額；新增 `requiredStatus` 參數，會員 API 傳入「待處理」由服務在鎖內判斷
+      （避免檢查後才被管理員出貨仍被取消）。以 SQL Server 實測修正前：同一筆訂單同時取消 10 次全部成功（退點 10 次），
+      同時把數量 1 改成 2 共 10 次多扣 270 點；修正後只成立一次。`ConcurrencyTests` 新增 3 項
 
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 26～28（見下方「第二次全專案檢查」）→ 29～31 → 其餘。
+建議修正順序：第二次檢查的 29～31（見下方「第二次全專案檢查」）→ 其餘。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -363,21 +375,21 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題，**全部尚未修正**。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～28 已修正（見修正紀錄 30），其餘尚未修正。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
-### 🔴 高（一般會員可直接利用，優先修）
+### 🔴 高（一般會員可直接利用，已修正，見修正紀錄 30）
 
-26. **論壇內文 HTML 檔可在後端網域執行腳本（儲存型 XSS）**：`ContentService.SaveContentBodyAsync` 把會員送來的 HTML 原樣寫成
+26. ~~**論壇內文 HTML 檔可在後端網域執行腳本（儲存型 XSS）**~~：`ContentService.SaveContentBodyAsync` 把會員送來的 HTML 原樣寫成
     `/contents/content-xxx.html`，由後端以靜態檔提供。前端顯示有經 DOMPurify，但直接開啟該檔案網址不會過濾，腳本在後端網域執行：
     同源請求會帶後台 Cookie、Origin 檢查也視為自己，誘導管理員點連結即可操作後台（對會員同樣有效）。
     方向：存檔前在伺服器端過濾，或對 `/contents/` 回應加 `Content-Security-Policy: sandbox` 與 `X-Content-Type-Options: nosniff`
     （改版前的舊檔已搬到 `App:UploadRoot`，見修正紀錄 29；尚未執行搬檔腳本的環境，wwwroot 可能還有舊檔）。
-27. **後台首頁可被會員暱稱注入腳本**：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
+27. ~~**後台首頁可被會員暱稱注入腳本**~~（暱稱的字元與長度仍沒有限制）：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
     輸出到 `<script>` 內；暱稱沒有格式限制（`RegisterDto` / `UpdateUserDto`，最長 150 字），Newtonsoft 預設不跳脫 `<`，
     暱稱含 `</script><script>…` 會在管理員登入後的首頁執行。方向：改用 `Json.Serialize` 或跳脫 HTML，並限制暱稱字元與長度。
-28. **並行取消 / 修改訂單會重複退點**：`OrderService.CancelOrderAsync`、`UpdateOrderItemsAsync` 在交易與點數鎖之前就讀取訂單狀態與明細
+28. ~~**並行取消 / 修改訂單會重複退點**~~：`OrderService.CancelOrderAsync`、`UpdateOrderItemsAsync` 在交易與點數鎖之前就讀取訂單狀態與明細
     （`OrderApiController` 的狀態檢查也在鎖之前）。兩個並行的取消請求都讀到「待處理」，第二個拿到鎖後用舊資料再退一次點、再加一次庫存；
     並行修改數量同理。`Orders` 沒有 rowversion，`ConcurrencyTests` 沒有涵蓋這條路徑。方向：拿到鎖後在交易內重新讀取訂單再判斷，並補併發測試。
 
