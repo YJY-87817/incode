@@ -331,9 +331,13 @@ const sendMessage = async (text) => {
 
     } catch (error) {
         isSending.value = false; // 失敗才手動關閉
-        chatStore.addMessage({ role: 'ai', text: `<span style="color:red">發送失敗。</span>`, isSystem: true, time: new Date() });
+        chatStore.addMessage({ role: 'ai', text: `<span style="color:red">${failureText(error, '發送失敗。')}</span>`, isSystem: true, time: new Date() });
     }
 };
+
+// 後端對 AI 聊天有速率限制（每位會員每分鐘 10 次，超過回 429）
+const failureText = (error, fallback) =>
+    error?.response?.status === 429 ? '訊息送出太頻繁，請稍後再試。' : fallback;
 
 const sendImageWithText = async (file, text) => {
     if (!connection.value) await initSignalR();
@@ -370,7 +374,7 @@ const sendImageWithText = async (file, text) => {
         
     } catch (error) { 
         isSending.value = false; 
-        chatStore.addMessage({ role: 'ai', text: `<span style="color:red">圖片上傳失敗。</span>`, isSystem: true, time: new Date() });
+        chatStore.addMessage({ role: 'ai', text: `<span style="color:red">${failureText(error, '圖片上傳失敗。')}</span>`, isSystem: true, time: new Date() });
     }
 };
 
@@ -545,6 +549,7 @@ onUnmounted(() => {
               <div class="input-field-wrapper">
                 <input 
                   v-model="userInput" 
+                  maxlength="2000"
                   @keyup.enter="handleSend" 
                   :placeholder="isHumanMode ? '傳送給客服人員...' : '輸入訊息...'" 
                   type="text" 

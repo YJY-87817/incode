@@ -8,6 +8,8 @@ namespace incode.MVC.ApiControllers.Common
   [Route("/api/images")]
   public class MediaController : ControllerBase
   {
+    private const long MaxUploadRequestBytes = 100L * 1024 * 1024;
+
     private readonly IImageService _imageService;
     private readonly ILogger<MediaController> _logger;
 
@@ -21,12 +23,11 @@ namespace incode.MVC.ApiControllers.Common
     // POST https://localhost:7190/api/images/upload
     // Request: multipart/form-data with multiple files
     // Response: { urls: ["url1", "url2", ...] }
-    // 支援最大 500 MB 檔案上傳
-    // tim 預設不能上傳限制為約28.6 MB，改設定成 500 MB
-    // Program.cs設定後，在ImageApiController.cs內的上傳api要用[屬性類別]來解除預設限制
+    // 單檔 20 MB（ImageFileValidator）、一次最多 20 個檔案（ImageService），整個請求最多 100 MB
+    // （全站上限 30 MB，見 Program.cs；原本這裡與全站都是 500 MB）
     [HttpPost("upload")]
-    [RequestSizeLimit(524288000)] // 500 MB
-    [RequestFormLimits(MultipartBodyLengthLimit = 524288000)]
+    [RequestSizeLimit(MaxUploadRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadRequestBytes)]
     public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
     {
       try

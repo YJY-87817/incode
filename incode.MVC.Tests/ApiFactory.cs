@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -13,13 +14,27 @@ namespace incode.MVC.Tests;
 /// 啟動整個網站做 API 測試：資料庫換成 SQLite 記憶體資料庫，並提供 <c>/__test/login</c> 讓測試直接以真正的
 /// Cookie 驗證方案（MemberAuth / AdminAuth）登入，避開密碼雜湊與登入限流，其餘驗證 / 授權 / 中介層都是正式程式。
 /// </summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>
+public class ApiFactory : WebApplicationFactory<Program>
 {
     public TestDb Db { get; } = new();
 
-    private readonly string _uploadRoot = Path.Combine(Path.GetTempPath(), "incode-test-" + Guid.NewGuid().ToString("N"));
+    // 整個測試程序共用一個 UploadRoot：設定是透過環境變數（整個程序共用）傳入，若每個 ApiFactory 各用一個資料夾，
+    // 平行執行的測試類別會互相覆蓋，網站可能讀到另一個 factory 的資料夾（CI 上 UploadSecurityHeadersTests 因此 404）
+    private static readonly string SharedUploadRoot = CreateSharedUploadRoot();
 
-    /// <summary>測試用的 App:UploadRoot（會員上傳檔案的存放處）。</summary>
+    private static string CreateSharedUploadRoot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "incode-test-" + Guid.NewGuid().ToString("N"));
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            try { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); } catch { /* 暫存資料夾，清不掉也無妨 */ }
+        };
+        return root;
+    }
+
+    private readonly string _uploadRoot = SharedUploadRoot;
+
+    /// <summary>測試用的 App:UploadRoot（會員上傳檔案的存放處，所有 ApiFactory 共用）。</summary>
     public string UploadRoot => _uploadRoot;
 
     public ApiFactory()
@@ -29,8 +44,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("App__UploadRoot", _uploadRoot);
     }
 
+    /// <summary>子類別可以覆寫設定（例如綠界商店），會加在網站設定的最後面。</summary>
+    protected virtual Dictionary<string, string?> ExtraConfiguration => new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(ExtraConfiguration));
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<incodedatabaseContext>>();
@@ -63,7 +83,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (!disposing) return;
         Db.Dispose();
-        try { if (Directory.Exists(_uploadRoot)) Directory.Delete(_uploadRoot, recursive: true); } catch { /* 暫存資料夾，清不掉也無妨 */ }
     }
 
     private sealed class TestLoginStartupFilter : IStartupFilter

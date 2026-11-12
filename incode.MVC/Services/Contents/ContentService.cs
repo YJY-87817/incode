@@ -21,6 +21,8 @@ namespace incode.MVC.Services.Contents
 
     public async Task<ContentListResponseDto> GetContents(int? categoryId, int page, int pageSize, int? userId, string? keyword, string? types, string? sortBy)
     {
+      (page, pageSize) = Paging.Normalize(page, pageSize, defaultPageSize: 10);
+
       var typeFilter = ParseTypes(types);
       if (types != null && typeFilter.Count == 0)
       {
@@ -300,6 +302,8 @@ namespace incode.MVC.Services.Contents
 
     public async Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize, int? userId)
     {
+      (page, pageSize) = Paging.Normalize(page, pageSize, defaultPageSize: 20);
+
       var typeFilter = ParseTypes(types);
       if (types != null && typeFilter.Count == 0)
       {
@@ -508,6 +512,8 @@ namespace incode.MVC.Services.Contents
 
     public async Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize)
     {
+      (page, pageSize) = Paging.Normalize(page, pageSize, defaultPageSize: 10);
+
       var typeList = types?.Distinct().ToList();
       if (types != null && (typeList == null || typeList.Count == 0))
       {
@@ -567,6 +573,8 @@ namespace incode.MVC.Services.Contents
 
     public async Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize)
     {
+      (page, pageSize) = Paging.Normalize(page, pageSize, defaultPageSize: 10);
+
       var resolvedCategoryId = interactionCategoryId;
       if (!resolvedCategoryId.HasValue)
       {

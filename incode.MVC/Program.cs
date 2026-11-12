@@ -26,20 +26,16 @@ builder.Services.AddCors(options =>
   });
 });
 
-// 2.5 Configure request size limits for file uploads
-// tim 預設不能上傳限制為約28.6 MB，改設定成 500 MB
-// Program.cs設定後，在ImageApiController.cs內的上傳api要用[屬性類別]來解除預設限制
+// 2.5 請求大小上限：全站 30 MB（原本 500 MB，任何端點都能送巨大的請求）。
+// 需要更大的端點個別加 [RequestSizeLimit] / [RequestFormLimits]（論壇多圖上傳 100 MB，見 ImageApiController）
+const long MaxRequestBodyBytes = 30L * 1024 * 1024;
 builder.Services.Configure<FormOptions>(options =>
 {
-  options.MultipartBodyLengthLimit = 524288000; // 500 MB (允許上傳多張圖片)
-  options.ValueLengthLimit = int.MaxValue;
-  options.MultipartHeadersLengthLimit = int.MaxValue;
+  options.MultipartBodyLengthLimit = MaxRequestBodyBytes;
 });
-
-// Configure Kestrel server limits
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
-  serverOptions.Limits.MaxRequestBodySize = 524288000; // 500 MB
+  serverOptions.Limits.MaxRequestBodySize = MaxRequestBodyBytes;
 });
 
 // Gemini服務
@@ -177,6 +173,11 @@ builder.Services.AddScoped<IPointReserveService, PointReserveService>();
 builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();
+
+// 正式環境不能用綠界公開的測試商店（任何人都能偽造付款通知替自己加點），見 EcpayService.CheckSettings
+var ecpaySettingsError = EcpayService.CheckSettings(app.Configuration, app.Environment);
+if (ecpaySettingsError != null)
+  throw new InvalidOperationException(ecpaySettingsError);
 
 // 5. HTTP
 
