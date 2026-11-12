@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System;
@@ -71,6 +72,7 @@ namespace incode.MVC.ApiControllers.Chat
         // 3. [API] ★ AI 自動產生標題 (進階功能)
         // ==========================================
         [HttpPost("AutoTitle/{sessionId}")]
+        [EnableRateLimiting(RateLimitPolicies.AiChat)] // 會呼叫 Gemini 產生標題
         public async Task<IActionResult> AutoGenerateTitle(int sessionId)
         {
             // 1. 先從資料庫找出這個對話 Session
