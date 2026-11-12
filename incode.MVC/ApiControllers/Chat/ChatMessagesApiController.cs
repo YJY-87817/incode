@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Hosting;
 using System;
@@ -170,6 +171,7 @@ namespace incode.MVC.ApiControllers.Chat
 
         [HttpPost]
         [Route("api/ChatMessages/SendMessage")]
+        [EnableRateLimiting(RateLimitPolicies.AiChat)] // 會呼叫 Gemini（含付費的生圖）
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> SendMessage([FromBody] MessageRequestDto request)
         {
@@ -437,6 +439,7 @@ namespace incode.MVC.ApiControllers.Chat
 
         [HttpPost]
         [Route("api/ChatMessages/UploadImage")]
+        [EnableRateLimiting(RateLimitPolicies.AiChat)] // 會呼叫 Gemini 分析圖片
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> UploadImage([FromForm] ImageUploadRequest request)
         {

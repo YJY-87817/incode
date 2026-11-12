@@ -11,6 +11,12 @@ namespace incode.MVC.Extensions
 
         /// <summary>忘記密碼寄信 / 重設密碼：同一 IP 每 15 分鐘 5 次（避免大量寄信與猜重設碼）</summary>
         public const string PasswordReset = "password-reset";
+
+        /// <summary>
+        /// 會呼叫 Gemini 的聊天端點（送出訊息、上傳圖片、自動命名）：每位會員每分鐘 10 次（未登入時依 IP）。
+        /// 每則訊息最多呼叫 2 次 Gemini，「生圖」另外呼叫付費 API，沒有限制會被刷費用
+        /// </summary>
+        public const string AiChat = "ai-chat";
     }
 
     public static class RateLimitExtensions
@@ -26,6 +32,7 @@ namespace incode.MVC.Extensions
             {
                 options.AddPolicy(RateLimitPolicies.Auth, context => FixedWindowByIp(context, 20, TimeSpan.FromMinutes(1)));
                 options.AddPolicy(RateLimitPolicies.PasswordReset, context => FixedWindowByIp(context, 5, TimeSpan.FromMinutes(15)));
+                options.AddPolicy(RateLimitPolicies.AiChat, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(1)));
 
                 options.OnRejected = async (context, cancellationToken) =>
                 {
@@ -43,6 +50,19 @@ namespace incode.MVC.Extensions
                         await response.WriteAsync(message, cancellationToken);
                     }
                 };
+            });
+        }
+
+        // 已登入依會員 ID（共用網路的會員不會互相影響），未登入依 IP
+        private static RateLimitPartition<string> FixedWindowByUser(HttpContext context, int permitLimit, TimeSpan window)
+        {
+            var userId = context.User.GetId();
+            var key = userId > 0 ? $"user:{userId}" : $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+            return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = window,
+                QueueLimit = 0,
             });
         }
 
