@@ -5,6 +5,12 @@ namespace incode.MVC.Services.Point
 {
     public class EcpayService
     {
+        /// <summary>
+        /// 綠界公開的測試商店。它的 HashKey / HashIV 也是公開的，任何人都能算出正確的 CheckMacValue 偽造付款成功通知，
+        /// 測試環境也能用公開的測試信用卡付款，所以只能用在開發；正式環境用到會拒絕啟動（見 <see cref="CheckSettings"/>）
+        /// </summary>
+        public const string PublicTestMerchantId = "3002607";
+
         private readonly string MerchantID;
         private readonly string HashKey;
         private readonly string HashIV;
@@ -14,11 +20,36 @@ namespace incode.MVC.Services.Point
 
         public EcpayService(IConfiguration config)
         {
-            MerchantID = config["ECPay:MerchantID"] ?? throw new InvalidOperationException("ECPay:MerchantID 未設定");
-            HashKey = config["ECPay:HashKey"] ?? throw new InvalidOperationException("ECPay:HashKey 未設定");
-            HashIV = config["ECPay:HashIV"] ?? throw new InvalidOperationException("ECPay:HashIV 未設定");
-            ReturnUrl = config["ECPay:ReturnUrl"] ?? throw new InvalidOperationException("ECPay:ReturnUrl 未設定");
+            // appsettings.json 為空字串（測試金鑰只放在 appsettings.Development.json），空字串視同未設定
+            MerchantID = Required(config, "ECPay:MerchantID");
+            HashKey = Required(config, "ECPay:HashKey");
+            HashIV = Required(config, "ECPay:HashIV");
+            ReturnUrl = Required(config, "ECPay:ReturnUrl");
             ClientBackUrl = $"{config.GetFrontendUrl()}/recharge-result";
+        }
+
+        /// <summary>目前使用的是綠界公開的測試商店（付款通知可能是偽造或模擬的）</summary>
+        public bool IsTestMerchant => MerchantID == PublicTestMerchantId;
+
+        private static string Required(IConfiguration config, string key)
+        {
+            var value = config[key];
+            return string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException($"{key} 未設定") : value;
+        }
+
+        /// <summary>
+        /// 啟動時檢查綠界設定，有問題回傳錯誤訊息（Program.cs 會拒絕啟動）。
+        /// 非 Development 環境不能使用公開的測試商店，除非明確設定 ECPay:AllowTestMerchant=true（例如對外展示用的環境）
+        /// </summary>
+        public static string? CheckSettings(IConfiguration config, IHostEnvironment environment)
+        {
+            if (environment.IsDevelopment()) return null;
+            if (config["ECPay:MerchantID"] != PublicTestMerchantId) return null;
+            if (config.GetValue<bool>("ECPay:AllowTestMerchant")) return null;
+
+            return $"{environment.EnvironmentName} 環境不可使用綠界公開的測試商店（{PublicTestMerchantId}）：測試的 HashKey / HashIV 是公開的，"
+                + "任何人都能偽造付款成功通知替自己加點。請以環境變數設定正式商店（ECPay__MerchantID、ECPay__HashKey、ECPay__HashIV、ECPay__ReturnUrl）；"
+                + "若是展示用的環境、確定要用測試金流，設定 ECPay__AllowTestMerchant=true";
         }
 
         public Dictionary<string, string> CreatePayment(

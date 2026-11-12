@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -13,7 +14,7 @@ namespace incode.MVC.Tests;
 /// 啟動整個網站做 API 測試：資料庫換成 SQLite 記憶體資料庫，並提供 <c>/__test/login</c> 讓測試直接以真正的
 /// Cookie 驗證方案（MemberAuth / AdminAuth）登入，避開密碼雜湊與登入限流，其餘驗證 / 授權 / 中介層都是正式程式。
 /// </summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>
+public class ApiFactory : WebApplicationFactory<Program>
 {
     public TestDb Db { get; } = new();
 
@@ -29,8 +30,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("App__UploadRoot", _uploadRoot);
     }
 
+    /// <summary>子類別可以覆寫設定（例如綠界商店），會加在網站設定的最後面。</summary>
+    protected virtual Dictionary<string, string?> ExtraConfiguration => new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(ExtraConfiguration));
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<incodedatabaseContext>>();

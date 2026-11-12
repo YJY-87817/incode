@@ -178,6 +178,11 @@ builder.Services.AddScoped<EcpayService>();
 
 var app = builder.Build();
 
+// 正式環境不能用綠界公開的測試商店（任何人都能偽造付款通知替自己加點），見 EcpayService.CheckSettings
+var ecpaySettingsError = EcpayService.CheckSettings(app.Configuration, app.Environment);
+if (ecpaySettingsError != null)
+  throw new InvalidOperationException(ecpaySettingsError);
+
 // 5. HTTP
 
 if (app.Environment.IsDevelopment())
