@@ -26,6 +26,12 @@ namespace incode.MVC.Services.Users
             {
                 return "Email 已被註冊"; // 1. 檢查 Email (呼叫 UserService)
             } 
+
+            // 大頭貼只接受站內上傳的圖片（POST api/User/images 回傳的網址）
+            if (!AvatarUrls.IsAllowed(imageUrl))
+            {
+                return "大頭貼請使用上傳的圖片";
+            }
             
             string passwordHash = _passwordService.Hash(password);// 2. 加密密碼 (呼叫 PasswordService)      
             string generatedUsername = GenerateUsernameFromEmail(email);// 自動產生 Username (Email @ 前贅詞 + 2位亂碼)
@@ -104,6 +110,17 @@ namespace incode.MVC.Services.Users
                 {
                     IsSuccess = false,
                     Message = "此帳號出現異常情況已被鎖定，請聯繫客服。"
+                };
+            }
+
+            // Google 帳號沒有密碼（密碼欄是標記字串，原本交給 BCrypt 驗證會丟例外 → 500）
+            if (user.Password == UserService.GoogleAccountPassword)
+            {
+                _loginLimiter.RecordFailure(email);
+                return new LoginResult
+                {
+                    IsSuccess = false,
+                    Message = "此帳號使用 Google 登入，請點選「使用 Google 登入」"
                 };
             }
 

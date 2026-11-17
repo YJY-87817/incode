@@ -20,11 +20,13 @@ namespace incode.MVC.Controllers.Users
             var users = await _userService.GetAllUsersAsync();
             var vms = new List<MemberIndexViewModel>();
 
+            // 所有會員最近 10 筆登入紀錄一次查出（原本每位會員各查一次）
+            var recentLogs = await _userService.GetRecentLoginLogsForAllUsersAsync(10);
+
             // 針對每個使用者，檢查是否有異常登入
             foreach (var u in users)
             {
-                // 撈取前 10 筆 Log
-                var logs = await _userService.GetLoginLogsByUserIdAsync(u.UserId, 10);
+                var logs = recentLogs.GetValueOrDefault(u.UserId) ?? new List<LoginLogDto>();
 
                 // 判斷主要 IP
                 var mainIp = logs.GroupBy(l => l.IpAddress)
@@ -125,6 +127,15 @@ namespace incode.MVC.Controllers.Users
 
             var user = await _userService.GetUserByIdAsync(vm.UserId);
             if (user == null) return NotFound();
+
+            // Email / 暱稱有唯一索引：與其他會員重複時顯示錯誤（原本存檔時 500）
+            if (await _userService.IsEmailTakenByOtherAsync(vm.Email, vm.UserId))
+                ModelState.AddModelError(nameof(vm.Email), "此 Email 已被其他會員使用");
+            if (string.IsNullOrWhiteSpace(vm.Username))
+                ModelState.AddModelError(nameof(vm.Username), "請輸入暱稱");
+            else if (await _userService.IsUsernameTakenByOtherAsync(vm.Username, vm.UserId))
+                ModelState.AddModelError(nameof(vm.Username), "此暱稱已被其他會員使用");
+            if (!ModelState.IsValid) return View(vm);
 
             // 更新基本資料
             user.Username = vm.Username;

@@ -19,6 +19,9 @@ namespace incode.MVC.Services.Users
             return await _context.User.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        /// <summary>Google 帳號的密碼欄位標記（沒有密碼，只能用 Google 登入）。</summary>
+        public const string GoogleAccountPassword = "GOOGLE_AUTH";
+
         // username 欄位上限（資料庫 nvarchar(150)）
         internal const int UsernameMaxLength = 150;
         private const int GoogleUserCreateAttempts = 5;
@@ -35,11 +38,11 @@ namespace incode.MVC.Services.Users
                 {
                     Email = email,
                     Username = await GetAvailableUsernameAsync(baseName),
-                    Password = "GOOGLE_AUTH", // 標記
+                    Password = GoogleAccountPassword, // 標記：沒有密碼，只能用 Google 登入
                     CreatedAt = DateTime.Now,
                     IsActive = true,
                     RoleId = 2,
-                    ImageUrl = "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+                    ImageUrl = AvatarUrls.GoogleDefault
                 };
 
                 _context.User.Add(newUser);
@@ -129,6 +132,34 @@ namespace incode.MVC.Services.Users
         }
 
         // 2. 實作：取得登入紀錄
+        public async Task<Dictionary<int, List<LoginLogDto>>> GetRecentLoginLogsForAllUsersAsync(int count)
+        {
+            var rows = await _context.User
+                .AsNoTracking()
+                .Select(u => new
+                {
+                    u.UserId,
+                    Logs = u.UserLoginlog
+                        .OrderByDescending(l => l.Logintime)
+                        .Take(count)
+                        .Select(l => new LoginLogDto
+                        {
+                            LoginTime = l.Logintime ?? DateTime.MinValue,
+                            IpAddress = l.IpAddress,
+                        })
+                        .ToList(),
+                })
+                .ToListAsync();
+
+            return rows.ToDictionary(r => r.UserId, r => r.Logs);
+        }
+
+        public Task<bool> IsEmailTakenByOtherAsync(string email, int exceptUserId)
+            => _context.User.AnyAsync(u => u.Email == email && u.UserId != exceptUserId);
+
+        public Task<bool> IsUsernameTakenByOtherAsync(string username, int exceptUserId)
+            => _context.User.AnyAsync(u => u.Username == username && u.UserId != exceptUserId);
+
         public async Task<List<LoginLogDto>> GetLoginLogsByUserIdAsync(int userId, int count)
         {            
             return await _context.UserLoginlog
@@ -184,6 +215,10 @@ namespace incode.MVC.Services.Users
                     return (UpdateProfileResult.UsernameTaken, null);
                 user.Username = dto.Username;
             }
+
+            // 大頭貼只接受站內上傳的圖片（或原本的值），不接受任意外部網址
+            if (!AvatarUrls.IsAllowed(dto.ImageUrl, user.ImageUrl))
+                return (UpdateProfileResult.InvalidImageUrl, null);
 
             // 其他欄位：有值就更新，null 保持原值
             if (dto.ImageUrl != null) user.ImageUrl = dto.ImageUrl;

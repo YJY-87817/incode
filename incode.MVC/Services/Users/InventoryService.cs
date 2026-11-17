@@ -29,22 +29,27 @@ namespace incode.MVC.Services.Users
         // 2. 使用道具
         public async Task<int> UseItemAsync(int userId, int itemId)
         {
-            var inventoryItem = await _context.UserInventory
-                .FirstOrDefaultAsync(i => i.UserId == userId && i.ItemId == itemId);
+            // 原子扣減：以條件更新（數量 >= 1 才扣）。原本讀出數量再存回，同時使用多次會都成功、只扣一次
+            // 同一道具可能有多筆（AddItemAsync 沒有唯一限制），一次只扣一筆
+            var inventoryId = await _context.UserInventory
+                .Where(i => i.UserId == userId && i.ItemId == itemId && i.Quantity >= 1)
+                .OrderBy(i => i.InventoryId)
+                .Select(i => (int?)i.InventoryId)
+                .FirstOrDefaultAsync();
+            if (inventoryId == null) return -1; // 道具不存在或數量不足
 
-            // 檢查道具是否存在或數量不足
-            if (inventoryItem == null || inventoryItem.Quantity < 1)
-            {
-                return -1; // 表示失敗代碼
-            }
-
-            inventoryItem.Quantity -= 1;
+            int updated = await _context.UserInventory
+                .Where(i => i.InventoryId == inventoryId && i.Quantity >= 1)
+                .ExecuteUpdateAsync(s => s.SetProperty(i => i.Quantity, i => i.Quantity - 1));
+            if (updated == 0) return -1; // 同時有其他請求先用掉了
 
             // 如果數量歸零是否刪除資料，視需求而定，這裡保留
-
-            await _context.SaveChangesAsync();
-
-            return inventoryItem.Quantity ?? 0; // 回傳剩餘數量，若為 null 則回傳 0
+            var remaining = await _context.UserInventory
+                .AsNoTracking()
+                .Where(i => i.InventoryId == inventoryId)
+                .Select(i => i.Quantity)
+                .FirstOrDefaultAsync();
+            return remaining ?? 0;
         }
         public async Task AddItemAsync(int userId, int itemId, int quantity)
         {

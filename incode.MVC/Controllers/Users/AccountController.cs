@@ -84,6 +84,7 @@ namespace incode.MVC.Controllers.Users
 
         // POST: /Account/Logout
         [HttpPost]
+        [ValidateAntiForgeryToken] // 版面的登出表單（form tag helper）會自動帶入 token；原本其他網站可以讓管理員被登出
         public async Task<IActionResult> Logout()
         {
             // 只清除後台 Cookie

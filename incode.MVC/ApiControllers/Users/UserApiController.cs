@@ -124,6 +124,7 @@ namespace incode.MVC.ApiControllers.Users
             var (result, user) = await _userService.UpdateProfileAsync(User.GetId(), dto);
             if (result == UpdateProfileResult.NotFound) return NotFound("找不到使用者");
             if (result == UpdateProfileResult.UsernameTaken) return BadRequest("此暱稱已被使用");
+            if (result == UpdateProfileResult.InvalidImageUrl) return BadRequest("大頭貼請使用上傳的圖片");
             user = user!;
 
             // 只回傳可公開給本人的欄位 (原本回傳整個 User 實體，包含密碼雜湊與 ResetToken)
@@ -183,14 +184,15 @@ namespace incode.MVC.ApiControllers.Users
                 return NotFound(new { message = "找不到該使用者或是使用者不存在" });
             }
 
-            // 回傳 200 OK 與數據
+            // 回傳 200 OK 與數據。點數餘額只給本人看（公開個人頁原本對任何人、包含未登入者顯示餘額）
+            bool isSelf = User.Identity?.IsAuthenticated == true && User.GetId() == userId;
             return Ok(new
             {
                 articleCount = stats.ArticleCount,
                 followers = stats.FollowerCount, 
                 following = stats.FollowingCount,
                 missionCount = stats.MissionCount,
-                points = stats.PointBalance
+                points = isSelf ? stats.PointBalance : (int?)null
             });
         }
     }

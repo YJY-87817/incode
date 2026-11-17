@@ -15,6 +15,13 @@ namespace incode.MVC.Services.Users
         // 新增：依據 User ID 取得登入紀錄 (參數 count 用來決定要抓最近幾筆)
         Task<List<LoginLogDto>> GetLoginLogsByUserIdAsync(int userId, int count);              
 
+        /// <summary>所有會員各自最近 count 筆登入紀錄（一次查詢；後台會員列表用，原本每位會員各查一次）。</summary>
+        Task<Dictionary<int, List<LoginLogDto>>> GetRecentLoginLogsForAllUsersAsync(int count);
+
+        /// <summary>Email / 暱稱是否已被其他會員使用（後台編輯會員時檢查，兩個欄位都有唯一索引）。</summary>
+        Task<bool> IsEmailTakenByOtherAsync(string email, int exceptUserId);
+        Task<bool> IsUsernameTakenByOtherAsync(string username, int exceptUserId);
+
         // 更新使用者 (存檔用)
         Task UpdateUserAsync(User user);
         Task<User> CreateGoogleUserAsync(string email, string? name);
@@ -41,6 +48,7 @@ namespace incode.MVC.Services.Users
     {
         Success,
         NotFound,
-        UsernameTaken
+        UsernameTaken,
+        InvalidImageUrl
     }
 }
