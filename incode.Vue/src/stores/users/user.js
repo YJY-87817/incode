@@ -69,7 +69,7 @@ export const useUserStore = defineStore("user", () => {
           : "",
           articleCount: 0,
         missionCount: 0,
-        points: 0,
+        points: null,
         followers: 0,
         following: 0
       };
@@ -82,7 +82,8 @@ export const useUserStore = defineStore("user", () => {
           const sData = statsRes.data;
          userProfile.value.articleCount = sData.articleCount || sData.ArticleCount || 0;
         userProfile.value.missionCount = sData.missionCount || sData.MissionCount || 0;
-        userProfile.value.points = sData.pointBalance || sData.PointBalance || 0;
+        // 點數餘額只有看自己的個人頁時後端才會回傳（其他人為 null，卡片不顯示）。原本讀 pointBalance，後端欄位是 points，一律顯示 0
+        userProfile.value.points = sData.points ?? null;
         userProfile.value.followers = sData.followers || sData.FollowerCount || 0;
         userProfile.value.following = sData.following || sData.FollowingCount || 0;
         } catch (statsErr) {

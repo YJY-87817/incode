@@ -6,45 +6,63 @@ using Microsoft.Extensions.Caching.Memory;
 namespace incode.MVC.Extensions
 {
     /// <summary>
-    /// 會員 Cookie 驗證：帳號被停用（IsActive = false）或已不存在時，已登入的人下一個請求就登出。
-    /// 否則 Cookie 效期 7 天且會自動延長，停用帳號等於沒有立即生效。
-    /// 結果快取 <see cref="CacheSeconds"/> 秒避免每個請求都查資料庫；停用 / 啟用時由 <see cref="Evict"/> 清除。
+    /// 會員 / 後台 Cookie 驗證：帳號被停用（IsActive = false）或已不存在時，已登入的人下一個請求就登出；
+    /// 後台 Cookie 另外要求帳號仍是管理員。否則 Cookie 效期內（會員 7 天且自動延長、後台 10 小時）停用等於沒有立即生效。
+    /// 結果快取 <see cref="CacheSeconds"/> 秒避免每個請求都查資料庫；停用 / 啟用 / 後台編輯會員時由 <see cref="Evict"/> 清除。
     /// </summary>
     public static class MemberCookieValidator
     {
         public const int CacheSeconds = 60;
 
-        private static string CacheKey(int userId) => $"user-active-{userId}";
+        private sealed record AccountState(bool Active, int? RoleId);
+
+        private static string CacheKey(int userId) => $"user-state-{userId}";
 
         public static void Evict(IMemoryCache cache, int userId) => cache.Remove(CacheKey(userId));
 
-        public static async Task ValidateAsync(CookieValidatePrincipalContext context)
+        /// <summary>會員 Cookie（MemberAuth）：帳號必須存在且啟用。</summary>
+        public static Task ValidateAsync(CookieValidatePrincipalContext context)
+            => ValidateCoreAsync(context, requireAdmin: false);
+
+        /// <summary>後台 Cookie（AdminAuth）：帳號必須存在、啟用，且角色仍是管理員。</summary>
+        public static Task ValidateAdminAsync(CookieValidatePrincipalContext context)
+            => ValidateCoreAsync(context, requireAdmin: true);
+
+        private static async Task ValidateCoreAsync(CookieValidatePrincipalContext context, bool requireAdmin)
         {
             var userId = context.Principal?.GetId() ?? 0;
-            if (userId <= 0) return;
+            if (userId <= 0)
+            {
+                // 後台 Cookie 一定有會員 ID，沒有就是無效的 Cookie
+                if (requireAdmin) await RejectAsync(context);
+                return;
+            }
 
             var services = context.HttpContext.RequestServices;
             var cache = services.GetRequiredService<IMemoryCache>();
 
-            if (!cache.TryGetValue(CacheKey(userId), out bool active))
+            if (!cache.TryGetValue(CacheKey(userId), out AccountState? state) || state == null)
             {
                 var db = services.GetRequiredService<incodedatabaseContext>();
-                var flag = await db.User
+                var row = await db.User
                     .AsNoTracking()
                     .Where(u => u.UserId == userId)
-                    .Select(u => new { u.IsActive })
+                    .Select(u => new { u.IsActive, u.RoleId })
                     .FirstOrDefaultAsync();
 
                 // 查無會員（已刪除）或明確被停用（false）都視為無效；null 視為啟用（與登入檢查一致）
-                active = flag != null && flag.IsActive != false;
-                cache.Set(CacheKey(userId), active, TimeSpan.FromSeconds(CacheSeconds));
+                state = new AccountState(row != null && row.IsActive != false, row?.RoleId);
+                cache.Set(CacheKey(userId), state, TimeSpan.FromSeconds(CacheSeconds));
             }
 
-            if (!active)
-            {
-                context.RejectPrincipal();
-                await context.HttpContext.SignOutAsync(context.Scheme.Name);
-            }
+            bool valid = state.Active && (!requireAdmin || state.RoleId == (int)RoleType.Admin);
+            if (!valid) await RejectAsync(context);
+        }
+
+        private static async Task RejectAsync(CookieValidatePrincipalContext context)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(context.Scheme.Name);
         }
     }
 }

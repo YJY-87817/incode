@@ -364,11 +364,26 @@ incode/
     - **39 前端測試套件**：vitest 3 → 5.1（`npm audit` 0 個漏洞，需 Node 22.12 以上）。`authInterceptor.test.js` 改為在 `afterEach`
       執行計時器重置去重旗標（vitest 5 重複呼叫 `useFakeTimers` 會丟棄尚未執行的計時器）
 
+34. 第二次全專案檢查 40～44 中不需要改資料表的項目（都先寫測試重現，`LowPriorityFixesTests`、`SqlServerLowPriorityTests`）：
+    - **40 帳號**：Google 帳號用密碼登入回 400「此帳號使用 Google 登入」（原本 BCrypt 驗證 `GOOGLE_AUTH` 丟例外 → 500；
+      `PasswordService.Verify` 遇到非 BCrypt 值也回 false）。後台 Cookie 加上 `MemberCookieValidator.ValidateAdminAsync`：
+      帳號停用或不再是管理員時下一個請求就登出（導向後台登入頁）。Google 登入改寫入暫存 Cookie `AuthSchemes.External`
+      （`Incode.External`，5 分鐘），`GoogleResponse` 讀出 Email 後清除：原本寫入預設方案，有後台 Cookie 時會覆蓋後台登入
+    - **41 發文**：分類統計只算公開中的文章（原本排除的是不存在的狀態 3）；已刪除的文章不能編輯（404）；
+      「發文 + 委託」（`ContentEntrustMissionService`）在同一個交易，委託失敗（例如點數不足）時文章 rollback 並刪除內文檔
+      （`EntrustMissionService.CreateEntrustMissionAsync` 在已有交易時加入該交易）；委託標題 / 詳情 HTML 編碼後才接進內文
+    - **43 後台**：`Account/Logout` 加防偽 token；會員列表的登入紀錄改為一次查詢（`GetRecentLoginLogsForAllUsersAsync`，原本每位會員各查一次）；
+      編輯會員時 Email / 暱稱與其他會員重複顯示錯誤（原本撞唯一索引 500）
+    - **44 其他**：`GET api/User/{id}/stats` 的 `points` 只回給本人（其他人為 null，個人頁卡片不顯示；前端原本讀錯欄位，一律顯示 0）；
+      大頭貼網址只接受站內上傳的 `/img/user/{檔名}`、Google 預設圖或原本的值（`AvatarUrls`），註冊與修改個人資料都檢查；
+      道具使用改為條件更新原子扣減（同時使用 10 次、數量 3 → 只成功 3 次）；`SelectBestAnswerAsync` 失敗時記錄 log
+    - 測試：`ApiFactory.LoginAsync(admin: true)` 會把該會員設為管理員（後台 Cookie 每個請求都會檢查角色）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查的 40～44（低優先，見下方「第二次全專案檢查」）。
+建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：42 唯一索引 → 40 帳號（security stamp、修改密碼、Email 驗證）→ 41 發文驗證 → 43 後台點數 / 檢舉。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -412,7 +427,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33），40～44 尚未修正。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分已修正（見修正紀錄 34），刪除線以外為尚未修正的項目。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -455,14 +470,12 @@ incode/
 ### ⚪ 低 / 功能缺口
 
 40. 帳號：註冊不驗證 Email（可先用別人的 Email 註冊，對方之後用 Google 登入會進到同一個帳號）；重設密碼後舊的登入 Cookie 仍有效；
-    後台 Cookie 沒有停用檢查（被停用的管理員最長還能用 10 小時）；會員沒有「修改密碼」功能；
-    Google 帳號用密碼登入會 500（密碼欄存的是字串 `GOOGLE_AUTH`，BCrypt 驗證丟例外）；
-    瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入（`SmartScheme` 把外部登入轉給 `AdminAuth`）。
-41. 發文：`Type`、父文章、分類都不驗證；「發文 + 委託」（`ContentEntrustMissionService`）不是同一個交易，點數不足時文章已建立但沒有委託，
-    且委託標題 / 詳情未編碼就接進內文；`CategoryService` 的統計把已刪除的文章也算進去（排除的是狀態 3，刪除是 2）；
-    內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；可以編輯已刪除的文章。
+    ~~後台 Cookie 沒有停用檢查~~；會員沒有「修改密碼」功能；
+    ~~Google 帳號用密碼登入會 500~~；
+    ~~瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34）。
+41. 發文：`Type`、父文章、分類都不驗證；~~「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼~~；~~分類統計算進已刪除的文章~~；
+    內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；~~可以編輯已刪除的文章~~（見修正紀錄 34）。
 42. `content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）。
 43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
-    沒有檢舉清單、不能下架文章；`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複。
-44. 其他：公開個人頁（`GET api/User/{id}/stats`）顯示點數餘額；大頭貼網址（`ImageUrl`）可填任意外部網址；
-    `SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用（`InventoryService.UseItemAsync`）不是原子扣減。
+    沒有檢舉清單、不能下架文章；~~`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34）。
+44. ~~其他：公開個人頁顯示點數餘額；大頭貼網址可填任意外部網址；`SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用不是原子扣減~~（見修正紀錄 34）。

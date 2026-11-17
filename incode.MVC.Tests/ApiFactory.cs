@@ -69,10 +69,27 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>建立一個已登入的用戶端（每個用戶端有自己的 Cookie）。</summary>
     public async Task<HttpClient> LoginAsync(int userId, bool admin = false)
     {
+        // 後台 Cookie 每個請求都會確認帳號仍是管理員（MemberCookieValidator.ValidateAdminAsync），資料庫要一致
+        if (admin) await MakeAdminAsync(userId);
+
         var client = CreateAnonymousClient();
         var response = await client.GetAsync($"/__test/login?userId={userId}&admin={(admin ? 1 : 0)}");
         response.EnsureSuccessStatusCode();
         return client;
+    }
+
+    /// <summary>把會員設為管理員（RoleId = Admin），角色資料不存在時一併建立（與 docs/database/seed.sql 相同）。</summary>
+    public async Task MakeAdminAsync(int userId)
+    {
+        await using var context = Db.NewContext();
+        if (!await context.Role.AnyAsync())
+        {
+            context.Role.AddRange(new Role { RoleId = 1, RoleName = "Admin" }, new Role { RoleId = 2, RoleName = "Member" });
+            await context.SaveChangesAsync();
+        }
+        var user = await context.User.SingleAsync(u => u.UserId == userId);
+        user.RoleId = (int)RoleType.Admin;
+        await context.SaveChangesAsync();
     }
 
     public HttpClient CreateAnonymousClient() => CreateClient(new WebApplicationFactoryClientOptions

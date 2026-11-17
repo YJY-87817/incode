@@ -164,7 +164,10 @@ namespace incode.MVC.Services.Point
             if (!userExists)
                 return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
 
-            using var tx = await _context.Database.BeginTransactionAsync();
+            // 呼叫端已經開了交易（例如「發文 + 委託」）時加入該交易：失敗時由呼叫端整筆 rollback（文章也不會留下）
+            using var tx = _context.Database.CurrentTransaction == null
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
             try
             {
                 var entrustMission = new EntrustMission
@@ -196,12 +199,12 @@ namespace incode.MVC.Services.Point
 
                 if (!reserveSuccess)
                 {
-                    await tx.RollbackAsync();
+                    if (tx != null) await tx.RollbackAsync();
                     return new ResultDTO { Ok = false, Code = 400, Message = "點數不足或預扣失敗" };
                 }
 
                 await _context.SaveChangesAsync();
-                await tx.CommitAsync();
+                if (tx != null) await tx.CommitAsync();
 
                 return new ResultDTO
                 {
@@ -213,7 +216,7 @@ namespace incode.MVC.Services.Point
             }
             catch (Exception ex)
             {
-                await tx.RollbackAsync();
+                if (tx != null) await tx.RollbackAsync();
                 _logger.LogError(ex, "建立委託失敗 - UserId: {UserId}", userId);
                 return new ResultDTO { Ok = false, Code = 500, Message = "建立委託失敗，請稍後再試" };
             }

@@ -45,10 +45,10 @@ builder.Services.AddSignalR();
 
 // 3. Cookie
 // owen以下
-const string MemberScheme = "MemberAuth";
+const string MemberScheme = AuthSchemes.Member;
 // API 與 SignalR 未登入 / 無權限時回 401 / 403，不轉址到登入頁
 static bool IsApiOrHub(PathString path) => path.StartsWithSegments("/api") || path.StartsWithSegments("/chatHub");
-const string AdminScheme = "AdminAuth";
+const string AdminScheme = AuthSchemes.Admin;
 
 // 使用 PolicyScheme 作為預設，根據 cookie 存在情況選擇要用哪個 scheme Authenticate
 builder.Services.AddAuthentication(options =>
@@ -130,9 +130,23 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
+
+    // 管理員被停用或不再是管理員時，下一個請求就登出（原本 Cookie 有效的 10 小時內都能繼續使用後台）
+    options.Events.OnValidatePrincipal = MemberCookieValidator.ValidateAdminAsync;
+})
+// Google 登入的暫存 Cookie（只在 Google 回呼 → GoogleResponse 之間使用，見 AuthSchemes.External）
+.AddCookie(AuthSchemes.External, options =>
+{
+    options.Cookie.Name = "Incode.External";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 })
     .AddGoogle(googleOptions =>
     {
+      // 不寫入預設方案（SmartScheme 有後台 Cookie 時會轉給 AdminAuth，覆蓋後台登入）
+      googleOptions.SignInScheme = AuthSchemes.External;
       googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
       googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
       googleOptions.SaveTokens = true; // 讓 Google 登入後，將 Token 暫存，方便我們在 Controller 取出 Email

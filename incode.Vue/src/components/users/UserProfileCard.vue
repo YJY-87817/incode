@@ -77,8 +77,8 @@
             <span class="text-h5 font-weight-bold text-grey-darken-3">{{ profile.missionCount || 0 }}</span>
             <span class="text-subtitle-1 text-white ml-1">任務</span>
           </div>
-          <div class="text-center mr-4">
-            <span class="text-h5 font-weight-bold text-grey-darken-3">{{ profile.points || 0 }}</span>
+          <div v-if="profile.points != null" class="text-center mr-4">
+            <span class="text-h5 font-weight-bold text-grey-darken-3">{{ profile.points }}</span>
             <span class="text-subtitle-1 text-white ml-1">點數</span>
           </div>
           <div class="text-center mr-4" style="cursor: pointer" @click="handleStatClick('following')">
