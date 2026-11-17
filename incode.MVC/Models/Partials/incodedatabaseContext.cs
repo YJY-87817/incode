@@ -28,6 +28,15 @@ namespace incode.MVC.Models
       modelBuilder.Entity<ContentInteraction>()
         .HasIndex(e => new { e.ContentId, e.UserId, e.CategoryId }, ContentInteractionUniqueIndex)
         .IsUnique();
+
+      // 會員的 Email 驗證與登入戳記（Models/Partials/User.cs）
+      modelBuilder.Entity<User>(entity =>
+      {
+        entity.Property(e => e.EmailVerified).HasColumnName("email_verified").HasDefaultValue(false);
+        entity.Property(e => e.EmailVerifyToken).HasColumnName("email_verify_token").HasMaxLength(100);
+        entity.Property(e => e.EmailVerifyTokenExpiry).HasColumnName("email_verify_token_expiry").HasColumnType("datetime");
+        entity.Property(e => e.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64);
+      });
     }
 
     public const string ContentInteractionUniqueIndex = "UX_content_interaction_content_user_category";

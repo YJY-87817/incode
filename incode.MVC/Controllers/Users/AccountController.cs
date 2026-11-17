@@ -64,6 +64,8 @@ namespace incode.MVC.Controllers.Users
                 new Claim(ClaimTypes.Role, "Admin"),
                 new Claim(ClaimTypes.NameIdentifier, result.Member.UserId.ToString()),
                 new Claim("UserId", result.Member.UserId.ToString()),
+                // 登入戳記：重設 / 修改密碼後這個 Cookie 會失效（MemberCookieValidator.ValidateAdminAsync）
+                new Claim(AuthSchemes.SecurityStampClaim, result.Member.SecurityStamp ?? ""),
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, "AdminAuth");

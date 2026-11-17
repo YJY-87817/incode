@@ -12,5 +12,11 @@ namespace incode.MVC.Constants
         /// 把後台登入覆蓋成 Google 的身分。
         /// </summary>
         public const string External = "ExternalAuth";
+
+        /// <summary>
+        /// 登入 Cookie 裡的登入戳記（User.SecurityStamp）。重設 / 修改密碼時資料庫換新，
+        /// MemberCookieValidator 比對不符就登出，舊裝置的登入因此失效
+        /// </summary>
+        public const string SecurityStampClaim = "incode:security_stamp";
     }
 }

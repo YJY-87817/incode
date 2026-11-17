@@ -138,6 +138,10 @@ CREATE TABLE [user] (
     [employeeid] int NULL,
     [ResetToken] nvarchar(500) NULL,
     [ResetTokenExpiry] datetime2 NULL,
+    [email_verified] bit NOT NULL DEFAULT CAST(0 AS bit),
+    [email_verify_token] nvarchar(100) NULL,
+    [email_verify_token_expiry] datetime NULL,
+    [security_stamp] nvarchar(64) NULL,
     CONSTRAINT [PK__user__B9BE370FD7BBF0C4] PRIMARY KEY ([user_id]),
     CONSTRAINT [FK__user__role_id__46B27FE2] FOREIGN KEY ([role_id]) REFERENCES [role] ([role_id])
 );
