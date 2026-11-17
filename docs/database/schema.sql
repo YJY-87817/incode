@@ -537,6 +537,10 @@ CREATE INDEX [IX_content_interaction_user_id] ON [content_interaction] ([user_id
 GO
 
 
+CREATE UNIQUE INDEX [UX_content_interaction_content_user_category] ON [content_interaction] ([content_id], [user_id], [category_id]);
+GO
+
+
 CREATE INDEX [IX_content_notification_category_id] ON [content_notification] ([category_id]);
 GO
 
