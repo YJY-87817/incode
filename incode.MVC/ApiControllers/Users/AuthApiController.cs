@@ -167,7 +167,9 @@ namespace incode.MVC.ApiControllers.Users
         public async Task<IActionResult> GoogleResponse()
         {
             // 取得 Google 回傳的使用者資訊
-            var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            // Google 回呼寫在暫存 Cookie（AuthSchemes.External），讀完就清除
+            var result = await HttpContext.AuthenticateAsync(AuthSchemes.External);
+            await HttpContext.SignOutAsync(AuthSchemes.External);
 
             if (!result.Succeeded)
                 return BadRequest("Google 驗證失敗");
