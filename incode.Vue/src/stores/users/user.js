@@ -64,6 +64,9 @@ export const useUserStore = defineStore("user", () => {
         phone: data.phone || data.Phone || "",
         address: data.address || data.Address || "",
         imageUrl: data.imageUrl || data.ImageUrl || "",
+        // 只有看自己時後端才會回傳（其他人為 null）
+        emailVerified: data.emailVerified ?? null,
+        isGoogleAccount: data.isGoogleAccount ?? null,
         birthday: data.birthday || data.Birthday
           ? (data.birthday || data.Birthday).split("T")[0]
           : "",

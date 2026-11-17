@@ -92,7 +92,9 @@
         </div>
       </div>
 
-      <div class="mt-2 mb-2 mr-6 d-flex justify-end">
+      <div class="mt-2 mb-2 mr-6 d-flex justify-end flex-wrap ga-2">
+        <!-- 額外的按鈕（例如會員中心的「修改密碼」） -->
+        <slot name="actions" />
         <v-btn :prepend-icon="
               actionLabel === '編輯資料' ? 'mdi-pencil-outline' : actionLabel === '已追蹤' ? 'mdi-check' : 'mdi-plus'
             " variant="flat" :color="actionLabel === '已追蹤' ? 'grey-lighten-2' : '#145369'" :class="

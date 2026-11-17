@@ -100,6 +100,11 @@ const routes = [
     component: () => import("@/views/users/ResetPasswordView.vue"),
   },
   {
+    path: "/verify-email",
+    name: "VerifyEmail",
+    component: () => import("@/views/users/VerifyEmailView.vue"),
+  },
+  {
     path: "/usersettings",
     name: "UserSettings",
     component: () => import("@/views/users/UserSettings.vue"),

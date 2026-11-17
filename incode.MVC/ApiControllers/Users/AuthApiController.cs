@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
@@ -50,6 +51,9 @@ namespace incode.MVC.ApiControllers.Users
 
                     var newUser = loginResult.Member;
                     await SignInProcessAsync(newUser, false); // false 代表註冊預設不記住我
+
+                    // 寄 Email 驗證信（不擋登入；寄信失敗不影響註冊，會員中心可以重寄）
+                    await TrySendVerificationEmailAsync(newUser.UserId);
                     string roleName = newUser.RoleId == (int)RoleType.Admin ? "Admin" : "Member";
 
                     return Ok(new
@@ -85,7 +89,9 @@ namespace incode.MVC.ApiControllers.Users
     {
         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
         new Claim(ClaimTypes.Name, user.Username ?? user.Email),
-        new Claim(ClaimTypes.Role, roleName)
+        new Claim(ClaimTypes.Role, roleName),
+        // 登入戳記：重設 / 修改密碼後資料庫換新，這個 Cookie 就會失效（MemberCookieValidator）
+        new Claim(AuthSchemes.SecurityStampClaim, user.SecurityStamp ?? "")
     };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MemberAuth");
@@ -184,12 +190,10 @@ namespace incode.MVC.ApiControllers.Users
             if (string.IsNullOrEmpty(email))
                 return BadRequest("無法取得 Google Email 資訊");
 
-            var user = await _userService.GetUserByEmailAsync(email);
-
-            if (user == null)
-            {
-                user = await _userService.CreateGoogleUserAsync(email, name);
-            }
+            // 找不到就建立 Google 帳號；同 Email 的未驗證密碼帳號會被接管（清除密碼、登出其他裝置）
+            var (user, takenOver) = await _authService.GetOrCreateGoogleUserAsync(email, name);
+            if (takenOver)
+                _logger.LogWarning("Google 登入接管未驗證 Email 的密碼帳號 - UserId: {UserId}", user.UserId);
 
             // --- 執行登入 (寫入 Cookie) ---
             await SignInProcessAsync(user, true); // Google 登入預設記住我
@@ -235,6 +239,81 @@ namespace incode.MVC.ApiControllers.Users
             }
 
             return Ok(new { isLoggedIn = false });
+        }
+
+        // 修改密碼（會員中心）：需要目前的密碼；成功後其他裝置登出，目前的裝置重新簽發 Cookie 保持登入
+        [HttpPost("change-password")]
+        [Authorize(AuthenticationSchemes = AuthSchemes.Member)] // 會員本人（不是後台 Cookie）
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var (result, user) = await _authService.ChangePasswordAsync(User.GetId(), request.CurrentPassword, request.NewPassword);
+            switch (result)
+            {
+                case ChangePasswordResult.Success:
+                    // 保留原本的「記住我」設定
+                    var current = await HttpContext.AuthenticateAsync(AuthSchemes.Member);
+                    await SignInProcessAsync(user!, current.Properties?.IsPersistent ?? false);
+                    return Ok(new { message = "密碼已更新，其他裝置的登入已登出" });
+                case ChangePasswordResult.GoogleAccount:
+                    return BadRequest(new { message = "此帳號使用 Google 登入，沒有密碼可以修改" });
+                case ChangePasswordResult.LockedOut:
+                    return StatusCode(StatusCodes.Status429TooManyRequests,
+                        new { message = $"密碼錯誤次數過多，請 {LoginAttemptLimiter.Window.TotalMinutes:0} 分鐘後再試" });
+                case ChangePasswordResult.WrongPassword:
+                    return BadRequest(new { message = "目前的密碼不正確" });
+                case ChangePasswordResult.InvalidNewPassword:
+                    return BadRequest(new { message = "新密碼需為 6～100 碼" });
+                default:
+                    return NotFound(new { message = "找不到使用者" });
+            }
+        }
+
+        // 驗證 Email（驗證信連結 → 前端 /verify-email 頁面呼叫）
+        [HttpPost("verify-email")]
+        [EnableRateLimiting(RateLimitPolicies.PasswordReset)]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+        {
+            if (await _authService.VerifyEmailAsync(request.Email, request.Token))
+                return Ok(new { message = "Email 驗證成功" });
+            return BadRequest(new { message = "驗證連結無效或已過期，請從會員中心重寄驗證信" });
+        }
+
+        // 重寄 Email 驗證信（會員中心）
+        [HttpPost("resend-verification")]
+        [Authorize(AuthenticationSchemes = AuthSchemes.Member)] // 會員本人（不是後台 Cookie）
+        [EnableRateLimiting(RateLimitPolicies.PasswordReset)]
+        public async Task<IActionResult> ResendVerification()
+        {
+            try
+            {
+                var result = await _authService.SendVerificationEmailAsync(User.GetId(), VerifyEmailUrl);
+                return result switch
+                {
+                    SendVerificationResult.Sent => Ok(new { message = "驗證信已寄出，請到信箱收信" }),
+                    SendVerificationResult.AlreadyVerified => Ok(new { message = "Email 已經驗證過了" }),
+                    _ => NotFound(new { message = "找不到使用者" }),
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "寄送 Email 驗證信失敗");
+                return StatusCode(500, new { message = "驗證信寄送失敗，請稍後再試" });
+            }
+        }
+
+        private string VerifyEmailUrl => $"{_frontendUrl}/verify-email";
+
+        private async Task TrySendVerificationEmailAsync(int userId)
+        {
+            try
+            {
+                await _authService.SendVerificationEmailAsync(userId, VerifyEmailUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "註冊後寄送 Email 驗證信失敗 - UserId: {UserId}", userId);
+            }
         }
 
         // 前端 Vue 請 POST 到: /api/Auth/forgot-password
