@@ -59,9 +59,16 @@ namespace incode.MVC.ApiControllers.Contents
       dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
-      // 建立貼文資料交由 ContentService 處理寫入
-      var content = await _contentService.CreateContent(dto);
-      return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
+      // 建立貼文資料交由 ContentService 處理寫入（類型、父文章、分類不合法時丟 BusinessException）
+      try
+      {
+        var content = await _contentService.CreateContent(dto);
+        return CreatedAtAction(nameof(GetContent), new { id = content.ContentId }, content);
+      }
+      catch (BusinessException ex)
+      {
+        return BadRequest(new { message = ex.Message });
+      }
     }
 
     // 創立新的貼文並視情況新增委託任務

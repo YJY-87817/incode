@@ -57,11 +57,11 @@ namespace incode.MVC.Services.Contents
         query = query.Where(c => typeFilter.Contains(c.Type));
       }
 
+      // 關鍵字只比對標題：內文存成檔案（Body 只是 /contents/... 的路徑），資料庫裡沒有內文可以搜尋
       if (!string.IsNullOrWhiteSpace(keyword))
       {
         var normalizedKeyword = keyword.Trim();
-        query = query.Where(c => c.Title.Contains(normalizedKeyword)
-          || (!c.Body.StartsWith("/contents/") && c.Body.Contains(normalizedKeyword)));
+        query = query.Where(c => c.Title.Contains(normalizedKeyword));
       }
 
       var normalizedSortBy = sortBy?.Trim().ToLowerInvariant();
@@ -387,8 +387,60 @@ namespace incode.MVC.Services.Contents
     }
 
     //創立貼文
+    // 發文前的檢查（第二次全專案檢查 41）：類型只能是 1～4；主題不能有父文章、要有存在且未停用的分類；
+    // 回覆類一定要有父文章，父文章與所屬主題都必須存在且未刪除，父文章的類型要符合 ContentTypes.AllowedParentTypes。
+    // 原本都不檢查：可以發出沒有分類的主題、掛在已刪除文章或不存在 ID 底下的回覆（後者撞外鍵 → 500）
+    private async Task ValidateNewContentAsync(CreateContentDto dto)
+    {
+      if (!ContentTypes.IsValid(dto.Type))
+        throw new BusinessException("不支援的內容類型");
+
+      if (dto.Type == ContentTypes.Post)
+      {
+        if (dto.ParentContentId.HasValue)
+          throw new BusinessException("主題不能有父文章");
+        if (!dto.CategoryId.HasValue)
+          throw new BusinessException("請選擇分類");
+
+        bool categoryOk = await _context.ContentCategory.AnyAsync(c =>
+          c.ContentCategoryId == dto.CategoryId.Value && c.IsActive != ContentCategoryStatus.Disabled);
+        if (!categoryOk)
+          throw new BusinessException("分類不存在或已停用");
+        return;
+      }
+
+      if (!dto.ParentContentId.HasValue)
+        throw new BusinessException("回覆必須指定要回覆的文章");
+
+      var parent = await _context.Content
+        .AsNoTracking()
+        .Where(c => c.ContentId == dto.ParentContentId.Value)
+        .Select(c => new { c.Type, c.IsActive, c.ParentContentId })
+        .FirstOrDefaultAsync();
+      if (parent == null || parent.IsActive != 1)
+        throw new BusinessException("要回覆的文章不存在或已刪除");
+      if (!ContentTypes.AllowedParentTypes[dto.Type].Contains(parent.Type))
+        throw new BusinessException("回覆的類型與要回覆的文章不符");
+
+      // 所屬主題也必須還在（主題刪除後，底下的回文 / 留言不能再回覆）
+      var currentId = parent.ParentContentId;
+      for (int depth = 0; currentId.HasValue && depth < 10; depth++)
+      {
+        var ancestor = await _context.Content
+          .AsNoTracking()
+          .Where(c => c.ContentId == currentId.Value)
+          .Select(c => new { c.IsActive, c.ParentContentId })
+          .FirstOrDefaultAsync();
+        if (ancestor == null || ancestor.IsActive != 1)
+          throw new BusinessException("要回覆的文章不存在或已刪除");
+        currentId = ancestor.ParentContentId;
+      }
+    }
+
     public async Task<Content> CreateContent(CreateContentDto dto)
     {
+      await ValidateNewContentAsync(dto);
+
       int? categoryId = dto.CategoryId;
 
       // 如果有父內容 ID（回文/留言/留言回覆），則繼承父內容的 CategoryId
