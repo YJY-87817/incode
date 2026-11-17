@@ -60,4 +60,54 @@ public class MigrationScriptTests : IClassFixture<SqlServerFixture>
         Assert.Equal("來自 打賞者" + sender, logs.Single(l => l.SourceType == "point_tip" && l.UserId == author).DisplaySourceSubTitle);
         Assert.Equal("給 " + authorEmail, logs.Single(l => l.SourceType == "orders").DisplaySourceSubTitle);
     }
+    [SqlServerFact]
+    public async Task Content_interaction_migration_removes_duplicates_and_adds_unique_index()
+    {
+        // 模擬改版前的資料庫：還沒有唯一索引（測試資料庫由目前的模型建立，先把索引拿掉）
+        await RunScriptAsync($"DROP INDEX [{incodedatabaseContext.ContentInteractionUniqueIndex}] ON dbo.content_interaction");
+
+        var author = _db.SeedUser($"{Guid.NewGuid():N}@example.com");
+        var member = _db.SeedUser($"{Guid.NewGuid():N}@example.com");
+        int contentId;
+        await using (var seed = _db.NewContext())
+        {
+            await InteractionSeed.EnsureCategoriesAsync(seed);
+            var content = new Content { UserId = author, Title = "t", Body = "b", Type = 1, IsActive = 1 };
+            seed.Content.Add(content);
+            await seed.SaveChangesAsync();
+            contentId = content.ContentId;
+
+            // 按讚 3 筆（重複）、收藏 1 筆、作者自己的按讚 1 筆
+            foreach (var (userId, category) in new[]
+            {
+                (member, InteractionCategoryIds.Like), (member, InteractionCategoryIds.Like), (member, InteractionCategoryIds.Like),
+                (member, InteractionCategoryIds.Bookmark), (author, InteractionCategoryIds.Like),
+            })
+            {
+                seed.ContentInteraction.Add(new ContentInteraction { ContentId = contentId, UserId = userId, CategoryId = category, CreatedAt = DateTime.Now });
+                await seed.SaveChangesAsync(); // 一筆一筆存，ID 依序遞增
+            }
+        }
+
+        int firstLikeId;
+        await using (var read = _db.NewContext())
+            firstLikeId = await read.ContentInteraction
+                .Where(ci => ci.UserId == member && ci.CategoryId == InteractionCategoryIds.Like)
+                .MinAsync(ci => ci.ContentInteractionId);
+
+        var script = ReadScript("2026-11-17-content-interaction-unique.sql");
+        await RunScriptAsync(script);
+        await RunScriptAsync(script); // 可重複執行（索引已存在時略過）
+
+        await using var verify = _db.NewContext();
+        var rows = await verify.ContentInteraction.AsNoTracking().Where(ci => ci.ContentId == contentId).ToListAsync();
+        Assert.Equal(3, rows.Count);
+        Assert.Equal(firstLikeId, rows.Single(r => r.UserId == member && r.CategoryId == InteractionCategoryIds.Like).ContentInteractionId); // 保留最早的
+        Assert.Single(rows, r => r.UserId == member && r.CategoryId == InteractionCategoryIds.Bookmark);
+        Assert.Single(rows, r => r.UserId == author);
+
+        // 索引已建立：再寫入重複的會失敗
+        verify.ContentInteraction.Add(new ContentInteraction { ContentId = contentId, UserId = member, CategoryId = InteractionCategoryIds.Like });
+        await Assert.ThrowsAsync<DbUpdateException>(() => verify.SaveChangesAsync());
+    }
 }
