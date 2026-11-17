@@ -73,16 +73,20 @@ public class SqlServerLowPriorityTests : IClassFixture<SqlServerFixture>
         try
         {
             await using var context = _db.NewContext();
+            var category = new ContentCategory { CategoryName = "c" + Guid.NewGuid().ToString("N")[..8], Description = "d", IsActive = 2 };
+            context.ContentCategory.Add(category);
+            await context.SaveChangesAsync();
             var service = CreateService(context, uploadRoot);
 
             var result = await service.CreateContentWithEntrustMissionAsync(new CreateContentWithEntrustMissionDto
             {
-                Title = "發文含委託", Body = "<p>b</p>", Type = 1,
+                Title = "發文含委託", Body = "<p>b</p>", Type = 1, CategoryId = category.ContentCategoryId,
                 EntrustMission = new CreateEntrustMissionDto { Title = "委託", Detail = "d", RewardPoints = 100 },
             }, userId);
 
             Assert.False(result.Ok);
             Assert.Equal(400, result.Code);
+            Assert.Contains("點數", result.Message); // 是委託失敗（點數不足）而 rollback，不是發文檢查擋下
             await using var verify = _db.NewContext();
             Assert.False(await verify.Content.AnyAsync(c => c.UserId == userId));
             Assert.Empty(Directory.GetFiles(Path.Combine(uploadRoot, UploadFolders.ContentBodies)));

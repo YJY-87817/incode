@@ -148,11 +148,21 @@ public class LowPriorityFixesTests : IClassFixture<ApiFactory>
         Assert.Equal("已刪除", (await verify.Content.AsNoTracking().SingleAsync(c => c.ContentId == contentId)).Title);
     }
 
-    private static object PostWithEntrust(string marker, string missionTitle, int reward) => new
+    private async Task<int> NewCategory()
+    {
+        await using var context = _factory.Db.NewContext();
+        var category = new ContentCategory { CategoryName = "c" + Guid.NewGuid().ToString("N")[..8], Description = "d", IsActive = 2 };
+        context.ContentCategory.Add(category);
+        await context.SaveChangesAsync();
+        return category.ContentCategoryId;
+    }
+
+    private object PostWithEntrust(string marker, string missionTitle, int reward) => new
     {
         title = "發文含委託 " + marker,
         body = $"<p>{marker}</p>",
         type = 1,
+        categoryId = NewCategory().GetAwaiter().GetResult(),
         entrustMission = new { title = missionTitle, detail = "<img src=x onerror=alert(1)>", rewardPoints = reward, category = "其他" },
     };
 

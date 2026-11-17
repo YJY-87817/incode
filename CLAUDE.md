@@ -135,7 +135,7 @@ incode/
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
-- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
+- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、發文驗證（`ContentValidationTests`）、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
   SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
@@ -409,11 +409,20 @@ incode/
       **既有的密碼會員一律為未驗證**（之後被同 Email 的 Google 登入會被接管，想保留密碼登入的人從會員中心重寄驗證信），既有 Google 帳號標記為已驗證
     - 測試：`ApiFactory` 以 `RecordingEmailService` 取代寄信；`CreateAnonymousClient(ownIp: true)` 讓用戶端有自己的來源 IP（依 IP 的速率限制不共用額度）
 
+37. 第二次全專案檢查 41（發文驗證，都先寫測試重現，`ContentValidationTests`）：
+    - `ContentService.CreateContent` 寫入前檢查（`POST api/ContentApi` 與「發文 + 委託」共用），不合法回 400（`BusinessException`）：
+      類型只能是 1～4（`Constants/ContentTypes`）；主題不能有父文章、必須有存在且未停用的分類（`ContentCategoryStatus.Disabled` = 3）；
+      回覆類必須有父文章，父文章與所屬主題都存在且未刪除，父文章類型依前端用法限制（`ContentTypes.AllowedParentTypes`：
+      回文 → 主題、留言 → 回文或主題（簡易留言）、留言回覆 → 留言）；回覆的分類一律沿用父文章。
+      修正前：類型 0 / 5、沒有分類的主題、掛在已刪除文章或主題下的回覆都能建立，不存在的父文章撞外鍵 → 500
+    - 關鍵字搜尋只比對標題（內文存成檔案，資料庫沒有內文；移除永遠不成立的內文比對）。
+      **注意**：前端導覽列的搜尋框沒有接到任何功能（`forumStore.setSearchKeyword` 沒有被呼叫），目前前台沒有搜尋入口
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：41 發文驗證 → 43 後台點數 / 檢舉。
+建議修正順序：第二次檢查 43 的其餘項目（後台點數紀錄唯讀、檢舉清單 / 下架文章，見下方「第二次全專案檢查」）。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -457,7 +466,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分、40、42 已修正（見修正紀錄 34～36），刪除線以外為尚未修正的項目。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～42、44 已修正，43 部分修正（見修正紀錄 34～37），刪除線以外為尚未修正的項目。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -501,8 +510,8 @@ incode/
 
 40. ~~帳號：註冊不驗證 Email；重設密碼後舊的登入 Cookie 仍有效；後台 Cookie 沒有停用檢查；會員沒有「修改密碼」功能；
     Google 帳號用密碼登入會 500；瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34、36）。
-41. 發文：`Type`、父文章、分類都不驗證；~~「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼~~；~~分類統計算進已刪除的文章~~；
-    內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；~~可以編輯已刪除的文章~~（見修正紀錄 34）。
+41. ~~發文：`Type`、父文章、分類都不驗證；「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼；分類統計算進已刪除的文章；
+    可以編輯已刪除的文章~~（見修正紀錄 34、37）。關鍵字搜尋只搜標題（內文存成檔案，決定維持）；前端導覽列的搜尋框沒有接到功能。
 42. ~~`content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）~~（見修正紀錄 35；`follow` 原本就有主鍵，問題是同時追蹤時 500）。
 43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
     沒有檢舉清單、不能下架文章；~~`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34）。
