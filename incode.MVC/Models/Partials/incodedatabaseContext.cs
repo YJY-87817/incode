@@ -19,6 +19,18 @@ namespace incode.MVC.Models
         optionsBuilder.UseSqlServer(Config.GetConnectionString("incodedatabase"));
       }
     }
+
+    // 產生的 OnModelCreating 之後執行：補上 Database-First 原本沒有的設定（重新產生模型時不會被覆蓋）
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
+    {
+      // 同一會員對同一內容的同一種互動只能有一筆（連點兩下原本會寫入兩筆，按讚數虛增）。
+      // 已上線的資料庫執行 docs/database/migrations/2026-11-17-content-interaction-unique.sql 建立
+      modelBuilder.Entity<ContentInteraction>()
+        .HasIndex(e => new { e.ContentId, e.UserId, e.CategoryId }, ContentInteractionUniqueIndex)
+        .IsUnique();
+    }
+
+    public const string ContentInteractionUniqueIndex = "UX_content_interaction_content_user_category";
   }
 }
 

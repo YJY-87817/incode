@@ -128,7 +128,9 @@ incode/
 ## 建置與驗證
 
 - 需要 .NET 10 SDK（Visual Studio 2026）、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
-  新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生
+  新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生。
+  **改資料表（例如新增索引）**：模型設定放 `Models/Partials/incodedatabaseContext.cs` 的 `OnModelCreatingPartial`、更新 `schema.sql`，
+  並在 `docs/database/migrations/` 加一支可重複執行的腳本給已上線的資料庫（`MigrationScriptTests` 在 SQL Server 上測試）
 - 機密設定（Google OAuth、ECPay、Gemini 等）放 user-secrets 或環境變數，不要提交到 repo
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
@@ -379,11 +381,22 @@ incode/
       道具使用改為條件更新原子扣減（同時使用 10 次、數量 3 → 只成功 3 次）；`SelectBestAnswerAsync` 失敗時記錄 log
     - 測試：`ApiFactory.LoginAsync(admin: true)` 會把該會員設為管理員（後台 Cookie 每個請求都會檢查角色）
 
+35. 第二次全專案檢查 42（論壇互動 / 追蹤重複寫入，都先寫測試重現）：
+    - `content_interaction` 新增唯一索引 `UX_content_interaction_content_user_category`（content_id, user_id, category_id），
+      定義在 `Models/Partials/incodedatabaseContext.cs` 的 `OnModelCreatingPartial`（重新產生模型不會覆蓋），`schema.sql` 已更新。
+      **已上線的資料庫要執行一次** `docs/database/migrations/2026-11-17-content-interaction-unique.sql`：先刪除重複的互動
+      （同一會員對同一內容的同一種互動保留 ID 最小的一筆，會印出刪除筆數），再建立索引；可重複執行（`MigrationScriptTests`）
+    - 互動切換（`AddOrUpdateInteraction`）連點兩下：第二個新增撞到唯一索引時視為已新增，回傳資料庫目前的狀態（200）；
+      同時取消也不會 500。判斷唯一索引衝突用 `Services/Common/DbErrors.IsUniqueViolation`
+    - `follow` 原本就有主鍵（follower_id + followee_id），清單上「沒有唯一索引」有誤；但同時追蹤時第二個請求撞主鍵 → 500，
+      改為回「已經追蹤過了」（與原本重複追蹤相同，400）；同時取消追蹤回「尚未追蹤」
+    - 修正前在 SQL Server 同時送出 10 個請求：互動會寫入多筆、追蹤有 9 個 500；修正後只有一筆、沒有 500（`SqlServerInteractionUniqueTests`）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：42 唯一索引 → 40 帳號（security stamp、修改密碼、Email 驗證）→ 41 發文驗證 → 43 後台點數 / 檢舉。
+建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：40 帳號（security stamp、修改密碼、Email 驗證）→ 41 發文驗證 → 43 後台點數 / 檢舉。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -427,7 +440,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分已修正（見修正紀錄 34），刪除線以外為尚未修正的項目。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分與 42 已修正（見修正紀錄 34、35），刪除線以外為尚未修正的項目。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -475,7 +488,7 @@ incode/
     ~~瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34）。
 41. 發文：`Type`、父文章、分類都不驗證；~~「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼~~；~~分類統計算進已刪除的文章~~；
     內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；~~可以編輯已刪除的文章~~（見修正紀錄 34）。
-42. `content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）。
+42. ~~`content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）~~（見修正紀錄 35；`follow` 原本就有主鍵，問題是同時追蹤時 500）。
 43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
     沒有檢舉清單、不能下架文章；~~`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34）。
 44. ~~其他：公開個人頁顯示點數餘額；大頭貼網址可填任意外部網址；`SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用不是原子扣減~~（見修正紀錄 34）。

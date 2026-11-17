@@ -82,7 +82,15 @@ namespace incode.MVC.Services.Contents
       if (existingInteraction != null)
       {
         _context.ContentInteraction.Remove(existingInteraction);
-        await _context.SaveChangesAsync();
+        try
+        {
+          await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+          // 連點兩下：同時送出的另一個請求已經先刪掉了，結果相同
+          _context.ChangeTracker.Clear();
+        }
 
         return ResultDTO<ContentInteractionDto?>.Success(null, "互動已移除");
       }
@@ -95,7 +103,17 @@ namespace incode.MVC.Services.Contents
         CreatedAt = DateTime.Now
       };
       _context.ContentInteraction.Add(newInteraction);
-      await _context.SaveChangesAsync();
+      try
+      {
+        await _context.SaveChangesAsync();
+      }
+      catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+      {
+        // 連點兩下：同時送出的另一個請求已經先新增了（唯一索引 UX_content_interaction_content_user_category），
+        // 視為已新增，回傳目前資料庫裡的狀態
+        _context.ChangeTracker.Clear();
+        return await CurrentStateAsync(dto);
+      }
 
       // qiu 按讚任務：進度 = 本週期內「目前仍按讚中的不同內容」數（不含自己的內容）。
       // 原本每按一次就 +1，對同一篇反覆取消 / 重按就能完成任務；改為依實際資料計算，同一內容只算一次
@@ -113,21 +131,7 @@ namespace incode.MVC.Services.Contents
             .CountAsync());
       }
 
-      var created = await _context.ContentInteraction
-        .Where(ci => ci.ContentInteractionId == newInteraction.ContentInteractionId)
-        .Include(ci => ci.Category)
-        .Select(ci => new ContentInteractionDto
-        {
-          ContentInteractionId = ci.ContentInteractionId,
-          InteractionCategoryId = ci.CategoryId,
-          InteractionCategoryName = ci.Category.Name,
-          ContentId = ci.ContentId,
-          UserId = ci.UserId,
-          CreatedAt = ci.CreatedAt ?? DateTime.Now
-        })
-        .FirstAsync();
-
-      return ResultDTO<ContentInteractionDto?>.Success(created, "互動已新增");
+      return await CurrentStateAsync(dto);
     }
 
 
@@ -207,6 +211,30 @@ namespace incode.MVC.Services.Contents
         .AsNoTracking()
         .Where(ci => ci.ContentId == contentId && ci.CategoryId == InteractionCategoryIds.Like)
         .CountAsync();
+    }
+
+    // 回傳該會員對該內容此種互動目前的狀態：有 → 互動已新增（Data 為該筆）；沒有（同時送出的另一個請求剛好取消了）→ 互動已移除
+    private async Task<ResultDTO<ContentInteractionDto?>> CurrentStateAsync(CreateContentInteractionDto dto)
+    {
+      var current = await _context.ContentInteraction
+        .AsNoTracking()
+        .Where(ci => ci.ContentId == dto.ContentId
+          && ci.UserId == dto.UserId
+          && ci.CategoryId == dto.InteractionCategoryId)
+        .Select(ci => new ContentInteractionDto
+        {
+          ContentInteractionId = ci.ContentInteractionId,
+          InteractionCategoryId = ci.CategoryId,
+          InteractionCategoryName = ci.Category.Name,
+          ContentId = ci.ContentId,
+          UserId = ci.UserId,
+          CreatedAt = ci.CreatedAt ?? DateTime.Now
+        })
+        .FirstOrDefaultAsync();
+
+      return current != null
+        ? ResultDTO<ContentInteractionDto?>.Success(current, "互動已新增")
+        : ResultDTO<ContentInteractionDto?>.Success(null, "互動已移除");
     }
 
     public async Task<ResultDTO> SelectBestAnswerAsync(int entrustMissionId, int contentId, int selectorUserId)
