@@ -135,7 +135,7 @@ incode/
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
-- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
+- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
   SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
@@ -392,11 +392,28 @@ incode/
       改為回「已經追蹤過了」（與原本重複追蹤相同，400）；同時取消追蹤回「尚未追蹤」
     - 修正前在 SQL Server 同時送出 10 個請求：互動會寫入多筆、追蹤有 9 個 500；修正後只有一筆、沒有 500（`SqlServerInteractionUniqueTests`）
 
+36. 第二次全專案檢查 40（帳號，都先寫測試重現，`AccountSecurityTests`）：
+    - **登入戳記**：`[user]` 新增 `security_stamp`，登入時寫進 Cookie（`AuthSchemes.SecurityStampClaim`，會員與後台都有），
+      `MemberCookieValidator` 比對不符就登出。**重設密碼**（原本舊的登入 Cookie 仍然有效）、**修改密碼**、Google 接管時換新。
+      戳記從未換過（NULL）的帳號，改版前沒有戳記的 Cookie 仍有效，上線不會把所有人登出
+    - **修改密碼**：`POST api/AuthApi/change-password`（會員 Cookie、需目前的密碼、與登入共用失敗次數限制）；成功後其他裝置登出，
+      目前的裝置重新簽發 Cookie（保留「記住我」）。Google 帳號不能修改，「忘記密碼」也不再替 Google 帳號產生重設連結（改寄提醒信，API 回應不變）。
+      前端：會員中心卡片的「修改密碼」按鈕（`components/users/ChangePasswordDialog.vue`，Google 帳號不顯示）
+    - **Email 驗證**：新增 `email_verified`、`email_verify_token(_expiry)`。註冊後寄驗證信（不擋登入，24 小時有效；寄信失敗只記 log），
+      `POST api/AuthApi/verify-email`（前端 `/verify-email` 頁）、`POST api/AuthApi/resend-verification`（會員中心未驗證提示的「重寄驗證信」）；
+      重設密碼成功也視為已驗證。`GET api/User/profile` 看自己時回傳 `emailVerified`、`isGoogleAccount`
+    - **Google 登入接管**（`AuthService.GetOrCreateGoogleUserAsync`）：同一個 Email 已有「密碼註冊、尚未驗證」的帳號時，
+      清除密碼（之後只能用 Google 登入）、換新登入戳記（登出所有裝置）、標記為已驗證並記錄 log；已驗證的密碼帳號維持兩種登入方式。
+      避免先用別人的 Email 註冊、等對方用 Google 登入後共用帳號
+    - **已上線的資料庫要執行一次** `docs/database/migrations/2026-11-17-user-email-verify-security-stamp.sql`（新增 4 個欄位，可重複執行）：
+      **既有的密碼會員一律為未驗證**（之後被同 Email 的 Google 登入會被接管，想保留密碼登入的人從會員中心重寄驗證信），既有 Google 帳號標記為已驗證
+    - 測試：`ApiFactory` 以 `RecordingEmailService` 取代寄信；`CreateAnonymousClient(ownIp: true)` 讓用戶端有自己的來源 IP（依 IP 的速率限制不共用額度）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：40 帳號（security stamp、修改密碼、Email 驗證）→ 41 發文驗證 → 43 後台點數 / 檢舉。
+建議修正順序：第二次檢查 40～44 的其餘項目（低優先，見下方「第二次全專案檢查」）：41 發文驗證 → 43 後台點數 / 檢舉。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -440,7 +457,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分與 42 已修正（見修正紀錄 34、35），刪除線以外為尚未修正的項目。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 不需改資料表的部分、40、42 已修正（見修正紀錄 34～36），刪除線以外為尚未修正的項目。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -482,10 +499,8 @@ incode/
 
 ### ⚪ 低 / 功能缺口
 
-40. 帳號：註冊不驗證 Email（可先用別人的 Email 註冊，對方之後用 Google 登入會進到同一個帳號）；重設密碼後舊的登入 Cookie 仍有效；
-    ~~後台 Cookie 沒有停用檢查~~；會員沒有「修改密碼」功能；
-    ~~Google 帳號用密碼登入會 500~~；
-    ~~瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34）。
+40. ~~帳號：註冊不驗證 Email；重設密碼後舊的登入 Cookie 仍有效；後台 Cookie 沒有停用檢查；會員沒有「修改密碼」功能；
+    Google 帳號用密碼登入會 500；瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34、36）。
 41. 發文：`Type`、父文章、分類都不驗證；~~「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼~~；~~分類統計算進已刪除的文章~~；
     內文都存成檔案路徑，關鍵字搜尋實際上只搜得到標題；~~可以編輯已刪除的文章~~（見修正紀錄 34）。
 42. ~~`content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）~~（見修正紀錄 35；`follow` 原本就有主鍵，問題是同時追蹤時 500）。

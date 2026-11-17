@@ -60,11 +60,18 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             services.AddSingleton<IStartupFilter, TestLoginStartupFilter>();
 
+            // 不實際寄信（SMTP），記錄下來讓測試取出驗證 / 重設連結
+            services.RemoveAll<IEmailService>();
+            services.AddSingleton<IEmailService>(Emails);
+
             // 背景的過期委託處理會在測試進行中改動資料，API 測試不執行（服務本身由 EntrustMissionServiceTests 測試）
             foreach (var worker in services.Where(s => s.ImplementationType == typeof(EntrustMissionExpiryWorker)).ToList())
                 services.Remove(worker);
         });
     }
+
+    /// <summary>網站寄出的信（取代 SMTP 的 EmailService）。</summary>
+    public RecordingEmailService Emails { get; } = new();
 
     /// <summary>建立一個已登入的用戶端（每個用戶端有自己的 Cookie）。</summary>
     public async Task<HttpClient> LoginAsync(int userId, bool admin = false)
@@ -92,12 +99,24 @@ public class ApiFactory : WebApplicationFactory<Program>
         await context.SaveChangesAsync();
     }
 
-    public HttpClient CreateAnonymousClient() => CreateClient(new WebApplicationFactoryClientOptions
+    public const string TestClientIpHeader = "X-Test-Client-Ip";
+
+    /// <param name="ownIp">true：這個用戶端使用自己的來源 IP（依 IP 的速率限制不與其他用戶端共用額度）</param>
+    public HttpClient CreateAnonymousClient(bool ownIp = false)
     {
-        BaseAddress = new Uri("https://localhost"), // 登入 Cookie 是 Secure
-        AllowAutoRedirect = false,
-        HandleCookies = true,
-    });
+        var client = CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"), // 登入 Cookie 是 Secure
+            AllowAutoRedirect = false,
+            HandleCookies = true,
+        });
+        if (ownIp)
+        {
+            var bytes = Guid.NewGuid().ToByteArray();
+            client.DefaultRequestHeaders.Add(TestClientIpHeader, $"10.{bytes[0]}.{bytes[1]}.{bytes[2]}");
+        }
+        return client;
+    }
 
     protected override void Dispose(bool disposing)
     {
@@ -110,6 +129,14 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
         {
+            // 測試用的來源 IP（TestServer 沒有 RemoteIpAddress，依 IP 的速率限制會讓同一個測試類別的所有請求共用額度）
+            app.Use(async (context, nextMiddleware) =>
+            {
+                if (System.Net.IPAddress.TryParse(context.Request.Headers[TestClientIpHeader], out var ip))
+                    context.Connection.RemoteIpAddress = ip;
+                await nextMiddleware();
+            });
+
             app.Use(async (context, nextMiddleware) =>
             {
                 if (context.Request.Path != "/__test/login")
@@ -133,5 +160,23 @@ public class ApiFactory : WebApplicationFactory<Program>
 
             next(app);
         };
+    }
+}
+
+/// <summary>測試用的寄信服務：只記錄，不寄出。</summary>
+public sealed class RecordingEmailService : IEmailService
+{
+    private readonly List<(string To, string Subject, string Content)> _sent = new();
+
+    public Task SendEmailAsync(string toEmail, string subject, string content)
+    {
+        lock (_sent) _sent.Add((toEmail, subject, content));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>寄給該信箱的最後一封信（沒有則為 null）。</summary>
+    public (string To, string Subject, string Content)? LastTo(string email)
+    {
+        lock (_sent) return _sent.LastOrDefault(m => m.To == email) is { To: not null } m ? m : null;
     }
 }
