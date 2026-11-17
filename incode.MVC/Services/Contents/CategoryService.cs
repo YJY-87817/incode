@@ -27,10 +27,11 @@ namespace incode.MVC.Services.Contents
                 })
                 .ToListAsync();
 
-            // 2) 從 content 表計算每個分類的主題數 / 文章數（IsActive = 3 為已刪除，不計）
+            // 2) 從 content 表計算每個分類的主題數 / 文章數：只算公開中的（IsActive = 1）。
+            //    刪除是 2（ContentService.DeleteContent），原本排除的是 3，已刪除的文章也被算進去
             var counts = await _context.Content
                 .AsNoTracking()
-                .Where(c => c.IsActive != 3 && c.CategoryId != null)
+                .Where(c => c.IsActive == 1 && c.CategoryId != null)
                 .GroupBy(c => c.CategoryId!.Value)
                 .Select(g => new
                 {

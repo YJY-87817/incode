@@ -454,10 +454,10 @@ namespace incode.MVC.Services.Contents
       var content = await _context.Content.FindAsync(id);
       if (content == null) return null;
 
-      // 驗證擁有者
-      if (content.UserId != currentUserId)
+      // 驗證擁有者；已刪除（IsActive != 1）的文章不能再編輯，與找不到相同（Controller 回 404）
+      if (content.UserId != currentUserId || content.IsActive != 1)
       {
-        return null; // 或拋出 Unauthorized
+        return null;
       }
 
       var history = new ContentHistory

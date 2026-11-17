@@ -8,9 +8,12 @@ namespace incode.MVC.Services.Contents
     private readonly IPointLogService _pointLogService;
     private readonly IPointReserveService _pointReserveService;
     private readonly IMissionService _missionService;
+    private readonly ILogger<ContentInteractionService> _logger;
 
-        public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService, IMissionService missionService)
+        public ContentInteractionService(incodedatabaseContext context, IPointLogService pointLogService, IPointReserveService pointReserveService, IMissionService missionService,
+            ILogger<ContentInteractionService>? logger = null)
         {
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentInteractionService>.Instance;
             _context = context;
             _pointLogService = pointLogService;
             _pointReserveService = pointReserveService;
@@ -338,6 +341,7 @@ namespace incode.MVC.Services.Contents
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "選擇最佳解答失敗 - EntrustMissionId: {MissionId}, ContentId: {ContentId}", entrustMissionId, contentId);
                 return new ResultDTO { Ok = false, Code = 500, Message = "伺服器錯誤，請稍後再試" };
             }
         }
