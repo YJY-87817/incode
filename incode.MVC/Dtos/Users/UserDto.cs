@@ -12,6 +12,10 @@ namespace incode.MVC.Dtos.Users
         public string? Phone { get; set; }   
         public string? Address { get; set; }
         public DateOnly? Birthday { get; set; }
+
+        // 以下只回給本人（GET api/User/profile 看自己時）
+        public bool? EmailVerified { get; set; }
+        public bool? IsGoogleAccount { get; set; }
     }
 
 

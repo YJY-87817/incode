@@ -39,6 +39,7 @@ namespace incode.MVC.Services.Users
                     Email = email,
                     Username = await GetAvailableUsernameAsync(baseName),
                     Password = GoogleAccountPassword, // 標記：沒有密碼，只能用 Google 登入
+                    EmailVerified = true,             // Google 已驗證 Email
                     CreatedAt = DateTime.Now,
                     IsActive = true,
                     RoleId = 2,

@@ -14,7 +14,7 @@ namespace incode.MVC.Extensions
     {
         public const int CacheSeconds = 60;
 
-        private sealed record AccountState(bool Active, int? RoleId);
+        private sealed record AccountState(bool Active, int? RoleId, string SecurityStamp);
 
         private static string CacheKey(int userId) => $"user-state-{userId}";
 
@@ -47,15 +47,20 @@ namespace incode.MVC.Extensions
                 var row = await db.User
                     .AsNoTracking()
                     .Where(u => u.UserId == userId)
-                    .Select(u => new { u.IsActive, u.RoleId })
+                    .Select(u => new { u.IsActive, u.RoleId, u.SecurityStamp })
                     .FirstOrDefaultAsync();
 
                 // 查無會員（已刪除）或明確被停用（false）都視為無效；null 視為啟用（與登入檢查一致）
-                state = new AccountState(row != null && row.IsActive != false, row?.RoleId);
+                state = new AccountState(row != null && row.IsActive != false, row?.RoleId, row?.SecurityStamp ?? "");
                 cache.Set(CacheKey(userId), state, TimeSpan.FromSeconds(CacheSeconds));
             }
 
-            bool valid = state.Active && (!requireAdmin || state.RoleId == (int)RoleType.Admin);
+            // 登入戳記：重設 / 修改密碼後資料庫換新，舊 Cookie 的戳記對不上。
+            // 戳記從未換過（null）的帳號，改版前沒有戳記的 Cookie 視為相符，不會因為上線而把所有人登出
+            var cookieStamp = context.Principal?.FindFirst(AuthSchemes.SecurityStampClaim)?.Value ?? "";
+            bool stampMatches = string.Equals(cookieStamp, state.SecurityStamp, StringComparison.Ordinal);
+
+            bool valid = state.Active && stampMatches && (!requireAdmin || state.RoleId == (int)RoleType.Admin);
             if (!valid) await RejectAsync(context);
         }
 

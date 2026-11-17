@@ -27,6 +27,9 @@
 - 論壇內文以 `components/common/HtmlIframe.vue` 顯示（sandbox 固定為 `allow-same-origin allow-popups allow-popups-to-escape-sandbox`）。
   **不要加 `allow-scripts`**：與 `allow-same-origin` 同時存在時 sandbox 形同無效
 - `v-html` 前一律過濾：論壇內容用 `utils/sanitizeHtml.js`；聊天訊息用 `ChatWidget.vue` 的 `toSafeHtml`（使用者輸入跳脫為純文字，其餘以 DOMPurify 過濾）
+- **帳號安全**：會員中心（`UserIndex.vue`）卡片的「修改密碼」（`components/users/ChangePasswordDialog.vue`，Google 帳號不顯示；
+  錯誤訊息顯示在對話框內，SweetAlert 會被 `v-dialog` 的遮罩蓋住）與 Email 未驗證提示（重寄驗證信）；驗證信連結為 `/verify-email`（`VerifyEmailView.vue`）。
+  `userProfile.emailVerified` / `isGoogleAccount` 只有看自己時才有值
 - 登入狀態：`src/stores/users/auth.js`（`App.vue` 掛載時呼叫 `checkAuth()`）。
   元件中請用 `computed(() => authStore.isAuthenticated)`，**不要**存成常數（會失去響應式）
 

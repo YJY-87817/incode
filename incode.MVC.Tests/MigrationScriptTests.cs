@@ -110,4 +110,31 @@ public class MigrationScriptTests : IClassFixture<SqlServerFixture>
         verify.ContentInteraction.Add(new ContentInteraction { ContentId = contentId, UserId = member, CategoryId = InteractionCategoryIds.Like });
         await Assert.ThrowsAsync<DbUpdateException>(() => verify.SaveChangesAsync());
     }
+    [SqlServerFact]
+    public async Task User_email_verify_migration_adds_columns_and_marks_google_accounts()
+    {
+        // 模擬改版前的資料庫：還沒有這 4 個欄位（測試資料庫由目前的模型建立，先拿掉；email_verified 有預設值條件約束要先刪）
+        await RunScriptAsync("""
+            DECLARE @df sysname = (SELECT d.name FROM sys.default_constraints d
+                JOIN sys.columns c ON c.object_id = d.parent_object_id AND c.column_id = d.parent_column_id
+                WHERE d.parent_object_id = OBJECT_ID(N'dbo.[user]') AND c.name = N'email_verified');
+            IF @df IS NOT NULL EXEC (N'ALTER TABLE dbo.[user] DROP CONSTRAINT [' + @df + N']');
+            ALTER TABLE dbo.[user] DROP COLUMN email_verified, email_verify_token, email_verify_token_expiry, security_stamp;
+            """);
+        await RunScriptAsync($"""
+            INSERT INTO dbo.[user] (email, username, password) VALUES
+                (N'google-{Guid.NewGuid():N}@example.com', N'g-{Guid.NewGuid():N}', N'GOOGLE_AUTH'),
+                (N'pw-{Guid.NewGuid():N}@example.com', N'p-{Guid.NewGuid():N}', N'$2a$11$hash');
+            """);
+
+        var script = ReadScript("2026-11-17-user-email-verify-security-stamp.sql");
+        await RunScriptAsync(script);
+        await RunScriptAsync(script); // 可重複執行（欄位已存在就略過）
+
+        await using var verify = _db.NewContext();
+        var users = await verify.User.AsNoTracking().ToListAsync(); // 模型的 4 個欄位都要查得到
+        Assert.All(users.Where(u => u.Password == "GOOGLE_AUTH"), u => Assert.True(u.EmailVerified));
+        Assert.All(users.Where(u => u.Password != "GOOGLE_AUTH"), u => Assert.False(u.EmailVerified)); // 既有密碼會員為未驗證
+        Assert.All(users, u => Assert.Null(u.SecurityStamp));
+    }
 }

@@ -9,12 +9,31 @@
   import Swal from "sweetalert2";
   import FollowListDialog from "@/components/users/FollowListDialog.vue";
   import UserProfileCard from "@/components/users/UserProfileCard.vue";
+  import ChangePasswordDialog from "@/components/users/ChangePasswordDialog.vue";
 
   const userStore = useUserStore();
   const authStore = useAuthStore();
   const { userProfile, displayAvatar, isLoading, isFollowingCurrentUser } = storeToRefs(userStore);
 
   const dialog = shallowRef(false);
+  const passwordDialog = shallowRef(false);
+
+  // --- Email 驗證（只有看自己時有值） ---
+  const showVerifyNotice = computed(() => isSelf.value && userProfile.value?.emailVerified === false);
+  const canChangePassword = computed(() => isSelf.value && userProfile.value?.isGoogleAccount === false);
+  const isResendingVerification = ref(false);
+
+  const resendVerification = async () => {
+    isResendingVerification.value = true;
+    try {
+      const res = await axios.post("/AuthApi/resend-verification");
+      Swal.fire({ icon: "success", title: res.data?.message || "驗證信已寄出", confirmButtonColor: "#145369" });
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "寄送失敗", text: error.response?.data?.message || "請稍後再試" });
+    } finally {
+      isResendingVerification.value = false;
+    }
+  };
   const showFollowDialog = ref(false);
   const followDialogTab = ref("following");
 
@@ -264,9 +283,37 @@
       <v-col cols="12">
         <UserProfileCard :profile="userProfile" :avatar-url="displayAvatar" :loading="isLoading"
           :show-contact-info="isSelf" :action-label="buttonLabel" @click-action="handleCardAction"
-          @click-stat="openFollowDialog" @upload-avatar="handleCardAvatarUpload" />
+          @click-stat="openFollowDialog" @upload-avatar="handleCardAvatarUpload">
+          <template #actions>
+            <v-btn v-if="canChangePassword" prepend-icon="mdi-lock-outline" variant="outlined" color="#145369"
+              rounded="pill" size="large" @click="passwordDialog = true">
+              修改密碼
+            </v-btn>
+          </template>
+        </UserProfileCard>
       </v-col>
     </v-row>
+
+    <v-row v-if="showVerifyNotice">
+      <v-col cols="12">
+        <v-alert type="info" variant="tonal" rounded="xl" :icon="false">
+          <div class="d-flex flex-wrap align-center ga-3">
+            <div class="flex-grow-1">
+              <div class="font-weight-bold">您的 Email 尚未驗證</div>
+              <div class="text-body-2">
+                請到信箱點擊驗證連結。未驗證的帳號，若有人以同一個 Email 的 Google 帳號登入，帳號會改由該 Google 帳號使用。
+              </div>
+            </div>
+            <v-btn variant="flat" color="#145369" class="text-white" rounded="pill"
+              :loading="isResendingVerification" @click="resendVerification">
+              重寄驗證信
+            </v-btn>
+          </div>
+        </v-alert>
+      </v-col>
+    </v-row>
+
+    <ChangePasswordDialog v-model="passwordDialog" />
 
     <FollowListDialog v-if="userProfile.id" v-model="showFollowDialog" :user-id="userProfile.id"
       :initial-tab="followDialogTab" />

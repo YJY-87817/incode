@@ -111,6 +111,8 @@ namespace incode.MVC.ApiControllers.Users
                 responseDto.Phone = targetUser.Phone;
                 responseDto.Address = targetUser.Address;
                 responseDto.Birthday = targetUser.Birthday;
+                responseDto.EmailVerified = targetUser.EmailVerified;
+                responseDto.IsGoogleAccount = targetUser.Password == UserService.GoogleAccountPassword;
             }
 
             return Ok(responseDto);        
