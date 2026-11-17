@@ -44,7 +44,16 @@ namespace incode.MVC.Services.Contents
         ? await _context.Database.BeginTransactionAsync()
         : null;
 
-      var content = await _contentService.CreateContent(contentDto);
+      Content content;
+      try
+      {
+        content = await _contentService.CreateContent(contentDto);
+      }
+      catch (BusinessException ex)
+      {
+        // 類型、父文章、分類不合法（檢查在寫入任何資料之前）
+        return new ResultDTO<CreateContentWithEntrustMissionResultDto> { Ok = false, Code = 400, Message = ex.Message };
+      }
 
       ResultDTO? entrustResult = null;
       if (dto.EntrustMission != null)
