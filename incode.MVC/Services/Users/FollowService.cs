@@ -68,7 +68,16 @@ namespace incode.MVC.Services.Users
                 FolloweeId = targetUserId,  // 對方是被關注者
                 CreatedAt = DateTime.Now
             });
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+            {
+                // 連點兩下：同時送出的另一個請求已經先追蹤了（主鍵 follower_id + followee_id），原本回 500
+                _context.ChangeTracker.Clear();
+                return FollowResult.AlreadyFollowing;
+            }
             return FollowResult.Success;
         }
 
@@ -81,7 +90,16 @@ namespace incode.MVC.Services.Users
             if (follow == null) return FollowResult.NotFollowing;
 
             _context.Follow.Remove(follow);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // 同時送出的另一個請求已經先取消追蹤了
+                _context.ChangeTracker.Clear();
+                return FollowResult.NotFollowing;
+            }
             return FollowResult.Success;
         }
 
