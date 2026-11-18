@@ -1,6 +1,4 @@
-﻿using Humanizer;
-
-namespace incode.MVC.Services.Users
+﻿namespace incode.MVC.Services.Users
 {
     public interface IAuthService
     {

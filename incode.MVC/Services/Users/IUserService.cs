@@ -49,6 +49,7 @@ namespace incode.MVC.Services.Users
         Success,
         NotFound,
         UsernameTaken,
-        InvalidImageUrl
+        InvalidImageUrl,
+        InvalidUsername
     }
 }

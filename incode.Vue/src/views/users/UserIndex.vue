@@ -329,7 +329,7 @@
           <v-col cols="12" md="7" class="pe-md-6">
             <v-form v-model="formValid">
               <v-row dense>
-                <v-col cols="12"><v-text-field v-model="editForm.username" label="暱稱" variant="outlined"
+                <v-col cols="12"><v-text-field v-model="editForm.username" label="暱稱" maxlength="30" variant="outlined"
                     density="comfortable" prepend-inner-icon="mdi-account-outline"
                     :rules="[rules.required]"></v-text-field></v-col>
                 <v-col cols="12"><v-text-field v-model="editForm.phone" label="手機" variant="outlined"

@@ -344,7 +344,8 @@ watch(
             </div>
           </div>
         </ul>
-        <!-- 搜尋框 -->
+        <!-- 搜尋框：尚未接到搜尋功能（forumStore.setSearchKeyword 沒有被呼叫），先註解；接上功能後再恢復。
+             保留 mx-auto 的空白區塊讓右側圖示維持靠右。
         <div
           class="mx-auto d-none d-lg-flex align-items-center"
           style="max-width: 350px; flex: 1"
@@ -388,6 +389,8 @@ watch(
             </button>
           </div>
         </div>
+        -->
+        <div class="mx-auto d-none d-lg-flex" style="max-width: 350px; flex: 1"></div>
         <ul class="navbar-nav ms-0">
           <!-- 購物車 -->
           <li class="nav-item d-none d-lg-block">
