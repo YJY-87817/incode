@@ -173,6 +173,9 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
 builder.Services.AddScoped<IContentReportService, ContentReportService>();
+builder.Services.AddScoped<IAdminMissionService, AdminMissionService>();
+builder.Services.AddScoped<IAdminEntrustMissionService, AdminEntrustMissionService>();
+builder.Services.AddScoped<IAdminPointQueryService, AdminPointQueryService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy

@@ -1,159 +1,118 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace incode.MVC.Controllers.Point
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class MissionController : Controller
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IAdminMissionService _missions;
 
-        public MissionController(incodedatabaseContext context)
+        public MissionController(IAdminMissionService missions)
         {
-            _context = context;
+            _missions = missions;
         }
 
-        // GET: MissionTest
+        // GET: Mission
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Mission.ToListAsync());
+            return View(await _missions.GetMissionsAsync());
         }
 
-        // GET: MissionTest/Details/5
+        // GET: Mission/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var mission = await _context.Mission
-                .FirstOrDefaultAsync(m => m.MissionId == id);
-            if (mission == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var mission = await _missions.GetMissionAsync(id.Value);
+            if (mission == null) return NotFound();
             return View(mission);
         }
 
-        // GET: MissionTest/Create
+        // GET: Mission/Create
         public IActionResult Create()
         {
-            return View();
+            return View(new Mission { IsActive = true, ResetType = "none", Difficulty = "中等", TargetCount = 1 });
         }
 
-        // POST: MissionTest/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: Mission/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,Category,Difficulty,EstimatedDuration,ResetType,ParticipantCount,IsFeatured,LastResetAt,IsActive,CreatedAt,UpdatedAt")] Mission mission)
+        public async Task<IActionResult> Create([Bind(MissionFormFields)] Mission mission)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(mission);
-                await _context.SaveChangesAsync();
+                await _missions.CreateMissionAsync(mission);
+                TempData["SuccessMessage"] = "平台任務已建立";
                 return RedirectToAction(nameof(Index));
             }
-            return View(mission);
+            catch (BusinessException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(mission);
+            }
         }
 
-        // GET: MissionTest/Edit/5
+        // GET: Mission/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var mission = await _context.Mission
-                .Include(m => m.MissionProgress)
-                .FirstOrDefaultAsync(m => m.MissionId == id);
-            if (mission == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
+            var mission = await _missions.GetMissionAsync(id.Value);
+            if (mission == null) return NotFound();
             return View(mission);
         }
 
-        // POST: MissionTest/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: Mission/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MissionId,MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,Category,Difficulty,EstimatedDuration,ResetType,ParticipantCount,IsFeatured,LastResetAt,IsActive,CreatedAt,UpdatedAt")] Mission mission)
+        public async Task<IActionResult> Edit(int id, [Bind(MissionFormFields)] Mission mission)
         {
-            if (id != mission.MissionId)
+            try
             {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(mission);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!MissionExists(mission.MissionId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                if (!await _missions.UpdateMissionAsync(id, mission)) return NotFound();
+                TempData["SuccessMessage"] = "平台任務已更新";
                 return RedirectToAction(nameof(Index));
             }
-            return View(mission);
+            catch (BusinessException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                // 重新顯示時保留系統欄位（參與人數、上次重置時間）
+                var current = await _missions.GetMissionAsync(id);
+                if (current == null) return NotFound();
+                mission.MissionId = id;
+                mission.ParticipantCount = current.ParticipantCount;
+                mission.LastResetAt = current.LastResetAt;
+                return View(mission);
+            }
         }
 
-        // GET: MissionTest/Delete/5
+        // 表單可以設定的欄位；建立時間、參與人數、上次重置時間由系統維護
+        private const string MissionFormFields =
+            "MissionName,MissionDetail,TargetType,TargetCount,RewardPoints,RewardExp,Category,Difficulty,EstimatedDuration,ResetType,IsFeatured,IsActive";
+
+        // GET: Mission/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var mission = await _context.Mission
-                .FirstOrDefaultAsync(m => m.MissionId == id);
-            if (mission == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var mission = await _missions.GetMissionAsync(id.Value);
+            if (mission == null) return NotFound();
             return View(mission);
         }
 
-        // POST: MissionTest/Delete/5
+        // POST: Mission/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var mission = await _context.Mission.FindAsync(id);
-            if (mission != null)
+            try
             {
-                _context.Mission.Remove(mission);
+                await _missions.DeleteMissionAsync(id);
+                TempData["SuccessMessage"] = "平台任務已刪除";
             }
-
-            await _context.SaveChangesAsync();
+            catch (BusinessException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool MissionExists(int id)
-        {
-            return _context.Mission.Any(e => e.MissionId == id);
         }
     }
 }
