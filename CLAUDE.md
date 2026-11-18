@@ -114,7 +114,10 @@ incode/
 - **表單**：POST 表單要有 `method="post"`，Action 加 `[ValidateAntiForgeryToken]`。
 - 檔案編碼：保持原檔的 BOM / 換行格式，避免整檔 diff。
 - **靜態檔**：沒有打包 / 壓縮流程，`wwwroot/css`、`wwwroot/js` 只保留原始檔（不要另放 `.min` 副本）；
-  `wwwroot/lib` 只保留實際引用的檔案。CORS 由 `app.UseCors("VueApp")`（在 `UseRouting` 之後、`UseStaticFiles` 之前）
+  後台的前端套件（jQuery、Bootstrap、DataTables、select2、SignalR、marked、DOMPurify、Font Awesome、Nunito 字型等）
+  **由 npm 管理**（`incode.MVC/package.json`，版本固定），`dotnet build` 前自動執行 `npm ci` + `npm run lib`
+  （`scripts/copy-lib.mjs`）把用到的檔案複製到 `wwwroot/lib`，**`wwwroot/lib` 不提交進 git**。新增套件：`npm install --save-exact <套件>@<版本>`
+  （選發布兩週以上的版本），再把要用的檔案加進 `copy-lib.mjs` 的清單；後台頁面不要再引用外部 CDN。CORS 由 `app.UseCors("VueApp")`（在 `UseRouting` 之後、`UseStaticFiles` 之前）
   統一套用到 API 與靜態檔，允許來源只在 `Program.cs` 的 `AddCors` 設定一處。
 
 ### 點數商城訂單（`Services/PointShop/OrderService.cs`）
@@ -129,7 +132,7 @@ incode/
 
 ## 建置與驗證
 
-- 需要 .NET 10 SDK（Visual Studio 2026）、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
+- 需要 .NET 10 SDK（Visual Studio 2026）、**Node.js 22 以上**（建置後端時產生後台的 `wwwroot/lib`；只跑測試、環境沒有 Node 時可加 `-p:SkipNpmLib=true`）、SQL Server（`appsettings.json` 的 `ConnectionStrings:incodedatabase`，預設 LocalDB）；
   新環境用 `docs/database/schema.sql` + `seed.sql` 建立資料庫，資料表變動後用 `dotnet ef dbcontext script` 重新產生。
   **改資料表（例如新增索引）**：模型設定放 `Models/Partials/incodedatabaseContext.cs` 的 `OnModelCreatingPartial`、更新 `schema.sql`，
   並在 `docs/database/migrations/` 加一支可重複執行的腳本給已上線的資料庫（`MigrationScriptTests` 在 SQL Server 上測試）
@@ -138,7 +141,7 @@ incode/
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
 - **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、發文驗證（`ContentValidationTests`）、後台點數調整 / 人工補單 / 檢舉處理（`AdminModerationTests`）、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
-  SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
+  SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行（映像沒有 Node：掛載主機的 Node 並加進 `PATH`，或加 `-p:SkipNpmLib=true`）
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
 - 上傳檔只放在 `App:UploadRoot`（已 gitignore）。改版前的上傳檔已從 git 移除，**新環境 / pull 之後**要先執行
@@ -207,7 +210,7 @@ incode/
     - 前端 `ChatWidget.vue` 顯示訊息前經 `toSafeHtml`：使用者輸入一律跳脫為純文字，AI / 客服 / 系統訊息以 DOMPurify 過濾
     - **後台客服頁面 `Views/ChatMessages/Index.cshtml` 原本以 `@Html.Raw` 顯示會員訊息**（會員可在管理員的後台執行腳本）：
       改為輸出到 `data-body` 後以 DOMPurify 過濾再顯示，SignalR 即時訊息（`appendMessage`）也一樣；
-      DOMPurify 放在 `wwwroot/lib/dompurify/`（libman.json 已登記）
+      DOMPurify 放在 `wwwroot/lib/dompurify/`（現由 npm 管理，見修正紀錄 41）
     - `UploadImage` 改用 `ImageFileValidator`（單檔 10 MB）與 Guid 檔名，不再使用原始檔名；圖片附帶文字存入前 HTML 編碼
 14. CSRF 與登入次數限制（全專案檢查 12、15）：
     - `Extensions/OriginCheckExtensions.cs`（`app.UseApiOriginCheck`）：`/api` 的寫入請求與 `/chatHub` 只接受自己與 CORS 允許來源的
@@ -455,6 +458,19 @@ incode/
       下架 / 恢復以條件更新判斷狀態，同時操作只會成立一次
     - **已上線的資料庫要執行一次** `docs/database/migrations/2026-11-18-content-report-review.sql`（新增 `content_report_review`，可重複執行）；
       資料表設定在 `Models/Partials/ContentReportReview.cs` 與 `OnModelCreatingPartial`，`schema.sql` 已更新。既有的檢舉執行後全部列為待處理
+41. 後台前端套件改由 npm 管理：
+    - `incode.MVC/package.json`（版本固定，`package-lock.json` 提交）取代 `libman.json` 與外部 CDN；`incode.MVC.csproj` 的 `NpmLib` target
+      在建置前執行 `npm ci` + `npm run lib`（`scripts/copy-lib.mjs`，複製清單外的檔案不會進 `wwwroot/lib`），套件與腳本沒變動時略過；
+      `wwwroot/lib` 加進 `.gitignore`，第一次建置時產生的檔案也會進 publish 與靜態檔清單（以全新 clone `dotnet publish` 驗證）
+    - 原本從 CDN 載入的 DataTables 1.13.7（+ FixedHeader、中文語系檔）、select2 4.1.0-rc.0、SignalR 7.0.5、marked（未指定版本）、
+      Google Fonts（Nunito，登入頁）全部改為本機檔案：DataTables 1.13.11、`datatables.net-plugins` 1.13.6 的 `zh-HANT.json`、
+      select2 4.1.0-rc.0、**SignalR 10.0.11（與後端相同主版本）**、marked 18.1.3、`@fontsource/nunito`（只用 woff2）。
+      其餘維持主版本、升到發布兩週以上的最新修正版（jQuery 3.7.1、Bootstrap 5.3.8、Font Awesome 7.3.1、Chart.js 4.6.1、DOMPurify 3.4.17 等）。
+      `npm audit` 0 個漏洞
+    - 以瀏覽器實測 13 個後台頁面：沒有任何外部請求、沒有 404 與 JS 錯誤；DataTables（分頁、搜尋、中文介面）、select2、SignalR、marked 都有載入。
+      原本在 CDN 連不到的環境，後台表格沒有分頁與搜尋
+    - 順便修正：`ContentCategory/Index` 的資料網址寫死 `https://localhost:7190`（其他網址的環境載不到分類），改用 `Url.Action`
+    - CI 的兩個後端 job 加上 `setup-node`（Node 22）
 
 ## 全專案檢查結果（2026-11）
 

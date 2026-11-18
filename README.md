@@ -52,7 +52,7 @@ incode/
 |---|---|
 | .NET SDK | 10.0（Visual Studio 需 2026 版；VS 2022 不支援 .NET 10） |
 | SQL Server | Docker（建議，見下方）、SQL Server 或 LocalDB（Windows） |
-| Node.js | 20.19 以上（Vite 7 需求） |
+| Node.js | 22 以上（前端 Vite 7；後端建置時以 npm 產生後台的 `wwwroot/lib`） |
 
 ### 後端
 
