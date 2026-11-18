@@ -190,7 +190,7 @@ incode/
    （原本沒有憑證時連 `npm run build` 都會失敗）
 10. 升級 .NET 10（.NET 9 為 STS，2026-11-10 結束支援）：`net10.0`、Microsoft 套件升到 10.x、CI 改用 .NET 10 SDK；
     直接參考 `System.Security.Cryptography.Pkcs` 10.x 取代 `Microsoft.Data.SqlClient` 帶入的 9.0.11（高風險漏洞 GHSA-846f-f764-76mx）。
-    `Microsoft.VisualStudio.Web.CodeGeneration.Design`（VS scaffolding，執行時不使用）仍帶入有低風險漏洞的 `NuGet.*` 6.12.1
+    `Microsoft.VisualStudio.Web.CodeGeneration.Design`（VS scaffolding）帶入有低風險漏洞的 `NuGet.*` 6.12.1，已於修正紀錄 38 移除
 11. 專案更名：後端 `incode2/` → `incode.MVC/`（`incode.MVC.csproj`，命名空間 `incode2.*` → `incode.MVC.*`，組件名稱 `incode.MVC.dll`）、
     前端 `incode_Vue/` → `incode.Vue/`、`incode2.sln` → `incode.sln`。`UserSecretsId` 保持不變（沿用既有的 user-secrets）。
     舊的 commit / 文件中出現的 `incode2`、`incode_Vue` 即為這兩個資料夾
@@ -416,11 +416,22 @@ incode/
       回文 → 主題、留言 → 回文或主題（簡易留言）、留言回覆 → 留言）；回覆的分類一律沿用父文章。
       修正前：類型 0 / 5、沒有分類的主題、掛在已刪除文章或主題下的回覆都能建立，不存在的父文章撞外鍵 → 500
     - 關鍵字搜尋只比對標題（內文存成檔案，資料庫沒有內文；移除永遠不成立的內文比對）。
-      **注意**：前端導覽列的搜尋框沒有接到任何功能（`forumStore.setSearchKeyword` 沒有被呼叫），目前前台沒有搜尋入口
+      **注意**：前端導覽列的搜尋框沒有接到任何功能（`forumStore.setSearchKeyword` 沒有被呼叫），目前前台沒有搜尋入口（修正紀錄 38 先註解）
+38. 部分修正項目的收尾：
+    - **27 暱稱規則**（`Services/Users/UsernameRules`）：2～30 字（以字計算，emoji 算一字），不可前後空白、不可包含 `<` `>`、控制字元與看不見的格式字元
+      （換行、零寬空白、文字方向控制等）。註冊、修改個人資料（`PUT api/User/profile`，400）、後台會員新增 / 編輯都檢查；
+      **只檢查新設定的暱稱**，改版前不符合規則的暱稱沒改就不擋其他欄位的修改。Google 顯示名稱與註冊時由 Email 前綴產生的暱稱
+      會移除禁用字元並截短到 30 字（原本 150）。前端與後台的暱稱輸入框 `maxlength="30"`。測試 `UsernameRulesTests`
+    - **導覽列搜尋框**（`NavbarDefault.vue`）先註解，保留同寬的空白區塊讓版面不變；接上搜尋功能後再恢復
+    - **22 論壇頁 JS**：Tiptap 編輯器改為開啟發文 / 回覆編輯器時才載入（`components/contents/lazyTiptapEditor.js`，`defineAsyncComponent`），
+      論壇頁 JS 615 KB → 153 KB，編輯器另成 463 KB 的 chunk。以瀏覽器實測：進入論壇不下載編輯器，按「發佈新主題」後載入並可輸入
+    - **移除 `Microsoft.VisualStudio.Web.CodeGeneration.Design`**：`dotnet list package --vulnerable` 已無漏洞。
+      之後要用 Visual Studio「新增 Controller / View」自動產生時，VS 會提示安裝。原本經由它間接引用的 Newtonsoft.Json 不再存在：
+      後台首頁的圖表資料改用 `System.Text.Json`（預設編碼器同樣把 `<` `>` 等轉成 `\u003c`，`AdminViewXssTests` 通過）
 
 ## 全專案檢查結果（2026-11）
 
-點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～21、23～25 已修正，22 部分修正（見修正紀錄 6～9、12～29），其餘尚未處理。
+點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
 建議修正順序：第二次檢查 43 的其餘項目（後台點數紀錄唯讀、檢舉清單 / 下架文章，見下方「第二次全專案檢查」）。
 
@@ -456,10 +467,10 @@ incode/
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
 21. ~~上傳檔案在 git 與 wwwroot~~（見修正紀錄 21、29：新的上傳檔寫到 `App:UploadRoot`，舊檔已從 git 移除，以 `scripts/copy-legacy-uploads.sh` 搬到 `UploadRoot`）。
     git 歷史沒有改寫，clone 大小不變。
-22. **前端效能 / 結構**（部分修正，見修正紀錄 15、26）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
+22. ~~**前端效能 / 結構**~~（見修正紀錄 15、26、38）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
     `forumStore.js` 已拆分（2,744 行 → 約 230 行的 state / getters + `stores/forum/` 底下的輔助模組與 6 組 actions），
     `TopicListView.vue` 已拆分（2,755 行 → 外層 82 行 + `ThreadDetailView.vue`、`TopicList.vue` 兩個視圖元件與 8 個 composable，見 `incode.Vue/CLAUDE.md`）。
-    論壇頁 JS 約 615 KB（含 Tiptap 3），尚未再縮小。
+    論壇頁 JS 615 KB → 153 KB（Tiptap 編輯器改為開啟時才載入，見修正紀錄 38）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
 25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
@@ -477,7 +488,7 @@ incode/
     同源請求會帶後台 Cookie、Origin 檢查也視為自己，誘導管理員點連結即可操作後台（對會員同樣有效）。
     方向：存檔前在伺服器端過濾，或對 `/contents/` 回應加 `Content-Security-Policy: sandbox` 與 `X-Content-Type-Options: nosniff`
     （改版前的舊檔已搬到 `App:UploadRoot`，見修正紀錄 29；尚未執行搬檔腳本的環境，wwwroot 可能還有舊檔）。
-27. ~~**後台首頁可被會員暱稱注入腳本**~~（暱稱的字元與長度仍沒有限制）：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
+27. ~~**後台首頁可被會員暱稱注入腳本**~~（暱稱規則見修正紀錄 38）：`Views/Home/Index.cshtml` 以 `@Html.Raw(JsonConvert.SerializeObject(...))` 把發文數前 10 名的暱稱
     輸出到 `<script>` 內；暱稱沒有格式限制（`RegisterDto` / `UpdateUserDto`，最長 150 字），Newtonsoft 預設不跳脫 `<`，
     暱稱含 `</script><script>…` 會在管理員登入後的首頁執行。方向：改用 `Json.Serialize` 或跳脫 HTML，並限制暱稱字元與長度。
 28. ~~**並行取消 / 修改訂單會重複退點**~~：`OrderService.CancelOrderAsync`、`UpdateOrderItemsAsync` 在交易與點數鎖之前就讀取訂單狀態與明細
@@ -511,7 +522,7 @@ incode/
 40. ~~帳號：註冊不驗證 Email；重設密碼後舊的登入 Cookie 仍有效；後台 Cookie 沒有停用檢查；會員沒有「修改密碼」功能；
     Google 帳號用密碼登入會 500；瀏覽器同時有後台 Cookie 時使用 Google 登入會覆蓋後台登入~~（見修正紀錄 34、36）。
 41. ~~發文：`Type`、父文章、分類都不驗證；「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼；分類統計算進已刪除的文章；
-    可以編輯已刪除的文章~~（見修正紀錄 34、37）。關鍵字搜尋只搜標題（內文存成檔案，決定維持）；前端導覽列的搜尋框沒有接到功能。
+    可以編輯已刪除的文章~~（見修正紀錄 34、37）。關鍵字搜尋只搜標題（內文存成檔案，決定維持）；前端導覽列的搜尋框沒有接到功能（先註解，見修正紀錄 38）。
 42. ~~`content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）~~（見修正紀錄 35；`follow` 原本就有主鍵，問題是同時追蹤時 500）。
 43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
     沒有檢舉清單、不能下架文章；~~`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34）。

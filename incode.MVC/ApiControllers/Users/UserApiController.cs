@@ -127,6 +127,7 @@ namespace incode.MVC.ApiControllers.Users
             if (result == UpdateProfileResult.NotFound) return NotFound("找不到使用者");
             if (result == UpdateProfileResult.UsernameTaken) return BadRequest("此暱稱已被使用");
             if (result == UpdateProfileResult.InvalidImageUrl) return BadRequest("大頭貼請使用上傳的圖片");
+            if (result == UpdateProfileResult.InvalidUsername) return BadRequest(UsernameRules.ErrorMessage);
             user = user!;
 
             // 只回傳可公開給本人的欄位 (原本回傳整個 User 實體，包含密碼雜湊與 ResetToken)

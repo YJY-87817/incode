@@ -2,7 +2,7 @@
 import { reactive, onMounted, watch, ref, computed } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
 import apiClient from "@/api/request.js";
-import TiptapEditor from "@/components/contents/TiptapEditor.vue";
+import { TiptapEditor } from "@/components/contents/lazyTiptapEditor";
 import { useForumPost } from "@/composables/useForumPost";
 import Swal from "sweetalert2";
 

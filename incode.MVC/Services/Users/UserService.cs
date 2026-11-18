@@ -22,15 +22,14 @@ namespace incode.MVC.Services.Users
         /// <summary>Google 帳號的密碼欄位標記（沒有密碼，只能用 Google 登入）。</summary>
         public const string GoogleAccountPassword = "GOOGLE_AUTH";
 
-        // username 欄位上限（資料庫 nvarchar(150)）
-        internal const int UsernameMaxLength = 150;
         private const int GoogleUserCreateAttempts = 5;
 
         public async Task<User> CreateGoogleUserAsync(string email, string? name)
         {
             // username 有唯一索引：Google 顯示名稱重複（或都沒有名稱）時改用「名稱_數字」，
             // 原本直接寫入，第二位同名的使用者建立帳號會 500
-            string baseName = string.IsNullOrWhiteSpace(name) ? "Google User" : name.Trim();
+            // 顯示名稱依暱稱規則處理（移除 < > 與控制字元、最多 30 字）
+            string baseName = UsernameRules.Sanitize(name, "Google User");
 
             for (int attempt = 0; ; attempt++)
             {
@@ -66,8 +65,7 @@ namespace incode.MVC.Services.Users
         // 回傳還沒被使用的 username：先用原名稱，被用掉就加上「_2」「_3」…（必要時截短，總長度不超過欄位上限）
         private async Task<string> GetAvailableUsernameAsync(string baseName)
         {
-            if (baseName.Length > UsernameMaxLength)
-                baseName = baseName[..UsernameMaxLength];
+            baseName = UsernameRules.Truncate(baseName, UsernameRules.MaxLength);
 
             if (!await IsUsernameExistAsync(baseName))
                 return baseName;
@@ -85,8 +83,7 @@ namespace incode.MVC.Services.Users
 
         private static string WithSuffix(string baseName, string suffix)
         {
-            int keep = Math.Min(baseName.Length, UsernameMaxLength - suffix.Length);
-            return baseName[..keep] + suffix;
+            return UsernameRules.Truncate(baseName, UsernameRules.MaxLength - suffix.Length) + suffix;
         }
 
         public async Task<List<User>> SearchUsersAsync(string keyword)
@@ -210,8 +207,11 @@ namespace incode.MVC.Services.Users
             if (user == null) return (UpdateProfileResult.NotFound, null);
 
             // Username 不能是空字串；有填才改，且不能與其他人重複
-            if (!string.IsNullOrWhiteSpace(dto.Username))
+            if (!string.IsNullOrWhiteSpace(dto.Username) && dto.Username != user.Username)
             {
+                // 只檢查新設定的暱稱（改版前不符合規則的舊暱稱，沒改就不擋其他欄位的修改）
+                if (!UsernameRules.IsValid(dto.Username))
+                    return (UpdateProfileResult.InvalidUsername, null);
                 if (await _context.User.AnyAsync(u => u.Username == dto.Username && u.UserId != userId))
                     return (UpdateProfileResult.UsernameTaken, null);
                 user.Username = dto.Username;

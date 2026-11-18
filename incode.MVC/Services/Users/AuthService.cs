@@ -46,6 +46,11 @@ namespace incode.MVC.Services.Users
             string finalUsername;
             if (!string.IsNullOrWhiteSpace(preferredUsername))// 使用者自己填了
             { 
+                preferredUsername = preferredUsername.Trim();
+                if (!UsernameRules.IsValid(preferredUsername))
+                {
+                    return UsernameRules.ErrorMessage;
+                }
                 if (await _userService.IsUsernameExistAsync(preferredUsername)) // 使用者填的 須檢查「是否已有人使用」
                 {
                     return "此使用者名稱已被使用";
@@ -72,7 +77,8 @@ namespace incode.MVC.Services.Users
         }
         private string GenerateUsernameFromEmail(string email)
         {           
-            var prefix = email.Split('@')[0];// 取得 @ 前面的字串            
+            // 取得 @ 前面的字串，依暱稱規則處理（移除 < > 與控制字元，加上亂碼後不超過 30 字）
+            var prefix = UsernameRules.Sanitize(email.Split('@')[0], "member", UsernameRules.MaxLength - 2);
             var randomCode = GetRandomString(2);// 產生 2 位亂碼 (包含數字與大寫字母)
             return $"{prefix}{randomCode}";
         }

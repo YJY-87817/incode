@@ -58,7 +58,7 @@ public class GoogleUserTests
     }
 
     [Fact]
-    public async Task Long_name_with_suffix_stays_within_column_length()
+    public async Task Long_name_with_suffix_stays_within_username_length()
     {
         using var db = new TestDb();
         var longName = new string('名', 200);
@@ -66,8 +66,9 @@ public class GoogleUserTests
         var first = await CreateGoogleUser(db, "a@example.com", longName);
         var second = await CreateGoogleUser(db, "b@example.com", longName);
 
-        Assert.Equal(150, first.Username.Length);
-        Assert.Equal(150, second.Username.Length);
+        // 暱稱上限 30 字（UsernameRules）
+        Assert.Equal(UsernameRules.MaxLength, first.Username.Length);
+        Assert.Equal(UsernameRules.MaxLength, second.Username.Length);
         Assert.EndsWith("_2", second.Username);
     }
 }

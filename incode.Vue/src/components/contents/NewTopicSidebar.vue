@@ -1,7 +1,7 @@
 <script setup>
 import { computed, watch } from "vue";
 import { CONTENT_TYPES, useForumStore } from "@/stores/forumStore";
-import TiptapEditor from "@/components/contents/TiptapEditor.vue";
+import { TiptapEditor } from "@/components/contents/lazyTiptapEditor";
 import { useForumPost } from "@/composables/useForumPost";
 import Swal from "sweetalert2";
 
