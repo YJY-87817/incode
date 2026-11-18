@@ -18,12 +18,12 @@
 
 @section Scripts
 {
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables-fixedheader/3.4.1/dataTables.fixedHeader.min.js" integrity="sha512-77LPFo/K97TH0ZwP21bdQ04DJxU2RWnawf+N80wNZS8B6ZNUS3NNnrsZ/TWlurTdvllO9eJHxoBWOSdprqMbng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="~/lib/datatables/dataTables.fixedHeader.min.js"></script>
   <script>
     $("table").dataTable({
       ajax:{
         type:"POST",
-        url:"https://localhost:7190/ContentCategory/IndexJson",
+        url: "@Url.Action("IndexJson", "ContentCategory")", // 原本寫死 https://localhost:7190，其他網址的環境載不到資料
         dataSrc:function(data){
           return data;
         }
@@ -39,7 +39,7 @@
         header:true,
       },
       language: {
-        url: '//cdn.datatables.net/plug-ins/2.3.6/i18n/zh-HANT.json',
+        url: '@Url.Content("~/lib/datatables/i18n/zh-HANT.json")',
       },
     })
   </script>

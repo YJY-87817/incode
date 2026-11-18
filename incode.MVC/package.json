@@ -1,0 +1,25 @@
+{
+  "name": "incode-mvc-admin-assets",
+  "private": true,
+  "description": "後台（Razor）使用的前端套件。dotnet build 前會執行 npm ci 與 npm run lib，把用到的檔案複製到 wwwroot/lib（不提交進 git）",
+  "scripts": {
+    "lib": "node scripts/copy-lib.mjs"
+  },
+  "dependencies": {
+    "@fontsource/nunito": "5.3.0",
+    "@fortawesome/fontawesome-free": "7.3.1",
+    "@microsoft/signalr": "10.0.11",
+    "bootstrap": "5.3.8",
+    "chart.js": "4.6.1",
+    "datatables.net": "1.13.11",
+    "datatables.net-bs5": "1.13.11",
+    "datatables.net-fixedheader": "3.4.1",
+    "datatables.net-plugins": "1.13.6",
+    "dompurify": "3.4.17",
+    "jquery": "3.7.1",
+    "jquery-validation": "1.22.1",
+    "jquery-validation-unobtrusive": "4.0.0",
+    "marked": "18.1.3",
+    "select2": "4.1.0-rc.0"
+  }
+}

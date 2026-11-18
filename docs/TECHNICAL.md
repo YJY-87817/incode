@@ -378,7 +378,8 @@ src/
 
 ## 8. 建置、CI 與部署
 
-- **CI**：`.github/workflows/ci.yml`，PR 與推送到 `main` 時在 Linux 執行後端 `dotnet build`（Release）與前端 `npm ci` + `npm run build`。沒有測試步驟。
+- **CI**：`.github/workflows/ci.yml`，PR 與推送到 `main` 時在 Linux 執行後端 `dotnet build` + `dotnet test`（另有 SQL Server 併發測試 job）與前端 `npm test` + `npm run build`。
+- **後台前端套件**：由 `incode.MVC/package.json` 管理，`dotnet build` / `dotnet publish` 前自動執行 `npm ci` + `npm run lib` 產生 `wwwroot/lib`（不提交進 git），建置機需要 Node.js 22 以上。
 - **Docker 測試資料庫**：`docker-compose.yml` 啟動 SQL Server 2022 並由 `db-init` 執行 `docs/database/` 腳本；後端用 launch profile `https (Docker DB)`。僅供開發測試。
 - **部署需設定**：
   - 後端：`App__FrontendUrl`、`App__CorsOrigins__*`、`ConnectionStrings__incodedatabase`、Google / Email / Gemini / ECPay 金鑰（環境變數或機密儲存）

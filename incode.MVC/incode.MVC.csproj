@@ -20,4 +20,41 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
+  <!--
+    後台的前端套件由 npm 管理（package.json / package-lock.json），wwwroot/lib 不提交進 git。
+    建置前執行 npm ci 與 npm run lib（scripts/copy-lib.mjs）把用到的檔案複製到 wwwroot/lib；
+    package.json、package-lock.json、複製腳本沒有變動且 wwwroot/lib 還在時略過。需要 Node.js 22 以上。
+    不需要後台靜態檔時（例如只跑測試、環境沒有 Node）可以加上 -p:SkipNpmLib=true 略過。
+  -->
+  <ItemGroup>
+    <!-- npm 的設定檔只在建置時使用，不放進 publish -->
+    <Content Update="package.json;package-lock.json" CopyToPublishDirectory="Never" />
+    <None Remove="node_modules\**" />
+    <Content Remove="node_modules\**" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NpmLibStamp>$(BaseIntermediateOutputPath)npm-lib.stamp</NpmLibStamp>
+  </PropertyGroup>
+
+  <Target Name="NpmLib" BeforeTargets="BeforeBuild" Condition="'$(SkipNpmLib)' != 'true'"
+          Inputs="package.json;package-lock.json;scripts/copy-lib.mjs"
+          Outputs="$(NpmLibStamp);wwwroot/lib/nunito/nunito.css">
+    <Exec Command="node --version" ContinueOnError="true" StandardOutputImportance="low">
+      <Output TaskParameter="ExitCode" PropertyName="NodeExitCode" />
+    </Exec>
+    <Error Condition="'$(NodeExitCode)' != '0'"
+           Text="建置後台需要 Node.js 22 以上（npm 管理 wwwroot/lib 的前端套件）。請安裝 Node.js，或以 -p:SkipNpmLib=true 略過（後台頁面會缺少 CSS / JS）。" />
+    <Exec Command="npm ci --no-audit --no-fund" />
+    <Exec Command="npm run lib" />
+    <Touch Files="$(NpmLibStamp)" AlwaysCreate="true" />
+  </Target>
+
+  <!-- 第一次建置時 wwwroot/lib 是在專案載入之後才產生的，預設的 Content 萬用字元沒有包含到：補進來才會出現在 publish 與靜態檔清單 -->
+  <Target Name="IncludeNpmLib" AfterTargets="NpmLib">
+    <ItemGroup>
+      <Content Include="wwwroot\lib\**" Exclude="@(Content)" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
 </Project>

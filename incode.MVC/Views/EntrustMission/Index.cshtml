@@ -112,7 +112,7 @@
         $(document).ready(function () {
             $('#entrustTable').DataTable({
                 "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/zh-HANT.json"
+                    "url": "@Url.Content("~/lib/datatables/i18n/zh-HANT.json")"
                 },
                 "order": [[0, "desc"]], // 預設用 ID 倒序排列（最新在上面）
                 "columnDefs": [

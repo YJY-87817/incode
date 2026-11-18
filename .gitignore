@@ -371,3 +371,6 @@ incode.MVC/wwwroot/img/user/
 incode.MVC/wwwroot/contents/
 incode.MVC/wwwroot/img/product/*
 !incode.MVC/wwwroot/img/product/NoImage.png
+
+# 後台前端套件：由 incode.MVC/package.json 管理，建置時以 npm run lib 產生
+incode.MVC/wwwroot/lib/

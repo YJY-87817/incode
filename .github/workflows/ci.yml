@@ -26,6 +26,13 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # 建置後端時會執行 npm ci + npm run lib 產生後台的 wwwroot/lib（incode.MVC/package.json）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: incode.MVC/package-lock.json
+
       - name: Restore
         run: dotnet restore incode.sln
 
@@ -63,6 +70,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # 建置後端時會執行 npm ci + npm run lib 產生後台的 wwwroot/lib（incode.MVC/package.json）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: incode.MVC/package-lock.json
 
       - name: Restore
         run: dotnet restore incode.sln
