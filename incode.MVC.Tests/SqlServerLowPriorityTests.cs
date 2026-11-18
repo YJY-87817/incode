@@ -97,6 +97,63 @@ public class SqlServerLowPriorityTests : IClassFixture<SqlServerFixture>
         }
     }
 
+    [SqlServerFact]
+    public async Task Concurrent_manual_completion_and_ecpay_callback_grant_points_once()
+    {
+        var userId = NewUser();
+        string orderNo = "T" + Guid.NewGuid().ToString("N")[..18];
+        int rechargeId;
+        await using (var context = _db.NewContext())
+        {
+            var recharge = new PointRecharge { UserId = userId, OrderNo = orderNo, CashAmount = 50, PointsGranted = 500, PaymentMethod = "ecpay", Status = "pending", CreatedAt = DateTime.Now };
+            context.PointRecharge.Add(recharge);
+            await context.SaveChangesAsync();
+            rechargeId = recharge.PointRechargeId;
+        }
+
+        // 後台人工補單 5 次 + 綠界付款成功通知 5 次同時進來
+        var gate = new TaskCompletionSource();
+        var tasks = Enumerable.Range(0, 10).Select(i => Task.Run(async () =>
+        {
+            await gate.Task;
+            await using var context = _db.NewContext();
+            var service = new PointLogService(context);
+            try
+            {
+                if (i % 2 == 0) await service.AdminCompleteRechargeAsync(rechargeId, "manual");
+                else await service.CompleteRechargeAsync(orderNo, "ecpay-trade");
+            }
+            catch (BusinessException) { } // 已經成功：補單回「不能重複加點」
+        })).ToArray();
+        gate.SetResult();
+        await Task.WhenAll(tasks);
+
+        await using var verify = _db.NewContext();
+        var logs = await verify.PointLog.AsNoTracking().Where(l => l.UserId == userId).ToListAsync();
+        Assert.Equal(500, Assert.Single(logs).ChangeAmount);
+        Assert.Equal("success", (await verify.PointRecharge.AsNoTracking().SingleAsync(r => r.PointRechargeId == rechargeId)).Status);
+    }
+
+    [SqlServerFact]
+    public async Task Concurrent_admin_adjustments_keep_the_ledger_continuous()
+    {
+        var userId = NewUser();
+        var gate = new TaskCompletionSource();
+        var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(async () =>
+        {
+            await gate.Task;
+            await using var context = _db.NewContext();
+            await new PointLogService(context).AdminAdjustPointsAsync(userId, 10, "併發測試");
+        })).ToArray();
+        gate.SetResult();
+        await Task.WhenAll(tasks);
+
+        await using var verify = _db.NewContext();
+        var balances = await verify.PointLog.AsNoTracking().Where(l => l.UserId == userId)
+            .OrderBy(l => l.PointLogId).Select(l => l.BalanceAfter).ToListAsync();
+        Assert.Equal(Enumerable.Range(1, 10).Select(i => i * 10), balances); // 每筆接續上一筆，沒有讀到舊餘額
+    }
+
     private static ContentEntrustMissionService CreateService(incodedatabaseContext context, string uploadRoot)
     {
         var configuration = new ConfigurationBuilder()

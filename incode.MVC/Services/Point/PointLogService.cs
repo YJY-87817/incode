@@ -65,6 +65,66 @@ namespace incode.MVC.Services.Point
             }
         }
 
+        /// <summary>後台手動調整單次上限（點）</summary>
+        public const int MaxAdminAdjustment = 100_000;
+        /// <summary>調整原因長度上限（point_log.display_source_sub_title 為 nvarchar(100)）</summary>
+        public const int MaxAdjustReasonLength = 100;
+        /// <summary>人工補單交易編號 / 備註長度上限（point_recharge.payment_trade_no 為 varchar(100)）</summary>
+        public const int MaxManualTradeNoLength = 100;
+
+        public async Task AdminAdjustPointsAsync(int userId, int changeAmount, string? reason)
+        {
+            reason = reason?.Trim();
+            if (changeAmount == 0 || Math.Abs(changeAmount) > MaxAdminAdjustment)
+                throw new BusinessException($"調整點數需為 1～{MaxAdminAdjustment:N0}（扣點填負數）");
+            if (string.IsNullOrEmpty(reason))
+                throw new BusinessException("請填寫調整原因（會顯示在會員的點數紀錄）");
+            if (reason.Length > MaxAdjustReasonLength)
+                throw new BusinessException($"調整原因最多 {MaxAdjustReasonLength} 字");
+            if (!await _context.User.AnyAsync(u => u.UserId == userId))
+                throw new BusinessException("找不到這位會員");
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (!await ChangePointsAsync(userId, changeAmount, "system", null, PointType.SystemAdjustment,
+                        displaySource: "系統調整", displaySubTitle: reason))
+                    throw new BusinessException("會員點數不足，不能扣到負數");
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                _context.ChangeTracker.Clear();
+                throw;
+            }
+        }
+
+        public async Task AdminCompleteRechargeAsync(int pointRechargeId, string? paymentTradeNo)
+        {
+            paymentTradeNo = paymentTradeNo?.Trim();
+            if (string.IsNullOrEmpty(paymentTradeNo))
+                throw new BusinessException("請填寫綠界交易編號或補單備註");
+            if (paymentTradeNo.Length > MaxManualTradeNoLength)
+                throw new BusinessException($"交易編號 / 備註最多 {MaxManualTradeNoLength} 字");
+
+            var recharge = await _context.PointRecharge.AsNoTracking()
+                .Where(r => r.PointRechargeId == pointRechargeId)
+                .Select(r => new { r.OrderNo, r.Status })
+                .FirstOrDefaultAsync()
+                ?? throw new BusinessException("找不到這筆儲值單");
+
+            if (recharge.Status != "pending" && recharge.Status != "failed")
+                throw new BusinessException(recharge.Status == "success" ? "這筆儲值單已經成功，不能重複加點" : "只有待付款或失敗的儲值單可以補單");
+
+            // 與綠界回呼共用：條件更新搶下訂單才加點，同時補單 / 回呼只會成立一次
+            var result = await CompleteRechargeAsync(recharge.OrderNo, paymentTradeNo);
+            if (result != RechargeResult.Completed)
+                throw new BusinessException("這筆儲值單已經成功，不能重複加點");
+        }
+
         public async Task LockUsersAsync(params int[] userIds)
         {
             if (_context.Database.CurrentTransaction == null)

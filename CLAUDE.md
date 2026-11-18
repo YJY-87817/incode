@@ -60,7 +60,7 @@ incode/
 | 模組 | API | 後台 | Service |
 |---|---|---|---|
 | 會員 | `ApiControllers/Users/*` | `Account`、`Member` | `Services/Users/*` |
-| 論壇內容 | `ApiControllers/Contents/*` | `Content*` | `Services/Contents/*` |
+| 論壇內容 | `ApiControllers/Contents/*` | `Content*`（含檢舉清單 `ContentReport`） | `Services/Contents/*` |
 | 點數 / 任務 / 儲值 | `ApiControllers/Point/*` | `Mission*`、`EntrustMission`、`PointLog`、`PointRecharge` | `Services/Point/*` |
 | 點數商城 | `ApiControllers/PointShop/*` | `Product`、`Order`、`Shipped` | `Services/PointShop/*` |
 | 客服聊天 | `ApiControllers/Chat/*` + `ChatHub` | `ChatSessions`、`ChatMessages` | `Services/Chat/*` |
@@ -89,6 +89,8 @@ incode/
   前端以 `error.response.data.message` 顯示錯誤。
 - **不外洩例外**：catch 後用 `ILogger` 記錄，回傳通用訊息，不要把 `ex.Message` 回給前端。
   要讓使用者看到的業務錯誤丟 `BusinessException`（`Services/Common/`），只有它的 `Message` 可以直接回傳。
+- **點數紀錄是帳本**：`point_log` 只能經由服務新增（每筆的 `balance_after` 接續上一筆），後台不提供新增 / 修改 / 刪除；
+  後台調整用 `AdminAdjustPointsAsync`，儲值補單用 `AdminCompleteRechargeAsync`
 - **點數異動**：透過 `IPointLogService.ChangePointsAsync`，必須在交易內呼叫（沒有交易會丟例外），不會自己 SaveChanges。
   它會以 `sp_getapplock`（`point-user-{userId}`）鎖定該會員到交易結束。**讀取會決定能不能異動的資料之前**
   （餘額、任務是否已領獎、委託狀態…）先呼叫 `LockUsersAsync(userId, ...)`，同一會員的請求才會排隊、不會讀到舊狀態；
@@ -135,7 +137,7 @@ incode/
 - **測試資料庫**：`docker compose up -d` 啟動 SQL Server 並自動建表與寫入基本資料，後端用 launch profile `https (Docker DB)`；
   `docker compose down -v` 可重建全新資料庫。註冊帳號後 `UPDATE [user] SET role_id = 1 ...` 即可登入後台
 - **CI**：`.github/workflows/ci.yml`：後端 `dotnet build` + `dotnet test`，前端 `npm test` + `npm run build`。PR 合併前請確認兩個 job 都通過
-- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、發文驗證（`ContentValidationTests`）、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
+- **測試**：後端 `incode.MVC.Tests/`（xUnit，SQLite 記憶體資料庫，涵蓋 `PointLogService`、`PointRechargeService`、`OrderService`、`MissionService`、`MissionProgressService`（領獎）、`EntrustMissionService`（含過期處理）、`ChatToolService`（AI 客服查詢）、Google 帳號建立、帳號安全（`AccountSecurityTests`：登入戳記、修改密碼、Email 驗證、Google 接管）、`LoginAttemptLimiter`、`ImageFileValidator`、發文驗證（`ContentValidationTests`）、後台點數調整 / 人工補單 / 檢舉處理（`AdminModerationTests`）、Origin 檢查，以及用 `WebApplicationFactory` 啟動整個網站的 API 權限測試 `ApiAuthorizationTests`（未登入 401、非管理員 403、非本人 404、停用帳號登出、Origin 檢查；`ApiFactory` 提供 `/__test/login`）；`dotnet test incode.sln`），前端 `npm test`（Vitest）。
   SQLite 不支援 `sp_getapplock`，併發行為由 `ConcurrencyTests`（`[SqlServerFact]`，需環境變數 `INCODE_TEST_SQLSERVER`，沒設定就略過；CI 的 `backend-concurrency` job 以 SQL Server service container 執行）驗證；`TestDb` 會移除模型中 SQL Server 專用的 `getdate()` 預設值。環境沒有 .NET 10 SDK 時可用 Docker 映像 `mcr.microsoft.com/dotnet/sdk:10.0` 建置 / 執行
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
@@ -437,12 +439,28 @@ incode/
     - 舊上傳檔只剩各環境的 `UploadRoot`（改寫前確認所有環境都已執行過搬檔腳本）；`scripts/copy-legacy-uploads.sh` 改為必須指定備份資料夾
     - GitHub 上已合併 PR 的 `refs/pull/*` 仍保留舊 commit（clone 不會下載）；舊分支 `claude/intelligent-lovelace-k9v90l` 需要在 GitHub 手動刪除，
       否則一般 clone（抓所有分支）仍會下載舊歷史
+40. 第二次全專案檢查 43 的其餘項目（後台，都先寫測試重現，`AdminModerationTests`；併發在 `SqlServerLowPriorityTests`）：
+    - **點數紀錄 / 儲值單改為唯讀**：刪除後台 `PointLog`、`PointRecharge` 的 Create / Edit / Delete（Action 與 View）。
+      修正前在 main 上重現：後台可以新增一筆手填餘額 999999 的點數紀錄（帳本斷掉）、把儲值單改成 success 但會員沒有加點
+    - **手動調整點數**（`PointLog/Adjust`，點數紀錄頁與每列的按鈕）：`IPointLogService.AdminAdjustPointsAsync` 在交易內走 `ChangePointsAsync`
+      （類型「系統調整」、`source_type = system`），餘額由系統接續計算、不能扣到負數，單次 ±100,000 點，原因必填（最多 100 字，
+      顯示在會員點數紀錄的副標），管理員與原因記在 log。同時 10 筆調整，帳本仍連續
+    - **儲值人工補單**（儲值紀錄頁「待付款 / 失敗」那幾列）：`AdminCompleteRechargeAsync` 與綠界回呼共用 `CompleteRechargeAsync`
+      （條件更新搶下訂單才加點），需填綠界交易編號或補單備註（寫入 `payment_trade_no`）。已成功 / 已取消的不能補；
+      補單與綠界通知同時進來只加一次點
+    - **檢舉清單**（後台「討論區 → 檢舉清單」，`ContentReportController` + `ContentReportService`）：列出待處理的檢舉
+      （內容、類型、所屬主題、作者、檢舉數、最近檢舉時間），可以**駁回**（內容維持公開）或**下架**（`content.is_active = 3` 官方移除，
+      常數 `Constants/ContentStatus`）；已下架的內容可以**恢復上架**（只限官方移除，會員自己刪除的不行）。每次處理寫一筆
+      `content_report_review`（管理員、動作、備註、時間），**最後一次處理之後的檢舉才算待處理**；頁面下方列出最近 50 筆處理紀錄。
+      下架 / 恢復以條件更新判斷狀態，同時操作只會成立一次
+    - **已上線的資料庫要執行一次** `docs/database/migrations/2026-11-18-content-report-review.sql`（新增 `content_report_review`，可重複執行）；
+      資料表設定在 `Models/Partials/ContentReportReview.cs` 與 `OnModelCreatingPartial`，`schema.sql` 已更新。既有的檢舉執行後全部列為待處理
 
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
 程度：🔴 嚴重（可直接被利用，影響點數 / 帳號 / 資料）、🟠 高、🟡 中、⚪ 低。
-建議修正順序：第二次檢查 43 的其餘項目（後台點數紀錄唯讀、檢舉清單 / 下架文章，見下方「第二次全專案檢查」）。
+第二次全專案檢查 26～44 已全部修正（見修正紀錄 30～40）。
 
 ### 🔴 嚴重（1～5 已修正）
 
@@ -486,7 +504,7 @@ incode/
 
 ## 第二次全專案檢查（2026-11-11）
 
-重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～42、44 已修正，43 部分修正（見修正紀錄 34～37），刪除線以外為尚未修正的項目。
+重讀整個專案（後端 API、服務、後台、設定，前端的路由、API 層與 HTML 顯示路徑）後新發現的問題。26～39 已修正（見修正紀錄 30～33）；40～44 已修正（見修正紀錄 34～37、40）。
 編號接續上一份清單。都是讀程式碼得出的，尚未實際重現（檢查環境沒有 .NET SDK / Docker）；修正時請先寫出重現步驟或測試。
 前端當時 `npm test` 76 項通過、`npm run build` 成功。
 
@@ -533,6 +551,6 @@ incode/
 41. ~~發文：`Type`、父文章、分類都不驗證；「發文 + 委託」不是同一個交易、委託標題 / 詳情未編碼；分類統計算進已刪除的文章；
     可以編輯已刪除的文章~~（見修正紀錄 34、37）。關鍵字搜尋只搜標題（內文存成檔案，決定維持）；前端導覽列的搜尋框沒有接到功能（先註解，見修正紀錄 38）。
 42. ~~`content_interaction`、`follow` 沒有唯一索引，連點兩下可能寫入兩筆（按讚數虛增）~~（見修正紀錄 35；`follow` 原本就有主鍵，問題是同時追蹤時 500）。
-43. 後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
-    沒有檢舉清單、不能下架文章；~~`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34）。
+43. ~~後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
+    沒有檢舉清單、不能下架文章；`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34、40）。
 44. ~~其他：公開個人頁顯示點數餘額；大頭貼網址可填任意外部網址；`SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用不是原子扣減~~（見修正紀錄 34）。

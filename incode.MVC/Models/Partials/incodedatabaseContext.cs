@@ -37,7 +37,28 @@ namespace incode.MVC.Models
         entity.Property(e => e.EmailVerifyTokenExpiry).HasColumnName("email_verify_token_expiry").HasColumnType("datetime");
         entity.Property(e => e.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64);
       });
+
+      // 後台檢舉處理紀錄（Models/Partials/ContentReportReview.cs）。
+      // 已上線的資料庫執行 docs/database/migrations/2026-11-18-content-report-review.sql 建立
+      modelBuilder.Entity<ContentReportReview>(entity =>
+      {
+        entity.ToTable("content_report_review");
+        entity.HasKey(e => e.ContentReportReviewId);
+        entity.Property(e => e.ContentReportReviewId).HasColumnName("content_report_review_id");
+        entity.Property(e => e.ContentId).HasColumnName("content_id");
+        entity.Property(e => e.AdminUserId).HasColumnName("admin_user_id");
+        entity.Property(e => e.Action).HasColumnName("action").HasMaxLength(20).IsRequired();
+        entity.Property(e => e.Note).HasColumnName("note").HasMaxLength(ContentReportActions.MaxNoteLength);
+        entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime");
+        entity.HasIndex(e => new { e.ContentId, e.CreatedAt }, "IX_content_report_review_content_id_created_at");
+        entity.HasOne(e => e.Content).WithMany().HasForeignKey(e => e.ContentId)
+          .OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_content_report_review_content");
+        entity.HasOne(e => e.AdminUser).WithMany().HasForeignKey(e => e.AdminUserId)
+          .OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_content_report_review_admin_user");
+      });
     }
+
+    public virtual DbSet<ContentReportReview> ContentReportReview { get; set; }
 
     public const string ContentInteractionUniqueIndex = "UX_content_interaction_content_user_category";
   }

@@ -1,0 +1,34 @@
+@model incode.MVC.ViewModels.Point.PointAdjustViewModel
+@{
+    ViewData["Title"] = "手動調整點數";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4" style="max-width: 640px">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-coins me-2"></i>手動調整點數</h6>
+            <small class="text-muted">寫入一筆「系統調整」點數紀錄，餘額由系統計算，不能扣到負數。</small>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="Adjust">
+                <div asp-validation-summary="All" class="text-danger mb-2"></div>
+                <div class="mb-3">
+                    <label asp-for="UserId" class="form-label"></label>
+                    <select asp-for="UserId" asp-items="ViewBag.UserList" class="form-select">
+                        <option value="0">-- 選擇會員 --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="ChangeAmount" class="form-label"></label>
+                    <input asp-for="ChangeAmount" type="number" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Reason" class="form-label"></label>
+                    <input asp-for="Reason" class="form-control" maxlength="@PointLogService.MaxAdjustReasonLength" placeholder="例如：活動獎勵、客服補償" />
+                </div>
+                <button type="submit" class="btn btn-primary" onclick="return confirm('確定要調整這位會員的點數？')">確認調整</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">返回</a>
+            </form>
+        </div>
+    </div>
+</div>

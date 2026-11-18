@@ -410,6 +410,19 @@ CREATE TABLE [content_notification] (
 GO
 
 
+CREATE TABLE [content_report_review] (
+    [content_report_review_id] int NOT NULL IDENTITY,
+    [content_id] int NOT NULL,
+    [admin_user_id] int NOT NULL,
+    [action] nvarchar(20) NOT NULL,
+    [note] nvarchar(500) NULL,
+    [created_at] datetime NOT NULL,
+    CONSTRAINT [PK_content_report_review] PRIMARY KEY ([content_report_review_id]),
+    CONSTRAINT [FK_content_report_review_admin_user] FOREIGN KEY ([admin_user_id]) REFERENCES [user] ([user_id]),
+    CONSTRAINT [FK_content_report_review_content] FOREIGN KEY ([content_id]) REFERENCES [content] ([content_id])
+);
+GO
+
 CREATE TABLE [entrust_mission] (
     [entrust_mission_id] int NOT NULL IDENTITY,
     [user_id] int NOT NULL,
@@ -556,6 +569,13 @@ GO
 CREATE INDEX [IX_content_notification_user_id] ON [content_notification] ([user_id]);
 GO
 
+
+CREATE INDEX [IX_content_report_review_admin_user_id] ON [content_report_review] ([admin_user_id]);
+GO
+
+
+CREATE INDEX [IX_content_report_review_content_id_created_at] ON [content_report_review] ([content_id], [created_at]);
+GO
 
 CREATE INDEX [IX_entrust_mission_best_content_id] ON [entrust_mission] ([best_content_id]);
 GO

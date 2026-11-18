@@ -13,10 +13,14 @@ namespace incode.MVC.Controllers.Point
     public class PointLogController : Controller
     {
         private readonly incodedatabaseContext _context;
+        private readonly IPointLogService _pointLogService;
+        private readonly ILogger<PointLogController> _logger;
 
-        public PointLogController(incodedatabaseContext context)
+        public PointLogController(incodedatabaseContext context, IPointLogService pointLogService, ILogger<PointLogController> logger)
         {
             _context = context;
+            _pointLogService = pointLogService;
+            _logger = logger;
         }
 
         // GET: PointLogTest
@@ -46,141 +50,49 @@ namespace incode.MVC.Controllers.Point
             return View(pointLog);
         }
 
-        // GET: PointLogTest/Create
-        public IActionResult Create()
+        // 點數紀錄是帳本（每筆的 BalanceAfter 接續上一筆），不能直接新增 / 修改 / 刪除：
+        // 原本的 Create / Edit / Delete 可以手填餘額，會讓帳本斷掉。調整點數一律用下方的 Adjust（走 ChangePointsAsync）
+
+        // GET: PointLog/Adjust
+        public async Task<IActionResult> Adjust(int? userId)
         {
-            ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "Category");
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email");
-
-            var sourceTypes = new List<SelectListItem>
-            {
-               new SelectListItem { Value = "mission", Text = "平台任務獎勵" },
-               new SelectListItem { Value = "entrust_mission", Text = "委託任務獎勵" },
-               new SelectListItem { Value = "entrust_mission_point_reserve", Text = "委託預扣點數" },
-               new SelectListItem { Value = "point_recharge", Text = "點數儲值" },
-               new SelectListItem { Value = "order", Text = "商品購買" },
-               new SelectListItem { Value = "system", Text = "系統調整" }
-            };
-            ViewBag.SourceTypes = sourceTypes;
-
-            return View();
+            await LoadUserListAsync(userId);
+            return View(new PointAdjustViewModel { UserId = userId ?? 0 });
         }
 
-        // POST: PointLogTest/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: PointLog/Adjust
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PointLogId,UserId,SourceType,SourceId,DisplaySource,DisplaySourceSubTitle,PointTypeDefinitionId,ChangeAmount,BalanceAfter,Status,CreatedAt")] PointLog pointLog)
+        public async Task<IActionResult> Adjust(PointAdjustViewModel vm)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(pointLog);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "Category", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointLog.UserId);
-            return View(pointLog);
-        }
-
-        // GET: PointLogTest/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var pointLog = await _context.PointLog
-                .Include(p => p.PointTypeDefinition)
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointLogId == id);
-
-            if (pointLog == null)
-            {
-                return NotFound();
-            }
-            ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "Category", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointLog.UserId);
-            return View(pointLog);
-        }
-
-        // POST: PointLogTest/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PointLogId,UserId,SourceType,SourceId,DisplaySource,DisplaySourceSubTitle,PointTypeDefinitionId,ChangeAmount,BalanceAfter,Status,CreatedAt")] PointLog pointLog)
-        {
-            if (id != pointLog.PointLogId)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(pointLog);
-                    await _context.SaveChangesAsync();
+                    await _pointLogService.AdminAdjustPointsAsync(vm.UserId, vm.ChangeAmount, vm.Reason);
+                    _logger.LogInformation("管理員 {AdminUserId} 調整會員 {UserId} 點數 {ChangeAmount}：{Reason}",
+                        User.GetId(), vm.UserId, vm.ChangeAmount, vm.Reason);
+                    TempData["SuccessMessage"] = $"已調整點數 {vm.ChangeAmount:+#,0;-#,0}";
+                    return RedirectToAction(nameof(PointLogsDetail), new { UserId = vm.UserId });
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (BusinessException ex)
                 {
-                    if (!PointLogExists(pointLog.PointLogId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    ModelState.AddModelError(string.Empty, ex.Message);
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["PointTypeDefinitionId"] = new SelectList(_context.PointTypeDefinition, "PointTypeDefinitionId", "Category", pointLog.PointTypeDefinitionId);
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointLog.UserId);
-            return View(pointLog);
+
+            await LoadUserListAsync(vm.UserId);
+            return View(vm);
         }
 
-        // GET: PointLogTest/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        private async Task LoadUserListAsync(int? selectedUserId)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var pointLog = await _context.PointLog
-                .Include(p => p.PointTypeDefinition)
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointLogId == id);
-            if (pointLog == null)
-            {
-                return NotFound();
-            }
-
-            return View(pointLog);
-        }
-
-        // POST: PointLogTest/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var pointLog = await _context.PointLog.FindAsync(id);
-            if (pointLog != null)
-            {
-                _context.PointLog.Remove(pointLog);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool PointLogExists(int id)
-        {
-            return _context.PointLog.Any(e => e.PointLogId == id);
+            var users = await _context.User
+                .AsNoTracking()
+                .OrderBy(u => u.UserId)
+                .Select(u => new { u.UserId, Text = "#" + u.UserId + " " + u.Username + "（" + u.Email + "）" })
+                .ToListAsync();
+            ViewBag.UserList = new SelectList(users, "UserId", "Text", selectedUserId);
         }
 
         //-----------------------------------------------------------
