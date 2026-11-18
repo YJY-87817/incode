@@ -7,9 +7,13 @@ public class ContentDetailViewModel
   public int ContentId { get; set; }
   public string Title { get; set; }
   public string Body { get; set; }
-  public DateTime CreatedAt { get; set; }
+  public DateTime? CreatedAt { get; set; }
   public string AuthorName { get; set; }
   public string CategoryName { get; set; }
+  public int? ParentContentId { get; set; }
+  public int Type { get; set; }
+  /// <summary>content.is_active（ContentStatus）</summary>
+  public int Status { get; set; }
 
   // 回覆列表
   public List<ReplyViewModel> Replies { get; set; }
@@ -21,5 +25,5 @@ public class ReplyViewModel
   public int ContentId { get; set; }
   public string Body { get; set; }
   public string AuthorName { get; set; }
-  public DateTime CreatedAt { get; set; }
+  public DateTime? CreatedAt { get; set; }
 }

@@ -11,7 +11,7 @@ namespace incode.MVC.ViewModels.Contents
     public int? ParentContentId { get; set; }
     public string Title { get; set; }
     public string Body { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
     // 作者資料
     public string AuthorName { get; set; }
 

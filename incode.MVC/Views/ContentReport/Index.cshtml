@@ -1,21 +1,6 @@
 @model incode.MVC.ViewModels.Contents.ContentReportIndexViewModel
 @{
     ViewData["Title"] = "檢舉清單";
-    string TypeName(int type) => type switch
-    {
-        ContentTypes.Post => "主題",
-        ContentTypes.Reply => "回文",
-        ContentTypes.Comment => "留言",
-        ContentTypes.CommentReply => "留言回覆",
-        _ => type.ToString(),
-    };
-    string StatusName(int status) => status switch
-    {
-        ContentStatus.Active => "公開",
-        ContentStatus.DeletedByAuthor => "作者已刪除",
-        ContentStatus.RemovedByAdmin => "已下架",
-        _ => status.ToString(),
-    };
 }
 
 <div class="container-fluid py-4">
@@ -52,10 +37,10 @@
                             {
                                 <tr>
                                     <td class="text-center"><a asp-controller="Content" asp-action="Details" asp-route-id="@item.ContentId">#@item.ContentId</a></td>
-                                    <td class="text-center">@TypeName(item.Type)</td>
+                                    <td class="text-center">@ContentTypes.DisplayName(item.Type)</td>
                                     <td class="text-truncate" style="max-width:240px">@item.TopicTitle</td>
                                     <td>@item.AuthorName</td>
-                                    <td class="text-center">@StatusName(item.Status)</td>
+                                    <td class="text-center">@ContentStatus.DisplayName(item.Status)</td>
                                     <td class="text-center text-danger font-weight-bold">@item.PendingReportCount</td>
                                     <td class="text-center">@item.LatestReportAt?.ToString("yyyy-MM-dd HH:mm")</td>
                                     <td>
@@ -99,7 +84,7 @@
                             {
                                 <tr>
                                     <td class="text-center"><a asp-controller="Content" asp-action="Details" asp-route-id="@item.ContentId">#@item.ContentId</a></td>
-                                    <td class="text-center">@TypeName(item.Type)</td>
+                                    <td class="text-center">@ContentTypes.DisplayName(item.Type)</td>
                                     <td class="text-truncate" style="max-width:240px">@item.TopicTitle</td>
                                     <td>@item.AuthorName</td>
                                     <td>

@@ -1,65 +1,69 @@
-﻿@model incode.MVC.Models.Content
-
+﻿@model incode.MVC.ViewModels.Contents.ContentDetailViewModel
 @{
-  ViewData["Title"] = "Details";
+  ViewData["Title"] = "內容詳情";
 }
 
-<h1>Details</h1>
+<div class="container-fluid py-4">
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">內容 #@Model.ContentId（@ContentTypes.DisplayName(Model.Type)）</h6>
+    </div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-2">標題</dt>
+        <dd class="col-sm-10">@Model.Title</dd>
+        <dt class="col-sm-2">作者</dt>
+        <dd class="col-sm-10">@Model.AuthorName</dd>
+        <dt class="col-sm-2">分類</dt>
+        <dd class="col-sm-10">@(Model.CategoryName ?? "（無）")</dd>
+        <dt class="col-sm-2">狀態</dt>
+        <dd class="col-sm-10">@ContentStatus.DisplayName(Model.Status)</dd>
+        <dt class="col-sm-2">父內容</dt>
+        <dd class="col-sm-10">
+          @if (Model.ParentContentId is int parentId)
+          {
+            <a asp-action="Details" asp-route-id="@parentId">#@parentId</a>
+          }
+          else
+          {
+            <span>（無）</span>
+          }
+        </dd>
+        <dt class="col-sm-2">建立時間</dt>
+        <dd class="col-sm-10">@Model.CreatedAt?.ToString("yyyy-MM-dd HH:mm")</dd>
+        <dt class="col-sm-2">內文檔案</dt>
+        <dd class="col-sm-10"><code>@Model.Body</code></dd>
+      </dl>
+    </div>
+  </div>
 
-<div>
-  <h4>Content</h4>
-  <hr />
-  <dl class="row">
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Title)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Title)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Body)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Body)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.CreatedAt)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.CreatedAt)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.UpdatedAt)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.UpdatedAt)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.IsActive)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.IsActive)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Category)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Category.CategoryName)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.ParentContent)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.ParentContent.Body)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.User)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.User.Email)
-    </dd>
-  </dl>
-</div>
-<div>
-  <a asp-action="Index">Back to List</a>
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 font-weight-bold text-primary">直接回覆（@Model.Replies.Count）</h6>
+    </div>
+    <div class="card-body">
+      @if (Model.Replies.Count == 0)
+      {
+        <p class="text-muted mb-0">沒有回覆。</p>
+      }
+      else
+      {
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>內容</th><th>作者</th><th>建立時間</th><th>內文檔案</th></tr></thead>
+          <tbody>
+            @foreach (var reply in Model.Replies)
+            {
+              <tr>
+                <td><a asp-action="Details" asp-route-id="@reply.ContentId">#@reply.ContentId</a></td>
+                <td>@reply.AuthorName</td>
+                <td>@reply.CreatedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                <td><code>@reply.Body</code></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+  <a asp-action="Index" class="btn btn-outline-secondary">返回列表</a>
 </div>
