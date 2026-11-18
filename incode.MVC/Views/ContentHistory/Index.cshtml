@@ -13,7 +13,6 @@
 <h1>Index</h1>
 
 <p>
-  <a class="btn btn-primary" title="新增商品紀錄" asp-action="Create">新增</a>
 </p>
 <table class="table table-striped table-bordered table-hover table-responsive">
   <thead class="table-primary">
@@ -59,9 +58,7 @@
                     @Html.DisplayFor(modelItem => item.User.Email)
         </td>
         <td>
-          <a asp-controller="ContentHistory" asp-action="Edit" asp-route-content_history_id="@item.ContentHistoryId">Edit</a> |
-          <a asp-controller="ContentHistory" asp-action="Details" asp-route-content_history_id="@item.ContentHistoryId">Details</a> |
-          <a asp-controller="ContentHistory" asp-action="Delete" asp-route-content_history_id="@item.ContentHistoryId">Delete</a>
+          <a asp-controller="ContentHistory" asp-action="Details" asp-route-content_history_id="@item.ContentHistoryId">Details</a>
         </td>
       </tr>
     }

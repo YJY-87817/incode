@@ -10,6 +10,10 @@ public class ContentDetailViewModel
   public DateTime CreatedAt { get; set; }
   public string AuthorName { get; set; }
   public string CategoryName { get; set; }
+  public int? ParentContentId { get; set; }
+  public int Type { get; set; }
+  /// <summary>content.is_active（ContentStatus）</summary>
+  public int Status { get; set; }
 
   // 回覆列表
   public List<ReplyViewModel> Replies { get; set; }

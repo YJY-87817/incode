@@ -1,190 +1,131 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace incode.MVC.Controllers.Contents
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
-
     public class ContentCategoryController : Controller
-  {
-    private readonly incodedatabaseContext _context;
-
-    public ContentCategoryController(incodedatabaseContext context)
     {
-      _context = context;
-    }
+        private readonly IAdminCategoryService _categories;
 
-    //// GET: ContentCategory 有改檔案名稱Index_Old.cshtml
-    //public async Task<IActionResult> Index()
-    //{
-    //  var incodedatabaseContext = _context.ContentCategory.Include(c => c.ParentCategory);
-    //  return View(await incodedatabaseContext.ToListAsync());
-    //}
-
-    // GET: ContentCategory
-    public async Task<IActionResult> Index()
-    {
-      var incodedatabaseContext = _context.ContentCategory.Include(c => c.ParentCategory);
-      return View();
-    }
-
-    // POST: ContentCategory/IndexJson
-    [HttpPost]
-    public async Task<IActionResult> IndexJson()
-    {
-      // 提供給前端 DataTables 的 JSON 資料來源
-      var category = await _context.ContentCategory
-      .Select(c => new
-      {
-        c.ContentCategoryId,
-        c.ParentCategoryId,
-        c.CategoryName,
-        c.Description,
-        //ParentName = c.ParentCategory != null ? c.ParentCategory.CategoryName : "無"
-      })
-      .ToListAsync();
-      return Json(category);
-    }
-
-    // GET: ContentCategory/Details/5
-    public async Task<IActionResult> Details(int? id)
-    {
-      if (id == null)
-      {
-        return NotFound();
-      }
-
-      var contentCategory = await _context.ContentCategory
-          .Include(c => c.ParentCategory)
-          .FirstOrDefaultAsync(m => m.ContentCategoryId == id);
-      if (contentCategory == null)
-      {
-        return NotFound();
-      }
-
-      return View(contentCategory);
-    }
-
-    // GET: ContentCategory/Create
-    public IActionResult Create()
-    {
-      ViewData["ParentCategoryId"] = new SelectList(_context.ContentCategory, "ContentCategoryId", "CategoryName");
-      return View();
-    }
-
-    // POST: ContentCategory/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("ContentCategoryId,ParentCategoryId,CategoryName,Description")] ContentCategory contentCategory)
-    {
-      if (ModelState.IsValid)
-      {
-        _context.Add(contentCategory);
-        await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
-      }
-      ViewData["ParentCategoryId"] = new SelectList(_context.ContentCategory, "ContentCategoryId", "CategoryName", contentCategory.ParentCategoryId);
-      return View(contentCategory);
-    }
-
-    // GET: ContentCategory/Edit/5
-    public async Task<IActionResult> Edit(int? id)
-    {
-      if (id == null)
-      {
-        return NotFound();
-      }
-
-      var contentCategory = await _context.ContentCategory.FindAsync(id);
-      if (contentCategory == null)
-      {
-        return NotFound();
-      }
-      ViewData["ParentCategoryId"] = new SelectList(_context.ContentCategory, "ContentCategoryId", "CategoryName", contentCategory.ParentCategoryId);
-      return View(contentCategory);
-    }
-
-    // POST: ContentCategory/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("ContentCategoryId,ParentCategoryId,CategoryName,Description")] ContentCategory contentCategory)
-    {
-      if (id != contentCategory.ContentCategoryId)
-      {
-        return NotFound();
-      }
-
-      if (ModelState.IsValid)
-      {
-        try
+        public ContentCategoryController(IAdminCategoryService categories)
         {
-          _context.Update(contentCategory);
-          await _context.SaveChangesAsync();
+            _categories = categories;
         }
-        catch (DbUpdateConcurrencyException)
+
+        // GET: ContentCategory（資料由 DataTables 呼叫 IndexJson 取得）
+        public IActionResult Index()
         {
-          if (!ContentCategoryExists(contentCategory.ContentCategoryId))
-          {
-            return NotFound();
-          }
-          else
-          {
-            throw;
-          }
+            return View();
         }
-        return RedirectToAction(nameof(Index));
-      }
-      ViewData["ParentCategoryId"] = new SelectList(_context.ContentCategory, "ContentCategoryId", "CategoryName", contentCategory.ParentCategoryId);
-      return View(contentCategory);
+
+        // POST: ContentCategory/IndexJson（唯讀資料，不改變狀態）
+        [HttpPost]
+        public async Task<IActionResult> IndexJson()
+        {
+            return Json(await _categories.GetRowsAsync());
+        }
+
+        // GET: ContentCategory/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+            var contentCategory = await _categories.GetAsync(id.Value);
+            if (contentCategory == null) return NotFound();
+            return View(contentCategory);
+        }
+
+        // GET: ContentCategory/Create
+        public async Task<IActionResult> Create()
+        {
+            await LoadOptionsAsync(null, null);
+            return View(new ContentCategory { IsActive = ContentCategoryStatus.Official });
+        }
+
+        // POST: ContentCategory/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("ParentCategoryId,CategoryName,Description,IsActive")] ContentCategory contentCategory)
+        {
+            try
+            {
+                await _categories.CreateAsync(contentCategory);
+                TempData["SuccessMessage"] = "分類已新增";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (BusinessException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await LoadOptionsAsync(null, contentCategory.ParentCategoryId);
+                return View(contentCategory);
+            }
+        }
+
+        // GET: ContentCategory/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null) return NotFound();
+            var contentCategory = await _categories.GetAsync(id.Value);
+            if (contentCategory == null) return NotFound();
+            await LoadOptionsAsync(id, contentCategory.ParentCategoryId);
+            return View(contentCategory);
+        }
+
+        // POST: ContentCategory/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("ContentCategoryId,ParentCategoryId,CategoryName,Description,IsActive")] ContentCategory contentCategory)
+        {
+            if (id != contentCategory.ContentCategoryId) return NotFound();
+
+            try
+            {
+                if (!await _categories.UpdateAsync(id, contentCategory)) return NotFound();
+                TempData["SuccessMessage"] = "分類已更新";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (BusinessException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await LoadOptionsAsync(id, contentCategory.ParentCategoryId);
+                return View(contentCategory);
+            }
+        }
+
+        // 父分類（編輯時排除自己與子孫，避免形成循環）與狀態下拉選單
+        private async Task LoadOptionsAsync(int? editingId, int? selectedParentId)
+        {
+            var parents = (await _categories.GetParentOptionsAsync(editingId)).Select(p => new { p.Id, p.Name });
+            ViewData["ParentCategoryId"] = new SelectList(parents, "Id", "Name", selectedParentId);
+            ViewData["Statuses"] = AdminCategoryService.Statuses
+                .Select(s => new SelectListItem(AdminCategoryService.StatusName(s), s.ToString())).ToList();
+        }
+
+        // GET: ContentCategory/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+            var contentCategory = await _categories.GetAsync(id.Value);
+            if (contentCategory == null) return NotFound();
+            return View(contentCategory);
+        }
+
+        // POST: ContentCategory/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            try
+            {
+                await _categories.DeleteAsync(id);
+                TempData["SuccessMessage"] = "分類已刪除";
+            }
+            catch (BusinessException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
     }
-
-    // GET: ContentCategory/Delete/5
-    public async Task<IActionResult> Delete(int? id)
-    {
-      if (id == null)
-      {
-        return NotFound();
-      }
-
-      var contentCategory = await _context.ContentCategory
-          .Include(c => c.ParentCategory)
-          .FirstOrDefaultAsync(m => m.ContentCategoryId == id);
-      if (contentCategory == null)
-      {
-        return NotFound();
-      }
-
-      return View(contentCategory);
-    }
-
-    // POST: ContentCategory/Delete/5
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-      var contentCategory = await _context.ContentCategory.FindAsync(id);
-      if (contentCategory != null)
-      {
-        _context.ContentCategory.Remove(contentCategory);
-      }
-
-      await _context.SaveChangesAsync();
-      return RedirectToAction(nameof(Index));
-    }
-
-    private bool ContentCategoryExists(int id)
-    {
-      return _context.ContentCategory.Any(e => e.ContentCategoryId == id);
-    }
-  }
 }

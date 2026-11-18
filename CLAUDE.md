@@ -84,7 +84,7 @@ incode/
 - **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
   （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
   後台 MVC（`Controllers/`）也一樣只呼叫服務（後台專用的放 `Services/<模組>/Admin*Service`），進行中：
-  點數 / 任務模組已完成（修正紀錄 42），論壇、商城、聊天 + 首頁尚未搬移
+  點數 / 任務、論壇模組已完成（修正紀錄 42、43），商城、聊天 + 首頁尚未搬移
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -484,6 +484,18 @@ incode/
     - **平台任務表單只能設定可編輯的欄位**：建立時間、參與人數、上次重置時間由系統維護（原本整個實體由表單綁定）；
       新增時寫入建立時間（原本為 null）、預設啟用；獎勵點數 / 經驗值不能是負數（領獎時會變成扣點）、目標次數至少 1；
       新增頁補上難度、重置類型、啟用、精選欄位，重置類型改為下拉選單（舊資料的其他值保留）
+43. 後台改走服務層（二）論壇模組（`Content`、`ContentEdit`、`ContentHistory`、`ContentCategory`）：新增 `AdminContentService`（文章列表 / 詳情、
+    修改前後對照、修改紀錄）、`AdminCategoryService`。搬移時修正（都先在 main 重現 5/5，`AdminForumTests`）：
+    - **文章詳情頁一律 500**：View 的 model 型別（`Content`）與 Controller 傳入的（`ContentDetailViewModel`）不同，檢舉清單的連結也連到這頁。
+      重寫頁面：標題、作者、分類、狀態（公開 / 作者已刪除 / 已下架）、父內容、直接回覆；沒有分類的舊資料也能顯示
+    - **文章修改紀錄改為唯讀**：刪除 `ContentHistory` 的 Create / Edit / Delete（可以偽造或清除會員的修改歷程；新增 / 修改頁引用不存在的欄位，一律 500）。
+      紀錄只由會員編輯文章時寫入（`ContentService`）
+    - **分類狀態**：編輯分類原本會把 `is_active` 蓋成 0（停用的分類被重新啟用），後台也無法停用分類。表單加上「狀態」下拉選單
+      （官方 / 會員新增 / 停用，`ContentCategoryStatus`），後台新增預設為「官方」
+    - **分類列表的 XSS**：DataTables 預設把資料當 HTML 插入，會員在前台新增的分類名稱（`POST api/CategoryApi`）會在管理員的後台執行；
+      名稱 / 說明 / 狀態改用 `render.text()`。以瀏覽器實測名稱為 `<img src=x onerror=…>` 的分類：以文字顯示、腳本沒有執行
+    - 分類列表原本沒有新增 / 編輯 / 刪除的入口，補上；父分類可以選「（無）」，不能設成自己或自己的子孫（原本可以形成循環）
+    - 還有文章或子分類的分類不能刪除（原本撞外鍵 → 500），提示改為停用；`ContentEdit` 的「查看」連到不存在的 Action（404），改連文章詳情
 
 ## 全專案檢查結果（2026-11）
 
