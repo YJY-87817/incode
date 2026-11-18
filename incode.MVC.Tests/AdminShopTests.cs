@@ -97,7 +97,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         return await context.ShippedDetail.AsNoTracking().FirstOrDefaultAsync(s => s.ShippedDetailId == id);
     }
 
-    private static string Decoded(HttpResponseMessage response) => WebUtility.HtmlDecode(response.Content.ReadAsStringAsync().Result);
+    private static async Task<string> DecodedAsync(HttpResponseMessage response) => WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
     // ---------- 頁面 ----------
 
@@ -110,7 +110,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
 
         foreach (var url in new[]
         {
-            "/Order", "/Order/Create", $"/Order/Edit/{orderId}", "/Order/GetShippedData",
+            "/Order", "/Order/Create", $"/Order/Edit/{orderId}", "/Order/ShippedRows",
             "/Shipped", "/Shipped/Create", $"/Shipped/Edit/{shippedId}", $"/Shipped/Delete/{shippedId}",
             "/Product", "/Product/Create", $"/Product/Edit/{productId}",
         })
@@ -122,25 +122,38 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/Product/Edit/999999")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/Shipped/Edit/999999")).StatusCode);
 
-        var rows = await admin.GetStringAsync("/Order/GetShippedData");
-        Assert.Contains("\"recipientName\":\"王小明\"", System.Text.RegularExpressions.Regex.Unescape(rows));
-        Assert.Contains("\"orderStatus\"", rows);
+        var rows = WebUtility.HtmlDecode(await admin.GetStringAsync("/Order/ShippedRows"));
+        Assert.Contains("王小明", rows);
     }
 
     [Fact]
-    public async Task Order_page_escapes_member_supplied_recipient_data()
+    public async Task Order_shipped_rows_are_html_encoded()
     {
+        var (orderId, _, _) = await NewOrder();
+        await using (var context = _factory.Db.NewContext())
+        {
+            context.ShippedDetail.Add(new ShippedDetail
+            {
+                OrderId = orderId, RecipientName = "<img src=x onerror=window.__xss=1>", RecipientAddress = "\"><script>alert(1)</script>",
+                RecipientPhone = "0912", Remark = "<b>備註</b>",
+            });
+            await context.SaveChangesAsync();
+        }
         var admin = await _factory.LoginAsync(NewUser(), admin: true);
 
-        // 收件人 / 地址 / 電話 / 備註是會員在前台填的：組 HTML 前要跳脫
-        var script = Regex.Replace(await admin.GetStringAsync("/Order"), @"\s+", "");
+        // 收件人 / 地址 / 電話 / 備註是會員在前台填的：原本由 JS 串成 HTML（會在管理員的後台執行），現在由伺服器端 Razor 輸出
+        var html = await admin.GetStringAsync("/Order/ShippedRows");
 
-        Assert.Contains("functionesc(value)", script);
-        foreach (var field in new[] { "recipientName", "recipientAddress", "recipientPhone", "remark" })
-        {
-            Assert.Contains($"esc(item.{field})", script);
-            Assert.DoesNotContain($"(item.{field}||'')", script); // 原本直接串進 HTML
-        }
+        Assert.DoesNotContain("<img src=x", html);
+        Assert.DoesNotContain("<script>alert", html);
+        Assert.DoesNotContain("<b>", html);
+        Assert.Contains("&lt;img src=x onerror=window.__xss=1&gt;", html);
+        Assert.Contains("&lt;b&gt;", html); // 中文會被編碼成 &#x…;，只比對 ASCII 部分
+
+        // 頁面本身不再有組 HTML 的收件資料 JS
+        var page = await admin.GetStringAsync("/Order");
+        Assert.DoesNotContain("item.recipientName", page);
+        Assert.Contains("ShippedRows", page);
     }
 
     // ---------- 訂單 ----------
@@ -178,7 +191,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         var restore = await PostForm(admin, $"/Order/Edit/{orderId}", $"/Order/Edit/{orderId}",
             ("OrderId", orderId.ToString()), ("UserId", userId.ToString()), ("Status", OrderStatus.Pending), ("Remark", ""));
         Assert.Equal(HttpStatusCode.OK, restore.StatusCode);
-        Assert.Contains("已取消的訂單不能恢復", Decoded(restore));
+        Assert.Contains("已取消的訂單不能恢復", await DecodedAsync(restore));
         Assert.Equal(OrderStatus.Canceled, (await Order(orderId)).Status);
     }
 
@@ -193,7 +206,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         var noMember = await PostForm(admin, "/Order/Create", "/Order/Create",
             ("UserId", "999999"), ("Status", OrderStatus.Pending), ("orderdetails[0].ProductId", productId.ToString()), ("orderdetails[0].Quantity", "1"));
         Assert.Equal(HttpStatusCode.OK, noMember.StatusCode);
-        Assert.Contains("找不到會員", Decoded(noMember));
+        Assert.Contains("找不到會員", await DecodedAsync(noMember));
 
         var canceled = await PostForm(admin, "/Order/Create", "/Order/Create",
             ("UserId", userId.ToString()), ("Status", OrderStatus.Canceled), ("orderdetails[0].ProductId", productId.ToString()), ("orderdetails[0].Quantity", "1"));
@@ -227,10 +240,10 @@ public class AdminShopTests : IClassFixture<ApiFactory>
 
         // 原本：不存在的訂單 / 過長欄位撞資料庫 → 500
         Assert.Equal(HttpStatusCode.OK, noOrder.StatusCode);
-        Assert.Contains("找不到訂單", Decoded(noOrder));
-        Assert.Contains("已取消的訂單不能新增", Decoded(canceled));
-        Assert.Contains("收件地址最多", Decoded(tooLong));
-        Assert.Contains("請填寫完整", Decoded(empty));
+        Assert.Contains("找不到訂單", await DecodedAsync(noOrder));
+        Assert.Contains("已取消的訂單不能新增", await DecodedAsync(canceled));
+        Assert.Contains("收件地址最多", await DecodedAsync(tooLong));
+        Assert.Contains("請填寫完整", await DecodedAsync(empty));
         await using (var context = _factory.Db.NewContext())
             Assert.False(await context.ShippedDetail.AnyAsync(s => s.OrderId == pending || s.OrderId == canceledOrder));
 
@@ -259,7 +272,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         var both = await PostForm(admin, $"/Shipped/Edit/{shippedId}", $"/Shipped/Edit/{shippedId}",
             ShippedForm(orderA, extra: new[] { ("ShippedDetailId", shippedId.ToString()), ("IsFailed", "true"), ("IsCompleted", "true") }));
         Assert.Equal(HttpStatusCode.OK, both.StatusCode);
-        Assert.Contains("不能同時", Decoded(both));
+        Assert.Contains("不能同時", await DecodedAsync(both));
         Assert.False((await Shipped(shippedId))!.IsCompleted);
 
         var done = await PostForm(admin, $"/Shipped/Edit/{shippedId}", $"/Shipped/Edit/{shippedId}",
@@ -285,7 +298,7 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         Assert.Null(await Shipped(ids[OrderStatus.Pending]));           // 待處理：可以刪除
         Assert.NotNull(await Shipped(ids[OrderStatus.Shipped]));        // 已出貨 / 已完成：保留
         Assert.NotNull(await Shipped(ids[OrderStatus.Completed]));
-        Assert.Contains("不能刪除", Decoded(await admin.GetAsync("/Order")));
+        Assert.Contains("不能刪除", await DecodedAsync(await admin.GetAsync("/Order")));
 
         var list = await admin.GetStringAsync("/Shipped");
         Assert.Contains($"/Shipped/Edit/{ids[OrderStatus.Shipped]}", list);
@@ -305,8 +318,8 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         var negative = await PostForm(admin, "/Product/Create", "/Product/Create",
             ("Name", name), ("Point", "-1"), ("Stock", "5"), ("OnSale", "true"));
         Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
-        Assert.Contains("請填寫商品名稱", Decoded(invalid));
-        Assert.Contains("所需點數", Decoded(negative));
+        Assert.Contains("請填寫商品名稱", await DecodedAsync(invalid));
+        Assert.Contains("所需點數", await DecodedAsync(negative));
 
         var ok = await PostForm(admin, "/Product/Create", "/Product/Create",
             ("Name", name), ("Point", "10"), ("Stock", "5"), ("OnSale", "true"), ("ImageName", "../../appsettings.json"), ("CreatedAt", "2000-01-01"));
@@ -349,12 +362,12 @@ public class AdminShopTests : IClassFixture<ApiFactory>
             ("ProductId", productId.ToString()), ("Name", "不該存進去"), ("Point", "10"), ("OnSale", "true"), ("stockDelta", "-5"));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("庫存不足", Decoded(response));
+        Assert.Contains("庫存不足", await DecodedAsync(response));
         var product = await Product(productId);
         Assert.Equal(3, product.Stock);
         Assert.NotEqual("不該存進去", product.Name); // 庫存調整失敗，其他欄位也不儲存
-        Assert.Contains("value=\"3\"", Decoded(response)); // 重新顯示的是資料庫目前的庫存
-        Assert.DoesNotContain("0001/01/01", Decoded(response));  // 建立 / 最後修改時間也從資料庫帶出
+        Assert.Contains("value=\"3\"", await DecodedAsync(response)); // 重新顯示的是資料庫目前的庫存
+        Assert.DoesNotContain("0001/01/01", await DecodedAsync(response));  // 建立 / 最後修改時間也從資料庫帶出
     }
 
     [Fact]
@@ -375,5 +388,100 @@ public class AdminShopTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         await using var context = _factory.Db.NewContext();
         Assert.False(await context.Product.AnyAsync(p => p.Name == name));
+    }
+
+    // ---------- 第二次 code review 的修正 ----------
+
+    [Theory]
+    [InlineData("Point", "abc")]
+    [InlineData("Stock", "99999999999")]
+    public async Task Product_create_with_unparsable_number_is_rejected(string field, string value)
+    {
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+        var name = "數字錯誤" + Guid.NewGuid().ToString("N")[..6];
+        var fields = new Dictionary<string, string> { ["Name"] = name, ["Point"] = "10", ["Stock"] = "5", ["OnSale"] = "true" };
+        fields[field] = value;
+
+        var response = await PostForm(admin, "/Product/Create", "/Product/Create", fields.Select(f => (f.Key, f.Value)).ToArray());
+
+        // 原本繫結失敗的欄位變成 0 就被存起來（0 點的商品）
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("格式不正確", await DecodedAsync(response));
+        await using var context = _factory.Db.NewContext();
+        Assert.False(await context.Product.AnyAsync(p => p.Name == name));
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("-2147483648")] // int.MinValue：Math.Abs 會丟 OverflowException
+    [InlineData("100001")]
+    public async Task Product_stock_delta_that_is_invalid_changes_nothing(string delta)
+    {
+        var productId = await AddProduct(point: 10, stock: 5);
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        var response = await PostForm(admin, $"/Product/Edit/{productId}", $"/Product/Edit/{productId}",
+            ("ProductId", productId.ToString()), ("Name", "不該存進去"), ("Point", "10"), ("OnSale", "true"), ("stockDelta", delta));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 顯示錯誤，不是 500，也不是默默忽略
+        Assert.Matches("格式不正確|單次調整庫存最多", await DecodedAsync(response));
+        var product = await Product(productId);
+        Assert.Equal(5, product.Stock);
+        Assert.NotEqual("不該存進去", product.Name);
+    }
+
+    [Fact]
+    public async Task Order_edit_with_unknown_product_shows_the_form_error_not_a_404_page()
+    {
+        var (orderId, userId, _) = await NewOrder();
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        var response = await PostForm(admin, $"/Order/Edit/{orderId}", $"/Order/Edit/{orderId}",
+            ("OrderId", orderId.ToString()), ("UserId", userId.ToString()), ("Status", OrderStatus.Pending),
+            ("orderdetails[0].ProductId", "999999"), ("orderdetails[0].Quantity", "1"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 原本（重構前）顯示表單與訊息；重構後曾變成 404 頁
+        Assert.Contains("無此商品", await DecodedAsync(response));
+        Assert.Equal(OrderStatus.Pending, (await Order(orderId)).Status);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await PostForm(admin, "/Order/Create", "/Order/Edit/999999",
+            ("OrderId", "999999"), ("UserId", "1"), ("Status", OrderStatus.Pending))).StatusCode); // 訂單本身不存在才是 404
+    }
+
+    [Fact]
+    public async Task Deleting_a_missing_shipped_record_shows_an_error()
+    {
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        var response = await PostForm(admin, "/Shipped/Create", "/Shipped/Delete/999999");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var page = await DecodedAsync(await admin.GetAsync("/Order"));
+        Assert.Contains("找不到這筆寄送資料", page);
+        Assert.DoesNotContain("寄送資料已刪除", page);
+    }
+
+    [Fact]
+    public async Task Shipped_records_added_to_a_pending_order_can_still_be_changed_to_shipped_afterwards()
+    {
+        // 條件刪除 / 條件新增不影響正常流程：新增 → 訂單改已出貨 → 刪除被擋；訂單改回待處理後可刪除
+        var (orderId, userId, productId) = await NewOrder();
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+        await PostForm(admin, "/Shipped/Create", "/Shipped/Create", ShippedForm(orderId));
+        int shippedId;
+        await using (var context = _factory.Db.NewContext())
+            shippedId = (await context.ShippedDetail.SingleAsync(s => s.OrderId == orderId)).ShippedDetailId;
+
+        async Task SetStatus(string status) => await PostForm(admin, $"/Order/Edit/{orderId}", $"/Order/Edit/{orderId}",
+            ("OrderId", orderId.ToString()), ("UserId", userId.ToString()), ("Status", status),
+            ("orderdetails[0].ProductId", productId.ToString()), ("orderdetails[0].Quantity", "1"));
+
+        await SetStatus(OrderStatus.Shipped);
+        await PostForm(admin, $"/Shipped/Delete/{shippedId}", $"/Shipped/Delete/{shippedId}");
+        Assert.NotNull(await Shipped(shippedId));
+
+        await SetStatus(OrderStatus.Pending);
+        await PostForm(admin, $"/Shipped/Delete/{shippedId}", $"/Shipped/Delete/{shippedId}");
+        Assert.Null(await Shipped(shippedId));
     }
 }

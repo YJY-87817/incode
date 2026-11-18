@@ -6,18 +6,18 @@ namespace incode.MVC.Controllers.PointShop
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class ShippedController : Controller
     {
-        private readonly IAdminShopService _shop;
+        private readonly IAdminShippedService _shipped;
 
-        public ShippedController(IAdminShopService shop)
+        public ShippedController(IAdminShippedService shipped)
         {
-            _shop = shop;
+            _shipped = shipped;
         }
 
         // GET: Shipped
         [HttpGet]
         public async Task<ActionResult> Index()
         {
-            return View(await _shop.GetShippedListAsync());
+            return View(await _shipped.GetShippedListAsync());
         }
 
         // GET: Shipped/Create 顯示頁面
@@ -34,7 +34,7 @@ namespace incode.MVC.Controllers.PointShop
         {
             try
             {
-                await _shop.CreateShippedAsync(ShippedDetail);
+                await _shipped.CreateShippedAsync(ShippedDetail);
                 TempData["SuccessMessage"] = "寄送資料已新增";
                 return RedirectToAction("Index", "Order");
             }
@@ -50,7 +50,7 @@ namespace incode.MVC.Controllers.PointShop
         [HttpGet]
         public async Task<IActionResult> Edit(int ShippedDetailId)
         {
-            var shipped = await _shop.GetShippedAsync(ShippedDetailId);
+            var shipped = await _shipped.GetShippedAsync(ShippedDetailId);
             if (shipped == null) return NotFound();
             return View(shipped);
         }
@@ -65,7 +65,7 @@ namespace incode.MVC.Controllers.PointShop
 
             try
             {
-                if (!await _shop.UpdateShippedAsync(ShippedDetailId, ShippedDetail)) return NotFound();
+                if (!await _shipped.UpdateShippedAsync(ShippedDetailId, ShippedDetail)) return NotFound();
                 TempData["SuccessMessage"] = "寄送資料已更新";
                 return RedirectToAction("Index", "Order");
             }
@@ -82,7 +82,7 @@ namespace incode.MVC.Controllers.PointShop
         public async Task<IActionResult> Delete(int? ShippedDetailId)
         {
             if (ShippedDetailId == null) return NotFound();
-            var shipped = await _shop.GetShippedAsync(ShippedDetailId.Value);
+            var shipped = await _shipped.GetShippedAsync(ShippedDetailId.Value);
             if (shipped == null) return NotFound();
             return View(shipped);
         }
@@ -95,8 +95,10 @@ namespace incode.MVC.Controllers.PointShop
         {
             try
             {
-                await _shop.DeleteShippedAsync(ShippedDetailId);
-                TempData["SuccessMessage"] = "寄送資料已刪除";
+                if (await _shipped.DeleteShippedAsync(ShippedDetailId))
+                    TempData["SuccessMessage"] = "寄送資料已刪除";
+                else
+                    TempData["ErrorMessage"] = "找不到這筆寄送資料（可能已被刪除）";
             }
             catch (BusinessException ex)
             {

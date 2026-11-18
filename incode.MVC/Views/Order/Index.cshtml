@@ -124,13 +124,6 @@
 @section Scripts
 {
     <script>
-        // 寄送資料的收件人 / 地址 / 電話 / 備註是會員在前台填的：組 HTML 前一律跳脫（原本直接串進去，會在管理員的後台執行）
-        function esc(value) {
-            return String(value ?? '').replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
-        }
-
         $(function () {
             // 初始化訂單表格
             $('#orderTable').DataTable({
@@ -154,54 +147,12 @@
             // 當切換到寄送管理標籤時載入資料
             $('#shipped-tab').on('shown.bs.tab', function (e) {
                 if (!shippedDataLoaded) {
+                    // 表格列由伺服器端以 Razor 輸出（會員填寫的內容自動編碼），這裡只負責放進表格
                     $.ajax({
-                        url: '@Url.Action("GetShippedData", "Order")',
+                        url: '@Url.Action("ShippedRows", "Order")',
                         type: 'GET',
-                        success: function(data) {
-                            var tbody = $('#shippedTable tbody');
-                            tbody.empty();
-                            
-                            data.forEach(function(item) {
-                                var statusBadge = '';
-                                if (item.orderStatus) {
-                                    var badgeClass = 'bg-secondary';
-                                    if (item.orderStatus === '已完成') badgeClass = 'bg-success';
-                                    else if (item.orderStatus === '已取消') badgeClass = 'bg-danger';
-                                    else if (item.orderStatus === '待處理') badgeClass = 'bg-warning';
-                                    statusBadge = '<span class="badge ' + badgeClass + '">' + esc(item.orderStatus) + '</span>';
-                                }
-
-                                var failedBadge = item.isFailed 
-                                    ? '<span class="badge bg-danger">是</span>' 
-                                    : '<span class="badge bg-success">否</span>';
-
-                                var completedBadge = item.isCompleted 
-                                    ? '<span class="badge bg-success">完成</span>' 
-                                    : '<span class="badge bg-secondary">未完成</span>';
-
-                                var row = '<tr>' +
-                                    '<td class="text-center">' + esc(item.shippedDetailId) + '</td>' +
-                                    '<td class="text-center">' + esc(item.orderId) + '</td>' +
-                                    '<td class="text-center" data-order="' + esc(item.orderStatus) + '">' + statusBadge + '</td>' +
-                                    '<td>' + esc(item.recipientName) + '</td>' +
-                                    '<td>' + esc(item.recipientAddress) + '</td>' +
-                                    '<td class="text-center">' + esc(item.recipientPhone) + '</td>' +
-                                    '<td class="text-center" data-order="' + esc(item.shippedDate) + '">' + esc(item.shippedDateFormatted) + '</td>' +
-                                    '<td class="text-center" data-order="' + esc(item.arrivalDate) + '">' + esc(item.arrivalDateFormatted) + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.isFailed ? '1' : '0') + '">' + failedBadge + '</td>' +
-                                    '<td>' + esc(item.remark) + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.isCompleted ? '1' : '0') + '">' + completedBadge + '</td>' +
-                                    '<td class="text-center">' +
-                                        '<div class="btn-group" role="group">' +
-                                            '<a class="btn btn-sm btn-primary" href="/Shipped/Edit/' + parseInt(item.shippedDetailId, 10) + '">修改</a>' +
-                                            // 已出貨 / 已完成訂單的寄送紀錄要保留作為出貨證明，不能刪除
-                                            (item.orderStatus === '已出貨' || item.orderStatus === '已完成' ? '' :
-                                                '<a class="btn btn-sm btn-danger" href="/Shipped/Delete/' + parseInt(item.shippedDetailId, 10) + '">刪除</a>') +
-                                        '</div>' +
-                                    '</td>' +
-                                '</tr>';
-                                tbody.append(row);
-                            });
+                        success: function(html) {
+                            $('#shippedTable tbody').html(html);
 
                             // 初始化 DataTable
                             if (shippedTable) {

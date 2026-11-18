@@ -6,25 +6,27 @@ namespace incode.MVC.Controllers.PointShop
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class OrderController : Controller
     {
-        private readonly IAdminShopService _shop;
+        private readonly IAdminOrderService _orders;
+        private readonly IAdminShippedService _shipped;
 
-        public OrderController(IAdminShopService shop)
+        public OrderController(IAdminOrderService orders, IAdminShippedService shipped)
         {
-            _shop = shop;
+            _orders = orders;
+            _shipped = shipped;
         }
 
         // GET: Order
         [HttpGet]
         public async Task<ActionResult> Index()
         {
-            return View(await _shop.GetOrdersAsync());
+            return View(await _orders.GetOrdersAsync());
         }
 
         // GET: Order/Create 顯示頁面
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Products = await _shop.GetProductOptionsAsync();
+            ViewBag.Products = await _orders.GetProductOptionsAsync();
             return View();
         }
 
@@ -34,7 +36,7 @@ namespace incode.MVC.Controllers.PointShop
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OrderViewModel NewOrder)
         {
-            var result = await _shop.CreateOrderAsync(NewOrder);
+            var result = await _orders.CreateOrderAsync(NewOrder);
             if (!result.Ok)
                 return await CreateFailedAsync(NewOrder, result.Message);
 
@@ -45,7 +47,7 @@ namespace incode.MVC.Controllers.PointShop
         private async Task<IActionResult> CreateFailedAsync(OrderViewModel model, string? message)
         {
             TempData["ErrorMessage"] = message ?? "訂單建立失敗！";
-            ViewBag.Products = await _shop.GetProductOptionsAsync();
+            ViewBag.Products = await _orders.GetProductOptionsAsync();
             return View(nameof(Create), model);
         }
 
@@ -54,10 +56,10 @@ namespace incode.MVC.Controllers.PointShop
         [HttpGet]
         public async Task<IActionResult> Edit(int OrderId)
         {
-            var order = await _shop.GetOrderForEditAsync(OrderId);
+            var order = await _orders.GetOrderForEditAsync(OrderId);
             if (order == null) return NotFound();
 
-            ViewBag.Products = await _shop.GetProductOptionsAsync();
+            ViewBag.Products = await _orders.GetProductOptionsAsync();
             return View(order);
         }
 
@@ -69,12 +71,12 @@ namespace incode.MVC.Controllers.PointShop
             if (OrderId != EditOrder.OrderId)
                 return NotFound();
 
-            var result = await _shop.UpdateOrderAsync(OrderId, EditOrder);
+            var result = await _orders.UpdateOrderAsync(OrderId, EditOrder);
             if (!result.Ok)
             {
                 if (result.Code == 404) return NotFound();
                 TempData["ErrorMessage"] = result.Message ?? "訂單修改失敗！";
-                ViewBag.Products = await _shop.GetProductOptionsAsync();
+                ViewBag.Products = await _orders.GetProductOptionsAsync();
                 return View(nameof(Edit), EditOrder);
             }
 
@@ -82,11 +84,11 @@ namespace incode.MVC.Controllers.PointShop
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Order/GetShippedData - 提供寄送資料的 API
+        // GET: Order/ShippedRows - 訂單頁「寄送管理」分頁的表格列（伺服器端以 Razor 輸出，收件人等會員填寫的內容自動編碼）
         [HttpGet]
-        public async Task<JsonResult> GetShippedData()
+        public async Task<IActionResult> ShippedRows()
         {
-            return Json(await _shop.GetShippedRowsAsync());
+            return PartialView("_ShippedRows", await _shipped.GetShippedListAsync());
         }
     }
 }

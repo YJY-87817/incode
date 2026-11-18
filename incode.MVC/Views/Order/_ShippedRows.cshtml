@@ -1,0 +1,39 @@
+﻿@model IEnumerable<ShippedDetail>
+@* 訂單頁「寄送管理」分頁的表格列。收件人 / 地址 / 電話 / 備註是會員在前台填的：以 Razor 輸出（自動 HTML 編碼），不要在 JS 串 HTML *@
+@foreach (var item in Model)
+{
+    var status = item.Order?.Status;
+    var badge = status == OrderStatus.Completed ? "bg-success" : status == OrderStatus.Canceled ? "bg-danger" : status == OrderStatus.Pending ? "bg-warning" : "bg-secondary";
+    <tr>
+        <td class="text-center">@item.ShippedDetailId</td>
+        <td class="text-center">@item.OrderId</td>
+        <td class="text-center" data-order="@(status ?? "")">
+            @if (!string.IsNullOrEmpty(status))
+            {
+                <span class="badge @badge">@status</span>
+            }
+        </td>
+        <td>@item.RecipientName</td>
+        <td>@item.RecipientAddress</td>
+        <td class="text-center">@item.RecipientPhone</td>
+        <td class="text-center" data-order="@(item.ShippedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">@(item.ShippedDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+        <td class="text-center" data-order="@(item.ArrivalDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">@(item.ArrivalDate?.ToString("yyyy-MM-dd HH:mm") ?? "")</td>
+        <td class="text-center" data-order="@(item.IsFailed ? "1" : "0")">
+            <span class="badge @(item.IsFailed ? "bg-danger" : "bg-success")">@(item.IsFailed ? "是" : "否")</span>
+        </td>
+        <td>@item.Remark</td>
+        <td class="text-center" data-order="@(item.IsCompleted ? "1" : "0")">
+            <span class="badge @(item.IsCompleted ? "bg-success" : "bg-secondary")">@(item.IsCompleted ? "完成" : "未完成")</span>
+        </td>
+        <td class="text-center">
+            <div class="btn-group" role="group">
+                <a class="btn btn-sm btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">修改</a>
+                @* 已出貨 / 已完成訂單的寄送紀錄要保留作為出貨證明，不能刪除 *@
+                @if (status is not (OrderStatus.Shipped or OrderStatus.Completed))
+                {
+                    <a class="btn btn-sm btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                }
+            </div>
+        </td>
+    </tr>
+}

@@ -481,8 +481,11 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
 
     // ---------- 後台商城：修改訂單狀態與取消同時進行，不會讓已取消的訂單復活 ----------
 
-    private static AdminShopService CreateAdminShop(incodedatabaseContext context)
-        => new(context, CreateOrderService(context), null!); // 沒有圖片上傳，不需要 UploadStorage
+    private static AdminOrderService CreateAdminOrders(incodedatabaseContext context)
+        => new(context, CreateOrderService(context));
+
+    private static AdminProductService CreateAdminProducts(incodedatabaseContext context)
+        => new(context, null!); // 這些測試沒有圖片上傳，不需要 UploadStorage
 
     [SqlServerFact]
     public async Task Concurrent_admin_status_edit_and_cancel_never_resurrect_a_canceled_order()
@@ -498,7 +501,7 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
             {
                 await using var context = _db.NewContext();
                 if (i % 2 == 0)
-                    return (await CreateAdminShop(context).UpdateOrderAsync(orderId, new incode.MVC.ViewModels.PointShop.OrderViewModel
+                    return (await CreateAdminOrders(context).UpdateOrderAsync(orderId, new incode.MVC.ViewModels.PointShop.OrderViewModel
                     {
                         OrderId = orderId, UserId = userId, Status = OrderStatus.Shipped, Remark = "出貨",
                         orderdetails = new List<Orderdetail> { new() { ProductId = productId, Quantity = 1 } },
@@ -539,7 +542,7 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
                 return (await CreateOrderService(context).CreateOrderAsync(
                     userId, new[] { new OrderItemRequest { ProductId = productId, Quantity = 1 } }, null, null, requireRecipient: false)).Ok;
 
-            return await CreateAdminShop(context).UpdateProductAsync(productId,
+            return await CreateAdminProducts(context).UpdateProductAsync(productId,
                 new Product { Name = "p", Point = 10, OnSale = true }, null, stockDelta: 5);
         });
 
