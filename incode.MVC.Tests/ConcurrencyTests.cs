@@ -478,4 +478,76 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         }
         await AssertLedgerIsConsistent(owner);
     }
+
+    // ---------- 後台商城：修改訂單狀態與取消同時進行，不會讓已取消的訂單復活 ----------
+
+    private static AdminOrderService CreateAdminOrders(incodedatabaseContext context)
+        => new(context, CreateOrderService(context));
+
+    private static AdminProductService CreateAdminProducts(incodedatabaseContext context)
+        => new(context, null!); // 這些測試沒有圖片上傳，不需要 UploadStorage
+
+    [SqlServerFact]
+    public async Task Concurrent_admin_status_edit_and_cancel_never_resurrect_a_canceled_order()
+    {
+        for (var round = 0; round < 3; round++)
+        {
+            var userId = NewUser();
+            await GivePoints(userId, 100);
+            var productId = await AddProduct(point: 30, stock: 10);
+            var orderId = await CreateOrder(userId, productId, 1);
+
+            await RunTogether(Parallel, async i =>
+            {
+                await using var context = _db.NewContext();
+                if (i % 2 == 0)
+                    return (await CreateAdminOrders(context).UpdateOrderAsync(orderId, new incode.MVC.ViewModels.PointShop.OrderViewModel
+                    {
+                        OrderId = orderId, UserId = userId, Status = OrderStatus.Shipped, Remark = "出貨",
+                        orderdetails = new List<Orderdetail> { new() { ProductId = productId, Quantity = 1 } },
+                    })).Ok;
+                return (await CreateOrderService(context).CancelOrderAsync(orderId)).Ok;
+            });
+
+            // 原本狀態是明細修改完成後才另外更新：期間被取消的訂單會被改回「已出貨」，庫存與點數卻已退還（免費取得商品）
+            await using var verify = _db.NewContext();
+            var order = await verify.Orders.AsNoTracking().SingleAsync(o => o.OrderId == orderId);
+            if (order.Status == OrderStatus.Canceled)
+            {
+                Assert.Equal(100, await Balance(userId));
+                Assert.Equal(10, await Stock(productId));
+            }
+            else
+            {
+                Assert.Equal(70, await Balance(userId));
+                Assert.Equal(9, await Stock(productId));
+            }
+            await AssertLedgerIsConsistent(userId);
+        }
+    }
+
+    // ---------- 後台商品：調整庫存與會員下單同時進行，不會蓋掉訂單扣掉的庫存 ----------
+
+    [SqlServerFact]
+    public async Task Admin_stock_adjustment_does_not_overwrite_concurrent_orders()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 1000);
+        var productId = await AddProduct(point: 10, stock: 100);
+
+        var results = await RunTogether(Parallel, async i =>
+        {
+            await using var context = _db.NewContext();
+            if (i % 2 == 0)
+                return (await CreateOrderService(context).CreateOrderAsync(
+                    userId, new[] { new OrderItemRequest { ProductId = productId, Quantity = 1 } }, null, null, requireRecipient: false)).Ok;
+
+            return await CreateAdminProducts(context).UpdateProductAsync(productId,
+                new Product { Name = "p", Point = 10, OnSale = true }, null, stockDelta: 5);
+        });
+
+        Assert.All(results, Assert.True);
+        // 100 - 5 筆訂單 + 5 次補貨 5 件 = 120
+        Assert.Equal(120, await Stock(productId));
+    }
 }

@@ -147,52 +147,12 @@
             // 當切換到寄送管理標籤時載入資料
             $('#shipped-tab').on('shown.bs.tab', function (e) {
                 if (!shippedDataLoaded) {
+                    // 表格列由伺服器端以 Razor 輸出（會員填寫的內容自動編碼），這裡只負責放進表格
                     $.ajax({
-                        url: '@Url.Action("GetShippedData", "Order")',
+                        url: '@Url.Action("ShippedRows", "Order")',
                         type: 'GET',
-                        success: function(data) {
-                            var tbody = $('#shippedTable tbody');
-                            tbody.empty();
-                            
-                            data.forEach(function(item) {
-                                var statusBadge = '';
-                                if (item.orderStatus) {
-                                    var badgeClass = 'bg-secondary';
-                                    if (item.orderStatus === '已完成') badgeClass = 'bg-success';
-                                    else if (item.orderStatus === '已取消') badgeClass = 'bg-danger';
-                                    else if (item.orderStatus === '待處理') badgeClass = 'bg-warning';
-                                    statusBadge = '<span class="badge ' + badgeClass + '">' + item.orderStatus + '</span>';
-                                }
-
-                                var failedBadge = item.isFailed 
-                                    ? '<span class="badge bg-danger">是</span>' 
-                                    : '<span class="badge bg-success">否</span>';
-
-                                var completedBadge = item.isCompleted 
-                                    ? '<span class="badge bg-success">完成</span>' 
-                                    : '<span class="badge bg-secondary">未完成</span>';
-
-                                var row = '<tr>' +
-                                    '<td class="text-center">' + item.shippedDetailId + '</td>' +
-                                    '<td class="text-center">' + item.orderId + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.orderStatus || '') + '">' + statusBadge + '</td>' +
-                                    '<td>' + (item.recipientName || '') + '</td>' +
-                                    '<td>' + (item.recipientAddress || '') + '</td>' +
-                                    '<td class="text-center">' + (item.recipientPhone || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.shippedDate || '') + '">' + (item.shippedDateFormatted || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.arrivalDate || '') + '">' + (item.arrivalDateFormatted || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.isFailed ? '1' : '0') + '">' + failedBadge + '</td>' +
-                                    '<td>' + (item.remark || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.isCompleted ? '1' : '0') + '">' + completedBadge + '</td>' +
-                                    '<td class="text-center">' +
-                                        '<div class="btn-group" role="group">' +
-                                            '<a class="btn btn-sm btn-primary" href="/Shipped/Edit/' + item.shippedDetailId + '">修改</a>' +
-                                            '<a class="btn btn-sm btn-danger" href="/Shipped/Delete/' + item.shippedDetailId + '">刪除</a>' +
-                                        '</div>' +
-                                    '</td>' +
-                                '</tr>';
-                                tbody.append(row);
-                            });
+                        success: function(html) {
+                            $('#shippedTable tbody').html(html);
 
                             // 初始化 DataTable
                             if (shippedTable) {

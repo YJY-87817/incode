@@ -76,7 +76,11 @@
                                 <td class="text-center" data-order="">
                                     <div class="btn-group" role="group">
                                         <a class="btn btn-sm btn-primary" asp-controller="Shipped" asp-action="Edit" asp-route-ShippedDetailId="@item.ShippedDetailId">修改</a>
-                                        <a class="btn btn-sm btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                                        @* 已出貨 / 已完成訂單的寄送紀錄要保留作為出貨證明 *@
+                                        @if (item.Order?.Status is not (OrderStatus.Shipped or OrderStatus.Completed))
+                                        {
+                                            <a class="btn btn-sm btn-danger" asp-controller="Shipped" asp-action="Delete" asp-route-ShippedDetailId="@item.ShippedDetailId">刪除</a>
+                                        }
                                     </div>
                                 </td>
                             </tr>
