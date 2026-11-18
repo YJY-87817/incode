@@ -6,9 +6,6 @@
 
 <h1>Index</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
 <table class="table">
     <thead>
         <tr>
@@ -43,9 +40,8 @@
                     @Html.DisplayFor(modelItem => item.User.Email)
             </td>
             <td>
-                <a asp-action="Edit" asp-route-id="@item.ChatSessionId">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.ChatSessionId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.ChatSessionId">Delete</a>
+                <a asp-controller="ChatMessages" asp-action="Index" asp-route-id="@item.ChatSessionId">查看訊息</a>
             </td>
         </tr>
 }
