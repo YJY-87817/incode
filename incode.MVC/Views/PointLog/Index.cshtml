@@ -5,10 +5,11 @@
 }
 
 <div class="container-fluid py-4">
+    <partial name="_TempDataAlert" />
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-coins text-warning me-2"></i>點數異動日誌</h1>
         <div>   
-            <a asp-action="Create" class="btn btn-sm btn-primary shadow-sm ms-2">
+            <a asp-action="Adjust" class="btn btn-sm btn-primary shadow-sm ms-2">
                 <i class="fas fa-plus fa-sm text-white-50"></i> 手動調整點數
             </a>
         </div>
@@ -97,8 +98,8 @@
                                         @* <a asp-action="Details" asp-route-id="@item.PointLogId" class="btn btn-sm btn-outline-info" title="查看詳情">
                                             <i class="fas fa-eye"></i>
                                         </a> *@
-                                        <a asp-action="Edit" asp-route-id="@item.PointLogId" class="btn btn-sm btn-outline-primary" title="編輯紀錄">
-                                            <i class="fas fa-edit"></i>
+                                        <a asp-action="Adjust" asp-route-userId="@item.UserId" class="btn btn-sm btn-outline-primary" title="調整 @item.User?.Username 的點數">
+                                            <i class="fas fa-coins"></i>
                                         </a>
                                     </div>
                                 </td>

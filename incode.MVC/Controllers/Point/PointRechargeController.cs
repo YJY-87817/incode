@@ -13,10 +13,14 @@ namespace incode.MVC.Controllers.Point
     public class PointRechargeController : Controller
     {
         private readonly incodedatabaseContext _context;
+        private readonly IPointLogService _pointLogService;
+        private readonly ILogger<PointRechargeController> _logger;
 
-        public PointRechargeController(incodedatabaseContext context)
+        public PointRechargeController(incodedatabaseContext context, IPointLogService pointLogService, ILogger<PointRechargeController> logger)
         {
             _context = context;
+            _pointLogService = pointLogService;
+            _logger = logger;
         }
 
         // GET: PointRecharge
@@ -45,123 +49,26 @@ namespace incode.MVC.Controllers.Point
             return View(pointRecharge);
         }
 
-        // GET: PointRecharge/Create
-        public IActionResult Create()
-        {
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email");
-            return View();
-        }
+        // 儲值單不能直接新增 / 修改 / 刪除：原本把狀態改成 success 不會加點，刪除也會讓點數紀錄失去來源。
+        // 會員付款了但綠界通知沒進來（或被標成失敗）時，用「人工補單」（與綠界回呼共用 CompleteRechargeAsync，不會重複加點）
 
-        // POST: PointRecharge/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: PointRecharge/Complete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,PaymentTradeNo,Status,CreatedAt")] PointRecharge pointRecharge)
+        public async Task<IActionResult> Complete(int id, string? paymentTradeNo)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(pointRecharge);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                await _pointLogService.AdminCompleteRechargeAsync(id, paymentTradeNo);
+                _logger.LogInformation("管理員 {AdminUserId} 人工補單儲值單 {PointRechargeId}（{PaymentTradeNo}）",
+                    User.GetId(), id, paymentTradeNo);
+                TempData["SuccessMessage"] = $"儲值單 #{id} 已補單並加點";
             }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
-            return View(pointRecharge);
-        }
-
-        // GET: PointRecharge/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
+            catch (BusinessException ex)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = ex.Message;
             }
-
-            var pointRecharge = await _context.PointRecharge
-                .Include(p => p.User) // <--- 確保這行存在
-                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
-
-            if (pointRecharge == null)
-            {
-                return NotFound();
-            }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
-            return View(pointRecharge);
-        }
-
-        // POST: PointRecharge/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PointRechargeId,UserId,OrderNo,CashAmount,PointsGranted,PaymentMethod,PaymentTradeNo,Status,CreatedAt")] PointRecharge pointRecharge)
-        {
-            if (id != pointRecharge.PointRechargeId)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(pointRecharge);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PointRechargeExists(pointRecharge.PointRechargeId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["UserId"] = new SelectList(_context.User, "UserId", "Email", pointRecharge.UserId);
-            return View(pointRecharge);
-        }
-
-        // GET: PointRecharge/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var pointRecharge = await _context.PointRecharge
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
-            if (pointRecharge == null)
-            {
-                return NotFound();
-            }
-
-            return View(pointRecharge);
-        }
-
-        // POST: PointRecharge/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var pointRecharge = await _context.PointRecharge.FindAsync(id);
-            if (pointRecharge != null)
-            {
-                _context.PointRecharge.Remove(pointRecharge);
-            }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool PointRechargeExists(int id)
-        {
-            return _context.PointRecharge.Any(e => e.PointRechargeId == id);
         }
     }
 }

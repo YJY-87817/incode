@@ -137,4 +137,33 @@ public class MigrationScriptTests : IClassFixture<SqlServerFixture>
         Assert.All(users.Where(u => u.Password != "GOOGLE_AUTH"), u => Assert.False(u.EmailVerified)); // 既有密碼會員為未驗證
         Assert.All(users, u => Assert.Null(u.SecurityStamp));
     }
+
+    [SqlServerFact]
+    public async Task Content_report_review_migration_creates_table()
+    {
+        // 模擬改版前的資料庫：還沒有這張表（測試資料庫由目前的模型建立，先刪除）
+        await RunScriptAsync("DROP TABLE dbo.content_report_review;");
+
+        var script = ReadScript("2026-11-18-content-report-review.sql");
+        await RunScriptAsync(script);
+        await RunScriptAsync(script); // 可重複執行（資料表已存在就略過）
+
+        // 模型可以讀寫這張表
+        var adminId = _db.SeedUser($"{Guid.NewGuid():N}@example.com");
+        int contentId;
+        await using (var context = _db.NewContext())
+        {
+            var content = new Content { UserId = adminId, Type = 1, Title = "t", Body = "b", IsActive = 1, CreatedAt = DateTime.Now, UpdatedAt = DateTime.Now };
+            context.Content.Add(content);
+            await context.SaveChangesAsync();
+            contentId = content.ContentId;
+            context.ContentReportReview.Add(new ContentReportReview
+            {
+                ContentId = contentId, AdminUserId = adminId, Action = ContentReportActions.Dismissed, Note = "備註", CreatedAt = DateTime.Now,
+            });
+            await context.SaveChangesAsync();
+        }
+        await using var verify = _db.NewContext();
+        Assert.Equal("備註", (await verify.ContentReportReview.AsNoTracking().SingleAsync(r => r.ContentId == contentId)).Note);
+    }
 }

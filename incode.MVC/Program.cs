@@ -172,6 +172,7 @@ builder.Services.AddScoped<IChatToolService, ChatToolService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
+builder.Services.AddScoped<IContentReportService, ContentReportService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy

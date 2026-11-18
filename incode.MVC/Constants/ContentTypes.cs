@@ -31,4 +31,30 @@ namespace incode.MVC.Constants
         public const int Official = 2;      // 官方提供
         public const int Disabled = 3;      // 停用
     }
+
+    /// <summary>論壇內容狀態（content.is_active，見 docs/TECHNICAL.md）。只有 Active 會顯示在前台。</summary>
+    public static class ContentStatus
+    {
+        public const int Active = 1;          // 顯示
+        public const int DeletedByAuthor = 2; // 本人刪除
+        public const int RemovedByAdmin = 3;  // 官方移除（後台下架，可以恢復）
+    }
+
+    /// <summary>後台處理檢舉的動作（content_report_review.action）。</summary>
+    public static class ContentReportActions
+    {
+        public const string Dismissed = "dismissed"; // 駁回：檢舉不成立，文章維持公開
+        public const string Removed = "removed";     // 下架
+        public const string Restored = "restored";   // 恢復上架
+
+        public const int MaxNoteLength = 500;
+
+        public static string DisplayName(string action) => action switch
+        {
+            Dismissed => "駁回",
+            Removed => "下架",
+            Restored => "恢復上架",
+            _ => action,
+        };
+    }
 }

@@ -1,0 +1,155 @@
+@model incode.MVC.ViewModels.Contents.ContentReportIndexViewModel
+@{
+    ViewData["Title"] = "檢舉清單";
+    string TypeName(int type) => type switch
+    {
+        ContentTypes.Post => "主題",
+        ContentTypes.Reply => "回文",
+        ContentTypes.Comment => "留言",
+        ContentTypes.CommentReply => "留言回覆",
+        _ => type.ToString(),
+    };
+    string StatusName(int status) => status switch
+    {
+        ContentStatus.Active => "公開",
+        ContentStatus.DeletedByAuthor => "作者已刪除",
+        ContentStatus.RemovedByAdmin => "已下架",
+        _ => status.ToString(),
+    };
+}
+
+<div class="container-fluid py-4">
+    <partial name="_TempDataAlert" />
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-flag me-2"></i>待處理的檢舉（@Model.Pending.Count）</h6>
+            <small class="text-muted">上次處理之後才出現的檢舉。駁回：檢舉不成立、內容維持公開；下架：前台不再顯示（可以恢復）。</small>
+        </div>
+        <div class="card-body">
+            @if (Model.Pending.Count == 0)
+            {
+                <p class="text-muted mb-0">目前沒有待處理的檢舉。</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle" width="100%">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th>內容</th>
+                                <th>類型</th>
+                                <th>所屬主題</th>
+                                <th>作者</th>
+                                <th>狀態</th>
+                                <th>檢舉數</th>
+                                <th>最近檢舉</th>
+                                <th style="min-width:280px">處理</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Pending)
+                            {
+                                <tr>
+                                    <td class="text-center"><a asp-controller="Content" asp-action="Details" asp-route-id="@item.ContentId">#@item.ContentId</a></td>
+                                    <td class="text-center">@TypeName(item.Type)</td>
+                                    <td class="text-truncate" style="max-width:240px">@item.TopicTitle</td>
+                                    <td>@item.AuthorName</td>
+                                    <td class="text-center">@StatusName(item.Status)</td>
+                                    <td class="text-center text-danger font-weight-bold">@item.PendingReportCount</td>
+                                    <td class="text-center">@item.LatestReportAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        <form method="post" class="d-flex gap-1">
+                                            <input name="note" class="form-control form-control-sm" maxlength="@ContentReportActions.MaxNoteLength" placeholder="備註（選填）" />
+                                            <button type="submit" asp-action="Dismiss" asp-route-id="@item.ContentId" class="btn btn-sm btn-outline-secondary text-nowrap">駁回</button>
+                                            @if (item.Status == ContentStatus.Active)
+                                            {
+                                                <button type="submit" asp-action="Remove" asp-route-id="@item.ContentId" class="btn btn-sm btn-danger text-nowrap"
+                                                        onclick="return confirm('確定要下架內容 #@item.ContentId？前台將不再顯示。')">下架</button>
+                                            }
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-ban me-2"></i>已下架的內容（@Model.Removed.Count）</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.Removed.Count == 0)
+            {
+                <p class="text-muted mb-0">目前沒有下架的內容。</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" width="100%">
+                        <thead class="table-light text-center">
+                            <tr><th>內容</th><th>類型</th><th>所屬主題</th><th>作者</th><th style="min-width:280px">處理</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Removed)
+                            {
+                                <tr>
+                                    <td class="text-center"><a asp-controller="Content" asp-action="Details" asp-route-id="@item.ContentId">#@item.ContentId</a></td>
+                                    <td class="text-center">@TypeName(item.Type)</td>
+                                    <td class="text-truncate" style="max-width:240px">@item.TopicTitle</td>
+                                    <td>@item.AuthorName</td>
+                                    <td>
+                                        <form method="post" asp-action="Restore" asp-route-id="@item.ContentId" class="d-flex gap-1">
+                                            <input name="note" class="form-control form-control-sm" maxlength="@ContentReportActions.MaxNoteLength" placeholder="備註（選填）" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success text-nowrap"
+                                                    onclick="return confirm('確定要恢復上架內容 #@item.ContentId？')">恢復上架</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-history me-2"></i>最近的處理紀錄</h6>
+        </div>
+        <div class="card-body">
+            @if (Model.RecentReviews.Count == 0)
+            {
+                <p class="text-muted mb-0">還沒有處理紀錄。</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle" width="100%">
+                        <thead class="table-light text-center">
+                            <tr><th>時間</th><th>內容</th><th>所屬主題</th><th>動作</th><th>管理員</th><th>備註</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var review in Model.RecentReviews)
+                            {
+                                <tr>
+                                    <td class="text-center text-nowrap">@review.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="text-center"><a asp-controller="Content" asp-action="Details" asp-route-id="@review.ContentId">#@review.ContentId</a></td>
+                                    <td class="text-truncate" style="max-width:240px">@review.TopicTitle</td>
+                                    <td class="text-center">@ContentReportActions.DisplayName(review.Action)</td>
+                                    <td>@review.AdminName</td>
+                                    <td>@review.Note</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

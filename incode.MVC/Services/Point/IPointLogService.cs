@@ -37,5 +37,13 @@ namespace incode.MVC.Services.Point
 
         // 綠界付款成功：以條件更新把儲值單改為 success，只有實際更新到的那一次會加點（重複回呼不會重複加點）
         Task<RechargeResult> CompleteRechargeAsync(string orderNo, string? paymentTradeNo);
+
+        // 後台手動調整點數（類型「系統調整」）：自己開交易、鎖定會員、寫入帳本；不能扣到負數。
+        // 原因顯示在會員點數紀錄的副標。參數不合法或點數不足丟 BusinessException
+        Task AdminAdjustPointsAsync(int userId, int changeAmount, string? reason);
+
+        // 後台人工補單：待付款或失敗的儲值單改為成功並加點（走 CompleteRechargeAsync，不會重複加點）。
+        // paymentTradeNo 為綠界交易編號或補單備註（必填）。狀態不符丟 BusinessException
+        Task AdminCompleteRechargeAsync(int pointRechargeId, string? paymentTradeNo);
     }
 }

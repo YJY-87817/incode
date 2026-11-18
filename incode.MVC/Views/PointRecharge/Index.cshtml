@@ -5,13 +5,11 @@
 }
 
 <div class="container-fluid py-4">
+    <partial name="_TempDataAlert" />
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
             <i class="fas fa-dollar-sign text-primary me-2"></i>點數儲值紀錄
         </h1>
-        <a asp-action="Create" class="btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-plus fa-sm text-white-50"></i> 新增儲值紀錄
-        </a>
     </div>
 
     <div class="card shadow mb-4">
@@ -73,15 +71,16 @@
                                     @emailPrefix
                                 </td>
                                 <td>
-                                    <a asp-action="Edit" asp-route-id="@item.PointRechargeId" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    @* <a asp-action="Details" asp-route-id="@item.PointRechargeId" class="btn btn-outline-info btn-sm">
-                                        <i class="fas fa-info-circle"></i>
-                                    </a>
-                                    <a asp-action="Delete" asp-route-id="@item.PointRechargeId" class="btn btn-outline-danger btn-sm">
-                                        <i class="fas fa-trash"></i>
-                                    </a> *@
+                                    @* 待付款 / 失敗：會員付款了但綠界通知沒進來時人工補單（會加點，不會重複） *@
+                                    @if (item.Status == "pending" || item.Status == "failed")
+                                    {
+                                        <form method="post" asp-action="Complete" asp-route-id="@item.PointRechargeId" class="d-flex gap-1">
+                                            <input name="paymentTradeNo" class="form-control form-control-sm" required
+                                                   maxlength="@PointLogService.MaxManualTradeNoLength" placeholder="綠界交易編號或補單備註" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success text-nowrap"
+                                                    onclick="return confirm('確認會員已付款？補單會把儲值單改為成功並加 @item.PointsGranted.ToString("N0") 點。')">人工補單</button>
+                                        </form>
+                                    }
                                 </td>
                             </tr>
                         }
