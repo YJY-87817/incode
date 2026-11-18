@@ -1,79 +1,52 @@
-﻿@model incode.MVC.Models.EntrustMission
-
+﻿@model incode.MVC.ViewModels.Point.EntrustMissionCreateViewModel
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "代會員建立委託";
 }
 
-<h1>Create</h1>
-
-<h4>EntrustMission</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="UserId" class="control-label"></label>
-                <select asp-for="UserId" class ="form-control" asp-items="ViewBag.UserId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="ContentId" class="control-label"></label>
-                <select asp-for="ContentId" class ="form-control" asp-items="ViewBag.ContentId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Detail" class="control-label"></label>
-                <input asp-for="Detail" class="form-control" />
-                <span asp-validation-for="Detail" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="RewardPoints" class="control-label"></label>
-                <input asp-for="RewardPoints" class="form-control" />
-                <span asp-validation-for="RewardPoints" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Category" class="control-label"></label>
-                <input asp-for="Category" class="form-control" />
-                <span asp-validation-for="Category" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Deadline" class="control-label"></label>
-                <input asp-for="Deadline" class="form-control" />
-                <span asp-validation-for="Deadline" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="BestContentId" class="control-label"></label>
-                <select asp-for="BestContentId" class ="form-control" asp-items="ViewBag.BestContentId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="BestUserId" class="control-label"></label>
-                <select asp-for="BestUserId" class ="form-control" asp-items="ViewBag.BestUserId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="SelectedAt" class="control-label"></label>
-                <input asp-for="SelectedAt" class="form-control" />
-                <span asp-validation-for="SelectedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<div class="container-fluid py-4">
+    <div class="card shadow mb-4" style="max-width: 760px">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tasks me-2"></i>代會員建立委託</h6>
+            <small class="text-muted">委託人為所選主題文章的作者，賞金從作者的點數預扣（與前台建立委託相同）；點數不足時無法建立。</small>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="Create">
+                <div asp-validation-summary="All" class="text-danger mb-2"></div>
+                <div class="mb-3">
+                    <label asp-for="ContentId" class="form-label"></label>
+                    <select asp-for="ContentId" asp-items="ViewBag.Topics" class="form-select">
+                        <option value="0">-- 選擇主題文章（只列出目前沒有委託的公開主題）--</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" maxlength="150" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Detail" class="form-label"></label>
+                    <textarea asp-for="Detail" class="form-control" rows="3" maxlength="500"></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label asp-for="RewardPoints" class="form-label"></label>
+                        <input asp-for="RewardPoints" type="number" min="1" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Category" class="form-label"></label>
+                        <input asp-for="Category" class="form-control" maxlength="50" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Deadline" class="form-label"></label>
+                        <input asp-for="Deadline" type="datetime-local" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-check mb-3">
+                    <input asp-for="IsUrgent" class="form-check-input" />
+                    <label asp-for="IsUrgent" class="form-check-label"></label>
+                </div>
+                <button type="submit" class="btn btn-primary" onclick="return confirm('確定要建立委託並從作者點數預扣賞金？')">建立委託</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">返回</a>
+            </form>
+        </div>
     </div>
 </div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

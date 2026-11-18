@@ -83,7 +83,8 @@ incode/
 - **擁有者檢查**：前台 API 讀寫資料時必須確認屬於 `User.GetId()`，找不到或非本人一律回 404。
 - **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
   （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
-  後台 MVC 的 CRUD 頁面（`Controllers/`）暫時直接用 DbContext
+  後台 MVC（`Controllers/`）也一樣只呼叫服務（後台專用的放 `Services/<模組>/Admin*Service`），進行中：
+  點數 / 任務模組已完成（修正紀錄 42），論壇、商城、聊天 + 首頁尚未搬移
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -471,6 +472,18 @@ incode/
       原本在 CDN 連不到的環境，後台表格沒有分頁與搜尋
     - 順便修正：`ContentCategory/Index` 的資料網址寫死 `https://localhost:7190`（其他網址的環境載不到分類），改用 `Url.Action`
     - CI 的兩個後端 job 加上 `setup-node`（Node 22）
+42. 後台改走服務層（一）點數 / 任務模組（`PointLog`、`PointRecharge`、`Mission`、`MissionProgress`、`EntrustMission`），
+    Controller 不再使用 `incodedatabaseContext`；新增 `AdminPointQueryService`（點數紀錄 / 儲值單查詢、會員下拉選單、會員點數明細）、
+    `AdminMissionService`（平台任務、任務進度查詢）、`AdminEntrustMissionService`。搬移時修正（都先在 main 重現，`AdminPointMissionTests`）：
+    - **任務進度改為唯讀**：刪除後台 `MissionProgress` 的 Create / Edit / Delete。原本可以把進度改成 completed 讓會員領獎、
+      或刪除已領獎的一次性任務進度讓會員再領一次；任務進度只由伺服器端觸發，要補點數用「手動調整點數」
+    - **後台建立委託改走預扣流程**：原本直接寫入委託（可自填狀態、最佳解答），不扣點，之後選最佳解答或退款會憑空發點
+      （在 main 重現：作者 0 點，後台建立了 500 點賞金的委託）。現在選擇公開中、沒有委託的主題文章，委託人為文章作者，
+      走 `EntrustMissionService.CreateEntrustMissionAsync` 從作者點數預扣，點數不足顯示錯誤
+    - **有會員進度的平台任務不能刪除**：原本撞外鍵 → 500；改為提示「請改為停用」（進度是一次性任務只能領一次的依據）
+    - **平台任務表單只能設定可編輯的欄位**：建立時間、參與人數、上次重置時間由系統維護（原本整個實體由表單綁定）；
+      新增時寫入建立時間（原本為 null）、預設啟用；獎勵點數 / 經驗值不能是負數（領獎時會變成扣點）、目標次數至少 1；
+      新增頁補上難度、重置類型、啟用、精選欄位，重置類型改為下拉選單（舊資料的其他值保留）
 
 ## 全專案檢查結果（2026-11）
 
@@ -516,7 +529,7 @@ incode/
     論壇頁 JS 615 KB → 153 KB（Tiptap 編輯器改為開啟時才載入，見修正紀錄 38）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
-25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面直接使用 DbContext，邏輯單純，暫不處理）
+25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面逐模組改走服務層，見修正紀錄 42）
 
 ## 第二次全專案檢查（2026-11-11）
 

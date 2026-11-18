@@ -11,7 +11,7 @@
         </div>
         <div class="card-body p-4">
             <form asp-action="Edit" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div asp-validation-summary="All" class="text-danger"></div>
                 <input type="hidden" asp-for="MissionId" />
 
                 @* 任務基本資訊 *@
@@ -78,7 +78,19 @@
                     </div>
                     <div class="col-md-4">
                         <label asp-for="ResetType" class="form-label fw-bold text-secondary">重置類型</label>
-                        <input asp-for="ResetType" class="form-control" />
+                        @* 不在清單內的值一律視為一次性任務（MissionResetTypes.IsOneTime） *@
+                        <select asp-for="ResetType" class="form-select">
+                            <option value="none">一次性</option>
+                            <option value="daily">每日</option>
+                            <option value="weekly">每週</option>
+                            <option value="monthly">每月</option>
+                            <option value="yearly">每年</option>
+                            @if (Model?.ResetType is string current && !new[] { "none", "daily", "weekly", "monthly", "yearly" }.Contains(current))
+                            {
+                                @* 保留舊資料的值（例如 once、Daily），避免存檔時被改掉 *@
+                                <option value="@current" selected>@current</option>
+                            }
+                        </select>
                         <span asp-validation-for="ResetType" class="text-danger"></span>
                     </div>
                 </div>

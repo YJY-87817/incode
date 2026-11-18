@@ -1,24 +1,18 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace incode.MVC.Controllers.Point
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class PointRechargeController : Controller
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IAdminPointQueryService _query;
         private readonly IPointLogService _pointLogService;
         private readonly ILogger<PointRechargeController> _logger;
 
-        public PointRechargeController(incodedatabaseContext context, IPointLogService pointLogService, ILogger<PointRechargeController> logger)
+        public PointRechargeController(IAdminPointQueryService query, IPointLogService pointLogService, ILogger<PointRechargeController> logger)
         {
-            _context = context;
+            _query = query;
             _pointLogService = pointLogService;
             _logger = logger;
         }
@@ -26,26 +20,15 @@ namespace incode.MVC.Controllers.Point
         // GET: PointRecharge
         public async Task<IActionResult> Index()
         {
-            var incodedatabaseContext = _context.PointRecharge.Include(p => p.User);
-            return View(await incodedatabaseContext.ToListAsync());
+            return View(await _query.GetRechargesAsync());
         }
 
         // GET: PointRecharge/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var pointRecharge = await _context.PointRecharge
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointRechargeId == id);
-            if (pointRecharge == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var pointRecharge = await _query.GetRechargeAsync(id.Value);
+            if (pointRecharge == null) return NotFound();
             return View(pointRecharge);
         }
 

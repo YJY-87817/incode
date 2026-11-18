@@ -1,52 +1,35 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace incode.MVC.Controllers.Point
 {
     [Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]
     public class PointLogController : Controller
     {
-        private readonly incodedatabaseContext _context;
+        private readonly IAdminPointQueryService _query;
         private readonly IPointLogService _pointLogService;
         private readonly ILogger<PointLogController> _logger;
 
-        public PointLogController(incodedatabaseContext context, IPointLogService pointLogService, ILogger<PointLogController> logger)
+        public PointLogController(IAdminPointQueryService query, IPointLogService pointLogService, ILogger<PointLogController> logger)
         {
-            _context = context;
+            _query = query;
             _pointLogService = pointLogService;
             _logger = logger;
         }
 
-        // GET: PointLogTest
+        // GET: PointLog
         public async Task<IActionResult> Index()
         {
-            var incodedatabaseContext = _context.PointLog.Include(p => p.PointTypeDefinition).Include(p => p.User);
-            return View(await incodedatabaseContext.ToListAsync());
+            return View(await _query.GetLogsAsync());
         }
 
-        // GET: PointLogTest/Details/5
+        // GET: PointLog/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var pointLog = await _context.PointLog
-                .Include(p => p.PointTypeDefinition)
-                .Include(p => p.User)
-                .FirstOrDefaultAsync(m => m.PointLogId == id);
-            if (pointLog == null)
-            {
-                return NotFound();
-            }
-
+            if (id == null) return NotFound();
+            var pointLog = await _query.GetLogAsync(id.Value);
+            if (pointLog == null) return NotFound();
             return View(pointLog);
         }
 
@@ -87,86 +70,27 @@ namespace incode.MVC.Controllers.Point
 
         private async Task LoadUserListAsync(int? selectedUserId)
         {
-            var users = await _context.User
-                .AsNoTracking()
-                .OrderBy(u => u.UserId)
-                .Select(u => new { u.UserId, Text = "#" + u.UserId + " " + u.Username + "（" + u.Email + "）" })
-                .ToListAsync();
+            var users = (await _query.GetUserOptionsAsync())
+                .Select(u => new { u.UserId, Text = $"#{u.UserId} {u.Username}（{u.Email}）" });
             ViewBag.UserList = new SelectList(users, "UserId", "Text", selectedUserId);
         }
 
-        //-----------------------------------------------------------
-        // GET: PointLogTest/PointLogsDetail
+        // GET: PointLog/PointLogsDetail
         public async Task<IActionResult> PointLogsDetail(int? UserId = null)
         {
-            // 1. 載入使用者清單給下拉選單
-            var userList = await _context.User
-                .Select(u => new { u.UserId, u.Username, u.Email })
-                .OrderBy(u => u.UserId)
-                .ToListAsync();
+            var users = await _query.GetUserOptionsAsync();
+            ViewBag.UserList = new SelectList(users.Select(u => new { u.UserId, u.Username }), "UserId", "Username");
+            ViewBag.UserCount = users.Count;
 
-            ViewBag.UserList = new SelectList(userList, "UserId", "Username");
-            ViewBag.UserCount = userList.Count;
-
-            // 如果沒傳 UserId，預設選第一個
-            if (!UserId.HasValue && userList.Any())
-                UserId = userList.First().UserId;
-
+            // 沒有指定會員：預設第一位
+            UserId ??= users.Count > 0 ? users[0].UserId : null;
             if (!UserId.HasValue)
                 return View(new List<PointLogsViewModel>());
 
-            // 2. 抓取該使用者的所有 Log
-            var logs = await _context.PointLog
-                .AsNoTracking()
-                .Include(l => l.PointTypeDefinition)
-                .Where(l => l.UserId == UserId.Value)
-                .OrderByDescending(l => l.CreatedAt)
-                .ToListAsync();
-
-            // 3. 準備批量查詢相關資料 (避免在迴圈內反覆下 SQL)
-            var missionIds = logs.Where(l => l.SourceType == "mission").Select(l => l.SourceId).Distinct().ToList();
-            var entrustIds = logs.Where(l => l.SourceType == "entrust_mission" || l.SourceType == "entrust_mission_point_reserve")
-                                 .Select(l => l.SourceId).Distinct().ToList();
-            var rechargeIds = logs.Where(l => l.SourceType == "point_recharge").Select(l => l.SourceId).Distinct().ToList();
-
-            var missions = await _context.Mission.Where(m => missionIds.Contains(m.MissionId))
-                .ToDictionaryAsync(m => m.MissionId, m => m.MissionName ?? "任務");
-
-            var entrusts = await _context.EntrustMission.Where(e => entrustIds.Contains(e.EntrustMissionId))
-                .ToDictionaryAsync(e => e.EntrustMissionId, e => e.Title ?? "委託");
-
-            // 4. 轉換為 ViewModel
-            var viewModel = logs.Select(log =>
-            {
-                string specificTitle = log.SourceType switch
-                {
-                    "mission" => missions.GetValueOrDefault(log.SourceId ?? 0, "平台任務獎勵"),
-                    "entrust_mission" => entrusts.GetValueOrDefault(log.SourceId ?? 0, "委託任務獎勵"),
-                    "entrust_mission_point_reserve" => entrusts.TryGetValue(log.SourceId ?? 0, out var t) ? $"[預扣] {t}" : "委託預扣",
-                    "point_recharge" => "點數儲值",
-                    "orders" => $"訂單編號 #{log.SourceId}", // 這裡直接顯示 ID 或是你可以補 Order 查詢
-                    _ => log.DisplaySource ?? "系統調整"
-                };
-
-                return new PointLogsViewModel
-                {
-                    CreatedAt = log.CreatedAt ?? DateTime.Now,
-                    ChangeAmount = log.ChangeAmount,
-                    NewBalance = log.BalanceAfter,
-                    DisplayName = log.PointTypeDefinition?.Category ?? "點數異動",
-                    Description = specificTitle
-                };
-            }).ToList();
-
-            // 5. 計算當前餘額 (ViewBag)
-            ViewBag.CurrentTotalPoints = logs.OrderByDescending(l => l.CreatedAt)
-                                            .ThenByDescending(l => l.PointLogId)
-                                            .Select(l => l.BalanceAfter)
-                                            .FirstOrDefault();
-
+            var (logs, balance) = await _query.GetUserLedgerAsync(UserId.Value);
+            ViewBag.CurrentTotalPoints = balance;
             ViewBag.SelectedUserId = UserId.Value;
-
-            return View(viewModel);
+            return View(logs);
         }
     }
 }
