@@ -385,7 +385,7 @@ src/
   - 前端：`.env.production` 的 `VITE_API_BASE_URL`、`VITE_BASE_URL`
   - 反向代理：設定 ForwardedHeaders（否則 IP 速率限制失效）、保持 HTTPS（會員 Cookie 為 `Secure` + `SameSite=None`）
   - 上傳目錄 `App__UploadRoot`（預設 `App_Data/uploads`）設成部署資料夾以外的絕對路徑，重新部署時不可被覆蓋；
-    第一次部署前執行 `scripts/copy-legacy-uploads.sh <UploadRoot>` 把改版前的上傳檔從 git 歷史還原進去（見 `CLAUDE.md` 修正紀錄 29）
+    第一次部署前執行 `scripts/copy-legacy-uploads.sh <UploadRoot> <備份資料夾>` 把改版前的上傳檔從備份複製進去（git 歷史已經沒有這些檔案）（見 `CLAUDE.md` 修正紀錄 29）
 
 ---
 

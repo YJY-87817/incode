@@ -175,7 +175,7 @@ export ConnectionStrings__incodedatabase="Server=...;Database=incodedatabase;...
 - 系統架構、驗證機制、各模組運作方式（點數、儲值、客服、商城…）與擴充指引見 [`docs/TECHNICAL.md`](docs/TECHNICAL.md)。
 - 建置、lint、端對端驗證與合併前檢查清單見 [`docs/TESTING.md`](docs/TESTING.md)（專案目前沒有自動化測試）。
 - 每個 PR 會由 GitHub Actions（`.github/workflows/ci.yml`）自動建置前後端，兩個檢查都通過再合併。
-- 前端合併進本 repo 前的 commit 歷史仍保留：`git log edfd961^2`。
+- 前端合併進本 repo 前的 commit 歷史仍保留：`git log dd7e8d8^2`。
 
 ## 授權
 
