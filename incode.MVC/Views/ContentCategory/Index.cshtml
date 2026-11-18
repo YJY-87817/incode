@@ -29,12 +29,13 @@
 {
   <script src="~/lib/datatables/dataTables.fixedHeader.min.js"></script>
   <script>
-    // 分類名稱 / 說明可以由會員在前台新增：一律以純文字輸出（DataTables 預設把資料當 HTML 插入，會執行會員寫入的標籤）
+    // 分類名稱 / 說明可以由會員在前台新增：所有欄位預設以純文字輸出（DataTables 預設把資料當 HTML 插入，會執行會員寫入的標籤）；
+    // 只有「操作」欄自己產生連結
     const text = $.fn.dataTable.render.text();
     const base = "@Url.Content("~/ContentCategory/")";
     $("#categoryTable").dataTable({
       ajax:{
-        type:"POST",
+        type:"GET",
         url: "@Url.Action("IndexJson", "ContentCategory")", // 原本寫死 https://localhost:7190，其他網址的環境載不到資料
         dataSrc:function(data){
           return data;
@@ -43,9 +44,9 @@
       columns:[
         {data:"contentCategoryId",width:"8%"},
         {data:"parentCategoryId",width:"10%",defaultContent:""},
-        {data:"categoryName",width:"25%",render:text},
-        {data:"description",width:"30%",render:text,defaultContent:""},
-        {data:"status",width:"10%",render:text},
+        {data:"categoryName",width:"25%"},
+        {data:"description",width:"30%",defaultContent:""},
+        {data:"status",width:"10%"},
         {data:"contentCategoryId",orderable:false,searchable:false,render:function(id){
           id = parseInt(id, 10);
           return '<a class="btn btn-sm btn-outline-info" href="' + base + 'Details/' + id + '">詳情</a> '
@@ -53,6 +54,7 @@
             + '<a class="btn btn-sm btn-outline-danger" href="' + base + 'Delete/' + id + '">刪除</a>';
         }},
       ],
+      columnDefs:[{targets:"_all",render:text}], // 預設：純文字（上面有自訂 render 的欄位優先）
       fixedHeader:
       {
         header:true,

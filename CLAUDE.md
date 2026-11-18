@@ -491,11 +491,15 @@ incode/
     - **文章修改紀錄改為唯讀**：刪除 `ContentHistory` 的 Create / Edit / Delete（可以偽造或清除會員的修改歷程；新增 / 修改頁引用不存在的欄位，一律 500）。
       紀錄只由會員編輯文章時寫入（`ContentService`）
     - **分類狀態**：編輯分類原本會把 `is_active` 蓋成 0（停用的分類被重新啟用），後台也無法停用分類。表單加上「狀態」下拉選單
-      （官方 / 會員新增 / 停用，`ContentCategoryStatus`），後台新增預設為「官方」
+      （官方 / 會員新增 / 停用，`ContentCategoryStatus.Selectable`），後台新增預設為「官方」；改版前不在選單內的狀態（例如舊後台建立的 0）
+      會加進選單並選取，只改名稱時狀態不變。名稱 2～50 字、說明最多 200 字（`ContentCategoryStatus.NameMaxLength` 等，原本超過欄位長度會 500）
     - **分類列表的 XSS**：DataTables 預設把資料當 HTML 插入，會員在前台新增的分類名稱（`POST api/CategoryApi`）會在管理員的後台執行；
-      名稱 / 說明 / 狀態改用 `render.text()`。以瀏覽器實測名稱為 `<img src=x onerror=…>` 的分類：以文字顯示、腳本沒有執行
+      所有欄位預設 `render.text()`（`columnDefs` 的 `_all`），只有「操作」欄自己產生連結；資料端點 `IndexJson` 改為 GET。
+      以瀏覽器實測名稱為 `<img src=x onerror=…>` 的分類：以文字顯示、腳本沒有執行
     - 分類列表原本沒有新增 / 編輯 / 刪除的入口，補上；父分類可以選「（無）」，不能設成自己或自己的子孫（原本可以形成循環）
     - 還有文章或子分類的分類不能刪除（原本撞外鍵 → 500），提示改為停用；`ContentEdit` 的「查看」連到不存在的 Action（404），改連文章詳情
+    - 內容類型 / 狀態的顯示名稱集中在 `ContentTypes.DisplayName`、`ContentStatus.DisplayName`（文章詳情與檢舉清單共用）；
+      沒有建立時間的舊內容顯示空白（原本 0001-01-01）
 
 ## 全專案檢查結果（2026-11）
 

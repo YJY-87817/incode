@@ -20,12 +20,12 @@
       </div>
       <div class="form-group">
         <label asp-for="CategoryName" class="control-label"></label>
-        <input asp-for="CategoryName" class="form-control" />
+        <input asp-for="CategoryName" class="form-control" maxlength="@ContentCategoryStatus.NameMaxLength" />
         <span asp-validation-for="CategoryName" class="text-danger"></span>
       </div>
       <div class="form-group">
         <label asp-for="Description" class="control-label"></label>
-        <input asp-for="Description" class="form-control" />
+        <input asp-for="Description" class="form-control" maxlength="@ContentCategoryStatus.DescriptionMaxLength" />
         <span asp-validation-for="Description" class="text-danger"></span>
       </div>
       <div class="form-group">

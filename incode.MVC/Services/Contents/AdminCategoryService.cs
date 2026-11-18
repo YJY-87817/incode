@@ -11,16 +11,6 @@ namespace incode.MVC.Services.Contents
             _context = context;
         }
 
-        public static string StatusName(int status) => status switch
-        {
-            ContentCategoryStatus.MemberCreated => "會員新增",
-            ContentCategoryStatus.Official => "官方",
-            ContentCategoryStatus.Disabled => "停用",
-            _ => $"未知（{status}）",
-        };
-
-        public static readonly int[] Statuses = { ContentCategoryStatus.Official, ContentCategoryStatus.MemberCreated, ContentCategoryStatus.Disabled };
-
         public async Task<List<AdminCategoryRow>> GetRowsAsync()
         {
             var rows = await _context.ContentCategory
@@ -28,7 +18,7 @@ namespace incode.MVC.Services.Contents
                 .Select(c => new { c.ContentCategoryId, c.ParentCategoryId, c.CategoryName, c.Description, c.IsActive })
                 .ToListAsync();
             return rows.Select(c => new AdminCategoryRow(c.ContentCategoryId, c.ParentCategoryId, c.CategoryName, c.Description,
-                c.IsActive, StatusName(c.IsActive))).ToList();
+                c.IsActive, ContentCategoryStatus.DisplayName(c.IsActive))).ToList();
         }
 
         public Task<ContentCategory?> GetAsync(int contentCategoryId)
@@ -61,7 +51,7 @@ namespace incode.MVC.Services.Contents
         public async Task<ContentCategory> CreateAsync(ContentCategory form)
         {
             var category = new ContentCategory();
-            await ApplyAsync(category, form, editingId: null);
+            await ApplyAsync(category, form, editingId: null, currentStatus: null);
             _context.ContentCategory.Add(category);
             await _context.SaveChangesAsync();
             return category;
@@ -72,17 +62,21 @@ namespace incode.MVC.Services.Contents
             var category = await _context.ContentCategory.FirstOrDefaultAsync(c => c.ContentCategoryId == contentCategoryId);
             if (category == null) return false;
 
-            await ApplyAsync(category, form, contentCategoryId);
+            await ApplyAsync(category, form, contentCategoryId, currentStatus: category.IsActive);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        private async Task ApplyAsync(ContentCategory category, ContentCategory form, int? editingId)
+        private async Task ApplyAsync(ContentCategory category, ContentCategory form, int? editingId, int? currentStatus)
         {
-            if (string.IsNullOrWhiteSpace(form.CategoryName))
-                throw new BusinessException("請填寫分類名稱");
-            // 原本表單沒有狀態欄位，存檔時一律變成 0（停用的分類編輯後就被重新啟用）
-            if (!Statuses.Contains(form.IsActive))
+            var name = form.CategoryName?.Trim() ?? "";
+            if (name.Length < ContentCategoryStatus.NameMinLength || name.Length > ContentCategoryStatus.NameMaxLength)
+                throw new BusinessException($"分類名稱需為 {ContentCategoryStatus.NameMinLength}～{ContentCategoryStatus.NameMaxLength} 字");
+            if ((form.Description?.Trim().Length ?? 0) > ContentCategoryStatus.DescriptionMaxLength)
+                throw new BusinessException($"說明最多 {ContentCategoryStatus.DescriptionMaxLength} 字");
+            // 原本表單沒有狀態欄位，存檔時一律變成 0（停用的分類編輯後就被重新啟用）。
+            // 改版前已存在、不在選單內的狀態值（例如舊後台建立的 0）維持原值即可存檔，不會被改掉
+            if (!ContentCategoryStatus.Selectable.Contains(form.IsActive) && form.IsActive != currentStatus)
                 throw new BusinessException("請選擇分類狀態");
 
             if (form.ParentCategoryId is int parentId)
@@ -96,7 +90,7 @@ namespace incode.MVC.Services.Contents
                     throw new BusinessException("不能把自己或自己的子分類設為父分類");
             }
 
-            category.CategoryName = form.CategoryName.Trim();
+            category.CategoryName = name;
             category.Description = string.IsNullOrWhiteSpace(form.Description) ? null! : form.Description.Trim();
             category.ParentCategoryId = form.ParentCategoryId;
             category.IsActive = form.IsActive;

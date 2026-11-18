@@ -21,7 +21,7 @@ namespace incode.MVC.Services.Contents
                     ParentContentId = c.ParentContentId,
                     Title = c.Title,
                     Body = c.Body.Substring(0, Math.Min(100, c.Body.Length)), // 只取前 100 字
-                    CreatedAt = c.CreatedAt ?? DateTime.MinValue,
+                    CreatedAt = c.CreatedAt,
                     AuthorName = c.User.Username,
                     CategoryName = c.Category != null ? c.Category.CategoryName : null,
                 })
@@ -37,7 +37,7 @@ namespace incode.MVC.Services.Contents
                     ContentId = c.ContentId,
                     Title = c.Title,
                     Body = c.Body,
-                    CreatedAt = c.CreatedAt ?? DateTime.MinValue,
+                    CreatedAt = c.CreatedAt,
                     AuthorName = c.User.Username,
                     // 沒有分類的內容（舊資料）原本在這裡 NullReferenceException → 500
                     CategoryName = c.Category != null ? c.Category.CategoryName : null,
@@ -57,7 +57,7 @@ namespace incode.MVC.Services.Contents
                     ContentId = c.ContentId,
                     Body = c.Body,
                     AuthorName = c.User.Username,
-                    CreatedAt = c.CreatedAt ?? DateTime.MinValue,
+                    CreatedAt = c.CreatedAt,
                 })
                 .ToListAsync();
             return content;

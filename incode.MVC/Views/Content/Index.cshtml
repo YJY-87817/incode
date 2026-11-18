@@ -47,7 +47,7 @@
                 <span class="badge badge-primary">@item.CategoryName</span>
               </td>
               <td>
-                @item.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                @item.CreatedAt?.ToString("yyyy/MM/dd HH:mm")
               </td>
               <td>
                 <a asp-action="Details" asp-route-id="@item.ContentId"

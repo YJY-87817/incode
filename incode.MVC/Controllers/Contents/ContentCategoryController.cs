@@ -20,8 +20,8 @@ namespace incode.MVC.Controllers.Contents
             return View();
         }
 
-        // POST: ContentCategory/IndexJson（唯讀資料，不改變狀態）
-        [HttpPost]
+        // GET: ContentCategory/IndexJson（唯讀資料，DataTables 以 GET 取得）
+        [HttpGet]
         public async Task<IActionResult> IndexJson()
         {
             return Json(await _categories.GetRowsAsync());
@@ -39,7 +39,7 @@ namespace incode.MVC.Controllers.Contents
         // GET: ContentCategory/Create
         public async Task<IActionResult> Create()
         {
-            await LoadOptionsAsync(null, null);
+            await LoadOptionsAsync(null, null, null);
             return View(new ContentCategory { IsActive = ContentCategoryStatus.Official });
         }
 
@@ -57,7 +57,7 @@ namespace incode.MVC.Controllers.Contents
             catch (BusinessException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
-                await LoadOptionsAsync(null, contentCategory.ParentCategoryId);
+                await LoadOptionsAsync(null, contentCategory.ParentCategoryId, contentCategory.IsActive);
                 return View(contentCategory);
             }
         }
@@ -68,7 +68,7 @@ namespace incode.MVC.Controllers.Contents
             if (id == null) return NotFound();
             var contentCategory = await _categories.GetAsync(id.Value);
             if (contentCategory == null) return NotFound();
-            await LoadOptionsAsync(id, contentCategory.ParentCategoryId);
+            await LoadOptionsAsync(id, contentCategory.ParentCategoryId, contentCategory.IsActive);
             return View(contentCategory);
         }
 
@@ -88,18 +88,21 @@ namespace incode.MVC.Controllers.Contents
             catch (BusinessException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
-                await LoadOptionsAsync(id, contentCategory.ParentCategoryId);
+                await LoadOptionsAsync(id, contentCategory.ParentCategoryId, contentCategory.IsActive);
                 return View(contentCategory);
             }
         }
 
-        // 父分類（編輯時排除自己與子孫，避免形成循環）與狀態下拉選單
-        private async Task LoadOptionsAsync(int? editingId, int? selectedParentId)
+        // 父分類（編輯時排除自己與子孫，避免形成循環）與狀態下拉選單。
+        // 目前的狀態不在選單內（例如舊後台建立的 0）時加進選單並選取，存檔時才不會被默默改成第一個選項
+        private async Task LoadOptionsAsync(int? editingId, int? selectedParentId, int? currentStatus)
         {
             var parents = (await _categories.GetParentOptionsAsync(editingId)).Select(p => new { p.Id, p.Name });
             ViewData["ParentCategoryId"] = new SelectList(parents, "Id", "Name", selectedParentId);
-            ViewData["Statuses"] = AdminCategoryService.Statuses
-                .Select(s => new SelectListItem(AdminCategoryService.StatusName(s), s.ToString())).ToList();
+            var statuses = ContentCategoryStatus.Selectable.ToList();
+            if (currentStatus is int current && !statuses.Contains(current)) statuses.Add(current);
+            ViewData["Statuses"] = statuses
+                .Select(s => new SelectListItem(ContentCategoryStatus.DisplayName(s), s.ToString())).ToList();
         }
 
         // GET: ContentCategory/Delete/5

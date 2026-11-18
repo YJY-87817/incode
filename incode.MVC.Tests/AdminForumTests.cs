@@ -88,22 +88,78 @@ public class AdminForumTests : IClassFixture<ApiFactory>
         }
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/Content/Details/999999")).StatusCode);
 
-        var json = await (await admin.PostAsync("/ContentCategory/IndexJson", new FormUrlEncodedContent([]))).Content.ReadAsStringAsync();
+        var json = await admin.GetStringAsync("/ContentCategory/IndexJson"); // 唯讀資料改用 GET
         using var doc = JsonDocument.Parse(json);
         var row = doc.RootElement.EnumerateArray().Single(r => r.GetProperty("contentCategoryId").GetInt32() == categoryId);
         Assert.Equal("官方", row.GetProperty("status").GetString());
     }
 
     [Fact]
-    public async Task Category_list_renders_names_as_text()
+    public async Task Category_list_renders_every_column_as_text_by_default()
     {
         var admin = await _factory.LoginAsync(NewUser(), admin: true);
 
-        // 分類名稱可以由會員在前台新增：DataTables 欄位要以純文字輸出
-        var html = await admin.GetStringAsync("/ContentCategory");
+        // 分類名稱可以由會員在前台新增：DataTables 所有欄位預設以純文字輸出，只有「操作」欄自訂 render
+        var html = Regex.Replace(await admin.GetStringAsync("/ContentCategory"), @"\s+", "");
 
-        Assert.Contains("render.text()", html);
-        Assert.Contains("{data:\"categoryName\",width:\"25%\",render:text}", html);
+        Assert.Contains("consttext=$.fn.dataTable.render.text();", html);
+        Assert.Contains("columnDefs:[{targets:\"_all\",render:text}]", html);
+        var columns = Regex.Match(html, @"columns:\[(.*?)\],columnDefs").Groups[1].Value;
+        Assert.Single(Regex.Matches(columns, "render:")); // 只有操作欄
+        Assert.Contains("render:function(id){id=parseInt(id,10);", columns);
+    }
+
+    [Theory]
+    [InlineData("a", "")]                            // 名稱少於 2 字
+    [InlineData("名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名稱名", "")] // 51 字
+    [InlineData("正常名稱", "x")]                     // 說明 201 字（下面補足）
+    public async Task Category_name_and_description_length_is_checked(string name, string description)
+    {
+        if (description == "x") description = new string('說', 201);
+        var id = await AddCategory("原名" + Guid.NewGuid().ToString("N")[..6]);
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        var response = await PostForm(admin, $"/ContentCategory/Edit/{id}", $"/ContentCategory/Edit/{id}",
+            ("ContentCategoryId", id.ToString()), ("CategoryName", name), ("Description", description),
+            ("IsActive", "2"), ("ParentCategoryId", ""));
+
+        // 原本：Controller 檢查 ModelState（2～50 字）；搬移後漏掉，超過資料庫欄位長度會 500
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains(description.Length > 200 ? "說明最多" : "分類名稱需為", WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
+        Assert.StartsWith("原名", (await Category(id))!.CategoryName);
+    }
+
+    [Fact]
+    public async Task Legacy_category_status_is_kept_when_editing()
+    {
+        var id = await AddCategory("舊分類" + Guid.NewGuid().ToString("N")[..6], status: 0); // 舊後台建立的分類
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        var page = WebUtility.HtmlDecode(await admin.GetStringAsync($"/ContentCategory/Edit/{id}"));
+        Assert.Contains("<option selected=\"selected\" value=\"0\">未設定（0）</option>", page);
+
+        await PostForm(admin, $"/ContentCategory/Edit/{id}", $"/ContentCategory/Edit/{id}", CategoryForm(id, "改名舊分類", 0));
+
+        var saved = (await Category(id))!;
+        Assert.Equal("改名舊分類", saved.CategoryName);
+        Assert.Equal(0, saved.IsActive); // 只改名稱，狀態不會被改成「官方」
+    }
+
+    [Fact]
+    public async Task Content_without_created_at_shows_empty_date()
+    {
+        int id;
+        await using (var context = _factory.Db.NewContext())
+        {
+            var content = new Content { UserId = NewUser(), Type = 1, Title = "沒有建立時間", Body = "b", IsActive = 1 };
+            context.Content.Add(content);
+            await context.SaveChangesAsync();
+            id = content.ContentId;
+        }
+        var admin = await _factory.LoginAsync(NewUser(), admin: true);
+
+        Assert.DoesNotContain("0001", await admin.GetStringAsync($"/Content/Details/{id}"));
+        Assert.DoesNotContain("0001/01/01", await admin.GetStringAsync("/Content"));
     }
 
     [Theory]
@@ -170,9 +226,9 @@ public class AdminForumTests : IClassFixture<ApiFactory>
         var admin = await _factory.LoginAsync(NewUser(), admin: true);
 
         var self = await PostForm(admin, $"/ContentCategory/Edit/{parent}", $"/ContentCategory/Edit/{parent}",
-            CategoryForm(parent, "父", ContentCategoryStatus.Official, parent));
+            CategoryForm(parent, "父分類", ContentCategoryStatus.Official, parent));
         var cycle = await PostForm(admin, $"/ContentCategory/Edit/{parent}", $"/ContentCategory/Edit/{parent}",
-            CategoryForm(parent, "父", ContentCategoryStatus.Official, child));
+            CategoryForm(parent, "父分類", ContentCategoryStatus.Official, child));
 
         Assert.Contains("父分類", WebUtility.HtmlDecode(await self.Content.ReadAsStringAsync()));
         Assert.Contains("父分類", WebUtility.HtmlDecode(await cycle.Content.ReadAsStringAsync()));
