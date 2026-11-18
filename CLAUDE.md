@@ -84,7 +84,7 @@ incode/
 - **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
   （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
   後台 MVC（`Controllers/`）也一樣只呼叫服務（後台專用的放 `Services/<模組>/Admin*Service`），進行中：
-  點數 / 任務、論壇模組已完成（修正紀錄 42、43），商城、聊天 + 首頁尚未搬移
+  點數 / 任務、論壇、商城模組已完成（修正紀錄 42～44），聊天 + 首頁尚未搬移
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -123,13 +123,15 @@ incode/
 
 ### 點數商城訂單（`Services/PointShop/OrderService.cs`）
 
-前台 `OrderApiController` 與後台 `OrderController` 共用。`CreateOrderAsync` / `UpdateOrderItemsAsync` / `CancelOrderAsync`：
+前台 `OrderApiController` 與後台（`AdminShopService` → `OrderService`）共用。`CreateOrderAsync` / `UpdateOrderItemsAsync` / `CancelOrderAsync`：
 
 - 整筆在交易內（`RunInTransactionAsync`），業務失敗丟 `OrderFailure` → rollback + 回傳訊息
 - 庫存用 `ExecuteUpdateAsync` 原子更新（`WHERE Stock >= 數量`），商品讀取用 `AsNoTracking`，**不要**改 tracked 實體的 `Stock` 再 SaveChanges
 - 交易開始先 `IPointLogService.LockUsersAsync(userId)`，同一會員的點數異動排隊；非 SQL Server（測試用 SQLite）時略過
 - 明細同商品會合併；數量必須 > 0；新加入的商品必須上架中
 - 權限 / 狀態檢查由呼叫端負責：會員只能操作自己的「待處理」訂單；已取消訂單不可改回其他狀態
+- 後台修改訂單狀態要和明細修改在同一個交易（`UpdateOrderItemsAsync(newStatus: …)`），**不要**在服務之外另外 `ExecuteUpdate` 狀態（會讓同時被取消的訂單復活）；
+  商品庫存不能用表單數字覆蓋，後台用「調整庫存 ±」（`AdminShopService.UpdateProductAsync` 的 `stockDelta`，原子更新）
 
 ## 建置與驗證
 
@@ -500,6 +502,22 @@ incode/
     - 還有文章或子分類的分類不能刪除（原本撞外鍵 → 500），提示改為停用；`ContentEdit` 的「查看」連到不存在的 Action（404），改連文章詳情
     - 內容類型 / 狀態的顯示名稱集中在 `ContentTypes.DisplayName`、`ContentStatus.DisplayName`（文章詳情與檢舉清單共用）；
       沒有建立時間的舊內容顯示空白（原本 0001-01-01）
+44. 後台改走服務層（三）商城模組（`Order`、`Shipped`、`Product`）：新增 `AdminShopService`（查詢、輸入檢查、商品與寄送資料維護；
+    訂單的建立 / 修改 / 取消仍走 `OrderService`）。搬移時修正（都先在 main 重現 5/6，`AdminShopTests`；併發在 `ConcurrencyTests`）：
+    - **商品庫存被蓋掉**：編輯商品原本以表單庫存覆蓋資料庫，打開編輯頁到儲存之間會員下單扣掉的庫存會被蓋回去（可超賣；main 上重現：庫存 3 被蓋回 10）。
+      編輯頁的庫存改為唯讀顯示，加「調整庫存（增加填正數、減少填負數）」：條件更新、不會扣到負數、單次 ±100,000、上限 1,000,000，
+      與其他欄位在同一個交易（庫存不足時其他欄位也不儲存）。同時 5 筆訂單 + 5 次補貨，庫存正確（SQL Server）
+    - **訂單頁的儲存型 XSS**：「寄送管理」分頁用 JS 把收件人 / 地址 / 電話 / 備註（會員在前台填的）直接串成 HTML，會在管理員的後台執行；
+      改為 `esc()` 跳脫。以瀏覽器實測收件人為 `<img src=x onerror=…>` 的寄送資料：以文字顯示、腳本沒有執行
+    - **後台改訂單狀態可讓已取消的訂單復活**：明細修改完成之後才另外更新狀態，期間被取消的訂單會被改回「已出貨」，庫存與點數卻已退還。
+      `UpdateOrderItemsAsync` 新增 `newStatus`，狀態與明細在同一個交易（鎖內）設定；同時修改與取消 10 筆（SQL Server），最終狀態與庫存 / 點數一致
+    - **寄送資料**：新增時指定不存在的訂單 → 500（main 重現）、已取消的訂單不能新增、姓名 / 地址 / 電話各 50 字與備註 300 字（原本超過欄位長度 500，
+      只有 SQL Server 會發生）、不能同時「失敗」又「完成」；編輯時所屬訂單不可變更（原本整個實體由表單綁定，可以把紀錄改掛到別的訂單；main 重現）；
+      **已出貨 / 已完成訂單的寄送紀錄不能刪除**（出貨證明；main 重現）。訂單頁的寄送列表同步隱藏刪除鈕
+    - **商品**：欄位綁定改為只收可編輯的欄位（原本圖片檔名、建立時間可由表單指定）；名稱必填且 100 字內、描述 500 字、類別 / 系列 100 字、點數 0～1,000,000；
+      圖片先存檔再寫資料庫，資料庫失敗會刪掉新圖；換圖時資料庫更新成功才刪舊圖（原本先刪舊圖，存檔失敗會留下指向已刪除檔案的商品）；
+      圖片檔名改為時間戳記 + 8 碼隨機（原本 `yyyyMMddHHss` 少了分鐘、只有 4 碼）；格式錯誤的圖片不會建立商品
+    - 新增訂單 / 修改訂單的會員檢查、狀態檢查移到服務；訂單 / 商品 / 寄送資料的失敗訊息在表單上方顯示
 
 ## 全專案檢查結果（2026-11）
 

@@ -291,11 +291,13 @@ namespace incode.MVC.Services.PointShop
         // 修改訂單明細
         // requiredStatus：呼叫端要求訂單必須是這個狀態（會員只能改「待處理」），在鎖內判斷，避免判斷後狀態才被改掉
         public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
-            string? requiredStatus = null)
+            string? requiredStatus = null, string? newStatus = null)
         {
             var (newQty, itemError) = NormalizeItems(items);
             if (itemError != null)
                 return ResultDTO<int>.Failure(itemError);
+            if (newStatus != null && (!OrderStatus.IsValid(newStatus) || newStatus == OrderStatus.Canceled))
+                return ResultDTO<int>.Failure("訂單狀態錯誤");
 
             var userId = await FindOrderUserIdAsync(orderId);
             if (userId == null)
@@ -387,6 +389,8 @@ namespace incode.MVC.Services.PointShop
                 order.TotalPoint = totalPoints;
                 if (remark != null)
                     order.Remark = remark;
+                if (newStatus != null)
+                    order.Status = newStatus;
 
                 await _context.SaveChangesAsync();
                 return order.OrderId;

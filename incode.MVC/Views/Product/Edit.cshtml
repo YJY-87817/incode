@@ -14,9 +14,9 @@
 
                 <div class="card-body p-4">
                     <form id="editForm" asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="All" class="alert alert-danger py-2"></div>
+                        <partial name="_TempDataAlert" />
                         <input type="hidden" asp-for="ProductId" />
-                        <input type="hidden" asp-for="ImageName" />
-                        <input type="hidden" asp-for="CreatedAt" />
 
                         <div class="row">
                             <div class="col-md-7">
@@ -57,11 +57,14 @@
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label asp-for="Stock" class="form-label fw-bold text-success">庫存數量 <span class="text-danger">*</span></label>
-                                        <div class="input-group">
+                                        @* 庫存會被會員下單同時扣減：不直接改數字，改用「調整庫存」增減（原子更新，不會蓋掉期間內的訂單） *@
+                                        <label class="form-label fw-bold text-success">庫存數量（目前）</label>
+                                        <div class="input-group mb-2">
                                             <span class="input-group-text">件</span>
-                                            <input asp-for="Stock" type="number" class="form-control" min="0" required>
+                                            <input value="@Model.Stock" type="number" class="form-control bg-light" readonly>
                                         </div>
+                                        <label for="stockDelta" class="form-label small text-muted">調整庫存（增加填正數、減少填負數）</label>
+                                        <input id="stockDelta" name="stockDelta" type="number" class="form-control" value="0" step="1">
                                     </div>
                                 </div>
 
@@ -182,10 +185,6 @@
                 errors.push('所需點數');
             }
 
-            const stock = document.querySelector('input[name="Stock"]');
-            if (!stock.value) {
-                errors.push('庫存數量');
-            }
 
             // 如果有錯誤，顯示提示並阻止提交
             if (errors.length > 0) {

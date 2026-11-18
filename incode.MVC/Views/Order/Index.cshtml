@@ -124,6 +124,13 @@
 @section Scripts
 {
     <script>
+        // 寄送資料的收件人 / 地址 / 電話 / 備註是會員在前台填的：組 HTML 前一律跳脫（原本直接串進去，會在管理員的後台執行）
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         $(function () {
             // 初始化訂單表格
             $('#orderTable').DataTable({
@@ -161,7 +168,7 @@
                                     if (item.orderStatus === '已完成') badgeClass = 'bg-success';
                                     else if (item.orderStatus === '已取消') badgeClass = 'bg-danger';
                                     else if (item.orderStatus === '待處理') badgeClass = 'bg-warning';
-                                    statusBadge = '<span class="badge ' + badgeClass + '">' + item.orderStatus + '</span>';
+                                    statusBadge = '<span class="badge ' + badgeClass + '">' + esc(item.orderStatus) + '</span>';
                                 }
 
                                 var failedBadge = item.isFailed 
@@ -173,21 +180,23 @@
                                     : '<span class="badge bg-secondary">未完成</span>';
 
                                 var row = '<tr>' +
-                                    '<td class="text-center">' + item.shippedDetailId + '</td>' +
-                                    '<td class="text-center">' + item.orderId + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.orderStatus || '') + '">' + statusBadge + '</td>' +
-                                    '<td>' + (item.recipientName || '') + '</td>' +
-                                    '<td>' + (item.recipientAddress || '') + '</td>' +
-                                    '<td class="text-center">' + (item.recipientPhone || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.shippedDate || '') + '">' + (item.shippedDateFormatted || '') + '</td>' +
-                                    '<td class="text-center" data-order="' + (item.arrivalDate || '') + '">' + (item.arrivalDateFormatted || '') + '</td>' +
+                                    '<td class="text-center">' + esc(item.shippedDetailId) + '</td>' +
+                                    '<td class="text-center">' + esc(item.orderId) + '</td>' +
+                                    '<td class="text-center" data-order="' + esc(item.orderStatus) + '">' + statusBadge + '</td>' +
+                                    '<td>' + esc(item.recipientName) + '</td>' +
+                                    '<td>' + esc(item.recipientAddress) + '</td>' +
+                                    '<td class="text-center">' + esc(item.recipientPhone) + '</td>' +
+                                    '<td class="text-center" data-order="' + esc(item.shippedDate) + '">' + esc(item.shippedDateFormatted) + '</td>' +
+                                    '<td class="text-center" data-order="' + esc(item.arrivalDate) + '">' + esc(item.arrivalDateFormatted) + '</td>' +
                                     '<td class="text-center" data-order="' + (item.isFailed ? '1' : '0') + '">' + failedBadge + '</td>' +
-                                    '<td>' + (item.remark || '') + '</td>' +
+                                    '<td>' + esc(item.remark) + '</td>' +
                                     '<td class="text-center" data-order="' + (item.isCompleted ? '1' : '0') + '">' + completedBadge + '</td>' +
                                     '<td class="text-center">' +
                                         '<div class="btn-group" role="group">' +
-                                            '<a class="btn btn-sm btn-primary" href="/Shipped/Edit/' + item.shippedDetailId + '">修改</a>' +
-                                            '<a class="btn btn-sm btn-danger" href="/Shipped/Delete/' + item.shippedDetailId + '">刪除</a>' +
+                                            '<a class="btn btn-sm btn-primary" href="/Shipped/Edit/' + parseInt(item.shippedDetailId, 10) + '">修改</a>' +
+                                            // 已出貨 / 已完成訂單的寄送紀錄要保留作為出貨證明，不能刪除
+                                            (item.orderStatus === '已出貨' || item.orderStatus === '已完成' ? '' :
+                                                '<a class="btn btn-sm btn-danger" href="/Shipped/Delete/' + parseInt(item.shippedDetailId, 10) + '">刪除</a>') +
                                         '</div>' +
                                     '</td>' +
                                 '</tr>';

@@ -178,6 +178,7 @@ builder.Services.AddScoped<IAdminEntrustMissionService, AdminEntrustMissionServi
 builder.Services.AddScoped<IAdminPointQueryService, AdminPointQueryService>();
 builder.Services.AddScoped<IAdminContentService, AdminContentService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
+builder.Services.AddScoped<IAdminShopService, AdminShopService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy

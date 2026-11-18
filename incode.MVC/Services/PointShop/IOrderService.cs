@@ -28,8 +28,10 @@ namespace incode.MVC.Services.PointShop
 
         /// <summary>修改訂單明細，依新舊總點數差額補扣或退還點數</summary>
         // requiredStatus：訂單必須是這個狀態才能修改 / 取消（會員傳 OrderStatus.Pending）；在交易內取得點數鎖後才判斷
+        // newStatus：後台同時修改狀態時傳入（在同一個交易、鎖內設定；不可是「已取消」，取消請用 CancelOrderAsync）。
+        // 原本後台在明細修改完成之後才另外更新狀態，期間被取消的訂單會被改回其他狀態，庫存與點數卻已退還
         Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
-            string? requiredStatus = null);
+            string? requiredStatus = null, string? newStatus = null);
 
         /// <summary>取消訂單：退還庫存與點數</summary>
         Task<ResultDTO<int>> CancelOrderAsync(int orderId, string? requiredStatus = null);
