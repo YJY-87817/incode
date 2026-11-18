@@ -12,7 +12,7 @@
 | `docs/` | 資料表設計、Content API 導覽 | |
 
 - 同一個功能牽涉前後端時，在同一個分支 / PR 一起修改。
-- 前端合併前的歷史：`git log edfd961^2`（合併 commit 的第二個 parent）。
+- 前端合併前的歷史：`git log dd7e8d8^2`（合併 commit 的第二個 parent）。
 
 ## 專案概觀
 
@@ -140,7 +140,8 @@ incode/
   （需 `--network host` 才能走主機的 proxy 與連到 Docker 資料庫）；搭配 Docker 資料庫可實際啟動後端，
   用 API（註冊 / 登入取得 Cookie）做端對端測試
 - 上傳檔只放在 `App:UploadRoot`（已 gitignore）。改版前的上傳檔已從 git 移除，**新環境 / pull 之後**要先執行
-  `scripts/copy-legacy-uploads.sh [UploadRoot]`（Windows 用 Git Bash）把它們從 git 歷史還原到 `UploadRoot`，否則舊文章的圖片與內文會 404
+  `scripts/copy-legacy-uploads.sh <UploadRoot> <備份資料夾>`（Windows 用 Git Bash）從備份（例如舊環境的 UploadRoot）複製到 `UploadRoot`，否則舊文章的圖片與內文會 404
+  （git 歷史已經沒有這些檔案，見修正紀錄 39）
 
 ## 修正紀錄
 
@@ -316,7 +317,7 @@ incode/
       取出，也可以指定備份資料夾；已存在的檔案不覆蓋，可重複執行。**每個環境都要先執行一次**，否則 pull 後舊文章圖片與內文會 404
     - 實測：腳本還原的 277 個檔案（含 `NoImage.png`）與 git 內容逐檔相同；以還原的資料夾當 `UploadRoot` 啟動後端，
       277 個舊網址全部回 200 且內容一致（含中文與空白檔名）
-    - **git 歷史沒有改寫**，clone 的大小不變；要縮小需改寫歷史並強制推送 main（所有人重新 clone），尚未進行
+    - 2026-11-18 已改寫 git 歷史（見修正紀錄 39）：預設來源 `git:a1199c9` 已移除，腳本只能從備份資料夾還原
     - 後台商品列表的預設圖寫成小寫 `noimage.png`，實際檔名是 `NoImage.png`（Linux 大小寫敏感會 404），已修正
 30. 第二次全專案檢查 26～28（三項都先寫測試重現，修正後通過）：
     - **26 上傳檔案的儲存型 XSS**：`Extensions/UploadSecurityHeadersExtensions.cs`（`app.UseUploadSecurityHeaders()`，在 `UseStaticFiles` 之前）
@@ -428,6 +429,14 @@ incode/
     - **移除 `Microsoft.VisualStudio.Web.CodeGeneration.Design`**：`dotnet list package --vulnerable` 已無漏洞。
       之後要用 Visual Studio「新增 Controller / View」自動產生時，VS 會提示安裝。原本經由它間接引用的 Newtonsoft.Json 不再存在：
       後台首頁的圖表資料改用 `System.Text.Json`（預設編碼器同樣把 `<` `>` 等轉成 `\u003c`，`AdminViewXssTests` 通過）
+39. **改寫 git 歷史**（2026-11-18，強制推送 main）：以 `git filter-repo` 從整個歷史刪除會員上傳檔
+    （`incode2/` 與 `incode.MVC/` 的 `wwwroot/img/fromApi|chat|user|product`、`wwwroot/contents`，保留 `img/product/NoImage.png`），
+    `.git` 115 MB → 32 MB。1555 個 commit 全部保留（只動到上傳檔的 55 個變成空 commit），作者、時間、訊息與合併結構不變，
+    main 最新的檔案內容與改寫前完全相同。
+    - **所有 commit 的 SHA 都變了**：舊的 clone 不能再 pull，要重新 clone；文件中的 `edfd961` → `dd7e8d8`、`a1199c9` → `97630cd`（已沒有上傳檔）
+    - 舊上傳檔只剩各環境的 `UploadRoot`（改寫前確認所有環境都已執行過搬檔腳本）；`scripts/copy-legacy-uploads.sh` 改為必須指定備份資料夾
+    - GitHub 上已合併 PR 的 `refs/pull/*` 仍保留舊 commit（clone 不會下載）；舊分支 `claude/intelligent-lovelace-k9v90l` 需要在 GitHub 手動刪除，
+      否則一般 clone（抓所有分支）仍會下載舊歷史
 
 ## 全專案檢查結果（2026-11）
 
@@ -466,7 +475,7 @@ incode/
 19. ~~資料庫無法重建~~（已補 `docs/database/schema.sql`、`seed.sql` 與 Docker 資料庫，見修正紀錄 7、8）
 20. ~~沒有 CI~~（已加 build 檢查，見修正紀錄 9；自動化測試仍未建立）
 21. ~~上傳檔案在 git 與 wwwroot~~（見修正紀錄 21、29：新的上傳檔寫到 `App:UploadRoot`，舊檔已從 git 移除，以 `scripts/copy-legacy-uploads.sh` 搬到 `UploadRoot`）。
-    git 歷史沒有改寫，clone 大小不變。
+    git 歷史已改寫，clone 115 MB → 32 MB（見修正紀錄 39）。
 22. ~~**前端效能 / 結構**~~（見修正紀錄 15、26、38）：~~Vuetify 全量匯入~~、~~頁面沒有延遲載入~~、~~只有全域 axios 處理 401~~、~~重複載入 Bootstrap 5.3 CSS~~。
     `forumStore.js` 已拆分（2,744 行 → 約 230 行的 state / getters + `stores/forum/` 底下的輔助模組與 6 組 actions），
     `TopicListView.vue` 已拆分（2,755 行 → 外層 82 行 + `ThreadDetailView.vue`、`TopicList.vue` 兩個視圖元件與 8 個 composable，見 `incode.Vue/CLAUDE.md`）。
