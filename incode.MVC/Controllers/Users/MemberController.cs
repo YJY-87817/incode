@@ -133,6 +133,8 @@ namespace incode.MVC.Controllers.Users
                 ModelState.AddModelError(nameof(vm.Email), "此 Email 已被其他會員使用");
             if (string.IsNullOrWhiteSpace(vm.Username))
                 ModelState.AddModelError(nameof(vm.Username), "請輸入暱稱");
+            else if (vm.Username != user.Username && !UsernameRules.IsValid(vm.Username))
+                ModelState.AddModelError(nameof(vm.Username), UsernameRules.ErrorMessage); // 沒改暱稱就不檢查（舊暱稱可能不符合規則）
             else if (await _userService.IsUsernameTakenByOtherAsync(vm.Username, vm.UserId))
                 ModelState.AddModelError(nameof(vm.Username), "此暱稱已被其他會員使用");
             if (!ModelState.IsValid) return View(vm);

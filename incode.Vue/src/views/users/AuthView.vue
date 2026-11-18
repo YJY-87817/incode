@@ -408,6 +408,7 @@ onMounted(() => {
                       <v-text-field
                         v-model="regFormData.username"
                         label="暱稱"
+                        maxlength="30"
                         placeholder="怎麼稱呼您?"
                         variant="outlined"
                         density="comfortable"
