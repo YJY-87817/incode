@@ -84,7 +84,7 @@ incode/
 - **分層**：前台 API Controller 與 SignalR Hub 不直接使用 `incodedatabaseContext`：資料存取、擁有者判斷與業務規則放在 `Services/<模組>/`
   （例如 `ChatService.IsOwnerAsync`、`OrderService.GetOwnOrderAsync`），Controller 只處理 HTTP、授權屬性、狀態碼與 SignalR 推播。
   後台 MVC（`Controllers/`）也一樣只呼叫服務（後台專用的放 `Services/<模組>/Admin*Service`），進行中：
-  點數 / 任務、論壇、商城模組已完成（修正紀錄 42～44），聊天 + 首頁尚未搬移
+  所有模組已完成（修正紀錄 42～45），後台 Controller 不再使用 DbContext
 - **API 回應**：使用 `ResultDTO<T>`，並以 `this.ToActionResult(result)`（`Extensions/ResultDTOExtensions.cs`）回傳。
   成功一律 HTTP 200（`Code` 為 204 時也是 200，避免前端拿不到 body）；失敗使用 `Code` 作為 HTTP 狀態碼（400 / 404 / 409 / 500）。
   前端以 `error.response.data.message` 顯示錯誤。
@@ -298,7 +298,7 @@ incode/
     結果完全一致（一開始 `rounded-4` 寫死 1rem 差了 4px：Material Kit 的 `:root` 把 `--bs-border-radius-xl` 設成 .75rem，改為引用變數後一致）。
     Bootstrap JS（offcanvas 等 `data-bs-*`）與 `bootstrap-icons` 仍使用
 27. 後端分層（全專案檢查 25）：前台 API Controller 與 `ChatHub` 全部改為只呼叫服務，不再使用 `incodedatabaseContext`
-    （後台 MVC 的 15 個 CRUD 頁面維持原樣）。
+    （後台 MVC 的 15 個 CRUD 頁面維持原樣，後來已逐模組改走服務層）。
     - 新增 `ChatService`（聊天：對話擁有者判斷、取得 / 建立對話、訊息存檔、客服列表、歷史、命名、刪除）、`CategoryService`（分類與統計）、
       `PointRechargeService`（儲值訂單建立、失敗標記、會員查詢；金額換點數的比率 `PointsPerCash` 只定義在這裡）
     - 補強既有服務：`UserService`（管理員列表、依暱稱查詢、更新個人資料、刪除）、`FollowService`（粉絲 / 追蹤名單、追蹤結果 `FollowResult`）、
@@ -524,6 +524,15 @@ incode/
     - 商品新增 / 編輯保留模型繫結檢查：數字欄位填 `abc` 等無法轉換的值時顯示「欄位格式不正確」（避免變成 0 就存起來；調整庫存填 `abc` 也不會默默忽略）；
       調整庫存直接比較範圍（`Math.Abs(int.MinValue)` 會 500）；訂單編輯時明細的商品不存在（「無此商品」）回到表單顯示訊息，只有訂單本身不存在才是 404
 
+45. 後台改走服務層（四）聊天與首頁（`ChatMessages`、`ChatSessions`、`Home`）：新增 `AdminChatService`、`AdminDashboardService`（`Services/Common`），
+    至此後台所有 Controller 都不再使用 `incodedatabaseContext`。搬移時修正（都先在 main 重現 7/8，`AdminChatTests`）：
+    - **聊天訊息與對話改為唯讀**：刪除 `ChatMessages` 的 Create / Edit / Delete 與 `ChatSessions` 的 Create / Edit / Delete。原本可以偽造或竄改會員與 AI 的對話紀錄；
+      編輯對話的表單沒有「真人模式」欄位，儲存會把它重設為 false；刪除有訊息的對話撞外鍵 → 500。客服只用客服頁的即時回覆（SignalR）；
+      對話列表加「查看訊息」連結
+    - **客服頁開啟時顯示對話目前的模式**：View 的 `isHumanMode` 原本固定為 false（Controller 設的 `ViewBag` 沒人讀），開啟真人模式的對話仍顯示「AI自動回覆」，
+      要等 SignalR 事件才更新；改由 `ChatIndexViewModel.IsHumanMode` 提供
+    - 首頁待處理訂單數改用 `OrderStatus.Pending`
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -568,7 +577,7 @@ incode/
     論壇頁 JS 615 KB → 153 KB（Tiptap 編輯器改為開啟時才載入，見修正紀錄 38）。
 23. ~~前端呼叫不存在的後端端點~~（見修正紀錄 17）
 24. ~~套件：Tiptap 漏洞、前端沒有 lockfile~~（見修正紀錄 19）
-25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面逐模組改走服務層，見修正紀錄 42）
+25. ~~後端分層~~（前台 API 與 Hub 已完成，見修正紀錄 27；後台 MVC 的 15 個 CRUD 頁面逐模組改走服務層，見修正紀錄 42～45；已全部完成）
 
 ## 第二次全專案檢查（2026-11-11）
 

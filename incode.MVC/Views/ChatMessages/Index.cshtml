@@ -7,7 +7,7 @@
     var currentSessionId = Model.CurrentChatSessionId ?? 0;
 
     // 預設為 AI 模式 (false)，實際狀態由 SignalR 連線後動態控制
-    bool isHumanMode = false;
+    bool isHumanMode = Model.IsHumanMode;
 
     var targetUserName = Model.TargetUser?.Username ?? "訪客";
 

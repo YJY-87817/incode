@@ -15,5 +15,8 @@ namespace incode.MVC.ViewModels.Chat
 
         // ★ 新增：當前對話的目標會員 (用來抓取他的 ImageUrl)
         public User TargetUser { get; set; }
+
+        // 當前對話是否為真人客服模式
+        public bool IsHumanMode { get; set; }
     }
 }
