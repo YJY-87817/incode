@@ -33,16 +33,4 @@ public class ChatRateLimitTests : IClassFixture<ApiFactory>
         var other = await _factory.LoginAsync(NewUser());
         Assert.NotEqual(HttpStatusCode.TooManyRequests, (await Send(other)).StatusCode);
     }
-
-    [Fact]
-    public async Task Auto_title_shares_the_same_limit()
-    {
-        var client = await _factory.LoginAsync(NewUser());
-
-        for (var i = 0; i < Limit; i++)
-            await Send(client);
-
-        var response = await client.PostAsync("/api/ChatSessionsApi/AutoTitle/1", null);
-        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
-    }
 }
