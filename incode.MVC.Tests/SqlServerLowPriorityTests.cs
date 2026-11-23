@@ -22,32 +22,6 @@ public class SqlServerLowPriorityTests : IClassFixture<SqlServerFixture>
     private int NewUser() => _db.SeedUser($"{Guid.NewGuid():N}@example.com");
 
     [SqlServerFact]
-    public async Task Concurrent_item_use_never_goes_below_zero()
-    {
-        var userId = NewUser();
-        await using (var context = _db.NewContext())
-        {
-            context.UserInventory.Add(new UserInventory { UserId = userId, ItemId = 1, Quantity = 3 });
-            await context.SaveChangesAsync();
-        }
-
-        var gate = new TaskCompletionSource();
-        var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(async () =>
-        {
-            await gate.Task;
-            await using var context = _db.NewContext();
-            return await new InventoryService(context).UseItemAsync(userId, 1);
-        })).ToArray();
-        gate.SetResult();
-        var results = await Task.WhenAll(tasks);
-
-        // 原本讀出數量再存回：同時使用 10 次會有多次「成功」，數量卻只扣一次
-        Assert.Equal(3, results.Count(r => r >= 0));
-        await using var verify = _db.NewContext();
-        Assert.Equal(0, (await verify.UserInventory.AsNoTracking().SingleAsync(i => i.UserId == userId)).Quantity);
-    }
-
-    [SqlServerFact]
     public async Task Recent_login_logs_query_translates_on_sql_server()
     {
         var userId = NewUser();

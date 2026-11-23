@@ -163,7 +163,6 @@ builder.Services.AddAuthRateLimiting();               // 登入 / 註冊 / 忘�
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
 //tim
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IChatToolService, ChatToolService>();
