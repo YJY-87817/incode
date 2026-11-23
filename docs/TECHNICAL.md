@@ -317,8 +317,6 @@ ChatWidget.vue ──REST──▶ ChatMessagesApi/SendMessage
 | 個人資料 | `UserApi`：`GET/PUT profile`、`{userId}/stats`（公開）、`images`（註冊流程上傳大頭貼，公開） |
 | 管理 | `UserApi` 列出全部會員 / 刪除會員（僅管理員） |
 | 追蹤 | `Follow`：`followers`、`following`、`POST/DELETE {targetId}` |
-| 通知 | `Notification`：列表、未讀數、已讀、全部已讀 |
-| 背包 / 狀態 | `Inventory`（列表、使用、刪除）、`Status`（經驗 / 等級 / 點數） |
 
 密碼以 BCrypt 雜湊（`PasswordService`），無法用 SQL 直接建立帳號。
 

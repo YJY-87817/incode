@@ -342,25 +342,4 @@ public class LowPriorityFixesTests : IClassFixture<ApiFactory>
         Assert.Contains("大頭貼", await response.Content.ReadAsStringAsync());
     }
 
-    [Fact]
-    public async Task Use_item_decrements_and_fails_when_empty()
-    {
-        using var db = new TestDb();
-        var userId = db.SeedUser();
-        await using (var context = db.NewContext())
-        {
-            context.UserInventory.Add(new UserInventory { UserId = userId, ItemId = 7, Quantity = 2 });
-            await context.SaveChangesAsync();
-        }
-
-        async Task<int> Use()
-        {
-            await using var context = db.NewContext();
-            return await new InventoryService(context).UseItemAsync(userId, 7);
-        }
-
-        Assert.Equal(1, await Use());
-        Assert.Equal(0, await Use());
-        Assert.Equal(-1, await Use());
-    }
 }

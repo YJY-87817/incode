@@ -45,7 +45,7 @@ namespace incode.MVC.Services.Chat
             return (session, false);
         }
 
-        public async Task<ChatSession> CreateSessionAsync(int userId, string title)
+        private async Task<ChatSession> CreateSessionAsync(int userId, string title)
         {
             var session = new ChatSession
             {
@@ -98,20 +98,6 @@ namespace incode.MVC.Services.Chat
                 })
                 .ToListAsync();
 
-        public Task<List<ChatSessionDto>> GetUserSessionsAsync(int userId) =>
-            _context.ChatSession
-                .Where(s => s.UserId == userId)
-                .OrderByDescending(s => s.UpdatedAt)
-                .Select(s => new ChatSessionDto
-                {
-                    ChatSessionId = s.ChatSessionId,
-                    UserId = s.UserId,
-                    Title = s.Title,
-                    Ishumanmode = s.Ishumanmode,
-                    CreatedAt = s.CreatedAt ?? DateTime.MinValue
-                })
-                .ToListAsync();
-
         public Task<List<ChatMessageDto>> GetHistoryAsync(int sessionId) =>
             _context.ChatMessage
                 .Where(m => m.SessionId == sessionId)
@@ -125,26 +111,5 @@ namespace incode.MVC.Services.Chat
                     CreatedAt = m.CreatedAt.HasValue ? m.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") : ""
                 })
                 .ToListAsync();
-
-        public Task<string?> GetFirstUserMessageAsync(int sessionId) =>
-            _context.ChatMessage
-                .Where(m => m.SessionId == sessionId && m.Role == "user")
-                .OrderBy(m => m.CreatedAt)
-                .Select(m => m.Body)
-                .FirstOrDefaultAsync();
-
-        public async Task SetTitleAsync(ChatSession session, string title)
-        {
-            session.Title = title;
-            session.UpdatedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteSessionAsync(ChatSession session)
-        {
-            _context.ChatMessage.RemoveRange(_context.ChatMessage.Where(m => m.SessionId == session.ChatSessionId));
-            _context.ChatSession.Remove(session);
-            await _context.SaveChangesAsync();
-        }
     }
 }
