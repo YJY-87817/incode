@@ -36,8 +36,6 @@ public class ApiAuthorizationTests : IClassFixture<ApiFactory>
         { "POST", "/api/EntrustMissionApi/1/cancel" },
         { "POST", "/api/PointRechargeApi/recharge" },
         { "GET", "/api/PointRechargeApi/order/ABC" },
-        { "GET", "/api/ChatSessionsApi/User/1" },
-        { "DELETE", "/api/ChatSessionsApi/Delete/1" },
         { "PUT", "/api/User/profile" },
     };
 
@@ -249,16 +247,6 @@ public class ApiAuthorizationTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await using var verify = _factory.Db.NewContext();
         Assert.Equal(0, await verify.PointLog.CountAsync(l => l.UserId == other));
-    }
-
-    [Fact]
-    public async Task Chat_session_lists_are_limited_to_the_owner_but_admins_can_read_any()
-    {
-        var owner = NewUser();
-
-        Assert.Equal(HttpStatusCode.OK, (await (await _factory.LoginAsync(owner)).GetAsync($"/api/ChatSessionsApi/User/{owner}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await (await _factory.LoginAsync(NewUser())).GetAsync($"/api/ChatSessionsApi/User/{owner}")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await (await _factory.LoginAsync(NewUser(), admin: true)).GetAsync($"/api/ChatSessionsApi/User/{owner}")).StatusCode);
     }
 
     [Fact]

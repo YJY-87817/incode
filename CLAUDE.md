@@ -532,6 +532,9 @@ incode/
     - **客服頁開啟時顯示對話目前的模式**：View 的 `isHumanMode` 原本固定為 false（Controller 設的 `ViewBag` 沒人讀），開啟真人模式的對話仍顯示「AI自動回覆」，
       要等 SignalR 事件才更新；改由 `ChatIndexViewModel.IsHumanMode` 提供
     - 首頁待處理訂單數改用 `OrderStatus.Pending`
+46. 刪除前端沒有使用的 API：`NotificationController`、`StatusController`、`InventoryController`、`ChatSessionsApiController`
+    （含 `INotificationService`、`IStatusService` 與其實作及註冊，以及只測這些端點的測試）。`IInventoryService` 保留（道具由伺服器端流程發放 / 使用，有測試），
+    要重新開放前端使用時從 git 歷史取回。`RateLimitPolicies.AiChat` 仍套用在 `SendMessage`、`UploadImage`
 
 ## 全專案檢查結果（2026-11）
 

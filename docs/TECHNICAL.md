@@ -304,7 +304,7 @@ ChatWidget.vue ──REST──▶ ChatMessagesApi/SendMessage
   - 使用者訊息含「生圖」「產生圖片」時走圖片生成；上傳圖片走圖片分析。
   - AI 失敗時固定回覆「AI 客服暫時無法回覆…」，錯誤細節只寫 log。
 - 聊天圖片：`POST ChatMessages/UploadImage`，經 `ImageFileValidator`（單檔 10 MB）、Guid 檔名。
-- 對話管理：`ChatSessionsApi`（依使用者列出、建立、`AutoTitle` 自動命名、刪除），皆檢查對話擁有者。
+- 對話管理 API（`ChatSessionsApi`）已移除：前端只用 `ChatMessages/*` 與 SignalR。
 - `Prompts/Prompts.md` 於執行時讀取，路徑不可改。
 
 ### 6.5 會員（`Services/Users/`）
