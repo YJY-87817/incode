@@ -38,8 +38,4 @@
 
     }
 
-    public class ClaimMissionRequest
-    {
-        public int MissionId { get; set; }
-    }
 }
