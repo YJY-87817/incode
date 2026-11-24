@@ -44,7 +44,6 @@ incode/
     ├── ViewModels/<模組>/      後台頁面模型
     ├── Constants/              常數與列舉（OrderStatus、PointType、RoleType）
     ├── Extensions/             擴充方法（ClaimsExtensions、ResultDTOExtensions）
-    ├── Validation/             自訂驗證屬性
     ├── Prompts/Prompts.md      AI 客服系統提示詞（執行時讀取，路徑不可改）
     ├── App_Data/uploads/       上傳檔案預設位置（App:UploadRoot，已 gitignore），網址 /img/...、/contents/... 不變
     └── wwwroot/                靜態檔（`img/product/NoImage.png` 是商品預設圖，不是上傳檔）；上傳檔一律在 App:UploadRoot
@@ -534,6 +533,8 @@ incode/
     - 首頁待處理訂單數改用 `OrderStatus.Pending`
 46. 刪除前端沒有使用的 API：`NotificationController`、`StatusController`、`InventoryController`、`ChatSessionsApiController`
     （含 `INotificationService`、`IStatusService` 與其實作及註冊，以及只測這些端點的測試）。`IInventoryService` 當時保留，之後確認沒有任何流程使用而刪除（連同 `InventoryItemDto` 與兩個測試；`UserInventory` 實體 / 資料表保留）。
+    `IFollowService` 移除沒有呼叫端的 `SearchUsersAsync`、`GetMyFollowingListAsync`（連同 `FollowingUserDto`）。
+    其他沒有呼叫端 / 引用的項目：`IMissionProgressService.GetAllProgressAsync`、`IncrementProgressAsync`（連同 `MissionProgressDTO`）、`IPointLogService.GetDetailedLogsAsync`（連同私有的 `GetOrderDisplayText`）、`IUserService.SearchUsersAsync`、`NewOrderDTO`、`ClaimMissionRequest`、`ContactViewModel` 與 `RequireEmailOrPhoneAttribute`。
     `IChatService` 移除沒有呼叫端的 `GetUserSessionsAsync`、`GetFirstUserMessageAsync`、`SetTitleAsync`、`DeleteSessionAsync`（`CreateSessionAsync` 改為內部私有方法，連同 `ChatSessionDto`）。
     要重新開放前端使用時從 git 歷史取回。`RateLimitPolicies.AiChat` 仍套用在 `SendMessage`、`UploadImage`
 

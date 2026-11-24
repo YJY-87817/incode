@@ -16,7 +16,6 @@ global using incode.MVC.Services.Contents;
 global using incode.MVC.Services.Point;
 global using incode.MVC.Services.PointShop;
 global using incode.MVC.Services.Users;
-global using incode.MVC.Validation;
 global using incode.MVC.ViewModels;
 global using incode.MVC.ViewModels.Chat;
 global using incode.MVC.ViewModels.Contents;

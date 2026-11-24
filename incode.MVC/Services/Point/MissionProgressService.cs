@@ -22,21 +22,6 @@ namespace incode.MVC.Services.Point
             _logger = logger;
         }
 
-        public async Task<IEnumerable<MissionProgressDTO>> GetAllProgressAsync()
-        {
-            return await _context.MissionProgress.Select(mg => new MissionProgressDTO
-            {
-                MissionProgressId = mg.MissionProgressId,
-                UserId = mg.UserId,
-                MissionId = mg.MissionId,
-                CurrentCount = mg.CurrentCount,
-                Status = mg.Status,
-                AcceptedAt = mg.AcceptedAt,
-                CompletedAt = mg.CompletedAt,
-                RewardedAt = mg.RewardedAt
-            }).ToListAsync();
-        }
-
         public async Task<IEnumerable<UserMissionViewDTO>> GetUserMissionsAsync(int userId)
         {
             var now = DateTime.Now;
@@ -114,50 +99,6 @@ namespace incode.MVC.Services.Point
             .OrderByDescending(x => x.IsFeatured)
             .ThenByDescending(x => x.AcceptedAt)
             .ToList();
-        }
-
-        public async Task<ResultDTO> IncrementProgressAsync(int userId, int missionId, int increment = 1)
-        {
-            if (increment <= 0) return new ResultDTO { Ok = false, Code = 400, Message = "增量必須大於 0" };
-
-            using var tx = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var progress = await _context.MissionProgress
-                    .Include(p => p.Mission)
-                    .FirstOrDefaultAsync(p => p.UserId == userId && p.MissionId == missionId);
-
-                if (progress == null)
-                    return new ResultDTO { Ok = false, Code = 404, Message = "尚未領取此任務" };
-
-                var mission = progress.Mission!;
-                if (progress.Status != "ongoing")
-                    return new ResultDTO { Ok = false, Code = 400, Message = "任務狀態不允許更新" };
-
-                progress.CurrentCount += increment;
-
-                if (progress.CurrentCount >= mission.TargetCount && progress.Status != "completed")
-                {
-                    progress.Status = "completed";
-                    progress.CompletedAt = DateTime.Now;
-                }
-
-                await _context.SaveChangesAsync();
-                await tx.CommitAsync();
-
-                return new ResultDTO
-                {
-                    Ok = true,
-                    Code = 200,
-                    Message = "進度更新成功",
-                    Data = new { CurrentCount = progress.CurrentCount, Status = progress.Status }
-                };
-            }
-            catch
-            {
-                await tx.RollbackAsync();
-                return new ResultDTO { Ok = false, Code = 500, Message = "更新失敗" };
-            }
         }
 
         public async Task<ResultDTO> ClaimRewardAsync(int userId, int progressId)

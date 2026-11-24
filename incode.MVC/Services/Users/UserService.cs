@@ -86,19 +86,6 @@ namespace incode.MVC.Services.Users
             return UsernameRules.Truncate(baseName, UsernameRules.MaxLength - suffix.Length) + suffix;
         }
 
-        public async Task<List<User>> SearchUsersAsync(string keyword)
-        {
-            // 搜尋 Email 或 Username
-            var query = _context.User.AsQueryable();
-
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                query = query.Where(u => u.Email.Contains(keyword) || u.Username.Contains(keyword));
-            }
-
-            return await query.ToListAsync();
-        }
-
         public async Task<User?> GetUserByIdAsync(int id)
         {
             return await _context.User.FindAsync(id);
