@@ -541,6 +541,8 @@ incode/
     `logs/incode-.log`（保留 30 天，`logs/` 已 gitignore；正式環境以 `Serilog__WriteTo__1__Args__path` 設成部署資料夾以外的路徑）。
     `Microsoft`、`Microsoft.EntityFrameworkCore`、`System` 只記 Warning 以上（避免 SQL 內容與會員資料進日誌）；`UseSerilogRequestLogging` 每個請求一筆摘要，
     只含路徑、不含查詢字串（重設密碼 / 驗證信的 token 在查詢字串）。既有的 `ILogger<T>` 不需修改；日誌內容不可寫入密碼、token、Email
+    日誌補強：原本吞掉例外卻沒記錄的地方（`MissionService.ClaimMissionAsync`、AI 系統提示詞讀取）改為記錄；
+    登入被暫停 / 失敗記錄來源 IP（不記 Email 與密碼）。`MissionService` 的 logger 為選用參數（測試可直接 `new MissionService(context)`）
 
 ## 全專案檢查結果（2026-11）
 
