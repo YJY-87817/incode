@@ -536,6 +536,10 @@ incode/
     （含 `INotificationService`、`IStatusService` 與其實作及註冊，以及只測這些端點的測試）。`IInventoryService` 當時保留，之後確認沒有任何流程使用而刪除（連同 `InventoryItemDto` 與兩個測試；`UserInventory` 實體 / 資料表保留）。
     `IChatService` 移除沒有呼叫端的 `GetUserSessionsAsync`、`GetFirstUserMessageAsync`、`SetTitleAsync`、`DeleteSessionAsync`（`CreateSessionAsync` 改為內部私有方法，連同 `ChatSessionDto`）。
     要重新開放前端使用時從 git 歷史取回。`RateLimitPolicies.AiChat` 仍套用在 `SendMessage`、`UploadImage`
+47. 日誌改用 Serilog（`Serilog.AspNetCore`）：`Program.cs` 以 `UseSerilog` 讀取 `appsettings` 的 `Serilog` 區段（取代 `Logging`），輸出到 Console 與每日滾動檔案
+    `logs/incode-.log`（保留 30 天，`logs/` 已 gitignore；正式環境以 `Serilog__WriteTo__1__Args__path` 設成部署資料夾以外的路徑）。
+    `Microsoft`、`Microsoft.EntityFrameworkCore`、`System` 只記 Warning 以上（避免 SQL 內容與會員資料進日誌）；`UseSerilogRequestLogging` 每個請求一筆摘要，
+    只含路徑、不含查詢字串（重設密碼 / 驗證信的 token 在查詢字串）。既有的 `ILogger<T>` 不需修改；日誌內容不可寫入密碼、token、Email
 
 ## 全專案檢查結果（2026-11）
 
