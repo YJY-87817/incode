@@ -299,7 +299,8 @@ namespace incode.MVC.Services.PointShop
         public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
             string? requiredStatus = null, string? newStatus = null)
         {
-            var (newQty, itemError) = NormalizeItems(items);
+            // 數量上限只限制「增加」（在交易內與舊明細比較）：改版前已超過上限的舊訂單仍可以改狀態、減少數量
+            var (newQty, itemError) = NormalizeItems(items, enforceMaximum: false);
             if (itemError != null)
                 return ResultDTO<int>.Failure(itemError);
             if (newStatus != null && (!OrderStatus.IsValid(newStatus) || newStatus == OrderStatus.Canceled))
@@ -323,6 +324,8 @@ namespace incode.MVC.Services.PointShop
                     .ToDictionary(g => g.Key, g => g.Sum(d => d.Quantity));
 
                 var allIds = newQty.Keys.Union(oldQty.Keys).ToList();
+                if (newQty.Any(kv => kv.Value > OrderLimits.MaxQuantityPerItem && kv.Value > oldQty.GetValueOrDefault(kv.Key)))
+                    throw new OrderFailure($"單一商品數量最多 {OrderLimits.MaxQuantityPerItem}");
                 var products = await LoadProductsAsync(allIds);
 
                 // 新加入的商品必須存在且上架中；原本就有的商品即使下架也可調整數量
@@ -484,7 +487,7 @@ namespace incode.MVC.Services.PointShop
         // ======================================================================
 
         // 驗證並合併明細：數量必須 > 0，同商品多筆合併為一筆
-        private static (Dictionary<int, int> quantities, string? error) NormalizeItems(IEnumerable<OrderItemRequest>? items)
+        private static (Dictionary<int, int> quantities, string? error) NormalizeItems(IEnumerable<OrderItemRequest>? items, bool enforceMaximum = true)
         {
             var list = items?.Where(i => i != null).ToList();
             if (list == null || list.Count == 0)
@@ -497,7 +500,7 @@ namespace incode.MVC.Services.PointShop
             var merged = list
                 .GroupBy(i => i.ProductId)
                 .ToDictionary(g => g.Key, g => g.Sum(i => (long)i.Quantity));
-            if (merged.Values.Any(q => q > OrderLimits.MaxQuantityPerItem))
+            if (merged.Values.Any(q => q > (enforceMaximum ? OrderLimits.MaxQuantityPerItem : int.MaxValue)))
                 return (new(), $"單一商品數量最多 {OrderLimits.MaxQuantityPerItem}");
 
             return (merged.ToDictionary(kv => kv.Key, kv => (int)kv.Value), null);

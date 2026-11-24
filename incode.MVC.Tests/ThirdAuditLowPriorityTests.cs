@@ -159,6 +159,46 @@ public class ShopLimitTests
     }
 }
 
+/// <summary>改版前已超過數量上限的舊訂單：仍可修改狀態 / 減少數量，但不能再增加。</summary>
+public class LegacyOrderQuantityTests
+{
+    [Fact]
+    public async Task Legacy_order_above_the_maximum_can_still_be_updated_but_not_increased()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser();
+        int productId, orderId;
+        await using (var context = db.NewContext())
+        {
+            var product = new Product
+            {
+                Name = "p", Description = "d", ImageName = "i.png", Type = "t", Series = "s", IsPhysical = false,
+                Point = 0, Stock = 5000, OnSale = true, CreatedAt = DateTime.Now, UpdatedAt = DateTime.Now,
+            };
+            context.Product.Add(product);
+            await context.SaveChangesAsync();
+            productId = product.ProductId;
+            var order = new Orders { UserId = userId, Status = OrderStatus.Pending, OrderDate = DateTime.Now, Remark = "", TotalPoint = 0 };
+            order.Orderdetail.Add(new Orderdetail { ProductId = productId, Quantity = 1500, UnitPointAtPurchase = 0 });
+            context.Orders.Add(order);
+            await context.SaveChangesAsync();
+            orderId = order.OrderId;
+        }
+
+        OrderService Create(incodedatabaseContext c) => new(c, new PointLogService(c), new FakeMissionService(), NullLogger<OrderService>.Instance);
+
+        await using (var context = db.NewContext())
+            Assert.True((await Create(context).UpdateOrderItemsAsync(orderId,
+                new[] { new OrderItemRequest { ProductId = productId, Quantity = 1500 } }, null, newStatus: OrderStatus.Shipped)).Ok);
+        await using (var context = db.NewContext())
+            Assert.False((await Create(context).UpdateOrderItemsAsync(orderId,
+                new[] { new OrderItemRequest { ProductId = productId, Quantity = 1501 } }, null)).Ok);
+        await using (var context = db.NewContext())
+            Assert.True((await Create(context).UpdateOrderItemsAsync(orderId,
+                new[] { new OrderItemRequest { ProductId = productId, Quantity = 1200 } }, null)).Ok);
+    }
+}
+
 /// <summary>第三次全專案檢查 52～56 中需要啟動網站的項目。</summary>
 public class ThirdAuditLowPriorityTests : IClassFixture<ApiFactory>
 {
@@ -238,6 +278,20 @@ public class ThirdAuditLowPriorityTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 回到表單顯示錯誤
         Assert.Equal(UserService.GoogleAccountPassword, (await GetUser(memberId)).Password);
+    }
+
+    [Fact]
+    public async Task Admin_cannot_reset_own_password_from_member_edit()
+    {
+        var adminId = NewUser();
+        await UpdateUser(adminId, u => u.Password = new PasswordService().Hash("oldpass1"));
+        var admin = await _factory.LoginAsync(adminId, admin: true);
+        var before = (await GetUser(adminId)).Password;
+
+        var response = await EditMember(admin, adminId, password: "newpass1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); // 回到表單顯示錯誤，不會把自己登出
+        Assert.Equal(before, (await GetUser(adminId)).Password);
     }
 
     [Fact]

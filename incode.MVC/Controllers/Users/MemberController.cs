@@ -143,6 +143,9 @@ namespace incode.MVC.Controllers.Users
             bool resetPassword = !string.IsNullOrEmpty(vm.Password);
             if (resetPassword && user.Password == UserService.GoogleAccountPassword)
                 ModelState.AddModelError(nameof(vm.Password), "此會員使用 Google 登入，沒有密碼可以重設");
+            // 重設密碼會換新登入戳記：在這裡改自己的密碼，目前的後台登入會在下一個請求失效
+            if (resetPassword && vm.UserId == User.GetId())
+                ModelState.AddModelError(nameof(vm.Password), "請到前台會員中心修改自己的密碼");
             if (!ModelState.IsValid) return View(vm);
 
             // Email 改了：新的 Email 還沒驗證過（Google 登入接管、驗證信都以 EmailVerified 為準）

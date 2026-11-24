@@ -591,15 +591,16 @@ incode/
       超過回 429「上傳量已達上限（每小時 N MB），請稍後再試」，在寫檔之前檢查（超過時不會寫入任何檔案、也不會呼叫 AI）。
       `App:UploadQuotaMegabytesPerHour`（預設 200，0 = 不限制）；記憶體計數，重啟清除、多台伺服器各自計算
     - `RateLimitPolicies.ContentWrite`：發文 / 回覆 / 編輯（含「發文 + 委託」）與論壇圖片上傳，每位會員每分鐘 30 次（未登入依 IP）
-    - 匿名的大頭貼上傳維持原本依 IP 的 `RateLimitPolicies.Upload`（沒有會員可以計算額度）
+    - 大頭貼上傳：已登入的會員（會員中心換大頭貼）也計入額度；註冊前的匿名上傳維持原本依 IP 的 `RateLimitPolicies.Upload`
     - 前端發文 / 編輯失敗時改為顯示後端回傳的訊息（`useForumPost.js`，原本一律「發佈失敗，請稍後再試」，連「分類不存在或已停用」等訊息也看不到）
 
 54. 第三次全專案檢查 51～56（低優先，都先寫測試重現，`ThirdAuditLowPriorityTests`、`ShopLimitTests`；SQL Server 上的在 `SqlServerPagingTests`、`ConcurrencyTests`）：
     - **51 商城**：同一商品數量最多 `OrderLimits.MaxQuantityPerItem`（1000，同商品多筆明細合併後計算）；訂單總點數改以 long 計算，
-      超過 int 回 400（原本 3 × 1000 × 1,000,000 溢位成負數，不扣點就成立訂單）；備註 300 字、收件人姓名 / 電話 / 地址各 50 字，
+      超過 int 回 400（原本 3 × 1000 × 1,000,000 溢位成負數，不扣點就成立訂單）；修改訂單時上限只限制「增加」，改版前已超過的舊訂單仍可改狀態 / 減少數量；備註 300 字、收件人姓名 / 電話 / 地址各 50 字，
       DTO（`[Range]` / `[StringLength]`）與 `OrderService`（建立、修改明細、修改寄送資料）都檢查（原本在 SQL Server 上 500）
     - **52 後台會員編輯**：「重設密碼」真的會寫入（`AuthService.AdminSetPasswordAsync`：6～100 碼、換新登入戳記讓該會員所有裝置登出；
-      原本寫入雜湊的那行被註解，畫面顯示成功但密碼沒變）；Google 帳號不能設定密碼；修改 Email 時改為未驗證；不能在這頁停用自己
+      原本寫入雜湊的那行被註解，畫面顯示成功但密碼沒變）；Google 帳號不能設定密碼；修改 Email 時改為未驗證；不能在這頁停用自己或改自己的密碼
+      （會換新登入戳記，目前的後台登入會失效；請到前台會員中心修改）
     - **53 點數紀錄顯示文字**：`ChangePointsAsync` 把 `display_source`（200）/ `display_source_sub_title`（100）超過欄位長度的文字截短並以「…」結尾，
       所有點數流程共用。原本 195 字以上的標題打賞失敗、150 字的委託標題建立委託時預扣紀錄的副標超過 100 字（SQL Server 上 500）
     - **54 分頁**：`Paging.MaxPage`（100 萬頁），極大的頁碼回空頁（原本 offset 溢位成負數，SQL Server 500）；
@@ -611,7 +612,8 @@ incode/
       - 綠界付款通知另外核對商店代號與金額（`TradeAmt` 必須等於儲值單金額），不符不加點、回 `0|Fail` 並記錄 log
       - Gemini API Key 改放 `x-goog-api-key` 標頭（原本在網址查詢字串）；所有 Gemini 呼叫都檢查 Key 是否設定
       - 聊天 API 只把**登入者自己的** SignalR 連線加入對話群組（`Services/Chat/ChatConnectionRegistry`，`ChatHub` 連線 / 斷線時登記；
-        原本任何 `ConnectionId` 都會被加入）。單一伺服器的記憶體登記，多台伺服器（SignalR backplane）時要改成共用的儲存
+        原本任何 `ConnectionId` 都會被加入）。單一伺服器的記憶體登記，多台伺服器（SignalR backplane）時要改成共用的儲存。
+        前端 `ChatWidget.vue` 在自動重新連線後更新 ConnectionId 並重新加入對話群組（原本沿用舊的 ID，重新連線後收不到即時回覆）
       - 後台登入寫入登入紀錄；會員新增分類的名稱改為 2～50 字、說明 200 字（與後台表單相同，原本 100 字的名稱後台無法編輯），
         前端輸入框加 `maxlength`，新增失敗時顯示後端的訊息
 

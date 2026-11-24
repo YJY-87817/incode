@@ -133,6 +133,15 @@ public class UploadQuotaTests : IClassFixture<SmallUploadQuotaApiFactory>
     }
 
     [Fact]
+    public async Task Avatar_uploads_by_logged_in_members_share_the_quota()
+    {
+        var client = await _factory.LoginAsync(NewUser());
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/images/upload", PngForm(700 * KB))).StatusCode);
+
+        await AssertQuotaMessage(await client.PostAsync("/api/User/images", PngForm(700 * KB)));
+    }
+
+    [Fact]
     public async Task Quota_is_per_member()
     {
         var first = await _factory.LoginAsync(NewUser());
