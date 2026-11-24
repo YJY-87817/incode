@@ -1,14 +1,17 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace incode.MVC.Services.Contents
 {
     public class ContentReportService : IContentReportService
     {
         private readonly incodedatabaseContext _context;
+        private readonly IMemoryCache? _cache;
         private readonly ILogger<ContentReportService> _logger;
 
-        public ContentReportService(incodedatabaseContext context, ILogger<ContentReportService> logger)
+        public ContentReportService(incodedatabaseContext context, ILogger<ContentReportService> logger, IMemoryCache? cache = null)
         {
+            _cache = cache;
             _context = context;
             _logger = logger;
         }
@@ -158,6 +161,10 @@ namespace incode.MVC.Services.Contents
             AddReview(contentId, adminUserId, action, note);
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+
+            // 下架後內文檔不再公開提供（ContentBodyAccess）；恢復上架不需處理，下一個請求會重新查詢
+            if (to != ContentStatus.Active)
+                ContentBodyAccess.Evict(_cache, await _context.Content.Where(c => c.ContentId == contentId).Select(c => c.Body).FirstOrDefaultAsync());
             _logger.LogInformation("管理員 {AdminUserId} 將內容 {ContentId} {Action}", adminUserId, contentId, action);
         }
 

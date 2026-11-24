@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -11,10 +12,12 @@ namespace incode.MVC.Services.Contents
     private readonly IContentInteractionService _contentInteractionService;
     private readonly IMissionService _missionService;
     private readonly ILogger<ContentService> _logger;
+    private readonly IMemoryCache? _cache;
 
     public ContentService(incodedatabaseContext context, UploadStorage storage, IContentInteractionService contentInteractionService, IMissionService missionService,
-      ILogger<ContentService>? logger = null)
+      ILogger<ContentService>? logger = null, IMemoryCache? cache = null)
     {
+      _cache = cache;
       _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentService>.Instance;
       _context = context;
       _storage = storage;
@@ -405,8 +408,9 @@ namespace incode.MVC.Services.Contents
         if (!dto.CategoryId.HasValue)
           throw new BusinessException("請選擇分類");
 
-        bool categoryOk = await _context.ContentCategory.AnyAsync(c =>
-          c.ContentCategoryId == dto.CategoryId.Value && c.IsActive != ContentCategoryStatus.Disabled);
+        // 分類本身與上層分類都不能是停用的（停用分類底下的子分類也不能發新主題）
+        bool categoryOk = await _context.ContentCategory.AnyAsync(c => c.ContentCategoryId == dto.CategoryId.Value)
+          && !(await CategoryService.GetUnavailableCategoryIdsAsync(_context)).Contains(dto.CategoryId.Value);
         if (!categoryOk)
           throw new BusinessException("分類不存在或已停用");
         return;
@@ -540,12 +544,15 @@ namespace incode.MVC.Services.Contents
 
       // 更新內容時同步覆寫檔案內容
       var bodyUri = await SaveContentBodyAsync(dto.Body);
+      var oldBody = content.Body;
 
       content.Title = dto.Title;
       content.Body = bodyUri;
       content.UpdatedAt = DateTime.Now;
 
       await _context.SaveChangesAsync();
+      // 舊版本只留給後台的修改紀錄，不再公開提供（ContentBodyAccess）
+      ContentBodyAccess.Evict(_cache, oldBody);
 
       return new UpdateContentDto
       {
@@ -569,6 +576,7 @@ namespace incode.MVC.Services.Contents
       content.IsActive = 2;
       content.UpdatedAt = DateTime.Now;
       await _context.SaveChangesAsync();
+      ContentBodyAccess.Evict(_cache, content.Body); // 刪除後內文檔不再公開提供
       return true;
     }
 

@@ -203,4 +203,81 @@ public class ContentValidationTests : IClassFixture<ApiFactory>
         var ids = doc.RootElement.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("contentId").GetInt32()).ToList();
         Assert.Equal(new[] { matched }, ids);
     }
+
+    // ---------- 第三次全專案檢查 48：停用的分類 ----------
+
+    private async Task<int> NewChildCategory(int parentId, int isActive = ContentCategoryStatus.Official)
+    {
+        await using var context = _factory.Db.NewContext();
+        var category = new ContentCategory
+        {
+            CategoryName = "c" + Guid.NewGuid().ToString("N")[..8], Description = "d", IsActive = isActive, ParentCategoryId = parentId,
+        };
+        context.ContentCategory.Add(category);
+        await context.SaveChangesAsync();
+        return category.ContentCategoryId;
+    }
+
+    private async Task<List<int>> ListedCategoryIds()
+    {
+        var response = await _factory.CreateAnonymousClient().GetAsync("/api/CategoryApi");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return json.RootElement.EnumerateArray().Select(e => e.GetProperty("id").GetInt32()).ToList();
+    }
+
+    [Fact]
+    public async Task Disabled_category_and_its_subcategories_are_not_listed()
+    {
+        var active = await NewCategory();
+        var disabled = await NewCategory(ContentCategoryStatus.Disabled);
+        var childOfDisabled = await NewChildCategory(disabled);
+        var memberCreated = await NewCategory(ContentCategoryStatus.MemberCreated);
+
+        var ids = await ListedCategoryIds();
+
+        // 修正前：停用的分類照樣列出，前台選得到卻不能發文
+        Assert.Contains(active, ids);
+        Assert.Contains(memberCreated, ids);
+        Assert.DoesNotContain(disabled, ids);
+        Assert.DoesNotContain(childOfDisabled, ids);
+    }
+
+    [Fact]
+    public async Task Topic_in_a_subcategory_of_a_disabled_category_is_rejected()
+    {
+        var userId = NewUser();
+        var client = await _factory.LoginAsync(userId);
+        var child = await NewChildCategory(await NewCategory(ContentCategoryStatus.Disabled));
+
+        var response = await Post(client, ContentTypes.Post, categoryId: child);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, await ContentCount(userId));
+    }
+
+    [Fact]
+    public async Task Member_cannot_create_a_category_under_a_disabled_category()
+    {
+        var client = await _factory.LoginAsync(NewUser());
+        var disabled = await NewCategory(ContentCategoryStatus.Disabled);
+        var name = "n" + Guid.NewGuid().ToString("N")[..8];
+
+        var response = await client.PostAsJsonAsync("/api/CategoryApi", new { parentCategoryId = disabled, name });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await using var context = _factory.Db.NewContext();
+        Assert.False(await context.ContentCategory.AnyAsync(c => c.CategoryName == name));
+    }
+
+    [Fact]
+    public async Task Member_can_still_create_a_category_under_an_active_category()
+    {
+        var client = await _factory.LoginAsync(NewUser());
+        var parent = await NewCategory();
+
+        var response = await client.PostAsJsonAsync("/api/CategoryApi", new { parentCategoryId = parent, name = "n" + Guid.NewGuid().ToString("N")[..8] });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }
