@@ -67,6 +67,61 @@ public class MissionProgressServiceTests
         Assert.Equal("rewarded", (await verify.MissionProgress.AsNoTracking().SingleAsync()).Status);
     }
 
+    // 第三次全專案檢查 45：每筆進度只屬於一個週期，上個週期已領過的進度不能在下個週期再領一次
+    // （修正前：昨天已領獎的每日任務進度，今天再領成功，每天都能把所有舊進度再領一遍）
+    [Theory]
+    [InlineData("daily", -1)]
+    [InlineData("weekly", -7)]
+    [InlineData("monthly", -40)]
+    [InlineData("yearly", -400)]
+    public async Task ClaimReward_rejects_progress_rewarded_in_an_earlier_cycle(string resetType, int daysAgo)
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser();
+        var missionId = await AddMission(db, resetType, reward: 50);
+        var earlier = DateTime.Now.Date.AddDays(daysAgo);
+        var progressId = await AddProgress(db, userId, missionId, 1, earlier, status: "rewarded");
+        await using (var context = db.NewContext())
+        {
+            var progress = await context.MissionProgress.SingleAsync();
+            progress.RewardedAt = earlier.AddHours(9);
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = db.NewContext())
+        {
+            var result = await Create(context).ClaimRewardAsync(userId, progressId);
+            Assert.False(result.Ok);
+            Assert.Equal(400, result.Code);
+        }
+
+        Assert.Equal(0, await Balance(db, userId));
+        await using (var verify = db.NewContext())
+            Assert.Equal(earlier.AddHours(9), (await verify.MissionProgress.AsNoTracking().SingleAsync()).RewardedAt);
+        await using (var verify = db.NewContext())
+            Assert.All(await Create(verify).GetUserMissionsAsync(userId), v => Assert.False(v.CanClaimReward));
+    }
+
+    [Fact]
+    public async Task ClaimReward_new_cycle_progress_can_still_be_claimed_after_earlier_cycle_was_rewarded()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser();
+        var missionId = await AddMission(db, "daily", reward: 50);
+        var yesterday = DateTime.Now.Date.AddDays(-1);
+        var oldId = await AddProgress(db, userId, missionId, 1, yesterday);
+        var todayId = await AddProgress(db, userId, missionId, 1, DateTime.Now.Date);
+
+        await using (var context = db.NewContext())
+            Assert.True((await Create(context).ClaimRewardAsync(userId, oldId)).Ok);
+        await using (var context = db.NewContext())
+            Assert.True((await Create(context).ClaimRewardAsync(userId, todayId)).Ok);
+        await using (var context = db.NewContext())
+            Assert.False((await Create(context).ClaimRewardAsync(userId, oldId)).Ok);
+
+        Assert.Equal(100, await Balance(db, userId));
+    }
+
     [Fact]
     public async Task ClaimReward_rejects_progress_below_target()
     {

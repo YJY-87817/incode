@@ -24,8 +24,6 @@ namespace incode.MVC.Services.Point
 
         public async Task<IEnumerable<UserMissionViewDTO>> GetUserMissionsAsync(int userId)
         {
-            var now = DateTime.Now;
-
             var data = await _context.MissionProgress
                 .AsNoTracking()
                 .Include(p => p.Mission)
@@ -43,26 +41,10 @@ namespace incode.MVC.Services.Point
                 var m = p.Mission;
                 if (m == null) return null!;
 
-                var resetType = (m.ResetType ?? "none").ToLowerInvariant();
                 bool isCompleted = p.CurrentCount >= m.TargetCount;
-                bool canClaim = isCompleted && !p.RewardedAt.HasValue && m.IsActive
+                // 與 ClaimRewardAsync 相同的規則：每筆進度只能領一次；一次性任務任何一筆領過就不能再領
+                bool canClaim = isCompleted && !p.RewardedAt.HasValue && p.Status != "rewarded" && m.IsActive
                                 && !(MissionResetTypes.IsOneTime(m.ResetType) && rewardedOneTime.Contains(m.MissionId));
-
-                // 已領取過，檢查是否同週期
-                if (p.RewardedAt.HasValue)
-                {
-                    var last = p.RewardedAt.Value;
-                    bool sameCycle = resetType switch
-                    {
-                        "daily" => last.Date == now.Date,
-                        "weekly" => IsSameWeek(last, now),
-                        "monthly" => last.Year == now.Year && last.Month == now.Month,
-                        "yearly" => last.Year == now.Year,
-                        "once" or "none" => true,
-                        _ => false
-                    };
-                    canClaim = canClaim && !sameCycle;
-                }
 
                 return new UserMissionViewDTO
                 {
@@ -137,23 +119,11 @@ namespace incode.MVC.Services.Point
                         p.UserId == userId && p.MissionId == mission.MissionId && p.RewardedAt != null))
                     return new ResultDTO { Ok = false, Code = 400, Message = "此任務已領取過獎勵" };
 
-                if (progress.RewardedAt.HasValue)
-                {
-                    var resetType = (mission.ResetType ?? "none").ToLowerInvariant();
-                    var last = progress.RewardedAt.Value;
-                    bool sameCycle = resetType switch
-                    {
-                        "daily" => last.Date == DateTime.Now.Date,
-                        "weekly" => IsSameWeek(last, DateTime.Now),
-                        "monthly" => last.Year == DateTime.Now.Year && last.Month == DateTime.Now.Month,
-                        "yearly" => last.Year == DateTime.Now.Year,
-                        "once" or "none" => true,
-                        _ => false
-                    };
-
-                    if (sameCycle)
-                        return new ResultDTO { Ok = false, Code = 400, Message = "本週期已領取過獎勵" };
-                }
+                // 每筆進度只屬於一個週期（下個週期會建立新的進度），領過一次就不能再領。
+                // 原本只比對「領獎時間是否在本週期」：昨天已領過的每日任務進度，今天可以再領一次，
+                // 而且每天都能把所有舊進度再領一遍（第三次全專案檢查 45）
+                if (progress.RewardedAt.HasValue || progress.Status == "rewarded")
+                    return new ResultDTO { Ok = false, Code = 400, Message = "此任務進度已領取過獎勵" };
 
                 progress.RewardedAt = DateTime.Now;
                 progress.Status = "rewarded";
@@ -189,14 +159,6 @@ namespace incode.MVC.Services.Point
                 _logger.LogError(ex, "任務領獎失敗 - UserId: {UserId}", userId);
                 return new ResultDTO { Ok = false, Code = 500, Message = "領取失敗，請稍後再試" };
             }
-        }
-
-        private bool IsSameWeek(DateTime d1, DateTime d2)
-        {
-            var cal = CultureInfo.InvariantCulture.Calendar;
-            return cal.GetWeekOfYear(d1, CalendarWeekRule.FirstDay, DayOfWeek.Monday) ==
-                   cal.GetWeekOfYear(d2, CalendarWeekRule.FirstDay, DayOfWeek.Monday) &&
-                   d1.Year == d2.Year;
         }
 
     }

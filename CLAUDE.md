@@ -544,6 +544,11 @@ incode/
     日誌補強：原本吞掉例外卻沒記錄的地方（`MissionService.ClaimMissionAsync`、AI 系統提示詞讀取）改為記錄；
     登入被暫停 / 失敗記錄來源 IP（不記 Email 與密碼）。`MissionService` 的 logger 為選用參數（測試可直接 `new MissionService(context)`）
 
+48. 第三次全專案檢查 45（任務獎勵重複領取，先寫測試重現）：`MissionProgressService.ClaimRewardAsync` 原本只在「領獎時間在本週期」時拒絕，
+    但每筆進度只屬於一個週期，昨天已領過的每日任務進度今天再領會成功（每週 / 每月 / 每年任務相同），每天都能把所有舊進度再領一遍。
+    改為**進度已領過（`RewardedAt` 有值或狀態為 rewarded）一律拒絕**；新週期的進度照常可領。「我的任務」的可領判斷使用同樣的規則，
+    移除不再需要的同週期比對（`IsSameWeek`）。測試：`MissionProgressServiceTests`（四種重置類型的舊週期進度不能再領、新週期仍可領）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -645,12 +650,12 @@ incode/
 
 ## 第三次全專案檢查（2026-11-24）
 
-重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單，尚未修正。
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45 已修正（見修正紀錄 48），其餘尚未修正。
 45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
 
 ### 🔴 嚴重
 
-45. **任務獎勵可以重複領取**（已重現）：`MissionProgressService.ClaimRewardAsync` 只在 `RewardedAt` 落在本週期時拒絕，
+45. ~~**任務獎勵可以重複領取**~~（已修正，見修正紀錄 48）：`MissionProgressService.ClaimRewardAsync` 只在 `RewardedAt` 落在本週期時拒絕，
     但每個週期本來就有各自的進度列，昨天已領過的每日任務進度今天再領會通過（測試：`Ok=True`，多拿 50 點）。
     連續登入 N 天後，每天可以對每筆舊進度各呼叫一次 `POST api/MissionProgressApi/claim-reward`；畫面不顯示按鈕但 API 照收。
     每週 / 每月 / 每年任務相同。方向：`RewardedAt` 已有值就拒絕，補跨日測試。
