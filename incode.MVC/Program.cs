@@ -3,8 +3,17 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.Features;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 日誌：Serilog 取代內建的 Console 日誌，等級與輸出位置由 appsettings 的 "Serilog" 區段設定
+// （正式環境可用環境變數覆寫，例如 Serilog__WriteTo__1__Args__path 指定部署資料夾以外的路徑）。
+// 既有程式碼注入的 ILogger<T> 不需修改
+builder.Host.UseSerilog((context, services, loggerConfiguration) => loggerConfiguration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 builder.Services.AddDbContext<incodedatabaseContext>(options =>
 {
@@ -218,6 +227,10 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// 每個請求記錄一筆摘要（方法、路徑、狀態碼、耗時）。只記路徑、不含查詢字串：
+// 重設密碼與 Email 驗證的 token 會出現在網址的查詢字串中，不可寫進日誌
+app.UseSerilogRequestLogging();
 
 app.UseRouting();
 // CORS 必須在 UseRouting 之後 (Controller 上的 [EnableCors] 需要)，並放在靜態檔之前：
