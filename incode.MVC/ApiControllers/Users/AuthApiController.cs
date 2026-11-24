@@ -115,13 +115,16 @@ namespace incode.MVC.ApiControllers.Users
             // 1. 呼叫 Service 驗證帳密
             var result = await _authService.ValidateUserAsync(loginData.Email, loginData.Password);
 
+            // 登入安全事件只記來源 IP，不記 Email / 密碼
             if (result.IsLockedOut)
             {
+                _logger.LogWarning("登入被暫停（失敗次數過多） - IP: {RemoteIp}", HttpContext.Connection.RemoteIpAddress);
                 return StatusCode(StatusCodes.Status429TooManyRequests, new { message = result.Message });
             }
 
             if (!result.IsSuccess)
-            {                
+            {
+                _logger.LogInformation("登入失敗 - IP: {RemoteIp}", HttpContext.Connection.RemoteIpAddress);
                 return BadRequest(new { message = result.Message });
             }
 

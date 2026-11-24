@@ -75,7 +75,7 @@ namespace incode.MVC.ApiControllers.Chat
                     return await System.IO.File.ReadAllTextAsync(promptPath); //就回傳並等待讀取非同步文字的結果
                 }
             }
-            catch { /* log error */ } //如果上面發生異常，這裡會紀錄發生啥錯誤
+            catch (Exception ex) { _logger.LogWarning(ex, "讀取 AI 系統提示詞失敗，改用預設提示詞"); }
             return "你是一個專業的電影評論家與推薦系統。如果使用者的問題與電影、影集、演員無關，請禮貌地拒絕回答。"; //如果檔案讀取過程發生錯誤，就回傳這個預設值
         }
 
