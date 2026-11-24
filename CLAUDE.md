@@ -642,3 +642,49 @@ incode/
 43. ~~後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
     沒有檢舉清單、不能下架文章；`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34、40）。
 44. ~~其他：公開個人頁顯示點數餘額；大頭貼網址可填任意外部網址；`SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用不是原子扣減~~（見修正紀錄 34）。
+
+## 第三次全專案檢查（2026-11-24）
+
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單，尚未修正。
+45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
+
+### 🔴 嚴重
+
+45. **任務獎勵可以重複領取**（已重現）：`MissionProgressService.ClaimRewardAsync` 只在 `RewardedAt` 落在本週期時拒絕，
+    但每個週期本來就有各自的進度列，昨天已領過的每日任務進度今天再領會通過（測試：`Ok=True`，多拿 50 點）。
+    連續登入 N 天後，每天可以對每筆舊進度各呼叫一次 `POST api/MissionProgressApi/claim-reward`；畫面不顯示按鈕但 API 照收。
+    每週 / 每月 / 每年任務相同。方向：`RewardedAt` 已有值就拒絕，補跨日測試。
+
+### 🟠 高
+
+46. **會員 Cookie 的 Admin 角色不會重新檢查**（已重現）：管理員從前台（`AuthApi/login`）登入時，會員 Cookie 帶 `Role=Admin`
+    （7 天、自動延長）；`MemberCookieValidator.ValidateAsync` 只檢查啟用與登入戳記，不檢查角色。降為一般會員後
+    `GET api/User`（所有會員 Email）、`POST api/User/{id}/deactivate` 仍回 200；讀任何人的聊天紀錄（`GetHistory`）、
+    加入客服群組、限管理員的互動查詢也一樣。方向：會員 Cookie 驗證時一併比對角色，或會員 Cookie 不放 Admin 角色。
+
+### 🟡 中
+
+47. **任務進度同時觸發回 500，主要操作卻已完成**：兩個「本週期第一次」的觸發同時進來（同時兩則回覆、登入 + 發文），
+    `UpdateMissionProgressAsync` 撞唯一索引 `UX_User_Mission_Cycle`，例外沒有攔下；`CreateContent` 已存好文章卻回 500，
+    使用者重試就重複發文。按讚、登入同一路徑。`ClaimMissionAsync` 以錯誤訊息字串判斷，應改用 `DbErrors.IsUniqueViolation`。
+    尚未重現（需要 SQL Server）。
+48. **停用的論壇分類在前台仍顯示**：`CategoryService.GetCategoriesAsync` 不依狀態過濾，`CategoryDto` 沒有狀態欄位；
+    停用後仍列出，但在該分類發文失敗（「分類不存在或已停用」）。會員也能在停用的分類底下新增子分類。
+49. **已刪除 / 已下架的文章仍可讀取**：內文檔 `/contents/*.html` 在作者刪除或後台下架後仍可直接用網址開啟，
+    每次編輯留下的舊版本也都是公開的；後台下架違規內容實際上沒有移除內容。
+50. **已登入會員可以塞滿磁碟**：`POST api/images/upload` 每個請求最多 100 MB、沒有速率限制；
+    每次發文 / 編輯都寫一個新的內文檔（最多 500 萬字元）、沒有速率限制，編輯後舊檔不刪除。
+
+### ⚪ 低
+
+51. 商城：`OrderItemRequest.Quantity` 沒有 `[Range]`，`TotalPoint += qty * point` 是沒有溢位檢查的 int 運算，
+    庫存 × 單價超過約 21 億時總點數變負數、不扣點；會員端 `NewShippedRequest` 收件資料與備註沒有 `[StringLength]`（太長在 SQL Server 500，後台已有限制）。
+52. 後台會員編輯的「重設密碼」欄位沒有作用（`MemberController.Edit` 寫入雜湊的那行被註解，仍顯示成功）；
+    修改 Email 時 `EmailVerified` 維持原值；可以在這頁停用自己（API 有擋）。
+53. 標題很長的文章打賞失敗：`display_source` 為 `nvarchar(200)`，「收到打賞〈標題〉」最長 206 字，標題 195 字以上 500。
+54. 分頁：`Paging.Normalize` 沒有限制 `page` 上限，`page=2147483647` 使 offset 溢位為負數，SQL Server 500；
+    `GET api/ContentApi/{id}/comments` 默默限制 100 筆（前端沒有使用，可以刪除）。
+55. 登入回應透露帳號狀態：停用帳號與 Google 帳號在比對密碼前就回傳專屬訊息，可以查出哪些 Email 是這兩種帳號。
+56. 其他：同時送出可在同一篇文章建立兩個委託（只影響發文者自己的點數）；綠界回呼沒有檢查金額與商店代號（多一層保護）；
+    Gemini API Key 放在網址查詢字串（改用 `x-goog-api-key` 標頭）；聊天 API 接受任意 SignalR `ConnectionId`；
+    後台登入不寫登入紀錄；會員可建立 100 字的分類名稱，後台表單只允許 50 字，無法編輯這些分類。
