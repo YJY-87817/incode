@@ -14,10 +14,25 @@ namespace incode.MVC.Hubs
         public const string SupportGroup = "SupportAgents";
 
         private readonly IChatService _chat;
+        private readonly ChatConnectionRegistry _connections;
 
-        public ChatHub(IChatService chat)
+        public ChatHub(IChatService chat, ChatConnectionRegistry connections)
         {
             _chat = chat;
+            _connections = connections;
+        }
+
+        // 記下連線屬於哪位會員：聊天 API 只會把登入者自己的連線加入對話群組（見 ChatConnectionRegistry）
+        public override async Task OnConnectedAsync()
+        {
+            _connections.Register(Context.ConnectionId, Context.User?.GetId() ?? 0);
+            await base.OnConnectedAsync();
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            _connections.Unregister(Context.ConnectionId);
+            await base.OnDisconnectedAsync(exception);
         }
 
         private bool IsAdmin => Context.User?.IsInRole("Admin") == true;

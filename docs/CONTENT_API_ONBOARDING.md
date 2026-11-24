@@ -168,9 +168,8 @@ D. 前後端協作關鍵
 
 
 2-7. 取回覆/子回覆
-- `GET /api/ContentApi/{id}/comments`
 - `GET /api/ContentApi/{id}/children?types=2,3&page=1&pageSize=20`
-- 都會走 `GetChildrenByContentId`，只是 comments 用全量模式。
+- 走 `GetChildrenByContentId`（分頁，每頁最多 100 筆）。原本的 `GET /{id}/comments`（全量）已移除
 
 
 2-8. 取「我的內容」系列

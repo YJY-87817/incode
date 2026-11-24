@@ -28,6 +28,7 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly ILogger<ChatMessagesApiController> _logger;
         private readonly UploadStorage _storage;
         private readonly UploadQuota _quota;
+        private readonly ChatConnectionRegistry _connections;
 
         public ChatMessagesApiController(
           IChatService chat,
@@ -38,9 +39,11 @@ namespace incode.MVC.ApiControllers.Chat
           IConfiguration configuration,
           ILogger<ChatMessagesApiController> logger,
           UploadStorage storage,
-          UploadQuota quota)
+          UploadQuota quota,
+          ChatConnectionRegistry connections)
         {
             _quota = quota;
+            _connections = connections;
             _logger = logger;
             _storage = storage;
             _chat = chat;
@@ -82,11 +85,13 @@ namespace incode.MVC.ApiControllers.Chat
             return "你是一個專業的電影評論家與推薦系統。如果使用者的問題與電影、影集、演員無關，請禮貌地拒絕回答。"; //如果檔案讀取過程發生錯誤，就回傳這個預設值
         }
 
-        private async Task EnsureGroupAsync(string connectionId, string sessionIdStr)  // 確保連線ID加入群組
+        private async Task EnsureGroupAsync(string connectionId, string sessionIdStr)
         {
-            if (!string.IsNullOrEmpty(connectionId))  //如果文字類型的變數不是空的(connectionId)  //!string.IsNullOrEmpty不是空的嗎？（代表裡面有東西）
+            // 只把登入者自己的 SignalR 連線加入對話群組（第三次全專案檢查 56）：原本任何 ConnectionId 都會被加入，
+            // 知道別人的 ConnectionId 就能讓對方收到自己對話的訊息。連線由 ChatHub 連線時登記
+            if (!string.IsNullOrEmpty(connectionId) && _connections.IsOwnedBy(connectionId, GetCurrentUserId()))
             {
-                await _hubContext.Groups.AddToGroupAsync(connectionId, sessionIdStr); // 就等待將這個「連線(Connection)」加入到指定的「群組(Session)」中
+                await _hubContext.Groups.AddToGroupAsync(connectionId, sessionIdStr);
             }
         }
 

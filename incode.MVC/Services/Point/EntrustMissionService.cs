@@ -155,11 +155,6 @@ namespace incode.MVC.Services.Point
             if (content.ParentContentId.HasValue)
                 return new ResultDTO { Ok = false, Code = 400, Message = "委託只能建立在自己的主題文章上" };
 
-            bool hasMission = await _context.EntrustMission
-                .AnyAsync(em => em.ContentId == dto.ContentId && em.IsActive && em.Status != "cancelled" && em.Status != "expired");
-            if (hasMission)
-                return new ResultDTO { Ok = false, Code = 409, Message = "這篇文章已經有委託" };
-
             bool userExists = await _context.User.AnyAsync(u => u.UserId == userId);
             if (!userExists)
                 return new ResultDTO { Ok = false, Code = 404, Message = "使用者不存在" };
@@ -170,6 +165,17 @@ namespace incode.MVC.Services.Point
                 : null;
             try
             {
+                // 先鎖定委託人再檢查同一篇文章是否已有委託：同時送出兩個建立請求時第二個會排隊，
+                // 看到第一個已建立的委託（原本檢查在交易外，兩個都會成立、各預扣一次點數；第三次全專案檢查 56）
+                await _pointLogService.LockUsersAsync(userId);
+                bool hasMission = await _context.EntrustMission
+                    .AnyAsync(em => em.ContentId == dto.ContentId && em.IsActive && em.Status != "cancelled" && em.Status != "expired");
+                if (hasMission)
+                {
+                    if (tx != null) await tx.RollbackAsync();
+                    return new ResultDTO { Ok = false, Code = 409, Message = "這篇文章已經有委託" };
+                }
+
                 var entrustMission = new EntrustMission
                 {
                     UserId = userId,

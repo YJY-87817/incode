@@ -49,4 +49,22 @@ public class SqlServerPagingTests : IClassFixture<SqlServerFixture>
         Assert.NotNull(list);
         Assert.NotEmpty(children.Items);
     }
+
+    // 第三次全專案檢查 54：(page - 1) × pageSize 以 int 計算，極大的頁碼溢位成負的 OFFSET → 500
+    [SqlServerTheory]
+    [InlineData(int.MaxValue, 100)]
+    [InlineData(int.MaxValue, 10)]
+    [InlineData(int.MaxValue / 10, 20)]
+    public async Task Huge_page_number_returns_an_empty_page_instead_of_failing(int page, int pageSize)
+    {
+        var topicId = await SeedTopic();
+        await using var context = _db.NewContext();
+        var service = CreateService(context);
+
+        var list = await service.GetContents(null, page, pageSize, null, null, null, null);
+        var children = await service.GetChildrenByContentId(topicId, null, page, pageSize, null);
+
+        Assert.Empty(list.Items);
+        Assert.Empty(children.Items);
+    }
 }

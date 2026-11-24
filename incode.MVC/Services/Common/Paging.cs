@@ -9,7 +9,13 @@ namespace incode.MVC.Services.Common
     {
         public const int MaxPageSize = 100;
 
+        /// <summary>
+        /// 頁碼上限：(page - 1) × pageSize 以 int 計算，page 太大會溢位成負數，SQL Server 的 OFFSET 不接受負數（500；第三次全專案檢查 54）。
+        /// 100 萬頁 × 100 筆仍在 int 範圍內，遠超過實際資料量
+        /// </summary>
+        public const int MaxPage = 1_000_000;
+
         public static (int Page, int PageSize) Normalize(int page, int pageSize, int defaultPageSize = 10)
-            => (Math.Max(1, page), pageSize <= 0 ? defaultPageSize : Math.Min(pageSize, MaxPageSize));
+            => (Math.Clamp(page, 1, MaxPage), pageSize <= 0 ? defaultPageSize : Math.Min(pageSize, MaxPageSize));
     }
 }

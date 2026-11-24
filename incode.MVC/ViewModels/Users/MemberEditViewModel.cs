@@ -5,7 +5,7 @@ namespace incode.MVC.ViewModels.Users
     public class MemberEditViewModel : MemberIndexViewModel
     {
         [Display(Name = "重設密碼")]
-        [MinLength(6, ErrorMessage = "密碼最少6碼")]
+        [StringLength(PasswordRules.MaxLength, MinimumLength = PasswordRules.MinLength, ErrorMessage = "密碼需為 6～100 碼")]
         public string? Password { get; set; }
 
         [Display(Name = "帳號狀態")]

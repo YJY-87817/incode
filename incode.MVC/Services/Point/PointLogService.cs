@@ -65,6 +65,10 @@ namespace incode.MVC.Services.Point
             }
         }
 
+        /// <summary>point_log.display_source 為 nvarchar(200)、display_source_sub_title 為 nvarchar(100)</summary>
+        public const int MaxDisplaySourceLength = 200;
+        public const int MaxDisplaySubTitleLength = 100;
+
         /// <summary>後台手動調整單次上限（點）</summary>
         public const int MaxAdminAdjustment = 100_000;
         /// <summary>調整原因長度上限（point_log.display_source_sub_title 為 nvarchar(100)）</summary>
@@ -170,6 +174,10 @@ namespace incode.MVC.Services.Point
 
             var log = new PointLog
             {
+                // 顯示文字超過欄位長度時截短（例如「收到打賞〈200 字標題〉」、「任務 #id - 150 字的委託標題」；
+                // 原本在 SQL Server 寫入失敗 → 打賞 / 建立委託 500，第三次全專案檢查 53）
+                DisplaySource = TruncateDisplay(displaySource, MaxDisplaySourceLength),
+                DisplaySourceSubTitle = TruncateDisplay(displaySubTitle, MaxDisplaySubTitleLength),
                 UserId = userId,
                 SourceType = sourceType,
                 SourceId = sourceId,
@@ -178,14 +186,21 @@ namespace incode.MVC.Services.Point
                 BalanceAfter = newBalance,
                 Status = "success",
                 CreatedAt = DateTime.Now,
-                DisplaySource = displaySource,
-                DisplaySourceSubTitle = displaySubTitle
             };
 
             _context.PointLog.Add(log);
 
             // 不呼叫 SaveChanges，讓呼叫端決定何時 commit
             return true;
+        }
+
+        // 截短到欄位長度，以「…」結尾（以 UTF-16 長度計算，與 nvarchar 相同；不切開代理字組）
+        private static string? TruncateDisplay(string? text, int maxLength)
+        {
+            if (text == null || text.Length <= maxLength) return text;
+            var cut = maxLength - 1;
+            if (char.IsHighSurrogate(text[cut - 1])) cut--;
+            return text[..cut] + "…";
         }
 
         public async Task<IEnumerable<PointLogDTO>> GetUserLogsAsync(int userId)

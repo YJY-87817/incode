@@ -9,10 +9,12 @@ namespace incode.MVC.Controllers.Users
     public class AccountController : Controller
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public AccountController(IAuthService authService)
+        public AccountController(IAuthService authService, IUserService userService)
         {
             _authService = authService;
+            _userService = userService;
         }
 
         // GET: /Account/Login
@@ -74,6 +76,9 @@ namespace incode.MVC.Controllers.Users
                 // 根據使用者是否勾選「記住我」(這裡先預設為 true，或者您可以從 model.RememberMe 傳入)
                 IsPersistent = true,
             };
+
+            // 後台登入也寫進登入紀錄（原本只有前台登入會記錄；第三次全專案檢查 56）
+            await _userService.AddLoginLogAsync(result.Member.UserId, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
             // 5. 簽發 "AdminAuth" Cookie
             await HttpContext.SignInAsync(

@@ -28,6 +28,12 @@ namespace incode.MVC.Services.Point
             return order;
         }
 
+        public Task<decimal?> GetOrderAmountAsync(string orderNo) =>
+            _context.PointRecharge.AsNoTracking()
+                .Where(r => r.OrderNo == orderNo)
+                .Select(r => (decimal?)r.CashAmount)
+                .FirstOrDefaultAsync();
+
         public Task<int> MarkFailedAsync(string orderNo, string? paymentTradeNo) =>
             _context.PointRecharge
                 .Where(r => r.OrderNo == orderNo && r.Status != "success")

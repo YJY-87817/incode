@@ -789,7 +789,10 @@ const submitCreateCategory = async () => {
     showCreateCategoryModal.value = false;
   } catch (error) {
     console.error("新增分類失敗:", error);
-    alert("新增分類失敗，請稍後再試");
+    // 後端的驗證訊息（例如名稱長度、父分類已停用）：一般錯誤是 { message }，欄位驗證是 { errors: { Name: [...] } }
+    const data = error?.response?.data;
+    const fieldError = data?.errors ? Object.values(data.errors).flat()[0] : null;
+    alert(data?.message || fieldError || "新增分類失敗，請稍後再試");
   } finally {
     isCreatingCategory.value = false;
     isCreatingSubCategory.value = false;
@@ -1440,7 +1443,8 @@ const handleModalCancel = () => {
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">分類名稱</label>
-                <input v-model="newCategoryName" class="form-control" />
+                <!-- 與後端 CreateCategoryDto 相同：名稱 2～50 字、描述最多 200 字 -->
+                <input v-model="newCategoryName" class="form-control" maxlength="50" />
               </div>
               <div class="mb-3">
                 <label class="form-label">描述</label>
@@ -1448,6 +1452,7 @@ const handleModalCancel = () => {
                   v-model="newCategoryDescription"
                   class="form-control"
                   rows="3"
+                  maxlength="200"
                   placeholder="請輸入分類描述"
                 ></textarea>
               </div>

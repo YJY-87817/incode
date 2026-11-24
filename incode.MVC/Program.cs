@@ -175,6 +175,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 //tim
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IChatToolService, ChatToolService>();
+builder.Services.AddSingleton<ChatConnectionRegistry>(); // SignalR 連線屬於哪位會員（聊天 API 加入群組前檢查）
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();

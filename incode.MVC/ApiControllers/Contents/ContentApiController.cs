@@ -146,19 +146,8 @@ namespace incode.MVC.ApiControllers.Contents
       return Ok(new { message = "刪除成功" });
     }
 
-    // 取得指定content的所有評論
-    // GET https://localhost:7190/api/ContentApi/{id}/comments
-    [HttpGet("{id}/comments")]
-    public async Task<IActionResult> GetCommentsByContentId(int id)
-    {
-      var comments = await _contentService.GetCommentsByContentId(id);
-      return Ok(new
-      {
-        contentId = id,
-        comments = comments,
-        count = comments.Count
-      });
-    }
+    // 原本的 GET api/ContentApi/{id}/comments（全部回覆）實際上被分頁上限默默截在 100 筆，前端也沒有使用，已移除；
+    // 請用下面的 children 分頁取得（第三次全專案檢查 54）
 
     // 取得指定content的子回覆 (分頁)
     // GET https://localhost:7190/api/ContentApi/{id}/children?types=2,3&page=1&pageSize=20

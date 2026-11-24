@@ -580,12 +580,6 @@ namespace incode.MVC.Services.Contents
       return true;
     }
 
-    public async Task<List<ContentDto>> GetCommentsByContentId(int contentId)
-    {
-      var result = await GetChildrenByContentId(contentId, null, 1, int.MaxValue, null);
-      return result.Items;
-    }
-
     public async Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize)
     {
       (page, pageSize) = Paging.Normalize(page, pageSize, defaultPageSize: 10);

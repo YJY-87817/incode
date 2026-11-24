@@ -137,7 +137,21 @@ namespace incode.MVC.Controllers.Users
                 ModelState.AddModelError(nameof(vm.Username), UsernameRules.ErrorMessage); // 沒改暱稱就不檢查（舊暱稱可能不符合規則）
             else if (await _userService.IsUsernameTakenByOtherAsync(vm.Username, vm.UserId))
                 ModelState.AddModelError(nameof(vm.Username), "此暱稱已被其他會員使用");
+            // 不能在這裡停用自己的帳號（前台 API 也擋；停用後會立刻被登出後台）
+            if (vm.UserId == User.GetId() && !vm.IsActive)
+                ModelState.AddModelError(nameof(vm.IsActive), "不能停用自己的帳號");
+            bool resetPassword = !string.IsNullOrEmpty(vm.Password);
+            if (resetPassword && user.Password == UserService.GoogleAccountPassword)
+                ModelState.AddModelError(nameof(vm.Password), "此會員使用 Google 登入，沒有密碼可以重設");
             if (!ModelState.IsValid) return View(vm);
+
+            // Email 改了：新的 Email 還沒驗證過（Google 登入接管、驗證信都以 EmailVerified 為準）
+            if (!string.Equals(vm.Email, user.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                user.EmailVerified = false;
+                user.EmailVerifyToken = null;
+                user.EmailVerifyTokenExpiry = null;
+            }
 
             // 更新基本資料
             user.Username = vm.Username;
@@ -146,14 +160,20 @@ namespace incode.MVC.Controllers.Users
             // --- 關鍵：更新帳號狀態 (停權/啟用) ---
             user.IsActive = vm.IsActive;
 
-            // 只有當管理員有填寫密碼欄位時，才幫使用者重設密碼
-            if (!string.IsNullOrEmpty(vm.Password))
-            {
-                // 注意：這裡需要 Hash 密碼，建議抽出 Helper 或 Service
-                // user.Password = _passwordService.Hash(vm.Password);
-            }
-
             await _userService.UpdateUserAsync(user);
+
+            // 有填密碼才重設（原本寫入雜湊的那行被註解，畫面顯示成功但密碼沒變）；重設後該會員所有裝置登出
+            if (resetPassword)
+            {
+                var result = await _authService.AdminSetPasswordAsync(user.UserId, vm.Password!);
+                if (result != ChangePasswordResult.Success)
+                {
+                    ModelState.AddModelError(nameof(vm.Password), result == ChangePasswordResult.InvalidNewPassword
+                        ? "密碼需為 6～100 碼" : "重設密碼失敗");
+                    return View(vm);
+                }
+                TempData["SuccessMessage"] = "已更新會員資料並重設密碼（該會員已在所有裝置登出）";
+            }
 
             return RedirectToAction("Index");
         }
