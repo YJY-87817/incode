@@ -71,6 +71,7 @@ incode/
 - **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
   伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
 - **停用帳號**：用 `UserService.SetActiveAsync`（不刪除會員；已登入的人由 `MemberCookieValidator` 在下個請求登出）
+- **角色變更**：後台 Cookie 與帶 Admin 角色的會員 Cookie 每個請求都會確認帳號仍是管理員（`MemberCookieValidator`，快取 60 秒），降級後下個請求登出
 - **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
   ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
@@ -549,6 +550,13 @@ incode/
     改為**進度已領過（`RewardedAt` 有值或狀態為 rewarded）一律拒絕**；新週期的進度照常可領。「我的任務」的可領判斷使用同樣的規則，
     移除不再需要的同週期比對（`IsSameWeek`）。測試：`MissionProgressServiceTests`（四種重置類型的舊週期進度不能再領、新週期仍可領）
 
+49. 第三次全專案檢查 46（會員 Cookie 的 Admin 角色，先寫測試重現，`AccountSecurityTests`）：管理員從前台（`AuthApi/login`）登入時，
+    會員 Cookie 帶 `Role=Admin`（7 天、自動延長），但 `MemberCookieValidator.ValidateAsync` 只檢查帳號啟用與登入戳記。
+    修正前在 main 重現：降為一般會員後 `GET api/User`（所有會員 Email）、`POST api/User/{id}/deactivate` 仍回 200。
+    改為**會員 Cookie 帶 Admin 角色時，帳號也必須仍是管理員**，否則下一個請求就登出（與後台 Cookie 相同；狀態快取 60 秒，
+    直接改資料庫最慢 60 秒後生效）；重新登入後是一般會員。沒有 Admin 角色的會員 Cookie 不受影響。
+    已建立的 SignalR 連線（客服群組）不會因此中斷，重新連線時才會重新驗證
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -650,7 +658,7 @@ incode/
 
 ## 第三次全專案檢查（2026-11-24）
 
-重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45 已修正（見修正紀錄 48），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45、46 已修正（見修正紀錄 48、49），其餘尚未修正。
 45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
 
 ### 🔴 嚴重
@@ -662,7 +670,7 @@ incode/
 
 ### 🟠 高
 
-46. **會員 Cookie 的 Admin 角色不會重新檢查**（已重現）：管理員從前台（`AuthApi/login`）登入時，會員 Cookie 帶 `Role=Admin`
+46. ~~**會員 Cookie 的 Admin 角色不會重新檢查**~~（已修正，見修正紀錄 49）：管理員從前台（`AuthApi/login`）登入時，會員 Cookie 帶 `Role=Admin`
     （7 天、自動延長）；`MemberCookieValidator.ValidateAsync` 只檢查啟用與登入戳記，不檢查角色。降為一般會員後
     `GET api/User`（所有會員 Email）、`POST api/User/{id}/deactivate` 仍回 200；讀任何人的聊天紀錄（`GetHistory`）、
     加入客服群組、限管理員的互動查詢也一樣。方向：會員 Cookie 驗證時一併比對角色，或會員 Cookie 不放 Admin 角色。

@@ -301,4 +301,58 @@ public class AccountSecurityTests : IClassFixture<ApiFactory>
         Assert.False(takenOver);
         Assert.True((await GetUser(user.UserId)).EmailVerified);
     }
+
+    // ---------- 第三次全專案檢查 46：會員 Cookie 的 Admin 角色 ----------
+
+    private void EvictAccountState(int userId)
+        => MemberCookieValidator.Evict(_factory.Services.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(), userId);
+
+    [Fact]
+    public async Task Admin_logged_in_from_frontend_loses_admin_access_after_demotion()
+    {
+        var (adminId, email) = await NewPasswordUser();
+        await _factory.MakeAdminAsync(adminId);
+        var client = await PasswordLogin(email); // 會員 Cookie，帶 Admin 角色
+        var victimId = _factory.Db.SeedUser(NewEmail());
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/User")).StatusCode);
+
+        await UpdateUser(adminId, u => u.RoleId = (int)RoleType.Member);
+        EvictAccountState(adminId);
+
+        // 修正前：降級後仍是 200（可以列出所有會員的 Email、停用其他會員）
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/User")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsync($"/api/User/{victimId}/deactivate", null)).StatusCode);
+        Assert.True((await GetUser(victimId)).IsActive != false);
+
+        // 被登出：Cookie 已清除，一般會員的 API 也要重新登入
+        Assert.Equal(HttpStatusCode.Unauthorized, await ProfileStatus(client));
+
+        // 以一般會員重新登入：可以使用會員功能，但沒有管理員權限
+        var relogin = await PasswordLogin(email);
+        Assert.Equal(HttpStatusCode.OK, await ProfileStatus(relogin));
+        Assert.Equal(HttpStatusCode.Forbidden, (await relogin.GetAsync("/api/User")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_logged_in_from_frontend_keeps_admin_access_while_still_admin()
+    {
+        var (adminId, email) = await NewPasswordUser();
+        await _factory.MakeAdminAsync(adminId);
+        var client = await PasswordLogin(email);
+        EvictAccountState(adminId); // 讓下一個請求重新查資料庫
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/User")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, await ProfileStatus(client));
+    }
+
+    [Fact]
+    public async Task Member_cookie_without_admin_role_is_not_affected_by_role_check()
+    {
+        var (_, email) = await NewPasswordUser();
+        var client = await PasswordLogin(email);
+
+        Assert.Equal(HttpStatusCode.OK, await ProfileStatus(client));
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/User")).StatusCode);
+    }
 }
