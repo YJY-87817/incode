@@ -187,6 +187,10 @@ namespace incode.MVC.Services.PointShop
             if (needsShipping && requireRecipient && !hasRecipient)
                 return ResultDTO<int>.Failure("訂單含實體商品，請填寫完整寄送資料");
 
+            var lengthError = CheckRemark(remark) ?? (needsShipping && hasRecipient ? CheckRecipient(recipient!) : null);
+            if (lengthError != null)
+                return ResultDTO<int>.Failure(lengthError);
+
             var result = await RunInTransactionAsync(userId, "新增訂單", async () =>
             {
                 // 1. 原子扣庫存 (UPDATE ... WHERE Stock >= 數量)，避免同時下單超賣
@@ -202,6 +206,7 @@ namespace incode.MVC.Services.PointShop
                     OrderDate = DateTime.Now,
                 };
 
+                long total = 0;
                 foreach (var (productId, qty) in quantities)
                 {
                     var product = products[productId];
@@ -212,8 +217,9 @@ namespace incode.MVC.Services.PointShop
                         UnitPointAtPurchase = product.Point,
                         RequiresShipping = product.IsPhysical
                     });
-                    order.TotalPoint += qty * product.Point;
+                    total += (long)qty * product.Point;
                 }
+                order.TotalPoint = CheckedTotal(total);
 
                 // 3. 寄送資料
                 if (needsShipping && hasRecipient)
@@ -293,11 +299,14 @@ namespace incode.MVC.Services.PointShop
         public async Task<ResultDTO<int>> UpdateOrderItemsAsync(int orderId, IEnumerable<OrderItemRequest>? items, string? remark,
             string? requiredStatus = null, string? newStatus = null)
         {
-            var (newQty, itemError) = NormalizeItems(items);
+            // 數量上限只限制「增加」（在交易內與舊明細比較）：改版前已超過上限的舊訂單仍可以改狀態、減少數量
+            var (newQty, itemError) = NormalizeItems(items, enforceMaximum: false);
             if (itemError != null)
                 return ResultDTO<int>.Failure(itemError);
             if (newStatus != null && (!OrderStatus.IsValid(newStatus) || newStatus == OrderStatus.Canceled))
                 return ResultDTO<int>.Failure("訂單狀態錯誤");
+            if (CheckRemark(remark) is string remarkError)
+                return ResultDTO<int>.Failure(remarkError);
 
             var userId = await FindOrderUserIdAsync(orderId);
             if (userId == null)
@@ -315,6 +324,8 @@ namespace incode.MVC.Services.PointShop
                     .ToDictionary(g => g.Key, g => g.Sum(d => d.Quantity));
 
                 var allIds = newQty.Keys.Union(oldQty.Keys).ToList();
+                if (newQty.Any(kv => kv.Value > OrderLimits.MaxQuantityPerItem && kv.Value > oldQty.GetValueOrDefault(kv.Key)))
+                    throw new OrderFailure($"單一商品數量最多 {OrderLimits.MaxQuantityPerItem}");
                 var products = await LoadProductsAsync(allIds);
 
                 // 新加入的商品必須存在且上架中；原本就有的商品即使下架也可調整數量
@@ -337,7 +348,7 @@ namespace incode.MVC.Services.PointShop
                 }
 
                 // 2. 同步明細：原有商品保留原購買單價，新商品使用目前價格
-                var totalPoints = 0;
+                long totalPoints = 0;
                 foreach (var productId in allIds)
                 {
                     var lines = order.Orderdetail.Where(d => d.ProductId == productId).ToList();
@@ -354,7 +365,7 @@ namespace incode.MVC.Services.PointShop
                         var keep = lines[0];
                         keep.Quantity = qty;
                         _context.Orderdetail.RemoveRange(lines.Skip(1));
-                        totalPoints += qty * keep.UnitPointAtPurchase;
+                        totalPoints += (long)qty * keep.UnitPointAtPurchase;
                     }
                     else
                     {
@@ -366,12 +377,13 @@ namespace incode.MVC.Services.PointShop
                             UnitPointAtPurchase = product.Point,
                             RequiresShipping = product.IsPhysical
                         });
-                        totalPoints += qty * product.Point;
+                        totalPoints += (long)qty * product.Point;
                     }
                 }
 
                 // 3. 點數差額：新總點數 > 舊總點數 → 補扣；反之 → 退還
-                var pointDiff = totalPoints - order.TotalPoint;
+                var newTotal = CheckedTotal(totalPoints);
+                var pointDiff = newTotal - order.TotalPoint;
                 if (pointDiff != 0)
                 {
                     var ok = await _pointlogService.ChangePointsAsync(
@@ -386,7 +398,7 @@ namespace incode.MVC.Services.PointShop
                         throw new OrderFailure("點數不足，無法修改訂單", 409);
                 }
 
-                order.TotalPoint = totalPoints;
+                order.TotalPoint = newTotal;
                 if (remark != null)
                     order.Remark = remark;
                 if (newStatus != null)
@@ -443,6 +455,8 @@ namespace incode.MVC.Services.PointShop
                 || string.IsNullOrWhiteSpace(shipped.RecipientPhone)
                 || string.IsNullOrWhiteSpace(shipped.RecipientAddress))
                 return ResultDTO<int>.Failure("請填寫完整寄送資料");
+            if ((CheckRecipient(shipped) ?? CheckRemark(shipped.Remark)) is string lengthError)
+                return ResultDTO<int>.Failure(lengthError);
 
             var existing = await _context.ShippedDetail.FindAsync(shippedDetailId);
             if (existing == null)
@@ -473,7 +487,7 @@ namespace incode.MVC.Services.PointShop
         // ======================================================================
 
         // 驗證並合併明細：數量必須 > 0，同商品多筆合併為一筆
-        private static (Dictionary<int, int> quantities, string? error) NormalizeItems(IEnumerable<OrderItemRequest>? items)
+        private static (Dictionary<int, int> quantities, string? error) NormalizeItems(IEnumerable<OrderItemRequest>? items, bool enforceMaximum = true)
         {
             var list = items?.Where(i => i != null).ToList();
             if (list == null || list.Count == 0)
@@ -482,11 +496,30 @@ namespace incode.MVC.Services.PointShop
             if (list.Any(i => i.Quantity <= 0))
                 return (new(), "商品數量必須大於 0");
 
-            var quantities = list
+            // 同商品多筆合併後也不能超過上限（以 long 加總，避免溢位）
+            var merged = list
                 .GroupBy(i => i.ProductId)
-                .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
-            return (quantities, null);
+                .ToDictionary(g => g.Key, g => g.Sum(i => (long)i.Quantity));
+            if (merged.Values.Any(q => q > (enforceMaximum ? OrderLimits.MaxQuantityPerItem : int.MaxValue)))
+                return (new(), $"單一商品數量最多 {OrderLimits.MaxQuantityPerItem}");
+
+            return (merged.ToDictionary(kv => kv.Key, kv => (int)kv.Value), null);
         }
+
+        // 訂單總點數：以 long 計算後檢查（數量 × 單價原本以 int 相乘，超過約 21 億時溢位成負數，訂單不扣點就成立）
+        private static int CheckedTotal(long total)
+            => total > int.MaxValue ? throw new OrderFailure("訂單總點數超過上限，請減少數量") : (int)total;
+
+        // 長度對照資料庫欄位（原本超過時在 SQL Server 寫入失敗 → 500）
+        private static string? CheckRemark(string? remark)
+            => remark != null && remark.Length > OrderLimits.MaxRemarkLength ? $"備註最多 {OrderLimits.MaxRemarkLength} 字" : null;
+
+        private static string? CheckRecipient(NewShippedRequest recipient)
+            => recipient.RecipientName?.Trim().Length > OrderLimits.MaxRecipientLength
+               || recipient.RecipientPhone?.Trim().Length > OrderLimits.MaxRecipientLength
+               || recipient.RecipientAddress?.Trim().Length > OrderLimits.MaxRecipientLength
+                ? $"收件人姓名、電話、地址各最多 {OrderLimits.MaxRecipientLength} 字"
+                : null;
 
         // 讀取商品 (不追蹤：庫存一律以 ExecuteUpdate 原子更新，避免 SaveChanges 以舊值覆蓋)
         // 訂單的會員（交易開始前要先知道鎖誰）；訂單不存在回傳 null

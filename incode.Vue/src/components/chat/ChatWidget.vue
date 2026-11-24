@@ -197,6 +197,19 @@ const initSignalR = async () => {
             }
         });
 
+        // 自動重新連線後 ConnectionId 會換新：更新後重新加入目前的對話群組，
+        // 否則後端只認得新的連線（ChatConnectionRegistry），AI / 客服的回覆不會即時推送到這個視窗
+        newConnection.onreconnected(async (newConnectionId) => {
+            connectionId.value = newConnectionId || newConnection.connectionId;
+            try {
+                if (currentSessionId.value > 0) {
+                    await newConnection.invoke("JoinSessionGroup", currentSessionId.value.toString());
+                }
+            } catch (err) {
+                console.error("重新加入對話群組失敗", err);
+            }
+        });
+
         newConnection.on("UpdateModeState", (sid, isHuman) => {
             if (sid == currentSessionId.value) {
                 isHumanMode.value = isHuman;

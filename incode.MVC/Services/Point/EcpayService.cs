@@ -28,6 +28,9 @@ namespace incode.MVC.Services.Point
             ClientBackUrl = $"{config.GetFrontendUrl()}/recharge-result";
         }
 
+        /// <summary>設定的商店代號（綠界通知核對用）</summary>
+        public string MerchantId => MerchantID;
+
         /// <summary>目前使用的是綠界公開的測試商店（付款通知可能是偽造或模擬的）</summary>
         public bool IsTestMerchant => MerchantID == PublicTestMerchantId;
 

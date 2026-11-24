@@ -15,9 +15,11 @@ namespace incode.MVC.ApiControllers.Users
         private readonly IUserService _userService;
         private readonly IImageService _imageService;
         private readonly UploadStorage _storage;
+        private readonly UploadQuota _quota;
 
-        public UserController(IUserService userService, IImageService imageService, UploadStorage storage)
+        public UserController(IUserService userService, IImageService imageService, UploadStorage storage, UploadQuota quota)
         {
+            _quota = quota;
             _userService = userService;
             _imageService = imageService;
             _storage = storage;
@@ -45,6 +47,11 @@ namespace incode.MVC.ApiControllers.Users
                 var error = ImageFileValidator.Validate(file, MaxAvatarBytes);
                 if (error != null) return BadRequest(new { message = error });
             }
+
+            // 已登入的會員（會員中心換大頭貼）計入每小時寫入量；註冊前的匿名上傳沒有會員可以計算，只有依 IP 的速率限制
+            var userId = User.GetId();
+            if (userId > 0 && !_quota.TryConsume(userId, list.Sum(f => f.Length)))
+                return StatusCode(StatusCodes.Status429TooManyRequests, new { message = _quota.ExceededMessage });
 
             var urls = new List<string>();
             foreach (var file in list)

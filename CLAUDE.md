@@ -105,7 +105,7 @@ incode/
 - **圖片上傳**：先用 `Services/Common/ImageFileValidator.Validate()` 檢查（僅 jpg/png/gif/webp + 檔頭比對，單檔 20 MB）；
   刪除檔案時檔名以資料庫為準並 `Path.GetFileName()`，不可使用表單傳入的路徑。
 - **請求大小 / 長度**：全站請求上限 30 MB（`Program.cs`），需要更大的端點個別加 `[RequestSizeLimit]`；前台 DTO 的字串欄位加 `[StringLength]`
-  （對照資料庫欄位長度，長度常數放 `ContentLimits` / `ChatLimits` 這類類別，前端輸入框用同樣的 `maxlength`）。允許匿名寫入或會呼叫付費 API 的端點要加速率限制
+  （對照資料庫欄位長度，長度常數放 `ContentLimits` / `ChatLimits` 這類類別，前端輸入框用同樣的 `maxlength`）。允許匿名寫入或會呼叫付費 API 的端點要加速率限制。會寫入檔案的會員端點寫檔前要呼叫 `UploadQuota.TryConsume`（每位會員每小時的寫入量，超過回 429）
 - **檔案存放**：上傳檔一律透過 `UploadStorage`（`Services/Common/UploadStorage.cs`）寫入 / 刪除，資料夾用 `UploadFolders` 常數，
   檔名由伺服器產生（Guid）。**不要寫進 `wwwroot`**（會被提交進 git、重新部署會被覆蓋）。
   位置由 `App:UploadRoot` 設定（預設 `App_Data/uploads`），正式環境設成部署資料夾以外的絕對路徑。
@@ -585,6 +585,38 @@ incode/
     - 檔案本身不刪除（後台修改紀錄與恢復上架需要）；前端只讀取 API 回傳的公開文章內文，不受影響
     - 回覆的主題被刪除時，回覆本身仍公開（與 `GET api/ContentApi/{id}` 一致）
 
+53. 第三次全專案檢查 50（已登入會員可以塞滿磁碟，先寫測試重現，`UploadQuotaTests`）：論壇圖片上傳（每次最多 100 MB）、發文 / 編輯
+    （每次寫一個最多 500 萬字元的內文檔，編輯後舊檔留給修改紀錄）、聊天圖片原本都沒有寫入量與次數限制。
+    - `Services/Common/UploadQuota`：**每位會員每小時的寫入量上限**，論壇圖片、文章內文（UTF-8 位元組數）、聊天圖片共用同一個額度，
+      超過回 429「上傳量已達上限（每小時 N MB），請稍後再試」，在寫檔之前檢查（超過時不會寫入任何檔案、也不會呼叫 AI）。
+      `App:UploadQuotaMegabytesPerHour`（預設 200，0 = 不限制）；記憶體計數，重啟清除、多台伺服器各自計算
+    - `RateLimitPolicies.ContentWrite`：發文 / 回覆 / 編輯（含「發文 + 委託」）與論壇圖片上傳，每位會員每分鐘 30 次（未登入依 IP）
+    - 大頭貼上傳：已登入的會員（會員中心換大頭貼）也計入額度；註冊前的匿名上傳維持原本依 IP 的 `RateLimitPolicies.Upload`
+    - 前端發文 / 編輯失敗時改為顯示後端回傳的訊息（`useForumPost.js`，原本一律「發佈失敗，請稍後再試」，連「分類不存在或已停用」等訊息也看不到）
+
+54. 第三次全專案檢查 51～56（低優先，都先寫測試重現，`ThirdAuditLowPriorityTests`、`ShopLimitTests`；SQL Server 上的在 `SqlServerPagingTests`、`ConcurrencyTests`）：
+    - **51 商城**：同一商品數量最多 `OrderLimits.MaxQuantityPerItem`（1000，同商品多筆明細合併後計算）；訂單總點數改以 long 計算，
+      超過 int 回 400（原本 3 × 1000 × 1,000,000 溢位成負數，不扣點就成立訂單）；修改訂單時上限只限制「增加」，改版前已超過的舊訂單仍可改狀態 / 減少數量；備註 300 字、收件人姓名 / 電話 / 地址各 50 字，
+      DTO（`[Range]` / `[StringLength]`）與 `OrderService`（建立、修改明細、修改寄送資料）都檢查（原本在 SQL Server 上 500）
+    - **52 後台會員編輯**：「重設密碼」真的會寫入（`AuthService.AdminSetPasswordAsync`：6～100 碼、換新登入戳記讓該會員所有裝置登出；
+      原本寫入雜湊的那行被註解，畫面顯示成功但密碼沒變）；Google 帳號不能設定密碼；修改 Email 時改為未驗證；不能在這頁停用自己或改自己的密碼
+      （會換新登入戳記，目前的後台登入會失效；請到前台會員中心修改）
+    - **53 點數紀錄顯示文字**：`ChangePointsAsync` 把 `display_source`（200）/ `display_source_sub_title`（100）超過欄位長度的文字截短並以「…」結尾，
+      所有點數流程共用。原本 195 字以上的標題打賞失敗、150 字的委託標題建立委託時預扣紀錄的副標超過 100 字（SQL Server 上 500）
+    - **54 分頁**：`Paging.MaxPage`（100 萬頁），極大的頁碼回空頁（原本 offset 溢位成負數，SQL Server 500）；
+      刪除沒有使用、且被分頁上限默默截在 100 筆的 `GET api/ContentApi/{id}/comments`（請用 `/{id}/children` 分頁）
+    - **55 登入**：帳號不存在、Google 帳號、密碼錯誤一律回 `AuthService.LoginFailedMessage`（含「以 Google 註冊請用 Google 登入」的提示）並計入失敗次數；
+      停用帳號只在密碼正確時才告知；沒有密碼可比對時也做一次 BCrypt 比對，回應時間不透露帳號是否存在
+    - **56 其他**：
+      - 建立委託先鎖定委託人再檢查「同一篇文章是否已有委託」（原本在交易外，SQL Server 同時 10 個請求可以成立多個並各預扣點數）
+      - 綠界付款通知另外核對商店代號與金額（`TradeAmt` 必須等於儲值單金額），不符不加點、回 `0|Fail` 並記錄 log
+      - Gemini API Key 改放 `x-goog-api-key` 標頭（原本在網址查詢字串）；所有 Gemini 呼叫都檢查 Key 是否設定
+      - 聊天 API 只把**登入者自己的** SignalR 連線加入對話群組（`Services/Chat/ChatConnectionRegistry`，`ChatHub` 連線 / 斷線時登記；
+        原本任何 `ConnectionId` 都會被加入）。單一伺服器的記憶體登記，多台伺服器（SignalR backplane）時要改成共用的儲存。
+        前端 `ChatWidget.vue` 在自動重新連線後更新 ConnectionId 並重新加入對話群組（原本沿用舊的 ID，重新連線後收不到即時回覆）
+      - 後台登入寫入登入紀錄；會員新增分類的名稱改為 2～50 字、說明 200 字（與後台表單相同，原本 100 字的名稱後台無法編輯），
+        前端輸入框加 `maxlength`，新增失敗時顯示後端的訊息
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -686,7 +718,7 @@ incode/
 
 ## 第三次全專案檢查（2026-11-24）
 
-重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～49 已修正（見修正紀錄 48～52），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～56 已全部修正（見修正紀錄 48～54）。
 45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
 
 ### 🔴 嚴重
@@ -713,19 +745,19 @@ incode/
     停用後仍列出，但在該分類發文失敗（「分類不存在或已停用」）。會員也能在停用的分類底下新增子分類。
 49. ~~**已刪除 / 已下架的文章仍可讀取**~~（已修正，見修正紀錄 52）：內文檔 `/contents/*.html` 在作者刪除或後台下架後仍可直接用網址開啟，
     每次編輯留下的舊版本也都是公開的；後台下架違規內容實際上沒有移除內容。
-50. **已登入會員可以塞滿磁碟**：`POST api/images/upload` 每個請求最多 100 MB、沒有速率限制；
+50. ~~**已登入會員可以塞滿磁碟**~~（已修正，見修正紀錄 53）：`POST api/images/upload` 每個請求最多 100 MB、沒有速率限制；
     每次發文 / 編輯都寫一個新的內文檔（最多 500 萬字元）、沒有速率限制，編輯後舊檔不刪除。
 
 ### ⚪ 低
 
-51. 商城：`OrderItemRequest.Quantity` 沒有 `[Range]`，`TotalPoint += qty * point` 是沒有溢位檢查的 int 運算，
-    庫存 × 單價超過約 21 億時總點數變負數、不扣點；會員端 `NewShippedRequest` 收件資料與備註沒有 `[StringLength]`（太長在 SQL Server 500，後台已有限制）。
-52. 後台會員編輯的「重設密碼」欄位沒有作用（`MemberController.Edit` 寫入雜湊的那行被註解，仍顯示成功）；
-    修改 Email 時 `EmailVerified` 維持原值；可以在這頁停用自己（API 有擋）。
-53. 標題很長的文章打賞失敗：`display_source` 為 `nvarchar(200)`，「收到打賞〈標題〉」最長 206 字，標題 195 字以上 500。
-54. 分頁：`Paging.Normalize` 沒有限制 `page` 上限，`page=2147483647` 使 offset 溢位為負數，SQL Server 500；
-    `GET api/ContentApi/{id}/comments` 默默限制 100 筆（前端沒有使用，可以刪除）。
-55. 登入回應透露帳號狀態：停用帳號與 Google 帳號在比對密碼前就回傳專屬訊息，可以查出哪些 Email 是這兩種帳號。
-56. 其他：同時送出可在同一篇文章建立兩個委託（只影響發文者自己的點數）；綠界回呼沒有檢查金額與商店代號（多一層保護）；
+51. ~~商城：`OrderItemRequest.Quantity` 沒有 `[Range]`，`TotalPoint += qty * point` 是沒有溢位檢查的 int 運算，
+    庫存 × 單價超過約 21 億時總點數變負數、不扣點；會員端 `NewShippedRequest` 收件資料與備註沒有 `[StringLength]`（太長在 SQL Server 500，後台已有限制）。~~（已修正，見修正紀錄 54）
+52. ~~後台會員編輯的「重設密碼」欄位沒有作用（`MemberController.Edit` 寫入雜湊的那行被註解，仍顯示成功）；
+    修改 Email 時 `EmailVerified` 維持原值；可以在這頁停用自己（API 有擋）。~~（已修正，見修正紀錄 54）
+53. ~~標題很長的文章打賞失敗：`display_source` 為 `nvarchar(200)`，「收到打賞〈標題〉」最長 206 字，標題 195 字以上 500。~~（已修正，見修正紀錄 54）
+54. ~~分頁：`Paging.Normalize` 沒有限制 `page` 上限，`page=2147483647` 使 offset 溢位為負數，SQL Server 500；
+    `GET api/ContentApi/{id}/comments` 默默限制 100 筆（前端沒有使用，可以刪除）。~~（已修正，見修正紀錄 54）
+55. ~~登入回應透露帳號狀態：停用帳號與 Google 帳號在比對密碼前就回傳專屬訊息，可以查出哪些 Email 是這兩種帳號。~~（已修正，見修正紀錄 54）
+56. ~~其他：同時送出可在同一篇文章建立兩個委託（只影響發文者自己的點數）；綠界回呼沒有檢查金額與商店代號（多一層保護）；
     Gemini API Key 放在網址查詢字串（改用 `x-goog-api-key` 標頭）；聊天 API 接受任意 SignalR `ConnectionId`；
-    後台登入不寫登入紀錄；會員可建立 100 字的分類名稱，後台表單只允許 50 字，無法編輯這些分類。
+    後台登入不寫登入紀錄；會員可建立 100 字的分類名稱，後台表單只允許 50 字，無法編輯這些分類。~~（已修正，見修正紀錄 54）

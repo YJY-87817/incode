@@ -21,6 +21,9 @@
 
         /// <summary>Google 登入：找不到就建立；接管同 Email、尚未驗證的密碼帳號時 TakenOver = true。</summary>
         Task<(User User, bool TakenOver)> GetOrCreateGoogleUserAsync(string email, string? name);
+
+        /// <summary>後台替會員重設密碼：換新登入戳記（所有裝置登出）；Google 帳號不能設定密碼</summary>
+        Task<ChangePasswordResult> AdminSetPasswordAsync(int userId, string newPassword);
     }
 
     public enum ChangePasswordResult

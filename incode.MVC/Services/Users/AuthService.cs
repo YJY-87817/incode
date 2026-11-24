@@ -92,6 +92,12 @@ namespace incode.MVC.Services.Users
                 .Select(s => s[Random.Shared.Next(s.Length)]).ToArray());
         }
 
+        // 帳號不存在 / Google 帳號時用來比對的假雜湊（只為了讓回應時間與一般帳號相同）
+        private static readonly Lazy<string> DummyPasswordHash = new(() => BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()));
+
+        /// <summary>登入失敗的訊息（帳號不存在、密碼錯誤、Google 帳號都相同，不透露帳號狀態）</summary>
+        public const string LoginFailedMessage = "帳號或密碼錯誤（以 Google 註冊的帳號請點選「使用 Google 登入」）";
+
         //  登入驗證
         public async Task<LoginResult> ValidateUserAsync(string email, string password)
         {
@@ -110,46 +116,29 @@ namespace incode.MVC.Services.Users
 
             var user = await _userService.GetUserByEmailAsync(email);
 
-            if (user == null)
+            // 帳號不存在、Google 帳號（沒有密碼）、密碼錯誤一律回同一個訊息，並計入失敗次數：
+            // 原本 Google 帳號與停用帳號在比對密碼前就回傳專屬訊息，任何人都能查出哪些 Email 是這兩種帳號（第三次全專案檢查 55）。
+            // Google 帳號的 Password 是標記字串，PasswordService.Verify 會回 false
+            bool hasPassword = user != null && user.Password != UserService.GoogleAccountPassword;
+            // 沒有密碼可比對時也做一次同樣成本的 BCrypt 比對，回應時間才不會透露帳號是否存在
+            bool passwordOk = _passwordService.Verify(password, hasPassword ? user!.Password : DummyPasswordHash.Value) && hasPassword;
+            if (!passwordOk)
             {
                 _loginLimiter.RecordFailure(email);
                 return new LoginResult
                 {
                     IsSuccess = false,
-                    Message = "帳號或密碼錯誤"
+                    Message = LoginFailedMessage
                 };
             }
 
-            if (user.IsActive == false)  // 帳號明確被設為 false (停權)，擋下來
+            // 停用的帳號：密碼正確才告知（只有帳號本人看得到）
+            if (user!.IsActive == false)
             {
                 return new LoginResult
                 {
                     IsSuccess = false,
                     Message = "此帳號出現異常情況已被鎖定，請聯繫客服。"
-                };
-            }
-
-            // Google 帳號沒有密碼（密碼欄是標記字串，原本交給 BCrypt 驗證會丟例外 → 500）
-            if (user.Password == UserService.GoogleAccountPassword)
-            {
-                _loginLimiter.RecordFailure(email);
-                return new LoginResult
-                {
-                    IsSuccess = false,
-                    Message = "此帳號使用 Google 登入，請點選「使用 Google 登入」"
-                };
-            }
-
-            // 2. 驗證密碼
-            bool isPasswordCorrect = _passwordService.Verify(password, user.Password);
-
-            if (!isPasswordCorrect)
-            {
-                _loginLimiter.RecordFailure(email);
-                return new LoginResult
-                {
-                    IsSuccess = false,
-                    Message = "帳號或密碼錯誤"
                 };
             }
 
@@ -297,6 +286,26 @@ namespace incode.MVC.Services.Users
             MemberCookieValidator.Evict(_cache, user.UserId);
             _loginLimiter.Reset(user.Email);
             return (ChangePasswordResult.Success, user);
+        }
+
+        // 後台重設會員密碼（MemberController.Edit；第三次全專案檢查 52，原本寫入雜湊的那行被註解，畫面顯示成功但密碼沒變）
+        public async Task<ChangePasswordResult> AdminSetPasswordAsync(int userId, string newPassword)
+        {
+            var user = await _context.User.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null) return ChangePasswordResult.NotFound;
+            if (user.Password == UserService.GoogleAccountPassword) return ChangePasswordResult.GoogleAccount;
+            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < PasswordRules.MinLength || newPassword.Length > PasswordRules.MaxLength)
+                return ChangePasswordResult.InvalidNewPassword;
+
+            user.Password = _passwordService.Hash(newPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            user.SecurityStamp = NewSecurityStamp(); // 舊密碼登入的裝置全部登出
+            await _context.SaveChangesAsync();
+
+            MemberCookieValidator.Evict(_cache, user.UserId);
+            _loginLimiter.Reset(user.Email);
+            return ChangePasswordResult.Success;
         }
 
         // 4. 寄 Email 驗證信（註冊後、會員中心重寄）。寄信失敗的例外由呼叫端記錄

@@ -8,7 +8,6 @@ namespace incode.MVC.Services.Contents
     Task<Content> CreateContent(CreateContentDto dto);
     Task<UpdateContentDto?> UpdateContent(int id, UpdateContentDto dto, int currentUserId);
     Task<bool> DeleteContent(int id, int currentUserId);
-    Task<List<ContentDto>> GetCommentsByContentId(int contentId);
     Task<PagedResultDto<ContentDto>> GetChildrenByContentId(int contentId, string? types, int page, int pageSize, int? userId);
     Task<object> GetUserContents(int userId, IEnumerable<int>? types, int page, int pageSize);
     Task<object> GetUserInteractedContents(int userId, int? interactionCategoryId, IEnumerable<string> interactionCategoryNames, int page, int pageSize);

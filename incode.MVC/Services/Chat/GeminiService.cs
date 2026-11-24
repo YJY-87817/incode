@@ -43,7 +43,7 @@ namespace incode.MVC.Services.Chat
                 return AiUnavailableMessage;
             }
 
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
             var payload = new
             {
@@ -85,8 +85,7 @@ namespace incode.MVC.Services.Chat
             }
             string mimeType = imageFile.ContentType;
 
-            string geminiApiKey = _configuration["GeminiApiKey"];
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
             // 2. 組裝含有 Function Calling 的 Payload
             var payload = new
@@ -112,8 +111,7 @@ namespace incode.MVC.Services.Chat
         // 核心：影像生成內容 (Gemini Vision 底層方法)
         public async Task<string> GetGeminiImageReplyAsync(string base64Image, string mimeType, string prompt)
         {
-            string geminiApiKey = _configuration["GeminiApiKey"];
-            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={geminiApiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent";
 
             var payload = new
             {
@@ -185,8 +183,20 @@ namespace incode.MVC.Services.Chat
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 };
 
-                var jsonContent = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
-                var response = await _httpClient.PostAsync(url, jsonContent);
+                // API Key 放在標頭（x-goog-api-key），不放在網址：網址會出現在代理伺服器、HttpClient 的記錄與例外訊息中（第三次全專案檢查 56）
+                string geminiApiKey = _configuration["GeminiApiKey"];
+                if (string.IsNullOrEmpty(geminiApiKey))
+                {
+                    _logger.LogError("GeminiApiKey 未設定");
+                    return AiUnavailableMessage;
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json"),
+                };
+                request.Headers.Add("x-goog-api-key", geminiApiKey);
+                var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
                 {

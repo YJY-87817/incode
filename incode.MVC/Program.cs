@@ -175,6 +175,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 //tim
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IChatToolService, ChatToolService>();
+builder.Services.AddSingleton<ChatConnectionRegistry>(); // SignalR 連線屬於哪位會員（聊天 API 加入群組前檢查）
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPointRechargeService, PointRechargeService>();
 builder.Services.AddScoped<IContentInteractionService, ContentInteractionService>();
@@ -193,6 +194,7 @@ builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IContentEntrustMissionService, ContentEntrustMissionService>();
 //yjy
 builder.Services.AddSingleton<UploadStorage>(); // 上傳檔案存放處（App:UploadRoot，網站目錄外）
+builder.Services.AddSingleton<UploadQuota>();   // 每位會員每小時的寫入量上限（App:UploadQuotaMegabytesPerHour）
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();

@@ -20,6 +20,12 @@ namespace incode.MVC.Extensions
 
         /// <summary>允許匿名的檔案上傳（註冊時的大頭貼）：每位會員 / 每個 IP 每 10 分鐘 10 次</summary>
         public const string Upload = "upload";
+
+        /// <summary>
+        /// 發文 / 回覆 / 編輯、論壇圖片上傳：每位會員每分鐘 30 次（未登入時依 IP）。
+        /// 寫入的檔案量另由 UploadQuota（每小時上限）控制，這裡擋大量的小請求
+        /// </summary>
+        public const string ContentWrite = "content-write";
     }
 
     public static class RateLimitExtensions
@@ -37,6 +43,7 @@ namespace incode.MVC.Extensions
                 options.AddPolicy(RateLimitPolicies.PasswordReset, context => FixedWindowByIp(context, 5, TimeSpan.FromMinutes(15)));
                 options.AddPolicy(RateLimitPolicies.AiChat, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(1)));
                 options.AddPolicy(RateLimitPolicies.Upload, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(10)));
+                options.AddPolicy(RateLimitPolicies.ContentWrite, context => FixedWindowByUser(context, 30, TimeSpan.FromMinutes(1)));
 
                 options.OnRejected = async (context, cancellationToken) =>
                 {

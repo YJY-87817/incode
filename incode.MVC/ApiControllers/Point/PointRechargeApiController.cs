@@ -73,6 +73,22 @@ namespace incode.MVC.ApiControllers.Point
 
             if (rtnCode == "1")
             {
+                // 多一層保護（第三次全專案檢查 56）：商店代號必須是自己的、付款金額必須等於儲值單金額，否則不加點。
+                // CheckMacValue 已經擋下偽造，這裡防的是金鑰共用 / 設定錯誤或訂單金額被改動的情況
+                if (form["MerchantID"].ToString() != _ecpay.MerchantId)
+                {
+                    _logger.LogError("綠界通知的商店代號不符，不處理 - OrderNo: {OrderNo}", orderNo);
+                    return Content("0|Fail");
+                }
+                var orderAmount = await _rechargeService.GetOrderAmountAsync(orderNo);
+                if (orderAmount != null
+                    && (!decimal.TryParse(form["TradeAmt"].ToString(), out var paidAmount) || paidAmount != orderAmount.Value))
+                {
+                    _logger.LogError("綠界通知的付款金額與儲值單不符，不加點 - OrderNo: {OrderNo}, TradeAmt: {TradeAmt}, 訂單金額: {Amount}",
+                        orderNo, form["TradeAmt"].ToString(), orderAmount.Value);
+                    return Content("0|Fail");
+                }
+
                 // 付款成功：狀態更新與加點在同一個交易，並以條件更新防止重複加點
                 try
                 {

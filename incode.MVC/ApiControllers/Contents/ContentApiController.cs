@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
 
@@ -14,9 +15,12 @@ namespace incode.MVC.ApiControllers.Contents
     private readonly IContentEntrustMissionService _contentEntrustMissionService;
     private readonly IPointLogService _pointLogService;
     private readonly ILogger<ContentApiController> _logger;
+    private readonly UploadQuota _quota;
 
-    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService, IPointLogService pointLogService, ILogger<ContentApiController> logger)
+    public ContentApiController(IContentService contentService, IContentEntrustMissionService contentEntrustMissionService, IPointLogService pointLogService, ILogger<ContentApiController> logger,
+      UploadQuota quota)
     {
+      _quota = quota;
       _contentService = contentService;
       _contentEntrustMissionService = contentEntrustMissionService;
       _pointLogService = pointLogService;
@@ -51,6 +55,7 @@ namespace incode.MVC.ApiControllers.Contents
     // Body: CreateContentDto
     [HttpPost]
     [Authorize] // 原本被註解掉，未登入時以 UserId 0 寫入而 500；現在未登入回 401
+    [EnableRateLimiting(RateLimitPolicies.ContentWrite)]
     public async Task<IActionResult> CreateContent([FromBody] CreateContentDto dto)
     {
       //這行可以取得當下登入的user所有資料
@@ -59,6 +64,7 @@ namespace incode.MVC.ApiControllers.Contents
       dto.UserId = userId;
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
+      if (!_quota.TryConsume(userId, UploadQuota.TextBytes(dto.Body))) return QuotaExceeded();
       // 建立貼文資料交由 ContentService 處理寫入（類型、父文章、分類不合法時丟 BusinessException）
       try
       {
@@ -75,6 +81,7 @@ namespace incode.MVC.ApiControllers.Contents
     // POST https://localhost:7190/api/ContentApi/with-entrust-mission
     // Body: CreateContentWithEntrustMissionDto
     [HttpPost("with-entrust-mission")]
+    [EnableRateLimiting(RateLimitPolicies.ContentWrite)]
     public async Task<IActionResult> CreateContentWithEntrustMission([FromBody] CreateContentWithEntrustMissionDto dto)
     {
       var userId = User.GetId();
@@ -84,6 +91,7 @@ namespace incode.MVC.ApiControllers.Contents
       }
 
       if (!ModelState.IsValid) return BadRequest(ModelState);
+      if (!_quota.TryConsume(userId, UploadQuota.TextBytes(dto.Body))) return QuotaExceeded();
 
       // 同步建立貼文與委託任務，由 ContentEntrustMissionService 負責流程
       var result = await _contentEntrustMissionService.CreateContentWithEntrustMissionAsync(dto, userId);
@@ -100,17 +108,25 @@ namespace incode.MVC.ApiControllers.Contents
     // Body: UpdateContentDto
     // 需要登入，且只能更新自己的content
     [HttpPut("{id}")]
+    [EnableRateLimiting(RateLimitPolicies.ContentWrite)]
     public async Task<IActionResult> UpdateContent(int id, [FromBody] UpdateContentDto dto)
     {
       //這行可以取得當下登入的user所有資料
       var currentUserId = User.GetId();
       //int.Parse(User.Claims.FirstOrDefault().Value);
 
+      // 每次編輯都會寫一個新的內文檔（舊版本留給修改紀錄），計入每小時的寫入量
+      if (currentUserId > 0 && !_quota.TryConsume(currentUserId, UploadQuota.TextBytes(dto.Body))) return QuotaExceeded();
+
       // 更新流程交給 ContentService 做權限與歷史紀錄處理
       var updated = await _contentService.UpdateContent(id, dto, currentUserId);
       if (updated == null) return NotFound(new { message = "找不到此內容" });
       return Ok(updated);
     }
+
+    // 超過每小時的寫入量上限（UploadQuota，第三次全專案檢查 50）
+    private IActionResult QuotaExceeded()
+      => StatusCode(StatusCodes.Status429TooManyRequests, new { message = _quota.ExceededMessage });
 
     // 軟刪除content
     // DELETE https://localhost:7190/api/ContentApi/{id}
@@ -130,19 +146,8 @@ namespace incode.MVC.ApiControllers.Contents
       return Ok(new { message = "刪除成功" });
     }
 
-    // 取得指定content的所有評論
-    // GET https://localhost:7190/api/ContentApi/{id}/comments
-    [HttpGet("{id}/comments")]
-    public async Task<IActionResult> GetCommentsByContentId(int id)
-    {
-      var comments = await _contentService.GetCommentsByContentId(id);
-      return Ok(new
-      {
-        contentId = id,
-        comments = comments,
-        count = comments.Count
-      });
-    }
+    // 原本的 GET api/ContentApi/{id}/comments（全部回覆）實際上被分頁上限默默截在 100 筆，前端也沒有使用，已移除；
+    // 請用下面的 children 分頁取得（第三次全專案檢查 54）
 
     // 取得指定content的子回覆 (分頁)
     // GET https://localhost:7190/api/ContentApi/{id}/children?types=2,3&page=1&pageSize=20

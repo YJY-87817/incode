@@ -592,4 +592,32 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         var single = Assert.Single(progress);
         Assert.InRange(single.CurrentCount, 1, Parallel);
     }
+
+    // 第三次全專案檢查 56：同一篇文章同時送出多個建立委託的請求，原本「是否已有委託」在交易外檢查，可能成立多個並各預扣一次點數
+    [SqlServerFact]
+    public async Task Concurrent_entrust_creation_on_the_same_post_succeeds_once()
+    {
+        var userId = NewUser();
+        await GivePoints(userId, 1000);
+        var contentId = await AddContent(userId);
+
+        var results = await RunTogether(Parallel, async _ =>
+        {
+            await using var context = _db.NewContext();
+            var points = new PointLogService(context);
+            var service = new EntrustMissionService(context, points, new PointReserveService(context, points),
+                NullLogger<EntrustMissionService>.Instance);
+            return await service.CreateEntrustMissionAsync(new EntrustMissionDTO
+            {
+                UserId = userId, ContentId = contentId, Title = "委託", Detail = "d", RewardPoints = 100, Category = "其他",
+            });
+        });
+
+        Assert.Equal(1, results.Count(r => r.Ok));
+        Assert.All(results.Where(r => !r.Ok), r => Assert.Equal(409, r.Code));
+        Assert.Equal(900, await Balance(userId));
+        await using var verify = _db.NewContext();
+        Assert.Equal(1, await verify.EntrustMission.CountAsync(e => e.ContentId == contentId));
+        await AssertLedgerIsConsistent(userId);
+    }
 }

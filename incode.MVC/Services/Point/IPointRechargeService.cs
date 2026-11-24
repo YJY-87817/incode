@@ -12,6 +12,9 @@
         /// <summary>綠界回報付款失敗 / 取消：只更新尚未成功的訂單（已成功的不會被後到的失敗通知覆蓋），回傳更新筆數。</summary>
         Task<int> MarkFailedAsync(string orderNo, string? paymentTradeNo);
 
+        /// <summary>儲值單的金額（元）；找不到回傳 null（綠界通知核對金額用）</summary>
+        Task<decimal?> GetOrderAmountAsync(string orderNo);
+
         /// <summary>會員查詢自己的訂單；不存在或不是自己的一律回傳 null。</summary>
         Task<RechargeOrderStatusDto?> GetUserOrderAsync(int userId, string orderNo);
     }

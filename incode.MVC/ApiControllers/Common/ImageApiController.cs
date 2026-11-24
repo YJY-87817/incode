@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace incode.MVC.ApiControllers.Common
 {
@@ -12,9 +13,11 @@ namespace incode.MVC.ApiControllers.Common
 
     private readonly IImageService _imageService;
     private readonly ILogger<MediaController> _logger;
+    private readonly UploadQuota _quota;
 
-    public MediaController(IImageService imageService, ILogger<MediaController> logger)
+    public MediaController(IImageService imageService, ILogger<MediaController> logger, UploadQuota quota)
     {
+      _quota = quota;
       _imageService = imageService;
       _logger = logger;
     }
@@ -26,6 +29,7 @@ namespace incode.MVC.ApiControllers.Common
     // 單檔 20 MB（ImageFileValidator）、一次最多 20 個檔案（ImageService），整個請求最多 100 MB
     // （全站上限 30 MB，見 Program.cs；原本這裡與全站都是 500 MB）
     [HttpPost("upload")]
+    [EnableRateLimiting(RateLimitPolicies.ContentWrite)]
     [RequestSizeLimit(MaxUploadRequestBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadRequestBytes)]
     public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
@@ -36,6 +40,10 @@ namespace incode.MVC.ApiControllers.Common
         {
           return BadRequest(new { message = "No files uploaded" });
         }
+
+        // 每位會員每小時的寫入量上限（第三次全專案檢查 50）
+        if (!_quota.TryConsume(User.GetId(), files.Sum(f => f?.Length ?? 0)))
+          return StatusCode(StatusCodes.Status429TooManyRequests, new { message = _quota.ExceededMessage });
 
         var urls = await _imageService.UploadImagesAsync(files);
         return Ok(new { urls });

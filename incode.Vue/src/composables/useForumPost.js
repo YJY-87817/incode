@@ -212,7 +212,13 @@ export function useForumPost() {
   /**
    * 顯示發佈失敗訊息
    */
-  const showErrorMessage = async () => {
+  // 後端回傳的錯誤訊息（例如「上傳量已達上限…」「分類不存在或已停用」），沒有時用預設文字
+  const backendErrorMessage = (error, fallback) => {
+    const message = error?.response?.data?.message;
+    return typeof message === "string" && message.trim() ? message : fallback;
+  };
+
+  const showErrorMessage = async (error) => {
     // 临时下陋 modal 的 z-index
     const modalBackdrop = document.querySelector(".custom-modal-backdrop");
     if (modalBackdrop) modalBackdrop.style.zIndex = "500";
@@ -220,7 +226,7 @@ export function useForumPost() {
     await Swal.fire({
       icon: "error",
       title: "發佈失敗",
-      text: "發佈失敗，請稍後再試",
+      text: backendErrorMessage(error, "發佈失敗，請稍後再試"),
       confirmButtonText: "確定",
       confirmButtonColor: "#145369",
     });
@@ -306,7 +312,7 @@ export function useForumPost() {
         await showLoginRequiredAlert("請先登入後操作");
         return false;
       }
-      await showErrorMessage();
+      await showErrorMessage(result.error);
       return false;
     }
 
@@ -387,7 +393,7 @@ export function useForumPost() {
       await Swal.fire({
         icon: "error",
         title: "更新失敗",
-        text: "更新失敗，請稍後再試",
+        text: backendErrorMessage(error, "更新失敗，請稍後再試"),
         confirmButtonText: "確定",
         confirmButtonColor: "#145369",
       });

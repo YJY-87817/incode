@@ -265,7 +265,7 @@ RechargeResult.vue    GET api/PointRechargeApi/order/{orderNo}   輪詢約 20 �
 
 | 功能 | 端點（`api/ContentApi`、`ContentInteractionApi`、`CategoryApi`） |
 |---|---|
-| 列表 / 單篇 / 子內容 | `GET /`、`GET /{id}`、`GET /{id}/comments`、`GET /{id}/children` |
+| 列表 / 單篇 / 子內容 | `GET /`、`GET /{id}`、`GET /{id}/children` |
 | 發文 / 編輯 / 刪除 | `POST /`（需登入）、`PUT /{id}`、`DELETE /{id}` |
 | 我的內容 | `GET /me/posts`、`/me/replies`、`/me/comments`、`/me/liked-contents`、`/me/bookmarked-contents` |
 | 互動 | `POST ContentInteractionApi`（只接受按讚 / 隱藏 / 收藏 / 檢舉，其他分類回 400）、`GET .../content/{id}`、`.../user/{id}`、`.../stats/{id}` |
