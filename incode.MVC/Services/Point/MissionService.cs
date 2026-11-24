@@ -9,10 +9,13 @@ namespace incode.MVC.Services.Point
     public class MissionService : IMissionService
     {
         private readonly incodedatabaseContext _context;
+        private readonly ILogger<MissionService> _logger;
 
-        public MissionService(incodedatabaseContext context)
+        // logger 預設為不輸出（單元測試直接 new MissionService(context)；DI 會注入實際的 logger）
+        public MissionService(incodedatabaseContext context, ILogger<MissionService>? logger = null)
         {
             _context = context;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MissionService>.Instance;
         }
 
         public async Task<IEnumerable<MissionDTO>> GetAllMissionAsync()
@@ -135,16 +138,18 @@ namespace incode.MVC.Services.Point
             catch (DbUpdateException dbEx)
             {
                 await tx.RollbackAsync();
-                // 可記 log：重複索引違反 → 視為已領取
+                // 重複索引違反 → 視為已領取（預期內的重複請求，不記錄為錯誤）
                 if (dbEx.InnerException?.Message.Contains("unique") ?? false)
                 {
                     return new ResultDTO { Ok = false, Code = 409, Message = "本週期已領取過（資料庫驗證）" };
                 }
+                _logger.LogError(dbEx, "領取任務資料庫錯誤 - UserId: {UserId}, MissionId: {MissionId}", userId, missionId);
                 return new ResultDTO { Ok = false, Code = 500, Message = "資料庫錯誤" };
             }
-            catch
+            catch (Exception ex)
             {
                 await tx.RollbackAsync();
+                _logger.LogError(ex, "領取任務失敗 - UserId: {UserId}, MissionId: {MissionId}", userId, missionId);
                 return new ResultDTO { Ok = false, Code = 500, Message = "系統錯誤，請稍後再試" };
             }
         }
