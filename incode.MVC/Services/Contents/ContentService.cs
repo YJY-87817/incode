@@ -405,8 +405,9 @@ namespace incode.MVC.Services.Contents
         if (!dto.CategoryId.HasValue)
           throw new BusinessException("請選擇分類");
 
-        bool categoryOk = await _context.ContentCategory.AnyAsync(c =>
-          c.ContentCategoryId == dto.CategoryId.Value && c.IsActive != ContentCategoryStatus.Disabled);
+        // 分類本身與上層分類都不能是停用的（停用分類底下的子分類也不能發新主題）
+        bool categoryOk = await _context.ContentCategory.AnyAsync(c => c.ContentCategoryId == dto.CategoryId.Value)
+          && !(await CategoryService.GetUnavailableCategoryIdsAsync(_context)).Contains(dto.CategoryId.Value);
         if (!categoryOk)
           throw new BusinessException("分類不存在或已停用");
         return;

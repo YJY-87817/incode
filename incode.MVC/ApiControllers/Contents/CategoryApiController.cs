@@ -44,7 +44,7 @@ namespace incode.MVC.ApiControllers.Contents
     {
       var result = await _categoryService.CreateCategoryAsync(request);
       if (result == null)
-        return BadRequest(new { message = "父分類不存在" });
+        return BadRequest(new { message = "父分類不存在或已停用" });
 
       return Ok(result);
     }
