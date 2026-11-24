@@ -98,7 +98,7 @@ incode/
   多位會員一次傳入（內部依 ID 排序避免死結）。
 - **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價；前端可輸入的金額 / 數量要在 DTO 加 `[Range]`。
 - **任務進度**：只由伺服器端觸發。一次性任務（`MissionResetTypes.IsOneTime`）每位會員只有一筆進度、只能領一次獎勵。可以被會員反覆切換的動作（例如按讚）不要用 `TriggerMissionAsync` 每次 +1，
-  改用 `SyncMissionCountAsync` 依實際資料計算。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
+  改用 `SyncMissionCountAsync` 依實際資料計算。任務觸發是附帶效果：在交易外呼叫時（發文、登入、按讚、購買）以 try/catch 記錄失敗，不要讓已完成的主要操作回 500。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
 - **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
   前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
@@ -557,6 +557,17 @@ incode/
     直接改資料庫最慢 60 秒後生效）；重新登入後是一般會員。沒有 Admin 角色的會員 Cookie 不受影響。
     已建立的 SignalR 連線（客服群組）不會因此中斷，重新連線時才會重新驗證
 
+50. 第三次全專案檢查 47（任務進度同時觸發回 500，先寫測試重現）：同一會員本週期第一次觸發任務時同時送出多個請求
+    （同時兩則回覆、登入 + 發文），兩邊都查不到進度而新增，後寫入的撞唯一索引 `UX_User_Mission_Cycle`，例外一路丟到 API：
+    文章 / 按讚已經存好卻回 500，使用者重試就重複發文。以 SQL Server 同時觸發 10 次重現（修正前多數請求丟出重複索引例外）。
+    - `MissionService.UpdateMissionProgressAsync`：撞到唯一索引時只撤銷這次對任務進度的變更（新增的進度、既有進度的次數 / 狀態），
+      重新查詢後以對方建立的進度重算（最多 3 次）；呼叫端其他尚未儲存的異動（例如領獎的點數紀錄）保留，重試時一起寫入。
+      `ClaimMissionAsync` 改用 `DbErrors.IsUniqueViolation` 判斷（原本比對錯誤訊息字串）
+    - 發文 / 回覆（`ContentService`）、登入（`AuthService`）、按讚（`ContentInteractionService`）的任務觸發改為附帶效果：
+      主要操作已經存好，任務更新失敗只記錄 log、不回 500（與購買任務相同）。領獎（`ClaimRewardAsync`）的觸發在交易內，失敗仍整筆 rollback
+    - 限制：同時對**已存在**的進度 +1 可能少算（沒有 rowversion），只影響每日任務的計數，不會多發獎勵
+    - 測試：`MissionServiceTests`（以同步回呼模擬另一個請求先寫入，含保留呼叫端異動）、`ConcurrencyTests`（SQL Server 同時觸發 10 次）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -658,7 +669,7 @@ incode/
 
 ## 第三次全專案檢查（2026-11-24）
 
-重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45、46 已修正（見修正紀錄 48、49），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～47 已修正（見修正紀錄 48～50），其餘尚未修正。
 45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
 
 ### 🔴 嚴重
@@ -677,7 +688,7 @@ incode/
 
 ### 🟡 中
 
-47. **任務進度同時觸發回 500，主要操作卻已完成**：兩個「本週期第一次」的觸發同時進來（同時兩則回覆、登入 + 發文），
+47. ~~**任務進度同時觸發回 500，主要操作卻已完成**~~（已修正，見修正紀錄 50）：兩個「本週期第一次」的觸發同時進來（同時兩則回覆、登入 + 發文），
     `UpdateMissionProgressAsync` 撞唯一索引 `UX_User_Mission_Cycle`，例外沒有攔下；`CreateContent` 已存好文章卻回 500，
     使用者重試就重複發文。按讚、登入同一路徑。`ClaimMissionAsync` 以錯誤訊息字串判斷，應改用 `DbErrors.IsUniqueViolation`。
     尚未重現（需要 SQL Server）。

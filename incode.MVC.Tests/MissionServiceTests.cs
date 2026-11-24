@@ -212,6 +212,77 @@ public class MissionServiceTests
         Assert.Equal(4, progress.CurrentCount);
     }
 
+    // ---------- 第三次全專案檢查 47：同時觸發任務進度 ----------
+
+    // 模擬另一個請求同時觸發：本服務查不到本週期的進度、決定新增之後，另一個連線先寫入了同一週期的進度
+    private static async Task InsertCycleProgressFromAnotherRequest(TestDb db, int userId, int missionId, int count)
+    {
+        await using var other = db.NewContext();
+        var (start, end) = (DateTime.Now.Date, DateTime.Now.Date.AddDays(1).AddTicks(-1));
+        other.MissionProgress.Add(new MissionProgress
+        {
+            UserId = userId, MissionId = missionId, CurrentCount = count, Status = "ongoing",
+            AcceptedAt = DateTime.Now, CycleStartAt = start, CycleEndAt = end,
+        });
+        await other.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Concurrent_first_trigger_in_cycle_uses_the_progress_created_by_the_other_request()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser();
+        var missionId = await AddMission(db, "daily", targetType: "like", target: 3);
+
+        await using var context = db.NewContext();
+        bool inserted = false;
+        // 修正前：撞到唯一索引 UX_User_Mission_Cycle，DbUpdateException 一路丟到 API（主要操作已完成卻回 500）
+        await new MissionService(context).SyncMissionCountAsync(userId, "like", async (_, _) =>
+        {
+            if (!inserted)
+            {
+                inserted = true;
+                await InsertCycleProgressFromAnotherRequest(db, userId, missionId, count: 1);
+            }
+            return 3;
+        });
+
+        var progress = Assert.Single(await ProgressOf(db, userId));
+        Assert.Equal(3, progress.CurrentCount);
+        Assert.Equal("completed", progress.Status);
+    }
+
+    [Fact]
+    public async Task Concurrent_first_trigger_keeps_other_pending_changes_of_the_caller()
+    {
+        using var db = new TestDb();
+        var userId = db.SeedUser();
+        var missionId = await AddMission(db, "daily", targetType: "like", target: 3);
+
+        await using var context = db.NewContext();
+        // 呼叫端尚未儲存的異動（例如領獎時的點數紀錄）在重試後仍要寫入
+        context.PointLog.Add(new PointLog
+        {
+            UserId = userId, SourceType = "system", ChangeAmount = 10, BalanceAfter = 10, Status = "success",
+            PointTypeDefinitionId = (int)PointType.SystemAdjustment, CreatedAt = DateTime.Now,
+        });
+        bool inserted = false;
+        await new MissionService(context).SyncMissionCountAsync(userId, "like", async (_, _) =>
+        {
+            if (!inserted)
+            {
+                inserted = true;
+                await InsertCycleProgressFromAnotherRequest(db, userId, missionId, count: 2);
+            }
+            return 1;
+        });
+
+        var progress = Assert.Single(await ProgressOf(db, userId));
+        Assert.Equal(2, progress.CurrentCount); // 同步取較大值，不會被改小
+        await using var verify = db.NewContext();
+        Assert.Equal(1, await verify.PointLog.CountAsync(l => l.UserId == userId));
+    }
+
     [Fact]
     public async Task CreateMission_requires_name_and_applies_defaults()
     {

@@ -13,12 +13,15 @@ namespace incode.MVC.Services.Users
         private readonly IMissionService _missionService;
         private readonly LoginAttemptLimiter _loginLimiter;
         private readonly IMemoryCache _cache;
+        private readonly ILogger<AuthService> _logger;
 
         /// <summary>Email 驗證信的有效時間</summary>
         public static readonly TimeSpan EmailVerifyTokenLifetime = TimeSpan.FromHours(24);
 
-        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService, IMissionService missionService, LoginAttemptLimiter loginLimiter, IMemoryCache cache)
+        public AuthService(incodedatabaseContext context, IPasswordService passwordService, IEmailService emailService, IUserService userService, IMissionService missionService, LoginAttemptLimiter loginLimiter, IMemoryCache cache,
+            ILogger<AuthService>? logger = null)
         {
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
             _loginLimiter = loginLimiter;
             _cache = cache;
             _context = context;
@@ -152,8 +155,15 @@ namespace incode.MVC.Services.Users
 
             _loginLimiter.Reset(email);
 
-            // 登入成功 → 觸發每日登入任務
-            await _missionService.TriggerMissionAsync(user.UserId, "login", 1);
+            // 登入成功 → 觸發每日登入任務（附帶效果：失敗只記錄，不影響登入）
+            try
+            {
+                await _missionService.TriggerMissionAsync(user.UserId, "login", 1);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "登入後觸發任務失敗 - UserId: {UserId}", user.UserId);
+            }
 
             return new LoginResult
             {
