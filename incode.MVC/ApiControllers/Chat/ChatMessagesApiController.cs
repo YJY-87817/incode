@@ -27,6 +27,7 @@ namespace incode.MVC.ApiControllers.Chat
         private readonly string _frontendUrl; // 前端網址 (App:FrontendUrl)，AI 回覆中產生連結用
         private readonly ILogger<ChatMessagesApiController> _logger;
         private readonly UploadStorage _storage;
+        private readonly UploadQuota _quota;
 
         public ChatMessagesApiController(
           IChatService chat,
@@ -36,8 +37,10 @@ namespace incode.MVC.ApiControllers.Chat
           IWebHostEnvironment webHostEnvironment,
           IConfiguration configuration,
           ILogger<ChatMessagesApiController> logger,
-          UploadStorage storage)
+          UploadStorage storage,
+          UploadQuota quota)
         {
+            _quota = quota;
             _logger = logger;
             _storage = storage;
             _chat = chat;
@@ -391,6 +394,10 @@ namespace incode.MVC.ApiControllers.Chat
             // 只接受圖片（副檔名 + 檔頭比對），避免把 .html / .svg 等檔案寫進 wwwroot
             var imageError = ImageFileValidator.Validate(request.Image, MaxChatImageBytes);
             if (imageError != null) return BadRequest(imageError);
+
+            // 每位會員每小時的寫入量上限（與論壇圖片、文章內文共用，第三次全專案檢查 50）
+            if (!_quota.TryConsume(userId, request.Image.Length))
+                return StatusCode(StatusCodes.Status429TooManyRequests, new { message = _quota.ExceededMessage });
 
             var (currentSession, isNew) = await _chat.GetOrInitSessionAsync(userId, request.SessionId, "圖片對話");
             if (currentSession == null) return Unauthorized("您無權存取此對話");
