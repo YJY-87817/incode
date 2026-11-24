@@ -44,7 +44,6 @@ incode/
     ├── ViewModels/<模組>/      後台頁面模型
     ├── Constants/              常數與列舉（OrderStatus、PointType、RoleType）
     ├── Extensions/             擴充方法（ClaimsExtensions、ResultDTOExtensions）
-    ├── Validation/             自訂驗證屬性
     ├── Prompts/Prompts.md      AI 客服系統提示詞（執行時讀取，路徑不可改）
     ├── App_Data/uploads/       上傳檔案預設位置（App:UploadRoot，已 gitignore），網址 /img/...、/contents/... 不變
     └── wwwroot/                靜態檔（`img/product/NoImage.png` 是商品預設圖，不是上傳檔）；上傳檔一律在 App:UploadRoot
