@@ -120,15 +120,23 @@ namespace incode.MVC.Services.Contents
       if (dto.InteractionCategoryId == InteractionCategoryIds.Like)
       {
         var userId = dto.UserId;
-        await _missionService.SyncMissionCountAsync(userId, "like", (cycleStart, cycleEnd) =>
-          _context.ContentInteraction
-            .Where(ci => ci.UserId == userId
-              && ci.CategoryId == InteractionCategoryIds.Like
-              && ci.CreatedAt >= cycleStart && ci.CreatedAt <= cycleEnd
-              && ci.Content.UserId != userId)
-            .Select(ci => ci.ContentId)
-            .Distinct()
-            .CountAsync());
+        // 附帶效果：互動已經存好，任務更新失敗只記錄，不回 500
+        try
+        {
+          await _missionService.SyncMissionCountAsync(userId, "like", (cycleStart, cycleEnd) =>
+            _context.ContentInteraction
+              .Where(ci => ci.UserId == userId
+                && ci.CategoryId == InteractionCategoryIds.Like
+                && ci.CreatedAt >= cycleStart && ci.CreatedAt <= cycleEnd
+                && ci.Content.UserId != userId)
+              .Select(ci => ci.ContentId)
+              .Distinct()
+              .CountAsync());
+        }
+        catch (Exception ex)
+        {
+          _logger.LogError(ex, "按讚後更新任務失敗 - UserId: {UserId}", userId);
+        }
       }
 
       return await CurrentStateAsync(dto);

@@ -71,6 +71,7 @@ incode/
 - **CSRF**：`/api` 寫入請求與 `/chatHub` 會檢查 `Origin`（`UseApiOriginCheck`），新的前端網址要加到 `App:CorsOrigins`，否則會被 403；
   伺服器對伺服器的回呼（如綠界）要加進 `OriginCheckExtensions.ExemptPaths`
 - **停用帳號**：用 `UserService.SetActiveAsync`（不刪除會員；已登入的人由 `MemberCookieValidator` 在下個請求登出）
+- **角色變更**：後台 Cookie 與帶 Admin 角色的會員 Cookie 每個請求都會確認帳號仍是管理員（`MemberCookieValidator`，快取 60 秒），降級後下個請求登出
 - **登入限制**：登入 / 註冊 / 密碼重設端點加 `[EnableRateLimiting(RateLimitPolicies.Xxx)]`；部署在反向代理後面時需設定
   ForwardedHeaders，否則所有人共用代理 IP 的額度
 - 後台 Controller 一律加：`[Authorize(AuthenticationSchemes = "AdminAuth", Roles = "Admin")]`
@@ -97,7 +98,7 @@ incode/
   多位會員一次傳入（內部依 ID 排序避免死結）。
 - **金額 / 價格**：一律以資料庫為準由後端計算，不信任前端或表單傳入的總額、單價；前端可輸入的金額 / 數量要在 DTO 加 `[Range]`。
 - **任務進度**：只由伺服器端觸發。一次性任務（`MissionResetTypes.IsOneTime`）每位會員只有一筆進度、只能領一次獎勵。可以被會員反覆切換的動作（例如按讚）不要用 `TriggerMissionAsync` 每次 +1，
-  改用 `SyncMissionCountAsync` 依實際資料計算。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
+  改用 `SyncMissionCountAsync` 依實際資料計算。任務觸發是附帶效果：在交易外呼叫時（發文、登入、按讚、購買）以 try/catch 記錄失敗，不要讓已完成的主要操作回 500。論壇互動分類 ID 用 `Constants/InteractionCategoryIds`，系統分類不可讓會員自行寫入。
 - **網址**：不要寫死前後端網址。後端用 `IConfiguration.GetFrontendUrl()`（`App:FrontendUrl`），CORS 來源加在 `App:CorsOrigins`；
   前端用 `import.meta.env.VITE_API_BASE_URL` / `VITE_BASE_URL`。
 - **訂單狀態**：使用 `Constants/OrderStatus.cs`（待處理、已出貨、已完成、已取消、其他），不要寫死字串。
@@ -544,6 +545,29 @@ incode/
     日誌補強：原本吞掉例外卻沒記錄的地方（`MissionService.ClaimMissionAsync`、AI 系統提示詞讀取）改為記錄；
     登入被暫停 / 失敗記錄來源 IP（不記 Email 與密碼）。`MissionService` 的 logger 為選用參數（測試可直接 `new MissionService(context)`）
 
+48. 第三次全專案檢查 45（任務獎勵重複領取，先寫測試重現）：`MissionProgressService.ClaimRewardAsync` 原本只在「領獎時間在本週期」時拒絕，
+    但每筆進度只屬於一個週期，昨天已領過的每日任務進度今天再領會成功（每週 / 每月 / 每年任務相同），每天都能把所有舊進度再領一遍。
+    改為**進度已領過（`RewardedAt` 有值或狀態為 rewarded）一律拒絕**；新週期的進度照常可領。「我的任務」的可領判斷使用同樣的規則，
+    移除不再需要的同週期比對（`IsSameWeek`）。測試：`MissionProgressServiceTests`（四種重置類型的舊週期進度不能再領、新週期仍可領）
+
+49. 第三次全專案檢查 46（會員 Cookie 的 Admin 角色，先寫測試重現，`AccountSecurityTests`）：管理員從前台（`AuthApi/login`）登入時，
+    會員 Cookie 帶 `Role=Admin`（7 天、自動延長），但 `MemberCookieValidator.ValidateAsync` 只檢查帳號啟用與登入戳記。
+    修正前在 main 重現：降為一般會員後 `GET api/User`（所有會員 Email）、`POST api/User/{id}/deactivate` 仍回 200。
+    改為**會員 Cookie 帶 Admin 角色時，帳號也必須仍是管理員**，否則下一個請求就登出（與後台 Cookie 相同；狀態快取 60 秒，
+    直接改資料庫最慢 60 秒後生效）；重新登入後是一般會員。沒有 Admin 角色的會員 Cookie 不受影響。
+    已建立的 SignalR 連線（客服群組）不會因此中斷，重新連線時才會重新驗證
+
+50. 第三次全專案檢查 47（任務進度同時觸發回 500，先寫測試重現）：同一會員本週期第一次觸發任務時同時送出多個請求
+    （同時兩則回覆、登入 + 發文），兩邊都查不到進度而新增，後寫入的撞唯一索引 `UX_User_Mission_Cycle`，例外一路丟到 API：
+    文章 / 按讚已經存好卻回 500，使用者重試就重複發文。以 SQL Server 同時觸發 10 次重現（修正前多數請求丟出重複索引例外）。
+    - `MissionService.UpdateMissionProgressAsync`：撞到唯一索引時只撤銷這次對任務進度的變更（新增的進度、既有進度的次數 / 狀態），
+      重新查詢後以對方建立的進度重算（最多 3 次）；呼叫端其他尚未儲存的異動（例如領獎的點數紀錄）保留，重試時一起寫入。
+      `ClaimMissionAsync` 改用 `DbErrors.IsUniqueViolation` 判斷（原本比對錯誤訊息字串）
+    - 發文 / 回覆（`ContentService`）、登入（`AuthService`）、按讚（`ContentInteractionService`）的任務觸發改為附帶效果：
+      主要操作已經存好，任務更新失敗只記錄 log、不回 500（與購買任務相同）。領獎（`ClaimRewardAsync`）的觸發在交易內，失敗仍整筆 rollback
+    - 限制：同時對**已存在**的進度 +1 可能少算（沒有 rowversion），只影響每日任務的計數，不會多發獎勵
+    - 測試：`MissionServiceTests`（以同步回呼模擬另一個請求先寫入，含保留呼叫端異動）、`ConcurrencyTests`（SQL Server 同時觸發 10 次）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -642,3 +666,49 @@ incode/
 43. ~~後台：`PointLog`、`PointRecharge` 可以直接新增 / 修改 / 刪除（餘額手填，會破壞帳本連續性；把儲值改成 success 不會加點）；
     沒有檢舉清單、不能下架文章；`Account/Logout` 沒有防偽 token；會員列表每位會員各查一次登入紀錄；後台改 Email 不檢查重複~~（見修正紀錄 34、40）。
 44. ~~其他：公開個人頁顯示點數餘額；大頭貼網址可填任意外部網址；`SelectBestAnswerAsync` catch 後沒有記錄 log；道具使用不是原子扣減~~（見修正紀錄 34）。
+
+## 第三次全專案檢查（2026-11-24）
+
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～47 已修正（見修正紀錄 48～50），其餘尚未修正。
+45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
+
+### 🔴 嚴重
+
+45. ~~**任務獎勵可以重複領取**~~（已修正，見修正紀錄 48）：`MissionProgressService.ClaimRewardAsync` 只在 `RewardedAt` 落在本週期時拒絕，
+    但每個週期本來就有各自的進度列，昨天已領過的每日任務進度今天再領會通過（測試：`Ok=True`，多拿 50 點）。
+    連續登入 N 天後，每天可以對每筆舊進度各呼叫一次 `POST api/MissionProgressApi/claim-reward`；畫面不顯示按鈕但 API 照收。
+    每週 / 每月 / 每年任務相同。方向：`RewardedAt` 已有值就拒絕，補跨日測試。
+
+### 🟠 高
+
+46. ~~**會員 Cookie 的 Admin 角色不會重新檢查**~~（已修正，見修正紀錄 49）：管理員從前台（`AuthApi/login`）登入時，會員 Cookie 帶 `Role=Admin`
+    （7 天、自動延長）；`MemberCookieValidator.ValidateAsync` 只檢查啟用與登入戳記，不檢查角色。降為一般會員後
+    `GET api/User`（所有會員 Email）、`POST api/User/{id}/deactivate` 仍回 200；讀任何人的聊天紀錄（`GetHistory`）、
+    加入客服群組、限管理員的互動查詢也一樣。方向：會員 Cookie 驗證時一併比對角色，或會員 Cookie 不放 Admin 角色。
+
+### 🟡 中
+
+47. ~~**任務進度同時觸發回 500，主要操作卻已完成**~~（已修正，見修正紀錄 50）：兩個「本週期第一次」的觸發同時進來（同時兩則回覆、登入 + 發文），
+    `UpdateMissionProgressAsync` 撞唯一索引 `UX_User_Mission_Cycle`，例外沒有攔下；`CreateContent` 已存好文章卻回 500，
+    使用者重試就重複發文。按讚、登入同一路徑。`ClaimMissionAsync` 以錯誤訊息字串判斷，應改用 `DbErrors.IsUniqueViolation`。
+    尚未重現（需要 SQL Server）。
+48. **停用的論壇分類在前台仍顯示**：`CategoryService.GetCategoriesAsync` 不依狀態過濾，`CategoryDto` 沒有狀態欄位；
+    停用後仍列出，但在該分類發文失敗（「分類不存在或已停用」）。會員也能在停用的分類底下新增子分類。
+49. **已刪除 / 已下架的文章仍可讀取**：內文檔 `/contents/*.html` 在作者刪除或後台下架後仍可直接用網址開啟，
+    每次編輯留下的舊版本也都是公開的；後台下架違規內容實際上沒有移除內容。
+50. **已登入會員可以塞滿磁碟**：`POST api/images/upload` 每個請求最多 100 MB、沒有速率限制；
+    每次發文 / 編輯都寫一個新的內文檔（最多 500 萬字元）、沒有速率限制，編輯後舊檔不刪除。
+
+### ⚪ 低
+
+51. 商城：`OrderItemRequest.Quantity` 沒有 `[Range]`，`TotalPoint += qty * point` 是沒有溢位檢查的 int 運算，
+    庫存 × 單價超過約 21 億時總點數變負數、不扣點；會員端 `NewShippedRequest` 收件資料與備註沒有 `[StringLength]`（太長在 SQL Server 500，後台已有限制）。
+52. 後台會員編輯的「重設密碼」欄位沒有作用（`MemberController.Edit` 寫入雜湊的那行被註解，仍顯示成功）；
+    修改 Email 時 `EmailVerified` 維持原值；可以在這頁停用自己（API 有擋）。
+53. 標題很長的文章打賞失敗：`display_source` 為 `nvarchar(200)`，「收到打賞〈標題〉」最長 206 字，標題 195 字以上 500。
+54. 分頁：`Paging.Normalize` 沒有限制 `page` 上限，`page=2147483647` 使 offset 溢位為負數，SQL Server 500；
+    `GET api/ContentApi/{id}/comments` 默默限制 100 筆（前端沒有使用，可以刪除）。
+55. 登入回應透露帳號狀態：停用帳號與 Google 帳號在比對密碼前就回傳專屬訊息，可以查出哪些 Email 是這兩種帳號。
+56. 其他：同時送出可在同一篇文章建立兩個委託（只影響發文者自己的點數）；綠界回呼沒有檢查金額與商店代號（多一層保護）；
+    Gemini API Key 放在網址查詢字串（改用 `x-goog-api-key` 標頭）；聊天 API 接受任意 SignalR `ConnectionId`；
+    後台登入不寫登入紀錄；會員可建立 100 字的分類名稱，後台表單只允許 50 字，無法編輯這些分類。

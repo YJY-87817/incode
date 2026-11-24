@@ -139,7 +139,7 @@ namespace incode.MVC.Services.Point
             {
                 await tx.RollbackAsync();
                 // 重複索引違反 → 視為已領取（預期內的重複請求，不記錄為錯誤）
-                if (dbEx.InnerException?.Message.Contains("unique") ?? false)
+                if (DbErrors.IsUniqueViolation(dbEx))
                 {
                     return new ResultDTO { Ok = false, Code = 409, Message = "本週期已領取過（資料庫驗證）" };
                 }
@@ -269,12 +269,67 @@ namespace incode.MVC.Services.Point
             string actionType,
             Func<Mission, MissionProgress, DateTime, DateTime, Task<int>> newCount)
         {
-            var now = DateTime.Now;
             // 抓所有符合 actionType 的有效任務，不限定週期
             var missions = await _context.Mission
                 .Where(m => m.IsActive &&
                             m.TargetType == actionType)
                 .ToListAsync();
+            if (missions.Count == 0) return;
+
+            // 同一會員的兩個請求同時觸發（例如同時送出兩則回覆、登入 + 發文）時，兩邊都查不到本週期的進度、都要新增，
+            // 後寫入的會撞到唯一索引 UX_User_Mission_Cycle。原本例外直接丟到 API：文章 / 按讚已經存好卻回 500，
+            // 使用者重試就重複發文（第三次全專案檢查 47）。撞到時撤銷這次的變更，改以對方建立的進度重算一次
+            for (int attempt = 1; ; attempt++)
+            {
+                var changes = await ApplyMissionProgressAsync(userId, missions, newCount);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+                catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+                {
+                    // 只撤銷任務進度的變更；呼叫端其他尚未儲存的異動維持原狀，重試時一起寫入
+                    changes.Undo(_context);
+                    if (attempt >= MaxProgressSaveAttempts) throw;
+                    _logger.LogInformation("任務進度同時建立，改用既有進度重算 - UserId: {UserId}, Action: {Action}", userId, actionType);
+                }
+                catch
+                {
+                    changes.Undo(_context);
+                    throw;
+                }
+            }
+        }
+
+        private const int MaxProgressSaveAttempts = 3;
+
+        // 這次對任務進度做的變更：新增的進度、既有進度修改前的值（失敗時復原，避免重試時重複累加或留下會一再失敗的新增）
+        private sealed class ProgressChanges
+        {
+            public List<MissionProgress> Added { get; } = new();
+            public List<(MissionProgress Progress, int Count, string? Status, DateTime? CompletedAt)> Modified { get; } = new();
+
+            public void Undo(incodedatabaseContext context)
+            {
+                foreach (var progress in Added)
+                    context.Entry(progress).State = EntityState.Detached;
+                foreach (var (progress, count, status, completedAt) in Modified)
+                {
+                    progress.CurrentCount = count;
+                    progress.Status = status;
+                    progress.CompletedAt = completedAt;
+                }
+            }
+        }
+
+        private async Task<ProgressChanges> ApplyMissionProgressAsync(
+            int userId,
+            List<Mission> missions,
+            Func<Mission, MissionProgress, DateTime, DateTime, Task<int>> newCount)
+        {
+            var now = DateTime.Now;
+            var changes = new ProgressChanges();
             foreach (var mission in missions)
             {
                 var (cycleStart, cycleEnd) = GetCycleRange(mission.ResetType);
@@ -294,6 +349,11 @@ namespace incode.MVC.Services.Point
                         CycleEndAt = cycleEnd
                     };
                     _context.MissionProgress.Add(progress);
+                    changes.Added.Add(progress);
+                }
+                else
+                {
+                    changes.Modified.Add((progress, progress.CurrentCount, progress.Status, progress.CompletedAt));
                 }
 
                 progress.CurrentCount = await newCount(mission, progress, cycleStart, cycleEnd);
@@ -305,7 +365,7 @@ namespace incode.MVC.Services.Point
                     progress.CompletedAt ??= now;
                 }
             }
-            await _context.SaveChangesAsync();
+            return changes;
         }
     }
 }

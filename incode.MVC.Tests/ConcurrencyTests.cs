@@ -550,4 +550,46 @@ public class ConcurrencyTests : IClassFixture<SqlServerFixture>
         // 100 - 5 筆訂單 + 5 次補貨 5 件 = 120
         Assert.Equal(120, await Stock(productId));
     }
+
+    // 第三次全專案檢查 47：同一會員本週期第一次觸發任務時同時送出多個請求（例如同時兩則回覆），
+    // 修正前後寫入的請求撞唯一索引 UX_User_Mission_Cycle → DbUpdateException（API 在文章已存好後回 500）
+    [SqlServerFact]
+    public async Task Concurrent_first_mission_trigger_in_cycle_does_not_fail()
+    {
+        var userId = NewUser();
+        var actionType = "test-" + Guid.NewGuid().ToString("N")[..8]; // 只影響這個測試的任務
+        int missionId;
+        await using (var context = _db.NewContext())
+        {
+            var mission = new Mission
+            {
+                MissionName = "m", MissionDetail = "d", TargetType = actionType, TargetCount = 100, RewardPoints = 1,
+                Category = "c", Difficulty = "簡單", ResetType = "daily", IsActive = true,
+            };
+            context.Mission.Add(mission);
+            await context.SaveChangesAsync();
+            missionId = mission.MissionId;
+        }
+
+        var errors = await RunTogether(Parallel, async _ =>
+        {
+            await using var context = _db.NewContext();
+            try
+            {
+                await new MissionService(context).TriggerMissionAsync(userId, actionType);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex;
+            }
+        });
+
+        Assert.All(errors, Assert.Null);
+        await using var verify = _db.NewContext();
+        var progress = await verify.MissionProgress.AsNoTracking()
+            .Where(p => p.UserId == userId && p.MissionId == missionId).ToListAsync();
+        var single = Assert.Single(progress);
+        Assert.InRange(single.CurrentCount, 1, Parallel);
+    }
 }

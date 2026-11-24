@@ -7,12 +7,15 @@ namespace incode.MVC.Extensions
 {
     /// <summary>
     /// 會員 / 後台 Cookie 驗證：帳號被停用（IsActive = false）或已不存在時，已登入的人下一個請求就登出；
-    /// 後台 Cookie 另外要求帳號仍是管理員。否則 Cookie 效期內（會員 7 天且自動延長、後台 10 小時）停用等於沒有立即生效。
+    /// 後台 Cookie，以及帶著 Admin 角色的會員 Cookie（管理員從前台登入），另外要求帳號仍是管理員。否則 Cookie 效期內（會員 7 天且自動延長、後台 10 小時）停用等於沒有立即生效。
     /// 結果快取 <see cref="CacheSeconds"/> 秒避免每個請求都查資料庫；停用 / 啟用 / 後台編輯會員時由 <see cref="Evict"/> 清除。
     /// </summary>
     public static class MemberCookieValidator
     {
         public const int CacheSeconds = 60;
+
+        /// <summary>Cookie 中管理員的角色名稱（AuthApiController / AccountController 簽發）</summary>
+        private const string AdminRoleName = "Admin";
 
         private sealed record AccountState(bool Active, int? RoleId, string SecurityStamp);
 
@@ -60,7 +63,13 @@ namespace incode.MVC.Extensions
             var cookieStamp = context.Principal?.FindFirst(AuthSchemes.SecurityStampClaim)?.Value ?? "";
             bool stampMatches = string.Equals(cookieStamp, state.SecurityStamp, StringComparison.Ordinal);
 
-            bool valid = state.Active && stampMatches && (!requireAdmin || state.RoleId == (int)RoleType.Admin);
+            // 角色：後台 Cookie 一定要是管理員；會員 Cookie 帶著 Admin 角色（管理員從前台登入）時也要仍是管理員。
+            // 原本會員 Cookie 不檢查角色，管理員被降為一般會員後，7 天內（且自動延長）仍能用 Admin 角色呼叫
+            // 列出所有會員、停用會員、讀取任何人聊天紀錄等 API（第三次全專案檢查 46）
+            bool claimsAdmin = requireAdmin || context.Principal?.IsInRole(AdminRoleName) == true;
+            bool roleOk = !claimsAdmin || state.RoleId == (int)RoleType.Admin;
+
+            bool valid = state.Active && stampMatches && roleOk;
             if (!valid) await RejectAsync(context);
         }
 

@@ -10,9 +10,12 @@ namespace incode.MVC.Services.Contents
     private readonly UploadStorage _storage;
     private readonly IContentInteractionService _contentInteractionService;
     private readonly IMissionService _missionService;
+    private readonly ILogger<ContentService> _logger;
 
-    public ContentService(incodedatabaseContext context, UploadStorage storage, IContentInteractionService contentInteractionService, IMissionService missionService)
+    public ContentService(incodedatabaseContext context, UploadStorage storage, IContentInteractionService contentInteractionService, IMissionService missionService,
+      ILogger<ContentService>? logger = null)
     {
+      _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentService>.Instance;
       _context = context;
       _storage = storage;
       _contentInteractionService = contentInteractionService;
@@ -483,7 +486,7 @@ namespace incode.MVC.Services.Contents
                 var contentLength = dto.Body?.Length ?? 0;
                 if (contentLength >= 200)
                 {
-                    await _missionService.TriggerMissionAsync(dto.UserId, "post", 1);
+                    await TriggerMissionSafelyAsync(dto.UserId, "post");
                 }
             }
 
@@ -493,11 +496,24 @@ namespace incode.MVC.Services.Contents
             {
                 // 留言不需要額外字數限制（除非你業務要加）
                 // 若要加最低字數，可在此判斷 dto.Body?.Length >= 某值
-                await _missionService.TriggerMissionAsync(dto.UserId, "comment", 1);
+                await TriggerMissionSafelyAsync(dto.UserId, "comment");
             }
             // ───────────────────────────────────────
 
             return content;
+    }
+
+    // 任務進度是附帶效果：文章已經存好，任務更新失敗只記錄，不讓發文回 500（使用者重試會重複發文）
+    private async Task TriggerMissionSafelyAsync(int userId, string actionType)
+    {
+      try
+      {
+        await _missionService.TriggerMissionAsync(userId, actionType, 1);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "發文後觸發任務失敗 - UserId: {UserId}, Action: {Action}", userId, actionType);
+      }
     }
 
     //修改content
