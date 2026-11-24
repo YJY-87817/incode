@@ -240,6 +240,8 @@ app.UseCors("VueApp");
 app.UseApiOriginCheck(builder.Configuration.GetCorsOrigins());
 // 會員上傳的檔案（論壇內文 HTML、圖片）直接開啟時不能以本站來源執行腳本（見 Extensions/UploadSecurityHeadersExtensions.cs）
 app.UseUploadSecurityHeaders();
+// 論壇內文檔只在公開中的文章指向它時提供：已刪除 / 已下架的文章與編輯前的舊版本回 404（見 Extensions/ContentBodyAccessExtensions.cs）
+app.UseContentBodyAccess();
 app.UseStaticFiles();
 // 上傳檔案（App:UploadRoot）掛在網站根目錄：/img/chat/xxx、/contents/xxx.html 等網址不變。
 // 改版前的上傳檔仍在 wwwroot，由上一行提供；找不到才會到這裡

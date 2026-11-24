@@ -33,6 +33,16 @@ public class UploadSecurityHeadersTests : IClassFixture<ApiFactory>
     public async Task Content_body_html_with_script_is_served_sandboxed()
     {
         var url = WriteUpload("contents/content-evil.html", "<p>hi</p><script>fetch('/api/User')</script>");
+        // 內文檔只在公開中的文章指向它時提供（第三次全專案檢查 49，見 ContentBodyAccessTests）
+        await using (var context = _factory.Db.NewContext())
+        {
+            context.Content.Add(new Content
+            {
+                UserId = _factory.Db.SeedUser($"{Guid.NewGuid():N}@example.com"), Type = ContentTypes.Post, Title = "t", Body = url,
+                IsActive = ContentStatus.Active, CreatedAt = DateTime.Now, UpdatedAt = DateTime.Now,
+            });
+            await context.SaveChangesAsync();
+        }
 
         var response = await _factory.CreateAnonymousClient().GetAsync(url);
 

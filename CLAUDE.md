@@ -108,7 +108,8 @@ incode/
   （對照資料庫欄位長度，長度常數放 `ContentLimits` / `ChatLimits` 這類類別，前端輸入框用同樣的 `maxlength`）。允許匿名寫入或會呼叫付費 API 的端點要加速率限制
 - **檔案存放**：上傳檔一律透過 `UploadStorage`（`Services/Common/UploadStorage.cs`）寫入 / 刪除，資料夾用 `UploadFolders` 常數，
   檔名由伺服器產生（Guid）。**不要寫進 `wwwroot`**（會被提交進 git、重新部署會被覆蓋）。
-  位置由 `App:UploadRoot` 設定（預設 `App_Data/uploads`），正式環境設成部署資料夾以外的絕對路徑
+  位置由 `App:UploadRoot` 設定（預設 `App_Data/uploads`），正式環境設成部署資料夾以外的絕對路徑。
+  論壇內文檔（`/contents/`）只在公開中的文章指向它時提供（`ContentBodyAccess`）：改變文章狀態或內文的程式要呼叫 `ContentBodyAccess.Evict`
 - **顯示使用者內容**：Razor 不要對會員 / AI 產生的內容用 `@Html.Raw`；需要保留格式時先經 DOMPurify（`~/lib/dompurify`）。
   前端 `v-html` 前一律過濾（論壇用 `utils/sanitizeHtml.js`，聊天用 `ChatWidget.vue` 的 `toSafeHtml`）。
 - **後台訊息**：Controller 用 `TempData["SuccessMessage"] / TempData["ErrorMessage"]`，View 放 `<partial name="_TempDataAlert" />`。
@@ -574,6 +575,16 @@ incode/
     - 前台分類清單不列出；發新主題（`ContentService` 發文檢查）與新增子分類（`POST api/CategoryApi`，400「父分類不存在或已停用」）都拒絕
     - **停用分類裡既有的文章不受影響**：仍然公開、可以回覆（回覆沿用父文章的分類），只是不能再發新主題；後台仍可看到並恢復停用的分類
 
+52. 第三次全專案檢查 49（已刪除 / 已下架的文章仍可讀取，先寫測試重現，`ContentBodyAccessTests`）：內文檔 `/contents/*.html` 原本一直以靜態檔提供，
+    作者刪除、後台下架後直接開網址仍讀得到，每次編輯留下的舊版本也都公開；後台下架違規內容實際上沒有移除內容。
+    - `Extensions/ContentBodyAccessExtensions.cs`（`app.UseContentBodyAccess()`，在 `UseStaticFiles` 之前）：`/contents/...` 只在
+      **有公開中的文章（`is_active = 1`）目前的內文指向它**時提供，其他（已刪除、已下架、編輯前的舊版本、沒有文章的檔案）一律 404。
+      後台管理員（後台 Cookie，同樣經過 `MemberCookieValidator`）不受限制，可以開啟後台文章詳情 / 修改紀錄顯示的路徑
+    - 規則在 `Services/Contents/ContentBodyAccess`：`content.body` 為 nvarchar(max) 沒有索引，「可以提供」的結果快取 60 秒；
+      刪除（`ContentService.DeleteContent`）、編輯（舊內文）、後台下架（`ContentReportService`）時清除快取，下一個請求就生效；恢復上架後立即可讀
+    - 檔案本身不刪除（後台修改紀錄與恢復上架需要）；前端只讀取 API 回傳的公開文章內文，不受影響
+    - 回覆的主題被刪除時，回覆本身仍公開（與 `GET api/ContentApi/{id}` 一致）
+
 ## 全專案檢查結果（2026-11）
 
 點數商城以外的前後端模組已全部檢查過。🔴 1～5、6（金鑰已撤銷）、7～25 已修正（見修正紀錄 6～9、12～29、38）。
@@ -675,7 +686,7 @@ incode/
 
 ## 第三次全專案檢查（2026-11-24）
 
-重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～48 已修正（見修正紀錄 48～51），其餘尚未修正。
+重讀整個專案（後端 API、服務、後台 Controller / View，前端顯示內容的方式）後新發現的問題，編號接續上一份清單。45～49 已修正（見修正紀錄 48～52），其餘尚未修正。
 45、46 已用暫時的測試重現（測試未提交），其餘是讀程式碼得出的；修正時請先寫出重現測試。
 
 ### 🔴 嚴重
@@ -700,7 +711,7 @@ incode/
     尚未重現（需要 SQL Server）。
 48. ~~**停用的論壇分類在前台仍顯示**~~（已修正，見修正紀錄 51）：`CategoryService.GetCategoriesAsync` 不依狀態過濾，`CategoryDto` 沒有狀態欄位；
     停用後仍列出，但在該分類發文失敗（「分類不存在或已停用」）。會員也能在停用的分類底下新增子分類。
-49. **已刪除 / 已下架的文章仍可讀取**：內文檔 `/contents/*.html` 在作者刪除或後台下架後仍可直接用網址開啟，
+49. ~~**已刪除 / 已下架的文章仍可讀取**~~（已修正，見修正紀錄 52）：內文檔 `/contents/*.html` 在作者刪除或後台下架後仍可直接用網址開啟，
     每次編輯留下的舊版本也都是公開的；後台下架違規內容實際上沒有移除內容。
 50. **已登入會員可以塞滿磁碟**：`POST api/images/upload` 每個請求最多 100 MB、沒有速率限制；
     每次發文 / 編輯都寫一個新的內文檔（最多 500 萬字元）、沒有速率限制，編輯後舊檔不刪除。
