@@ -155,7 +155,7 @@ const clearCart = async () => {
   top: 15%;
   right: -10px;
   /* transform: translateX(75px); 移除位移，保持固定顯示 */
-  background: linear-gradient(135deg, var(--incode-olive-dark) 0%, var(--incode-olive-darker) 100%);
+  background: linear-gradient(135deg, var(--incode-dark) 0%, var(--incode-darker) 100%);
   color: white;
   border: none;
   width: auto;
@@ -167,7 +167,7 @@ const clearCart = async () => {
   justify-content: center;
   padding: 0 15px 0 20px;
   gap: 8px;
-  /* box-shadow: -4px 0 15px rgba(var(--incode-olive-dark-rgb), 0.4); */
+  /* box-shadow: -4px 0 15px rgba(var(--incode-dark-rgb), 0.4); */
   z-index: 9990;
   /* transition: transform 0.3s ease-out, box-shadow 0.3s ease; 移除動畫 */
 }
@@ -175,7 +175,7 @@ const clearCart = async () => {
 .cart-side-btn:hover,
 .cart-side-btn:active {
   /* transform: translateX(0); 移除 Hover 動畫 */
-  box-shadow: -6px 0 20px rgba(var(--incode-olive-dark-rgb), 0.6);
+  box-shadow: -6px 0 20px rgba(var(--incode-dark-rgb), 0.6);
 }
 
 </style>

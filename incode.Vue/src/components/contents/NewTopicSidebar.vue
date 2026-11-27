@@ -77,7 +77,7 @@ const validateEntrustMission = async (draft) => {
       title: "提醒",
       text: "請完整填寫委託任務資訊",
       confirmButtonText: "確定",
-      confirmButtonColor: "var(--incode-olive-dark)",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -88,7 +88,7 @@ const validateEntrustMission = async (draft) => {
       title: "提醒",
       text: "獎勵點數需大於 0",
       confirmButtonText: "確定",
-      confirmButtonColor: "var(--incode-olive-dark)",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -461,48 +461,48 @@ watch(
 }
 
 .new-topic-sidebar .btn-primary {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-primary:hover {
-  background-color: var(--incode-olive-darker);
-  border-color: var(--incode-olive-darker);
+  background-color: var(--incode-darker);
+  border-color: var(--incode-darker);
 }
 
 .new-topic-sidebar .btn-outline-primary {
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-outline-primary:hover {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
   color: white;
 }
 
 .new-topic-sidebar .btn-entrust-toggle {
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-olive-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-entrust-toggle:hover {
-  background-color: var(--incode-cream-light);
-  color: var(--incode-olive-darker);
+  background-color: var(--incode-light-soft);
+  color: var(--incode-darker);
 }
 
 .new-topic-sidebar .btn-entrust-toggle:focus,
 .new-topic-sidebar .btn-entrust-toggle:active,
 .new-topic-sidebar .btn-entrust-toggle.active {
-  background-color: var(--incode-cream-light);
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-olive-darker);
+  background-color: var(--incode-light-soft);
+  border-color: var(--incode-dark);
+  color: var(--incode-darker);
   box-shadow: none;
 }
 
 .new-topic-sidebar .entrust-mission-panel {
-  background: var(--incode-cream-light);
-  border-color: var(--incode-sage-light);
+  background: var(--incode-light-soft);
+  border-color: var(--incode-accent-soft);
 }
 
 .new-topic-sidebar .sidebar-actions {
@@ -516,12 +516,12 @@ watch(
 
 /* banner 中的按鈕樣式 */
 .new-topic-banner .btn-primary {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-banner .btn-primary:hover {
-  background-color: var(--incode-olive-darker);
-  border-color: var(--incode-olive-darker);
+  background-color: var(--incode-darker);
+  border-color: var(--incode-darker);
 }
 </style>

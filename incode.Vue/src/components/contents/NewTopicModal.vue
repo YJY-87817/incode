@@ -846,7 +846,7 @@ const validateEntrustMission = async () => {
       title: "提醒",
       text: "請完整填寫委託任務資訊",
       confirmButtonText: "確定",
-      confirmButtonColor: "var(--incode-olive-dark)",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -857,7 +857,7 @@ const validateEntrustMission = async () => {
       title: "提醒",
       text: "獎勵點數需大於 0",
       confirmButtonText: "確定",
-      confirmButtonColor: "var(--incode-olive-dark)",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -1576,59 +1576,59 @@ const handleModalCancel = () => {
 <style scoped>
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-cream);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-light);
   transition: all 0.3s ease;
 }
 
 .btn-forum-primary:hover {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .btn-forum-secondary {
   background-color: transparent;
   border: 1px solid var(--incode-border);
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
-  background-color: var(--incode-cream);
-  border-color: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .btn-entrust-toggle {
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-olive-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-dark);
 }
 
 .btn-entrust-toggle:hover {
-  background-color: var(--incode-cream-light);
-  color: var(--incode-olive-darker);
+  background-color: var(--incode-light-soft);
+  color: var(--incode-darker);
 }
 
 .btn-entrust-toggle:focus,
 .btn-entrust-toggle:active,
 .btn-entrust-toggle.active {
-  background-color: var(--incode-cream-light);
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-olive-darker);
+  background-color: var(--incode-light-soft);
+  border-color: var(--incode-dark);
+  color: var(--incode-darker);
   box-shadow: none;
 }
 
 .entrust-mission-panel {
-  background: var(--incode-cream-light);
-  border-color: var(--incode-sage-light);
+  background: var(--incode-light-soft);
+  border-color: var(--incode-accent-soft);
 }
 
 .custom-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(var(--incode-olive-dark-rgb), 0.5);
+  background: rgba(var(--incode-dark-rgb), 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -1653,7 +1653,7 @@ const handleModalCancel = () => {
 .create-category-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(var(--incode-olive-dark-rgb), 0.5);
+  background: rgba(var(--incode-dark-rgb), 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -1720,7 +1720,7 @@ const handleModalCancel = () => {
 }
 
 .category-input-clear:hover {
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .category-input-dropdown {
@@ -1735,15 +1735,15 @@ const handleModalCancel = () => {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--incode-sage);
-  box-shadow: 0 0 0 0.2rem rgba(var(--incode-sage-rgb), 0.25);
+  border-color: var(--incode-accent);
+  box-shadow: 0 0 0 0.2rem rgba(var(--incode-accent-rgb), 0.25);
 }
 
 .category-dropdown {
   max-height: 220px;
   overflow-y: auto;
   background: #fff;
-  box-shadow: 0 8px 16px rgba(var(--incode-olive-dark-rgb), 0.12);
+  box-shadow: 0 8px 16px rgba(var(--incode-dark-rgb), 0.12);
   border-color: var(--incode-border) !important;
 }
 
@@ -1751,11 +1751,11 @@ const handleModalCancel = () => {
   padding: 0.5rem 0.75rem;
   border: none;
   background: transparent;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .dropdown-item:hover {
-  background: rgba(var(--incode-cream-rgb), 0.7);
+  background: rgba(var(--incode-light-rgb), 0.7);
 }
 
 .reply-dropdown-item {

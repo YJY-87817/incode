@@ -245,20 +245,20 @@ const jumpInputWidth = computed(() => {
 }
 
 .pagination .page-item.active .page-link {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-cream);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-light);
 }
 
 .pagination .page-link {
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   border-color: var(--incode-border);
 }
 
 .pagination .page-link:hover {
-  background-color: var(--incode-cream);
-  border-color: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .pagination .edge-page-link {
@@ -287,7 +287,7 @@ const jumpInputWidth = computed(() => {
   padding: 0.25rem 0.75rem;
   font-size: 0.82em;
   font-weight: 400;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   border-color: var(--incode-border);
   background-color: transparent;
   transition:
@@ -296,9 +296,9 @@ const jumpInputWidth = computed(() => {
 }
 
 .pagination-jump-button:hover {
-  background-color: var(--incode-cream);
-  border-color: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .pagination-jump-button:focus,
@@ -306,7 +306,7 @@ const jumpInputWidth = computed(() => {
 .pagination-jump-button.active {
   background-color: transparent;
   border-color: var(--incode-border);
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   outline: none;
   box-shadow: none;
 }

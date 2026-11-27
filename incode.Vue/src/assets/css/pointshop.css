@@ -1,15 +1,15 @@
 /* 點數商城共用樣式 (由 views/pointshop/* 與 components/pointshop/Cart.vue 匯入) */
 
 .btn-custom-primary {
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   background-color: transparent;
-  border: 1px solid var(--incode-olive-dark) !important;
+  border: 1px solid var(--incode-dark) !important;
 }
 
 .btn-custom-primary:hover {
   color: #fff;
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 /* 篩選面板 (FilterPanel / FilterOrder) 共用 */

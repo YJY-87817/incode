@@ -98,7 +98,7 @@ const goToForum = (commission) => {
                     <h6 class="mb-0 text-sm font-weight-bold text-dark">
                       {{ c.title || "未命名委託" }}
                     </h6>
-                    <span class="text-xxs" style="color: var(--incode-olive-dark)">
+                    <span class="text-xxs" style="color: var(--incode-dark)">
                       <i class="fas fa-user me-1"></i>
                       {{ c.username || "匿名影友" }} ·
                       <i class="fas fa-clock me-1"></i>
@@ -153,31 +153,31 @@ const goToForum = (commission) => {
 }
 
 .custom-text-main {
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 .custom-bg-main {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
 }
 
 .custom-btn-primary {
   background-color: #fff !important;
-  color: var(--incode-olive-dark) !important;
-  border: 1px solid var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
+  border: 1px solid var(--incode-dark) !important;
   transition: all 0.3s ease;
 }
 .custom-btn-primary:hover {
-  background-color: var(--incode-olive-dark) !important;
+  background-color: var(--incode-dark) !important;
   color: #fff !important;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .custom-thead {
   background-color: #f8f9fa;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .commission-row:hover {
-  background-color: rgba(var(--incode-sage-rgb), 0.1);
+  background-color: rgba(var(--incode-accent-rgb), 0.1);
 }
 
 .avatar-sm {

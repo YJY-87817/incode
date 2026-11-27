@@ -1,8 +1,8 @@
-// 網站色票（https://colorhunt.co/palette/ebebd86375454552309ba685）
+// 網站色票（https://colorhunt.co/palette/131b2b2f4a635b91a3cfeae0）
 // 與 src/assets/css/theme.css 的 CSS 變數、src/plugins/themeColors.js 相同；改色時三處一起改。
 // 在 Material Kit 的 _variables.scss 之前載入，那邊的變數都是 !default。
-$primary: #637545;
-$primary-gradient: #637545;
-$primary-gradient-state: #455230;
-$h-color: #455230; // 標題文字（Material Kit 預設 #344767）
-$headings-color: #455230; // h1～h6（Material Kit 預設 #344767）
+$primary: #2f4a63;
+$primary-gradient: #2f4a63;
+$primary-gradient-state: #131b2b;
+$h-color: #131b2b; // 標題文字（Material Kit 預設 #344767）
+$headings-color: #131b2b; // h1～h6（Material Kit 預設 #344767）

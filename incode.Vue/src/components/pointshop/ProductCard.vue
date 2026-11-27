@@ -32,7 +32,7 @@ const handleAddToCart = () => addToCartWithAlert(props.product);
             <div class="position-absolute top-0 start-0 m-2">
               <h5
                 class="badge opacity-75 fw-normal"
-                style="background-color: var(--incode-olive-dark)"
+                style="background-color: var(--incode-dark)"
               >
                 {{ product.type }}
               </h5>
@@ -57,7 +57,7 @@ const handleAddToCart = () => addToCartWithAlert(props.product);
             </p>
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <span class="fw-bold fs-5" style="color: var(--incode-sage)"
+              <span class="fw-bold fs-5" style="color: var(--incode-accent)"
                 >{{ product.point }} <small>P</small></span
               >
               <span class="badge rounded-pill bg-light text-dark border">

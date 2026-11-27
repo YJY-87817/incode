@@ -26,7 +26,7 @@ const refreshTasks = async () => {
   <div class="d-lg-none mb-3">
     <button
       class="btn w-100 d-flex align-items-center justify-content-between py-3 rounded-4 shadow-sm border-0"
-      style="background: var(--incode-sage); color: var(--incode-olive-dark)"
+      style="background: var(--incode-accent); color: var(--incode-dark)"
       type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#taskSidebar"
@@ -46,7 +46,7 @@ const refreshTasks = async () => {
   >
     <div
       class="p-4 border-bottom border-light d-flex justify-content-between align-items-center"
-      style="background-color: var(--incode-sage); color: var(--incode-olive-dark)"
+      style="background-color: var(--incode-accent); color: var(--incode-dark)"
     >
       <h5 class="mb-0 fw-bold">任務大廳</h5>
 
@@ -148,7 +148,7 @@ const refreshTasks = async () => {
 .section-label {
   font-size: 0.7rem;
   font-weight: 800;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 12px;
@@ -163,18 +163,18 @@ const refreshTasks = async () => {
   margin-bottom: 6px;
   border: none;
   background: transparent;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   font-weight: 600;
   border-radius: 10px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .menu-item:hover {
-  background: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background: var(--incode-accent);
+  color: var(--incode-dark);
 }
 .menu-item.active {
-  background: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background: var(--incode-accent);
+  color: var(--incode-dark);
 }
 .nav-icon {
   font-size: 1rem;
@@ -184,7 +184,7 @@ const refreshTasks = async () => {
 .active-indicator {
   width: 3px;
   height: 16px;
-  background: var(--incode-sage);
+  background: var(--incode-accent);
   border-radius: 4px;
   position: absolute;
   right: 12px;
@@ -206,8 +206,8 @@ const refreshTasks = async () => {
 .minimal-search:focus {
   outline: none;
   background: #fff;
-  border-color: var(--incode-olive-dark);
-  box-shadow: 0 3px 10px rgba(var(--incode-olive-dark-rgb), 0.08);
+  border-color: var(--incode-dark);
+  box-shadow: 0 3px 10px rgba(var(--incode-dark-rgb), 0.08);
 }
 .search-icon {
   position: absolute;
@@ -221,7 +221,7 @@ const refreshTasks = async () => {
 /* 篩選下拉框樣式 */
 .filter-group label {
   font-size: 0.75rem;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   margin-bottom: 4px;
   display: block;
   font-weight: 700;
@@ -246,7 +246,7 @@ const refreshTasks = async () => {
 .reset-link {
   background: none;
   border: none;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   font-size: 0.7rem;
   font-weight: 700;
   text-decoration: underline;

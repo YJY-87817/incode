@@ -590,7 +590,7 @@ onBeforeUnmount(() => {
 
 .toolbar-btn:hover:not(:disabled) {
   background-color: #e9ecef;
-  border-color: var(--incode-sage);
+  border-color: var(--incode-accent);
 }
 
 .toolbar-btn:disabled {
@@ -599,9 +599,9 @@ onBeforeUnmount(() => {
 }
 
 .toolbar-btn.is-active {
-  background-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
   color: #fff;
-  border-color: var(--incode-olive-dark);
+  border-color: var(--incode-dark);
 }
 
 .toolbar-file-input {
@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
 }
 
 .upload-status {
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   font-size: 0.875rem;
   margin-left: auto;
 }
@@ -734,7 +734,7 @@ onBeforeUnmount(() => {
 .cropper-header h5 {
   margin: 0;
   font-size: 1.25rem;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .close-btn {
@@ -755,7 +755,7 @@ onBeforeUnmount(() => {
 
 .close-btn:hover {
   background: #f0f0f0;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .cropper-body {
@@ -793,23 +793,23 @@ onBeforeUnmount(() => {
 
 .btn-cancel {
   background: #fff;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
 }
 
 .btn-cancel:hover {
   background: #f8f9fa;
-  border-color: var(--incode-sage);
+  border-color: var(--incode-accent);
 }
 
 .btn-confirm {
-  background: var(--incode-olive-dark);
+  background: var(--incode-dark);
   color: #fff;
-  border-color: var(--incode-olive-dark);
+  border-color: var(--incode-dark);
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background: var(--incode-accent);
+  border-color: var(--incode-accent);
 }
 
 .btn-confirm:disabled {

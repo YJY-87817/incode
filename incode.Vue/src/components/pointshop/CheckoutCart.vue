@@ -18,7 +18,7 @@ const decrease = (item) => {
 <template>
   <div class="col-12">
     <div class="card shadow-sm border-0 rounded-4">
-      <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: var(--incode-sage);">
+      <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: var(--incode-accent);">
         <h4 class="fw-bold mb-0">
           <i class="bi bi-cart3 me-2"></i>購物清單
         </h4>
@@ -45,7 +45,7 @@ const decrease = (item) => {
               </div>
               <div class="text-end" style="min-width: 80px;">
                 <small class="text-secondary d-block">小計</small>
-                <span class="fw-bold" style="color: var(--incode-sage);">{{ item.point * item.quantity }} p</span>
+                <span class="fw-bold" style="color: var(--incode-accent);">{{ item.point * item.quantity }} p</span>
               </div>
             </div>
 
@@ -75,7 +75,7 @@ const decrease = (item) => {
         <hr class="text-muted opacity-25">
         <div class="d-flex justify-content-end align-items-baseline gap-2">
           <span class="text-secondary small">共 {{ CartNow.totalItems }} 項商品，總計：</span>
-          <span class="fs-4 fw-bold" style="color: var(--incode-sage);">{{ CartNow.totalPoints }} P</span>
+          <span class="fs-4 fw-bold" style="color: var(--incode-accent);">{{ CartNow.totalPoints }} P</span>
         </div>
       </div>
 

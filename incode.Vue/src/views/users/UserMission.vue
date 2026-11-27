@@ -17,7 +17,7 @@ const missions = ref([
     content:
       "閱讀完網站的使用規範，並完成第一次的個人資料設定，即可獲得新手獎勵點數。",
     status: "進行中", // 用於顯示不同顏色狀態 (可選)
-    statusColor: "olive",
+    statusColor: "primary",
   },
   {
     id: 2,
@@ -43,7 +43,7 @@ const missions = ref([
     date: "2024-05-30 09:20",
     content: "前往設定頁面，填寫您的自我介紹與社群連結，讓更多人認識您。",
     status: "進行中",
-    statusColor: "olive",
+    statusColor: "primary",
   },
   {
     id: 5,
@@ -51,7 +51,7 @@ const missions = ref([
     date: "2024-06-03 14:00",
     content: "分享您的專屬邀請碼給朋友，雙方皆可獲得 100 積分。",
     status: "進行中",
-    statusColor: "olive",
+    statusColor: "primary",
   },
 ]);
 
@@ -168,7 +168,7 @@ const filteredMissions = computed(() => {
 /* 針對標題做一些微調，讓它跟搜尋框對齊好看一點 */
 h3 {
   font-weight: 700;
-  color: var(--incode-olive-dark);
-  /* 深橄欖綠 */
+  color: var(--incode-dark);
+  /* 深藍 */
 }
 </style>

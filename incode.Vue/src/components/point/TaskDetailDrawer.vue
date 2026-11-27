@@ -160,17 +160,17 @@ const isButtonDisabled = computed(() => {
 
 <style scoped>
 .custom-text-main {
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 .custom-bg-main {
-  background-color: var(--incode-olive-dark) !important;
+  background-color: var(--incode-dark) !important;
 }
 .custom-bg-light {
-  background-color: rgba(var(--incode-olive-dark-rgb), 0.05) !important;
+  background-color: rgba(var(--incode-dark-rgb), 0.05) !important;
 }
 
 .custom-btn-action {
-  background-color: var(--incode-olive-dark) !important;
+  background-color: var(--incode-dark) !important;
   color: white !important;
   border: none;
 }

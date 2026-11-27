@@ -282,7 +282,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
                 class="topic-preview-iframe"
                 :html="topic.contentHtml || topic.content"
                 :min-height="0"
-                text-color="olive-dark"
+                text-color="brand-dark"
                 :extra-css="getTopicPreviewCss(topic)"
               />
             </div>
@@ -488,7 +488,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
                         class="topic-preview-iframe"
                         :html="topic.contentHtml || topic.content"
                         :min-height="0"
-                        text-color="olive-dark"
+                        text-color="brand-dark"
                         :extra-css="getTopicPreviewCss(topic)"
                       />
                     </div>
@@ -611,7 +611,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--incode-border);
-  background: var(--incode-cream);
+  background: var(--incode-light);
 }
 
 .topic-preview-text-col {
@@ -632,7 +632,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .topic-table-header {
-  background-color: var(--incode-sage);
+  background-color: var(--incode-accent);
   color: #fff;
 }
 
@@ -660,7 +660,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   display: inline-flex;
   width: var(--sort-control-width, auto);
   max-width: 100%;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   transition: width 0.16s ease;
 }
 
@@ -686,7 +686,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   padding: 0.75rem;
   border: 1px solid var(--incode-border);
   border-radius: 0.6rem;
-  background-color: var(--incode-sage);
+  background-color: var(--incode-accent);
   position: relative;
 }
 
@@ -728,8 +728,8 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   font-size: 0.7rem;
   padding: 0.05rem 0.15rem;
   min-width: calc(1ch + 1em);
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-sage);
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: transparent;
   -moz-appearance: auto;
   appearance: auto;
@@ -747,14 +747,14 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 .topic-mobile-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.2rem;
   font-size: 0.7rem;
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-sage);
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: #fff;
 }
 
 .topic-mobile-pagination :deep(.pagination-total-pages) {
   font-size: 0.7rem;
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 
 .topic-mobile-pagination :deep(.topic-header-pagination-list .page-link) {
@@ -795,8 +795,8 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   font-weight: 700;
   padding: 0.05rem 0.2rem;
   min-width: calc(1ch + 1.3em);
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-sage);
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: transparent;
   -moz-appearance: auto;
   appearance: auto;
@@ -813,22 +813,22 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 .topic-header-pagination :deep(.pagination-total-pages) {
   font-size: 0.75rem;
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.1;
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-sage);
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: #fff;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button:hover) {
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
-  background-color: var(--incode-cream);
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  background-color: var(--incode-light);
 }
 
 .topic-sort-input-wrapper {
@@ -842,9 +842,9 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   min-height: 28px;
   font-size: 0.82rem;
   font-weight: 700;
-  border: 1px solid var(--incode-olive-dark);
+  border: 1px solid var(--incode-dark);
   border-radius: 999px;
-  background: var(--incode-olive-dark);
+  background: var(--incode-dark);
   color: #fff;
   padding: 0 1.45rem 0 0.7rem;
   line-height: 28px;
@@ -878,7 +878,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   border-radius: 0.65rem;
   border: 1px solid var(--incode-border);
   background: #fff;
-  box-shadow: 0 8px 18px rgba(var(--incode-olive-dark-rgb), 0.12);
+  box-shadow: 0 8px 18px rgba(var(--incode-dark-rgb), 0.12);
   z-index: 30;
   overflow: hidden;
 }
@@ -888,7 +888,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   width: 100%;
   border: none;
   background: transparent;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   text-align: left;
   padding: 0.45rem 0.7rem;
   font-size: 0.82rem;
@@ -901,7 +901,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 .topic-sort-item.active,
 .topic-sort-item:hover {
-  background: var(--incode-cream);
+  background: var(--incode-light);
 }
 
 .topic-table-header th:first-child {
@@ -913,7 +913,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .table-hover tbody tr:hover {
-  background-color: rgba(var(--incode-cream-rgb), 0.5) !important;
+  background-color: rgba(var(--incode-light-rgb), 0.5) !important;
 }
 
 .forum-row {
@@ -1130,13 +1130,13 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 /* 徽章樣式 */
 .badge.bg-secondary {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
 .badge.bg-secondary-light {
-  background-color: var(--incode-sage-light) !important;
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-accent-soft) !important;
+  color: var(--incode-dark);
 }
 
 .interaction-aligned-badge {
@@ -1168,26 +1168,26 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .parent-link-btn {
-  border: 1px solid var(--incode-sage);
-  color: var(--incode-olive-dark);
-  background-color: var(--incode-sage-light);
+  border: 1px solid var(--incode-accent);
+  color: var(--incode-dark);
+  background-color: var(--incode-accent-soft);
   cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .badge.bg-primary {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
 /* 主題標題 */
 .topic-title-link {
-  color: var(--incode-olive-darker);
+  color: var(--incode-darker);
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -1196,7 +1196,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .topic-title-link:hover {
-  color: var(--incode-sage);
+  color: var(--incode-accent);
 }
 
 /* 互動按鈕容器樣式 */
@@ -1207,7 +1207,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .reply-mode-tabs .nav-link.active {
-  background: var(--incode-olive-dark);
+  background: var(--incode-dark);
   color: #fff;
 }
 
@@ -1223,7 +1223,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 /* 載入動畫 */
 .spinner-border {
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 
 /* 響應式調整 */

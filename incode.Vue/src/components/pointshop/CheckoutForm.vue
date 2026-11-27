@@ -142,7 +142,7 @@ const checkout = async () => {
 
 <template>
   <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: var(--incode-sage)">
+    <div class="card-header border-bottom-0 pt-4 px-4" style="background-color: var(--incode-accent)">
       <h5 class="fw-bold mb-0">
         <i class="bi bi-truck me-2 text-primary"></i>寄送資訊
       </h5>

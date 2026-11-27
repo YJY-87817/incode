@@ -112,9 +112,10 @@ incode/
   論壇內文檔（`/contents/`）只在公開中的文章指向它時提供（`ContentBodyAccess`）：改變文章狀態或內文的程式要呼叫 `ContentBodyAccess.Evict`
 - **顯示使用者內容**：Razor 不要對會員 / AI 產生的內容用 `@Html.Raw`；需要保留格式時先經 DOMPurify（`~/lib/dompurify`）。
   前端 `v-html` 前一律過濾（論壇用 `utils/sanitizeHtml.js`，聊天用 `ChatWidget.vue` 的 `toSafeHtml`）。
-- **色票**（前後台共用，https://colorhunt.co/palette/ebebd86375454552309ba685）：cream `#EBEBD8`（背景）、sage `#9BA685`（裝飾 / 淺色底，不放小字）、
-  olive `#637545`（主色）、olive-dark `#455230`（文字 / 深色區塊）。後台用 `wwwroot/css/theme.css` 的 `var(--incode-*)`（`_Layout` 與登入頁在 sb-admin-2 之後載入），
-  `sb-admin-2.css` 的 primary 已換成 olive 系列；前台見 `incode.Vue/CLAUDE.md`。新樣式不要再寫死色碼
+- **色票**（前後台共用，https://colorhunt.co/palette/131b2b2f4a635b91a3cfeae0）：light `#CFEAE0`（淺色底）、accent `#5B91A3`（點綴 / 標題列底色，白字只適合大字）、
+  primary `#2F4A63`（主色）、dark `#131B2B`（文字 / 深色區塊）。變數依用途命名（`--incode-light` / `accent` / `primary` / `dark` 與深淺色），換色票只改色碼。
+  後台用 `wwwroot/css/theme.css` 的 `var(--incode-*)`（`_Layout` 與登入頁在 sb-admin-2 之後載入），`sb-admin-2.css` 的 primary 系列已換色；
+  前台見 `incode.Vue/CLAUDE.md`。新樣式不要再寫死色碼
 - **後台訊息**：Controller 用 `TempData["SuccessMessage"] / TempData["ErrorMessage"]`，View 放 `<partial name="_TempDataAlert" />`。
 - **表單**：POST 表單要有 `method="post"`，Action 加 `[ValidateAntiForgeryToken]`。
 - 檔案編碼：保持原檔的 BOM / 換行格式，避免整檔 diff。
@@ -620,11 +621,11 @@ incode/
       - 後台登入寫入登入紀錄；會員新增分類的名稱改為 2～50 字、說明 200 字（與後台表單相同，原本 100 字的名稱後台無法編輯），
         前端輸入框加 `maxlength`，新增失敗時顯示後端的訊息
 
-55. 前後台改用新色票（cream / sage / olive / olive-dark，見「開發慣例」的色票）：
-    - 後台：新增 `wwwroot/css/theme.css`（色票變數、Bootstrap 5.3 的 primary 變數與按鈕 / 分頁 / 表單覆寫、頂欄、內容區底色）；
-      `sb-admin-2.css` 的 primary（`#4e73df` 與其深淺色）換成 olive 系列，側欄改為 olive → olive-dark 漸層（原本手改成 `#5e8a96`）；
-      頂欄原本是 `#86b0bd` 底配淺灰字（對比不足），改為 cream 底配 olive-dark 字；客服頁、點數明細、首頁圖表的藍色一併替換
-    - 前台：新增 `src/assets/css/theme.css`（CSS 變數）與 `src/plugins/themeColors.js`（Vuetify 主題色 `olive` / `olive-dark` / `sage` / `cream`，primary = olive），
+55. 前後台改用新色票（light / accent / primary / dark，見「開發慣例」的色票；先試過一組橄欖綠色票，後來改為目前的藍色系，變數改依用途命名）：
+    - 後台：新增 `wwwroot/css/theme.css`（色票變數、Bootstrap 5.3 的 primary 變數與按鈕 / 分頁 / 表單覆寫、頂欄、內容區與卡片標題列底色）；
+      `sb-admin-2.css` 的 primary（`#4e73df` 與其深淺色）換成 primary 系列，側欄改為 primary → dark 漸層（原本手改成 `#5e8a96`）；
+      頂欄原本是 `#86b0bd` 底配淺灰字（對比不足），改為 light 底配 dark 字；客服頁、點數明細、首頁圖表的藍色一併替換
+    - 前台：新增 `src/assets/css/theme.css`（CSS 變數）與 `src/plugins/themeColors.js`（Vuetify 主題色 `primary` / `accent` / `brand-dark` / `brand-light`），
       Material Kit 的 `$primary`、標題顏色設定在 `src/assets/scss/material-kit/custom/_variables.scss`；
       元件中寫死的藍綠色系（`#145369`、`#86b0bd`、`#fff0dd`、聊天的藍色等）全部改為 `var(--incode-*)`
 

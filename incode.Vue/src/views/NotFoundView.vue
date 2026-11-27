@@ -160,14 +160,14 @@ import DefaultFooter from "@/components/layout/FooterCentered.vue";
 }
 
 .btn-custom-primary {
-    color: var(--incode-olive-dark);
+    color: var(--incode-dark);
     background-color: transparent;
-    border: 1px solid var(--incode-olive-dark) !important;
+    border: 1px solid var(--incode-dark) !important;
 }
 
 .btn-custom-primary:hover {
     color: #fff;
-    background-color: var(--incode-olive-dark);
-    border-color: var(--incode-olive-dark);
+    background-color: var(--incode-dark);
+    border-color: var(--incode-dark);
 }
 </style>

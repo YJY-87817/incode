@@ -16,8 +16,8 @@
   - 401 處理統一在 `src/api/authInterceptor.js`（三個 axios 都有安裝；**新增 axios 實例時也要 `installAuthInterceptor()`**）：
     已登入狀態收到 401 → 清除登入狀態、提示「登入已逾時」並導向登入頁（`?redirect=` 回原頁）；
     未登入時全域 axios 導向登入頁，`apiClient` / `pointClient` 只把錯誤拋給呼叫端
-- **色票**：`src/assets/css/theme.css` 定義 `--incode-cream` / `--incode-sage` / `--incode-olive` / `--incode-olive-dark` 與深淺色（半透明用 `rgba(var(--incode-xxx-rgb), 0.3)`），
-  元件樣式一律用這些變數，不要寫死色碼。Vuetify 的 `color` 屬性用主題色名稱（`color="olive-dark"`，`src/plugins/themeColors.js`），不要傳 `var()`
+- **色票**：`src/assets/css/theme.css` 定義 `--incode-light` / `--incode-accent` / `--incode-primary` / `--incode-dark` 與深淺色（依用途命名；半透明用 `rgba(var(--incode-xxx-rgb), 0.3)`），
+  元件樣式一律用這些變數，不要寫死色碼。Vuetify 的 `color` 屬性用主題色名稱（`primary`、`accent`、`brand-dark`、`brand-light`，`src/plugins/themeColors.js`），不要傳 `var()`
   （Vuetify 無法算出對比的文字顏色）。Bootstrap / Material Kit 的 `primary` 在 `src/assets/scss/material-kit/custom/_variables.scss`。改色時三處一起改
 - **Vuetify**：元件由 `vite-plugin-vuetify` 自動匯入（不要 `import * as components`）。圖示為 SVG，
   只有 `src/plugins/vuetifyIcons.js` 登記的 `mdi-xxx` 會顯示，**用新圖示要先在那裡登記**；沒有 MDI 字型 CSS，不能寫 `<i class="mdi mdi-xxx">`

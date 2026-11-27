@@ -582,26 +582,26 @@ onMounted(() => {
 /* 未激活狀態 */
 .btn-interaction {
   background-color: transparent;
-  border: 1px solid var(--incode-sage);
-  color: var(--incode-olive-dark);
+  border: 1px solid var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .btn-interaction:hover:not(:disabled) {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 /* 激活狀態 */
 .btn-interaction-active {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .btn-interaction-active:hover:not(:disabled) {
-  background-color: var(--incode-olive);
-  border-color: var(--incode-olive);
+  background-color: var(--incode-primary);
+  border-color: var(--incode-primary);
 }
 
 /* 禁用狀態 */
@@ -622,26 +622,26 @@ onMounted(() => {
 }
 
 .btn-best-answer {
-  background-color: var(--incode-olive-dark);
-  border: 1px solid var(--incode-olive-dark);
-  color: var(--incode-cream);
+  background-color: var(--incode-dark);
+  border: 1px solid var(--incode-dark);
+  color: var(--incode-light);
 }
 
 .btn-best-answer:hover:not(:disabled) {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .btn-best-answer {
-  background-color: var(--incode-olive-dark);
-  border: 1px solid var(--incode-olive-dark);
-  color: var(--incode-cream);
+  background-color: var(--incode-dark);
+  border: 1px solid var(--incode-dark);
+  color: var(--incode-light);
 }
 
 .btn-best-answer:hover:not(:disabled) {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
@@ -676,7 +676,7 @@ onMounted(() => {
   padding: 0.35rem 1rem;
   border: none;
   background: white;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   font-size: 0.875rem;
   text-align: left;
   cursor: pointer;
@@ -685,7 +685,7 @@ onMounted(() => {
 
 .more-menu-item:hover {
   background-color: #f8f9fa;
-  color: var(--incode-sage);
+  color: var(--incode-accent);
 }
 
 .more-menu-item-danger {

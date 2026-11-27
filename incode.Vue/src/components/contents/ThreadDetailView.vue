@@ -173,7 +173,7 @@ const threadHasInlineImages = computed(() => {
           forumStore.threadDetail.content
         "
         :min-height="120"
-        text-color="olive-dark"
+        text-color="brand-dark"
         :extra-css="`body { white-space: pre-wrap; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; height: auto; object-fit: contain; }`"
       />
       <!-- 改圖片大小在上面這裡 -->
@@ -319,18 +319,18 @@ const threadHasInlineImages = computed(() => {
 .btn-forum-secondary {
   background-color: transparent;
   border: 1px solid var(--incode-border);
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
-  background-color: var(--incode-cream);
-  border-color: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .topic-sort-item.active {
-  background: var(--incode-cream);
+  background: var(--incode-light);
 }
 
 .topic-list--container-max-768 .interaction-aligned-badge {
@@ -342,13 +342,13 @@ const threadHasInlineImages = computed(() => {
 
 /* 徽章樣式 */
 .badge.bg-secondary {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
 .badge.bg-secondary-light {
-  background-color: var(--incode-sage-light) !important;
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-accent-soft) !important;
+  color: var(--incode-dark);
 }
 
 .interaction-aligned-badge {
@@ -366,20 +366,20 @@ const threadHasInlineImages = computed(() => {
 }
 
 .parent-link-btn {
-  border: 1px solid var(--incode-sage);
-  color: var(--incode-olive-dark);
-  background-color: var(--incode-sage-light);
+  border: 1px solid var(--incode-accent);
+  color: var(--incode-dark);
+  background-color: var(--incode-accent-soft);
   cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .badge.bg-primary {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
@@ -389,7 +389,7 @@ const threadHasInlineImages = computed(() => {
   height: auto;
   border-radius: 8px;
   border: 1px solid var(--incode-border);
-  background: var(--incode-cream);
+  background: var(--incode-light);
 }
 
 /* 互動按鈕容器樣式 */
@@ -401,19 +401,19 @@ const threadHasInlineImages = computed(() => {
 
 .thread-detail-title {
   font-weight: 700;
-  color: var(--incode-olive-darker);
+  color: var(--incode-darker);
   letter-spacing: 0.2px;
   font-size: 1.35rem;
 }
 
 /* 主文正在回覆的目標內容高亮效果 */
 .thread-detail-card.replying-target {
-  border: 2px solid var(--incode-olive-dark);
-  box-shadow: 0 0 20px rgba(var(--incode-olive-dark-rgb), 0.3);
+  border: 2px solid var(--incode-dark);
+  box-shadow: 0 0 20px rgba(var(--incode-dark-rgb), 0.3);
   background: linear-gradient(
     135deg,
-    rgba(var(--incode-olive-dark-rgb), 0.08) 0%,
-    rgba(var(--incode-olive-dark-rgb), 0.03) 100%
+    rgba(var(--incode-dark-rgb), 0.08) 0%,
+    rgba(var(--incode-dark-rgb), 0.03) 100%
   );
   position: relative;
   animation: pulse-border 2s ease-in-out infinite;
@@ -423,11 +423,11 @@ const threadHasInlineImages = computed(() => {
 }
 
 .thread-detail-card.replying-target:hover {
-  box-shadow: 0 0 30px rgba(var(--incode-olive-dark-rgb), 0.5);
+  box-shadow: 0 0 30px rgba(var(--incode-dark-rgb), 0.5);
   background: linear-gradient(
     135deg,
-    rgba(var(--incode-olive-dark-rgb), 0.12) 0%,
-    rgba(var(--incode-olive-dark-rgb), 0.06) 100%
+    rgba(var(--incode-dark-rgb), 0.12) 0%,
+    rgba(var(--incode-dark-rgb), 0.06) 100%
   );
 }
 
@@ -436,23 +436,23 @@ const threadHasInlineImages = computed(() => {
   position: absolute;
   top: -12px;
   left: 12px;
-  background: linear-gradient(135deg, var(--incode-olive-dark) 0%, var(--incode-olive-darker) 100%);
-  color: var(--incode-cream);
+  background: linear-gradient(135deg, var(--incode-dark) 0%, var(--incode-darker) 100%);
+  color: var(--incode-light);
   padding: 2px 12px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(var(--incode-olive-dark-rgb), 0.4);
+  box-shadow: 0 2px 8px rgba(var(--incode-dark-rgb), 0.4);
   z-index: 10;
 }
 
 @keyframes pulse-border {
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(var(--incode-olive-dark-rgb), 0.3);
+    box-shadow: 0 0 20px rgba(var(--incode-dark-rgb), 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(var(--incode-olive-dark-rgb), 0.5);
+    box-shadow: 0 0 30px rgba(var(--incode-dark-rgb), 0.5);
   }
 }
 
@@ -490,7 +490,7 @@ const threadHasInlineImages = computed(() => {
 .reply-standalone-btn {
   border: none;
   background: transparent;
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   padding: 0 1rem;
   border-radius: 999px;
   font-size: 1rem;
@@ -523,12 +523,12 @@ const threadHasInlineImages = computed(() => {
 }
 
 .reply-mode-tabs .nav-link.active {
-  background: var(--incode-olive-dark);
+  background: var(--incode-dark);
   color: #fff;
 }
 
 .quick-reply-box {
-  background: rgba(var(--incode-cream-rgb), 0.5);
+  background: rgba(var(--incode-light-rgb), 0.5);
   border: 1px solid var(--incode-border);
   border-radius: 8px;
   padding-top: 1rem; /* 上 */

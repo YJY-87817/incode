@@ -248,26 +248,26 @@ watch(
 <style scoped>
 /* 自定義顏色方案 */
 :root {
-  --forum-primary: var(--incode-olive-dark);
-  --forum-light: var(--incode-cream);
+  --forum-primary: var(--incode-dark);
+  --forum-light: var(--incode-light);
   --forum-gray: var(--incode-border);
-  --forum-accent: var(--incode-sage);
+  --forum-accent: var(--incode-accent);
 }
 
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
-  color: var(--incode-cream);
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-light);
   transition: all 0.3s ease;
 }
 
 .btn-forum-primary:hover {
-  background-color: var(--incode-sage);
-  border-color: var(--incode-sage);
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(var(--incode-olive-dark-rgb), 0.3);
+  box-shadow: 0 4px 8px rgba(var(--incode-dark-rgb), 0.3);
 }
 
 .btn-forum-primary:disabled {
@@ -280,25 +280,25 @@ watch(
 .btn-forum-secondary {
   background-color: transparent;
   border: 1px solid var(--incode-border);
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
-  background-color: var(--incode-cream);
-  border-color: var(--incode-sage);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 /* 徽章樣式 */
 .badge.bg-secondary {
-  background-color: var(--incode-sage) !important;
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-accent) !important;
+  color: var(--incode-dark);
 }
 
 .badge.bg-info {
-  background-color: var(--incode-olive-dark) !important;
-  color: var(--incode-cream);
+  background-color: var(--incode-dark) !important;
+  color: var(--incode-light);
 }
 
 /* 卡片樣式 */
@@ -307,7 +307,7 @@ watch(
 }
 
 .card-header {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
   border-bottom-color: var(--incode-border);
 }
 
@@ -346,34 +346,34 @@ watch(
 
 /* 表格樣式 */
 .table-light {
-  background-color: var(--incode-cream) !important;
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-light) !important;
+  color: var(--incode-dark);
 }
 
 .table-hover tbody tr:hover {
-  background-color: rgba(var(--incode-cream-rgb), 0.5) !important;
+  background-color: rgba(var(--incode-light-rgb), 0.5) !important;
 }
 
 /* 鏈接顏色 */
 .topic-title-link {
-  color: var(--incode-olive-dark);
+  color: var(--incode-dark);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
 }
 
 .topic-title-link:hover {
-  color: var(--incode-sage);
+  color: var(--incode-accent);
 }
 
 /* 載入動畫顏色 */
 .spinner-border {
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 
 /* 文字顏色 */
 .text-primary {
-  color: var(--incode-olive-dark) !important;
+  color: var(--incode-dark) !important;
 }
 
 /* 浮動發佈新主題按鈕*/
@@ -386,7 +386,7 @@ watch(
   z-index: 990;
   padding: 0.6rem 1rem;
   border-radius: 999px;
-  box-shadow: 0 8px 18px rgba(var(--incode-olive-dark-rgb), 0.25);
+  box-shadow: 0 8px 18px rgba(var(--incode-dark-rgb), 0.25);
   transition: top 0.2s ease;
 }
 
@@ -407,7 +407,7 @@ watch(
     height: 45px;
     padding: 0 15px 0 18px;
     font-size: 0.9rem;
-    box-shadow: -4px 0 15px rgba(var(--incode-olive-dark-rgb), 0.35);
+    box-shadow: -4px 0 15px rgba(var(--incode-dark-rgb), 0.35);
   }
 
   .forum-new-topic-fab.forum-new-topic-fab--pinned {
@@ -419,7 +419,7 @@ watch(
     border-radius: 999px;
     padding: 0.45rem 0.85rem;
     height: auto;
-    box-shadow: 0 8px 18px rgba(var(--incode-olive-dark-rgb), 0.25);
+    box-shadow: 0 8px 18px rgba(var(--incode-dark-rgb), 0.25);
   }
 
   .forum-new-topic-fab span {
@@ -433,15 +433,15 @@ watch(
 
 /* 留言框樣式 */
 .reply-box {
-  background-color: rgba(var(--incode-cream-rgb), 0.5);
-  border-left-color: var(--incode-olive-dark);
+  background-color: rgba(var(--incode-light-rgb), 0.5);
+  border-left-color: var(--incode-dark);
   padding: 1rem;
   border-radius: 0.5rem;
 }
 
 /* 邊框顏色 */
 .border-forum-selected {
-  border-color: var(--incode-olive-dark) !important;
+  border-color: var(--incode-dark) !important;
   border-width: 2px !important;
 }
 
@@ -461,8 +461,8 @@ watch(
 
 /* 選中狀態 */
 .category-card.border-forum-selected {
-  background: rgba(var(--incode-cream-rgb), 0.8);
-  box-shadow: 0 0 0 3px rgba(var(--incode-sage-rgb), 0.3);
+  background: rgba(var(--incode-light-rgb), 0.8);
+  box-shadow: 0 0 0 3px rgba(var(--incode-accent-rgb), 0.3);
 }
 
 /* 表格行樣式 */
@@ -472,7 +472,7 @@ watch(
 }
 
 .forum-row:hover {
-  background-color: rgba(var(--incode-cream-rgb), 0.3) !important;
+  background-color: rgba(var(--incode-light-rgb), 0.3) !important;
 }
 
 .table {
@@ -535,7 +535,7 @@ watch(
   height: auto;
   border-radius: 8px;
   border: 1px solid var(--incode-border);
-  background: var(--incode-cream);
+  background: var(--incode-light);
 }
 
 .thread-detail-image {

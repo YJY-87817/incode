@@ -68,7 +68,7 @@ const { collapseRef: filterCollapseRef, headerRef: filterHeaderRef } =
       data-bs-target="#filterCollapse"
       aria-expanded="false"
       aria-controls="filterCollapse"
-      style="cursor: pointer; background-color: var(--incode-sage)"
+      style="cursor: pointer; background-color: var(--incode-accent)"
     >
       <h5 class="fw-bold mb-0"><i class="bi bi-funnel me-2"></i>篩選商品</h5>
       <i class="bi bi-chevron-down transition-icon"></i>

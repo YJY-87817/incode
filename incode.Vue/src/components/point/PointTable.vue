@@ -6,7 +6,7 @@ const store = usePointStore();
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-const mainColor = "var(--incode-olive-dark)"; // 定義主色
+const mainColor = "var(--incode-dark)"; // 定義主色
 
 watch([() => store.searchQuery, () => store.filterType], () => {
   currentPage.value = 1;
@@ -86,7 +86,7 @@ const getBadgeClass = (category) => {
             >
               {{ log.points > 0 ? "+" : "" }}{{ log.points.toLocaleString() }}
             </td>
-            <td class="text-end pe-4 fw-medium" :style="{ color: 'var(--incode-olive-dark)' }">
+            <td class="text-end pe-4 fw-medium" :style="{ color: 'var(--incode-dark)' }">
               {{ log.balance.toLocaleString() }}
             </td>
           </tr>
@@ -140,13 +140,13 @@ const getBadgeClass = (category) => {
 <style scoped>
 /* --- 強化的表頭樣式 --- */
 .custom-thead {
-  background-color: var(--incode-sage) !important;
+  background-color: var(--incode-accent) !important;
 }
 
 .custom-thead th {
   /* 1. 解決字看不見的問題：改用深色或白色 */
-  /* 背景是 sage 時文字用 olive-dark 或白色 */
-  color: var(--incode-olive-darker) !important;
+  /* 背景是 accent 時文字用 darker（對比約 5:1） */
+  color: var(--incode-darker) !important;
 
   /* 2. 強化視覺效果 */
   font-size: 0.85rem; /* 對應 small */
@@ -158,24 +158,24 @@ const getBadgeClass = (category) => {
 }
 /* 自定義主色 Badge */
 .custom-badge-main {
-  background-color: var(--incode-sage-light);
-  color: var(--incode-olive-dark);
+  background-color: var(--incode-accent-soft);
+  color: var(--incode-dark);
 }
 /* 修改一般狀態的數字顏色 */
 .page-link {
-  color: var(--incode-sage); /* 主色 */
+  color: var(--incode-accent); /* 主色 */
 }
 
 /* 修改滑鼠移過去的顏色 */
 .page-link:hover {
-  color: var(--incode-sage);
+  color: var(--incode-accent);
   background-color: #e9ecef;
 }
 
 /* 修改當前頁面 (Active) 的顏色 */
 .page-item.active .page-link {
-  background-color: var(--incode-sage) !important;
-  border-color: var(--incode-sage) !important;
-  color: var(--incode-olive-dark) !important;
+  background-color: var(--incode-accent) !important;
+  border-color: var(--incode-accent) !important;
+  color: var(--incode-dark) !important;
 }
 </style>

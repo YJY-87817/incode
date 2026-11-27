@@ -2,7 +2,7 @@
 import { usePointStore } from "@/stores/point/pointStore.js";
 const store = usePointStore();
 
-const mainColor = "var(--incode-olive-dark)";
+const mainColor = "var(--incode-dark)";
 </script>
 
 <template>
@@ -61,30 +61,30 @@ const mainColor = "var(--incode-olive-dark)";
 </template>
 
 <style scoped>
-/* 自定義按鈕樣式，對應 var(--incode-sage) */
+/* 自定義按鈕樣式，對應 var(--incode-accent) */
 .custom-btn {
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
   background-color: transparent;
   transition: all 0.3s ease;
 }
 
 .custom-btn:hover {
-  background-color: var(--incode-olive-dark);
+  background-color: var(--incode-dark);
   color: white;
-  border-color: var(--incode-olive-dark);
+  border-color: var(--incode-dark);
 }
 
 .custom-btn:disabled {
   opacity: 0.65;
-  color: var(--incode-olive-dark);
-  border-color: var(--incode-olive-dark);
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 /* 讓輸入框聚焦時也帶點主色調（選配） */
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--incode-olive-dark);
-  box-shadow: 0 0 0 0.25rem rgba(var(--incode-sage-rgb), 0.25);
+  border-color: var(--incode-dark);
+  box-shadow: 0 0 0 0.25rem rgba(var(--incode-accent-rgb), 0.25);
 }
 </style>
