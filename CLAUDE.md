@@ -631,7 +631,7 @@ incode/
       圖片只回 TMDB 相對路徑（格式不符的略過），YouTube 影片代碼驗證格式後才回傳
     - 前端：首頁標題下方 `components/movies/MovieCarousel.vue`（自動輪播；滑鼠移入 / 聚焦時暫停，觸控、滾輪操作後暫停 8 秒；失敗不顯示；
       「即將上映」以台灣時區的今天判斷，`utils/movie.js` 的 `taipeiToday`）→ `/movie/:id`（`views/movies/MovieDetailView.vue`）。
-      電影頁只在路由仍是 `movie-detail` 時重新載入，較慢的舊回應會被丟掉。依 TMDB 條款頁面標示 `TmdbAttribution.vue`（目前只有文字；官方 logo 取得後可加進該元件）
+      電影頁只在路由仍是 `movie-detail` 時重新載入，較慢的舊回應會被丟掉。依 TMDB 條款頁面標示 `TmdbAttribution.vue`（官方 logo `assets/img/tmdb-logo.svg` + 聲明文字）
     - 測試：`TmdbServiceTests`（日期區間、查詢參數與 Bearer、台灣上映日排序 / 去重 / 排除區間外、詳細欄位轉換、快取與失敗快取、同時請求只取一次、
       Token 未設定、TMDB 錯誤與網路失敗）、`MovieApiTests`（匿名、`recent` 不限流、`{id}` 限流）、前端 `utils/movie.test.js`
 
