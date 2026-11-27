@@ -88,7 +88,7 @@ incode/
    dotnet user-secrets set "GeminiApiKey" "<Gemini API Key>"
    ```
 
-   其他可選設定：`TmdbApiKey`、`imgapikey`、`ECPay:*`（`appsettings.json` 目前為綠界公開的測試帳號）。
+   其他可選設定：`TmdbApiKey`（TMDB v4「API Read Access Token」，首頁「近期上映」電影輪播用；沒設定時該區塊不顯示）、`imgapikey`、`ECPay:*`（`appsettings.json` 目前為綠界公開的測試帳號）。
    未設定 `Authentication:Google:ClientSecret` 時，需要驗證的頁面會無法開啟。
 
 3. **啟動**：

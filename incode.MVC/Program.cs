@@ -49,6 +49,13 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 // Gemini服務
 builder.Services.AddHttpClient<GeminiService>();
+// TMDB 電影資訊（首頁近期上映；TmdbApiKey 放 v4 API Read Access Token）
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHttpClient<ITmdbService, TmdbService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 // SignalR服務
 builder.Services.AddSignalR();
 

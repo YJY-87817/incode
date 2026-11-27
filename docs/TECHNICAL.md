@@ -161,7 +161,8 @@ ApiController / Controller  →  Service (介面)  →  incodedatabaseContext (E
 | `Authentication:Google:ClientId / ClientSecret` | Google OAuth（Secret 放 user-secrets） |
 | `EmailSettings:*` | 寄信（忘記密碼）；`EmailService` 讀根層級 |
 | `GeminiApiKey` | AI 客服 |
-| `TmdbApiKey`、`imgapikey` | 其他選用服務 |
+| `TmdbApiKey` | 首頁「近期上映」電影輪播（`TmdbService`）。放 TMDB v4 **API Read Access Token**（以 Bearer 標頭傳送）；未設定時 API 回 503、前端不顯示該區塊 |
+| `imgapikey` | 其他選用服務 |
 | `ECPay:MerchantID / HashKey / HashIV / ReturnUrl` | 綠界；`appsettings.json` 為空，公開測試帳號（`3002607`）只放在 `appsettings.Development.json`。非 Development 環境使用測試帳號會拒絕啟動（任何人都能以公開的 HashKey 偽造付款通知），展示環境要用測試帳號需設 `ECPay__AllowTestMerchant=true`；正式金鑰不可進 repo |
 
 取值統一用 `IConfiguration.GetFrontendUrl()`、`GetCorsOrigins()`（`Extensions/ConfigurationExtensions.cs`），不要寫死網址。正式環境用環境變數覆寫（`App__FrontendUrl`、`App__CorsOrigins__0`、`ConnectionStrings__incodedatabase`）。

@@ -38,6 +38,7 @@ import {
   mdiPhoneOutline,
   mdiPlus,
   mdiShareVariantOutline,
+  mdiStar,
   mdiStarOutline,
 } from "@mdi/js";
 
@@ -87,6 +88,7 @@ const icons = {
   "mdi-phone-outline": mdiPhoneOutline,
   "mdi-plus": mdiPlus,
   "mdi-share-variant-outline": mdiShareVariantOutline,
+  "mdi-star": mdiStar,
   "mdi-star-outline": mdiStarOutline,
 };
 
