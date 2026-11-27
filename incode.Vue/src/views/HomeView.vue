@@ -1,6 +1,7 @@
 <script setup>
 import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import DefaultFooter from "@/components/layout/FooterCentered.vue";
+import MovieCarousel from "@/components/movies/MovieCarousel.vue";
 import { onMounted, onUnmounted } from "vue";
 
 const body = document.getElementsByTagName("body")[0];
@@ -19,7 +20,7 @@ onUnmounted(() => {
   <div class="page-header min-vh-80">
     <div class="container">
       <div class="row">
-        <div class="col-lg-8 mx-auto text-center mt-8 mb-5">
+        <div class="col-lg-8 mx-auto text-center mt-8 mb-3">
           <h1 class="display-3 font-weight-bold mb-4 text-dark">
             <img
               src="@/assets/img/okapi.webp"
@@ -34,9 +35,20 @@ onUnmounted(() => {
             />
             歡迎來到 incode影庫
           </h1>
-          <p class="lead mb-5 text-dark">探索、分享、交流 - 您的影像創作平台</p>
+          <p class="lead mb-4 text-dark">探索、分享、交流 - 您的影像創作平台</p>
+        </div>
+      </div>
 
-          <div class="row mt-5 g-4">
+      <!-- 近期上映（TMDB）：比下方卡片寬，載入失敗時整個區塊不顯示 -->
+      <div class="row">
+        <div class="col-lg-10 mx-auto mb-5">
+          <MovieCarousel />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8 mx-auto text-center mb-5">
+          <div class="row g-4">
             <div class="col-md-4">
               <div class="card shadow-lg h-100">
                 <div class="card-body text-center p-4">

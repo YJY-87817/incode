@@ -23,6 +23,8 @@
 - **任務**：只有平台任務可以「接取」（`taskStore.claimTask`）；委託任務是到討論串回覆，由委託人選最佳解答
 - **論壇編輯器**：`components/contents/TiptapEditor.vue`（Tiptap 3）。ProseMirror 相關 import 一律用 `@tiptap/pm/*`，
   不要直接 import `prosemirror-*`（版本不同時 `instanceof` 會失效）；StarterKit 已內含 Underline / Link，不要重複加入
+- **電影（TMDB）**：首頁 `MovieCarousel.vue` 與 `/movie/:id`（`MovieDetailView.vue`）只呼叫後端 `api/MovieApi/*`（`api/movieApi.js`），不要在前端直接打 TMDB 或放 Token。
+  圖片網址由 `utils/movie.js` 的 `tmdbImage(path, size)` 組成（後端只回相對路徑）；頁面要保留 `TmdbAttribution.vue` 的標示
 - **路由**：新頁面一律 `component: () => import("@/views/...")` 延遲載入（只有首頁直接 import）
 - 論壇內文以 `components/common/HtmlIframe.vue` 顯示（sandbox 固定為 `allow-same-origin allow-popups allow-popups-to-escape-sandbox`）。
   **不要加 `allow-scripts`**：與 `allow-same-origin` 同時存在時 sandbox 形同無效
@@ -58,11 +60,13 @@ src/
 ├── views/                  路由頁面
 │   ├── HomeView.vue / NotFoundView.vue
 │   ├── contents/ForumView.vue
+│   ├── movies/MovieDetailView.vue
 │   ├── point/  pointshop/  users/
 ├── components/
 │   ├── layout/             NavbarDefault / FooterCentered (套版)
 │   ├── common/             HtmlIframe
 │   ├── chat/               ChatWidget (全站客服)
+│   ├── movies/             MovieCarousel (首頁近期上映輪播) / TmdbAttribution
 │   ├── contents/           論壇：TopicListView（外層卡片，量測寬度）→ ThreadDetailView（詳情）/ TopicList（列表）；其餘為 ThreadPost、InteractionButtons、NewTopicModal 等
 │   ├── point/  users/
 │   └── pointshop/          Cart (全站購物車側欄，掛在 App.vue) 與商城元件
