@@ -347,12 +347,12 @@ onMounted(() => {
                   variant="flat"
                   class="text-body-1 font-weight-bold mb-4"
                   :loading="isLoading"
-                  :color="isHovering ? '#FFFFFF' : '#145369'"
+                  :color="isHovering ? '#FFFFFF' : 'olive-dark'"
                   :style="{
                     color: isHovering
-                      ? '#145369 !important'
+                      ? 'var(--incode-olive-dark) !important'
                       : '#FFFFFF !important',
-                    border: '1px solid #145369',
+                    border: '1px solid var(--incode-olive-dark)',
                   }"
                 >
                   登入
@@ -548,12 +548,12 @@ onMounted(() => {
                   elevation="2"
                   @click="handleRegister"
                   :loading="isLoading"
-                  :color="isHovering ? '#FFFFFF' : '#145369'"
+                  :color="isHovering ? '#FFFFFF' : 'olive-dark'"
                   :style="{
                     color: isHovering
-                      ? '#145369 !important'
+                      ? 'var(--incode-olive-dark) !important'
                       : '#FFFFFF !important',
-                    border: '1px solid #145369',
+                    border: '1px solid var(--incode-olive-dark)',
                   }"
                 >
                   立即註冊
@@ -606,12 +606,12 @@ onMounted(() => {
                     variant="flat"
                     class="text-body-1 font-weight-bold"
                     :loading="forgotPasswordLoading"
-                    :color="isHovering ? '#FFFFFF' : '#145369'"
+                    :color="isHovering ? '#FFFFFF' : 'olive-dark'"
                     :style="{
                       color: isHovering
-                        ? '#145369 !important'
+                        ? 'var(--incode-olive-dark) !important'
                         : '#FFFFFF !important',
-                      border: '1px solid #145369',
+                      border: '1px solid var(--incode-olive-dark)',
                     }"
                   >
                     發送重設信
@@ -690,9 +690,9 @@ onMounted(() => {
 }
 
 .custom-hover-btn {
-  background-color: #145369 !important;
+  background-color: var(--incode-olive-dark) !important;
   color: #ffffff !important;
-  border: 1px solid #145369 !important;
+  border: 1px solid var(--incode-olive-dark) !important;
   transition: all 0.3s ease;
   height: 48px !important;
   font-weight: bold;
@@ -701,7 +701,7 @@ onMounted(() => {
 
 .custom-hover-btn:hover {
   background-color: #ffffff !important;
-  color: #145369 !important;
-  border: 1px solid #145369 !important;
+  color: var(--incode-olive-dark) !important;
+  border: 1px solid var(--incode-olive-dark) !important;
 }
 </style>

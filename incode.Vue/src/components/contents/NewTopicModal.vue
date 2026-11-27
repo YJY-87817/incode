@@ -846,7 +846,7 @@ const validateEntrustMission = async () => {
       title: "提醒",
       text: "請完整填寫委託任務資訊",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
     return false;
   }
@@ -857,7 +857,7 @@ const validateEntrustMission = async () => {
       title: "提醒",
       text: "獎勵點數需大於 0",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
     return false;
   }
@@ -1576,59 +1576,59 @@ const handleModalCancel = () => {
 <style scoped>
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
+  background-color: var(--incode-olive-dark);
+  border-color: var(--incode-olive-dark);
+  color: var(--incode-cream);
   transition: all 0.3s ease;
 }
 
 .btn-forum-primary:hover {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-sage);
+  border-color: var(--incode-sage);
   color: #fff;
 }
 
 .btn-forum-secondary {
   background-color: transparent;
-  border: 1px solid #d1d3d4;
-  color: #145369;
+  border: 1px solid var(--incode-border);
+  color: var(--incode-olive-dark);
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
+  background-color: var(--incode-cream);
+  border-color: var(--incode-sage);
+  color: var(--incode-olive-dark);
 }
 
 .btn-entrust-toggle {
-  border-color: #145369;
-  color: #145369;
+  border-color: var(--incode-olive-dark);
+  color: var(--incode-olive-dark);
 }
 
 .btn-entrust-toggle:hover {
-  background-color: #eaf2f4;
-  color: #0f4456;
+  background-color: var(--incode-cream-light);
+  color: var(--incode-olive-darker);
 }
 
 .btn-entrust-toggle:focus,
 .btn-entrust-toggle:active,
 .btn-entrust-toggle.active {
-  background-color: #eaf2f4;
-  border-color: #145369;
-  color: #0f4456;
+  background-color: var(--incode-cream-light);
+  border-color: var(--incode-olive-dark);
+  color: var(--incode-olive-darker);
   box-shadow: none;
 }
 
 .entrust-mission-panel {
-  background: #f6f8f9;
-  border-color: #d9e2e6;
+  background: var(--incode-cream-light);
+  border-color: var(--incode-sage-light);
 }
 
 .custom-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(67, 47, 40, 0.5);
+  background: rgba(var(--incode-olive-dark-rgb), 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -1645,7 +1645,7 @@ const handleModalCancel = () => {
   padding: 1rem;
   position: relative;
   z-index: 2100;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1653,7 +1653,7 @@ const handleModalCancel = () => {
 .create-category-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(67, 47, 40, 0.5);
+  background: rgba(var(--incode-olive-dark-rgb), 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -1669,7 +1669,7 @@ const handleModalCancel = () => {
   padding: 0.75rem 1rem;
   position: relative;
   z-index: 2100;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   max-height: 75vh;
   overflow-y: auto;
 }
@@ -1684,16 +1684,16 @@ const handleModalCancel = () => {
 }
 
 .modal-header {
-  border-bottom-color: #d1d3d4;
+  border-bottom-color: var(--incode-border);
 }
 
 .modal-footer {
-  border-top-color: #d1d3d4;
+  border-top-color: var(--incode-border);
 }
 
 .form-control,
 .form-select {
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   padding-left: 0.75rem;
 }
 
@@ -1720,7 +1720,7 @@ const handleModalCancel = () => {
 }
 
 .category-input-clear:hover {
-  color: #145369;
+  color: var(--incode-olive-dark);
 }
 
 .category-input-dropdown {
@@ -1735,27 +1735,27 @@ const handleModalCancel = () => {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: #86b0bd;
-  box-shadow: 0 0 0 0.2rem rgba(134, 176, 189, 0.25);
+  border-color: var(--incode-sage);
+  box-shadow: 0 0 0 0.2rem rgba(var(--incode-sage-rgb), 0.25);
 }
 
 .category-dropdown {
   max-height: 220px;
   overflow-y: auto;
   background: #fff;
-  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
-  border-color: #d1d3d4 !important;
+  box-shadow: 0 8px 16px rgba(var(--incode-olive-dark-rgb), 0.12);
+  border-color: var(--incode-border) !important;
 }
 
 .dropdown-item {
   padding: 0.5rem 0.75rem;
   border: none;
   background: transparent;
-  color: #145369;
+  color: var(--incode-olive-dark);
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 240, 221, 0.7);
+  background: rgba(var(--incode-cream-rgb), 0.7);
 }
 
 .reply-dropdown-item {

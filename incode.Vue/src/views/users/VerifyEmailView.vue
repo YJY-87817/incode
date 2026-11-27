@@ -41,7 +41,7 @@
         </v-icon>
         <p class="text-body-1 mb-6">{{ message }}</p>
         <div class="d-flex justify-center ga-2">
-          <v-btn variant="flat" color="#145369" class="text-white" rounded="pill" :to="{ name: 'UserIndex' }">
+          <v-btn variant="flat" color="olive-dark" class="text-white" rounded="pill" :to="{ name: 'UserIndex' }">
             前往會員中心
           </v-btn>
           <v-btn variant="text" rounded="pill" to="/">回首頁</v-btn>

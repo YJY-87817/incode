@@ -55,7 +55,7 @@
         icon: "success",
         title: "密碼已更新",
         text: res.data?.message || "其他裝置的登入已登出",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-olive-dark)",
       });
     } catch (error) {
       errorMessage.value = errorText(error);
@@ -96,7 +96,7 @@
           <v-spacer></v-spacer>
           <v-btn variant="text" class="text-body-1 font-weight-bold mr-2" color="grey-darken-1"
             @click="model = false">取消</v-btn>
-          <v-btn type="submit" variant="flat" class="text-body-1 font-weight-bold px-6" color="#145369"
+          <v-btn type="submit" variant="flat" class="text-body-1 font-weight-bold px-6" color="olive-dark"
             :loading="isSubmitting" :disabled="!formValid">更新密碼</v-btn>
         </v-card-actions>
       </v-form>

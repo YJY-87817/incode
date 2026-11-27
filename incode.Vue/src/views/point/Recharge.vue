@@ -137,7 +137,7 @@ const handleCheckout = async () => {
           err.response?.data?.errors?.CashAmount?.[0] ||
           err.response?.data?.message ||
           "無法啟動支付流程，請檢查網路或聯繫客服",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-olive-dark)",
         customClass: { confirmButton: "text-white" },
       });
     } finally {
@@ -288,8 +288,8 @@ const handleCheckout = async () => {
   transform: translateY(-5px);
 }
 .ring-active {
-  box-shadow: 0 0 15px rgba(233, 30, 99, 0.1);
-  background-color: rgba(233, 30, 99, 0.02);
+  box-shadow: 0 0 15px rgba(var(--incode-olive-rgb), 0.15);
+  background-color: rgba(var(--incode-olive-rgb), 0.04);
 }
 .cursor-pointer {
   cursor: pointer;

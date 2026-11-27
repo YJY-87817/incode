@@ -39,7 +39,7 @@ export function useTopicInteractionHandlers() {
       title: "互動失敗",
       text: data.error || "操作失敗，請稍後再試",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
   };
 

@@ -24,7 +24,7 @@ const { collapseRef: filterCollapseRef, headerRef: filterHeaderRef } =
       data-bs-target="#filterCollapse"
       aria-expanded="false"
       aria-controls="filterCollapse"
-      style="cursor: pointer; background-color: #86B0BD"
+      style="cursor: pointer; background-color: var(--incode-sage)"
     >
       <h5 class="fw-bold mb-0">
         <i class="bi bi-funnel me-2"></i>訂單篩選
@@ -44,7 +44,7 @@ const { collapseRef: filterCollapseRef, headerRef: filterHeaderRef } =
                 ? 'active'
                 : ''
             ]"
-            style="--bs-list-group-active-bg: #145369; --bs-list-group-active-border-color: #145369;"
+            style="--bs-list-group-active-bg: var(--incode-olive-dark); --bs-list-group-active-border-color: var(--incode-olive-dark);"
           >
             {{ status.label }}
           </button>

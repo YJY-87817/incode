@@ -582,26 +582,26 @@ onMounted(() => {
 /* 未激活狀態 */
 .btn-interaction {
   background-color: transparent;
-  border: 1px solid #86b0bd;
-  color: #145369;
+  border: 1px solid var(--incode-sage);
+  color: var(--incode-olive-dark);
 }
 
 .btn-interaction:hover:not(:disabled) {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-sage);
+  border-color: var(--incode-sage);
   color: #fff;
 }
 
 /* 激活狀態 */
 .btn-interaction-active {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-sage);
+  border-color: var(--incode-sage);
   color: #fff;
 }
 
 .btn-interaction-active:hover:not(:disabled) {
-  background-color: #6b96a8;
-  border-color: #6b96a8;
+  background-color: var(--incode-olive);
+  border-color: var(--incode-olive);
 }
 
 /* 禁用狀態 */
@@ -622,26 +622,26 @@ onMounted(() => {
 }
 
 .btn-best-answer {
-  background-color: #145369;
-  border: 1px solid #145369;
-  color: #fff0dd;
+  background-color: var(--incode-olive-dark);
+  border: 1px solid var(--incode-olive-dark);
+  color: var(--incode-cream);
 }
 
 .btn-best-answer:hover:not(:disabled) {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-sage);
+  border-color: var(--incode-sage);
   color: #fff;
 }
 
 .btn-best-answer {
-  background-color: #145369;
-  border: 1px solid #145369;
-  color: #fff0dd;
+  background-color: var(--incode-olive-dark);
+  border: 1px solid var(--incode-olive-dark);
+  color: var(--incode-cream);
 }
 
 .btn-best-answer:hover:not(:disabled) {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-sage);
+  border-color: var(--incode-sage);
   color: #fff;
 }
 
@@ -676,7 +676,7 @@ onMounted(() => {
   padding: 0.35rem 1rem;
   border: none;
   background: white;
-  color: #145369;
+  color: var(--incode-olive-dark);
   font-size: 0.875rem;
   text-align: left;
   cursor: pointer;
@@ -685,7 +685,7 @@ onMounted(() => {
 
 .more-menu-item:hover {
   background-color: #f8f9fa;
-  color: #86b0bd;
+  color: var(--incode-sage);
 }
 
 .more-menu-item-danger {

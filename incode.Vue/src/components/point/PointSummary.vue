@@ -8,7 +8,7 @@ const store = usePointStore();
   <div class="d-lg-none mb-3">
     <button
       class="btn w-100 d-flex align-items-center justify-content-between py-3 rounded-4 shadow-sm text-white"
-      style="background-color: #86b0bd"
+      style="background-color: var(--incode-sage)"
       type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#sidebarOffcanvas"
@@ -26,7 +26,7 @@ const store = usePointStore();
   >
     <div
       class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center text-white"
-      style="background-color: #86b0bd"
+      style="background-color: var(--incode-sage)"
     >
       <h6 class="fw-bold mb-0 text-uppercase tracking-wider">
         <i class="bi bi-person-circle me-2"></i>帳戶資訊

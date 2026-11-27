@@ -57,7 +57,7 @@ watch(Islogin, loadOrders, { immediate: true });
       <!-- Header -->
       <div
         class="card-header border-bottom-0 pt-4 px-4 mb-3"
-        style="background-color: #86b0bd"
+        style="background-color: var(--incode-sage)"
       >
         <h2 class="fw-bold mb-1">
           <i class="bi bi-person-lines-fill me-2"></i>訂單查詢

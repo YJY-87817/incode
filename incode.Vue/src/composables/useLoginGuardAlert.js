@@ -28,7 +28,7 @@ export function useLoginGuardAlert() {
       text: message,
       confirmButtonText: "知道了",
       showCloseButton: true,
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
 
     if (result.isConfirmed) {

@@ -160,12 +160,12 @@ const handleClearCategory = () => {
 <style scoped>
 /* 卡片樣式 */
 .card {
-  border-color: #d1d3d4;
+  border-color: var(--incode-border);
 }
 
 .card-header {
-  background-color: #86b0bd !important;
-  border-bottom-color: #d1d3d4;
+  background-color: var(--incode-sage) !important;
+  border-bottom-color: var(--incode-border);
 }
 
 .card-header h5 {
@@ -187,8 +187,8 @@ const handleClearCategory = () => {
 }
 
 .badge.bg-info {
-  background-color: #145369 !important;
-  color: #fff0dd;
+  background-color: var(--incode-olive-dark) !important;
+  color: var(--incode-cream);
 }
 
 .sort-dropdown {
@@ -228,8 +228,8 @@ const handleClearCategory = () => {
   padding-bottom: 0.25rem;
   border: none;
   border-radius: 4px;
-  background-color: #e8f1f4;
-  color: #145369;
+  background-color: var(--incode-cream-light);
+  color: var(--incode-olive-dark);
   font-size: 0.95rem;
   font-weight: 500;
   width: var(--sort-control-width, 10em);
@@ -272,9 +272,9 @@ const handleClearCategory = () => {
   z-index: 20;
   max-height: 220px;
   overflow-y: auto;
-  background: #f2f7f9;
-  box-shadow: 0 8px 16px rgba(20, 83, 105, 0.12);
-  border: 1px solid #d1d3d4;
+  background: var(--incode-cream-light);
+  box-shadow: 0 8px 16px rgba(var(--incode-olive-dark-rgb), 0.12);
+  border: 1px solid var(--incode-border);
   border-radius: 4px;
   padding: 0.35rem;
 }
@@ -286,7 +286,7 @@ const handleClearCategory = () => {
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
-  color: #145369;
+  color: var(--incode-olive-dark);
   text-align: left;
   white-space: nowrap;
   font-size: 0.95rem;
@@ -301,8 +301,8 @@ const handleClearCategory = () => {
 
 .sort-dropdown-item.active,
 .sort-dropdown-item:hover {
-  background: #dceaf0;
-  color: #145369;
+  background: var(--incode-sage-light);
+  color: var(--incode-olive-dark);
   transform: translateX(2px);
 }
 
@@ -311,7 +311,7 @@ const handleClearCategory = () => {
 }
 
 .sort-dropdown-item:focus-visible {
-  outline: 2px solid rgba(20, 83, 105, 0.25);
+  outline: 2px solid rgba(var(--incode-olive-dark-rgb), 0.25);
   outline-offset: 1px;
 }
 
@@ -364,7 +364,7 @@ const handleClearCategory = () => {
 .category-card:not(.border-primary):hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: #86b0bd !important;
+  border-color: var(--incode-sage) !important;
 }
 
 /**
@@ -372,15 +372,15 @@ const handleClearCategory = () => {
  * 使用亮色底色和深色邊框標示
  */
 .category-card.border-primary {
-  background: #fff0dd;
-  border-color: #145369 !important;
+  background: var(--incode-cream);
+  border-color: var(--incode-olive-dark) !important;
   border-width: 2px;
-  box-shadow: 0 0 0 3px rgba(134, 176, 189, 0.2);
+  box-shadow: 0 0 0 3px rgba(var(--incode-sage-rgb), 0.2);
 }
 
 /* 分類名稱樣式 */
 .category-card h6 {
-  color: #145369;
+  color: var(--incode-olive-dark);
   font-size: 0.85rem;
   line-height: 1.2;
 }
@@ -392,7 +392,7 @@ const handleClearCategory = () => {
 }
 
 .category-card.border-primary .category-tags {
-  color: #145369;
+  color: var(--incode-olive-dark);
   font-weight: 500;
 }
 
@@ -401,7 +401,7 @@ const handleClearCategory = () => {
   max-height: 400px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #d1d3d4 #f0f0f0;
+  scrollbar-color: var(--incode-border) #f0f0f0;
 }
 
 .category-item {
@@ -418,7 +418,7 @@ const handleClearCategory = () => {
 }
 
 .category-container::-webkit-scrollbar-thumb {
-  background: #d1d3d4;
+  background: var(--incode-border);
   border-radius: 3px;
 }
 
@@ -428,12 +428,12 @@ const handleClearCategory = () => {
 
 /* 載入動畫顏色 */
 .spinner-border {
-  color: #145369 !important;
+  color: var(--incode-olive-dark) !important;
 }
 
 /* 鍵盤焦點樣式 (無障礙) */
 .category-card:focus-visible {
-  outline: 2px solid #145369;
+  outline: 2px solid var(--incode-olive-dark);
   outline-offset: 2px;
 }
 

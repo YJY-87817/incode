@@ -6,7 +6,7 @@ const store = usePointStore();
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
-const mainColor = "#145369"; // 定義主色
+const mainColor = "var(--incode-olive-dark)"; // 定義主色
 
 watch([() => store.searchQuery, () => store.filterType], () => {
   currentPage.value = 1;
@@ -86,7 +86,7 @@ const getBadgeClass = (category) => {
             >
               {{ log.points > 0 ? "+" : "" }}{{ log.points.toLocaleString() }}
             </td>
-            <td class="text-end pe-4 fw-medium" :style="{ color: '#145369' }">
+            <td class="text-end pe-4 fw-medium" :style="{ color: 'var(--incode-olive-dark)' }">
               {{ log.balance.toLocaleString() }}
             </td>
           </tr>
@@ -140,13 +140,13 @@ const getBadgeClass = (category) => {
 <style scoped>
 /* --- 強化的表頭樣式 --- */
 .custom-thead {
-  background-color: #86b0bd !important;
+  background-color: var(--incode-sage) !important;
 }
 
 .custom-thead th {
   /* 1. 解決字看不見的問題：改用深色或白色 */
-  /* 如果背景是 #86b0bd，建議用深灰藍色（如照片中的層次感）或純白 */
-  color: #2c3e50 !important;
+  /* 背景是 sage 時文字用 olive-dark 或白色 */
+  color: var(--incode-olive-darker) !important;
 
   /* 2. 強化視覺效果 */
   font-size: 0.85rem; /* 對應 small */
@@ -158,24 +158,24 @@ const getBadgeClass = (category) => {
 }
 /* 自定義主色 Badge */
 .custom-badge-main {
-  background-color: #b2c9d1;
-  color: #145369;
+  background-color: var(--incode-sage-light);
+  color: var(--incode-olive-dark);
 }
 /* 修改一般狀態的數字顏色 */
 .page-link {
-  color: #86b0bd; /* 主色 */
+  color: var(--incode-sage); /* 主色 */
 }
 
 /* 修改滑鼠移過去的顏色 */
 .page-link:hover {
-  color: #86b0bd;
+  color: var(--incode-sage);
   background-color: #e9ecef;
 }
 
 /* 修改當前頁面 (Active) 的顏色 */
 .page-item.active .page-link {
-  background-color: #86b0bd !important;
-  border-color: #86b0bd !important;
-  color: #145369 !important;
+  background-color: var(--incode-sage) !important;
+  border-color: var(--incode-sage) !important;
+  color: var(--incode-olive-dark) !important;
 }
 </style>

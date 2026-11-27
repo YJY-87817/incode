@@ -58,7 +58,7 @@ export function useThreadReply() {
         title: "提醒",
         text: "未找到對應的主題，請重新嘗試",
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-olive-dark)",
       });
       return;
     }
@@ -73,7 +73,7 @@ export function useThreadReply() {
         title: "提醒",
         text: "請輸入內容",
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-olive-dark)",
       });
       return;
     }
@@ -124,7 +124,7 @@ export function useThreadReply() {
         title: "送出失敗",
         text: "送出失敗，請稍後再試",
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-olive-dark)",
       });
     } finally {
       forumStore.setQuickReplySubmitting(forumStore.threadDetail.id, false);

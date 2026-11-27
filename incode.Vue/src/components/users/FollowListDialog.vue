@@ -14,7 +14,7 @@
         <div v-if="loading" class="d-flex justify-center align-center h-100">
           <v-progress-circular
             indeterminate
-            color="#86b0bd"
+            color="sage"
           ></v-progress-circular>
         </div>
 
@@ -79,10 +79,10 @@
             variant="flat"
             class="text-body-1 font-weight-bold mb-4"
             :loading="isLoading"
-            :color="isHovering ? '#FFFFFF' : '#145369'"
+            :color="isHovering ? '#FFFFFF' : 'olive-dark'"
             :style="{
-              color: isHovering ? '#145369 !important' : '#FFFFFF !important',
-              border: '1px solid #145369',
+              color: isHovering ? 'var(--incode-olive-dark) !important' : '#FFFFFF !important',
+              border: '1px solid var(--incode-olive-dark)',
             }"
             @click="isOpen = false"
             >關閉</v-btn

@@ -71,7 +71,7 @@
                     text: "請使用新密碼重新登入",
                     icon: "success",
                     confirmButtonText: "前往登入",
-                    confirmButtonColor: "#145369"
+                    confirmButtonColor: "var(--incode-olive-dark)"
                 }).then(() => {
                     // 成功後轉跳回登入頁
                     router.push('/auth');
@@ -141,9 +141,9 @@
                     <v-hover v-slot="{ isHovering, props }">
                         <v-btn v-bind="props" type="submit" size="large" block rounded="lg" variant="flat"
                             class="text-body-1 font-weight-bold mb-4" :loading="authStore.isLoading"
-                            :disabled="!formValid" :color="isHovering ? '#FFFFFF' : '#145369'" :style="{
-                                color: isHovering ? '#145369 !important' : '#FFFFFF !important',
-                                border: '1px solid #145369',
+                            :disabled="!formValid" :color="isHovering ? '#FFFFFF' : 'olive-dark'" :style="{
+                                color: isHovering ? 'var(--incode-olive-dark) !important' : '#FFFFFF !important',
+                                border: '1px solid var(--incode-olive-dark)',
                             }">
                             確認修改
                         </v-btn>

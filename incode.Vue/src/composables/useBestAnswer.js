@@ -60,7 +60,7 @@ export function useBestAnswer() {
       title: "最佳解答已選定",
       text: `已發放 ${Number(payload?.rewardPoints || activeRewardPoints.value || 0)} 點給回覆作者`,
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
   };
 

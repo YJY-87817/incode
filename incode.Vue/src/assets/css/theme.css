@@ -1,0 +1,26 @@
+/*
+ * 網站色票（後台 incode.MVC/wwwroot/css/theme.css 使用同一組）
+ * 來源：https://colorhunt.co/palette/ebebd86375454552309ba685
+ *   cream       #EBEBD8  背景、淺色區塊
+ *   sage        #9BA685  裝飾、分隔、標題列底色（與 cream 對比只有約 2:1，不要用來放小字）
+ *   olive       #637545  主色：按鈕、連結（白字對比約 5:1）
+ *   olive-dark  #455230  文字、主要按鈕、深色區塊（放在 cream 上對比約 7:1、白字約 8:1）
+ * 其餘是由這四色調出的深淺色。元件請用 var(--incode-xxx)，不要再寫死色碼；
+ * 半透明用 rgba(var(--incode-xxx-rgb), 0.3)。
+ * Vuetify 的 color 屬性請用主題色名稱（color="olive-dark"，見 src/plugins/themeColors.js），
+ * 不要傳 var()：Vuetify 無法由 var() 算出對比的文字顏色。
+ */
+:root {
+  --incode-cream: #ebebd8;
+  --incode-cream-rgb: 235, 235, 216;
+  --incode-cream-light: #f5f5ec;
+  --incode-sage: #9ba685;
+  --incode-sage-rgb: 155, 166, 133;
+  --incode-sage-light: #d7dac4;
+  --incode-olive: #637545;
+  --incode-olive-rgb: 99, 117, 69;
+  --incode-olive-dark: #455230;
+  --incode-olive-dark-rgb: 69, 82, 48;
+  --incode-olive-darker: #353f25;
+  --incode-border: #d7dac4;
+}

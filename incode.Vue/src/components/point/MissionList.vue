@@ -22,8 +22,8 @@ async function handleClaim(mission) {
     text: `您即將開始任務：「${mission.title}」`,
     icon: "question",
     showCancelButton: true,
-    confirmButtonColor: "#145369", // 深藍綠色
-    cancelButtonColor: "#86b0bd", // 淺藍灰色
+    confirmButtonColor: "var(--incode-olive-dark)", // 深橄欖綠
+    cancelButtonColor: "var(--incode-sage)", // 鼠尾草綠
     confirmButtonText: "確定領取",
     cancelButtonText: "取消",
     reverseButtons: true,
@@ -39,7 +39,7 @@ async function handleClaim(mission) {
       title: "領取失敗",
       text: error.message || "暫時無法領取該任務，請稍後再試。",
       icon: "error",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-olive-dark)",
     });
     return;
   } finally {
@@ -52,8 +52,8 @@ async function handleClaim(mission) {
     text: `任務「${mission.title}」已加入您的執行清單。`,
     icon: "success",
     showCancelButton: true,
-    confirmButtonColor: "#145369",
-    cancelButtonColor: "#86b0bd",
+    confirmButtonColor: "var(--incode-olive-dark)",
+    cancelButtonColor: "var(--incode-sage)",
     confirmButtonText: "前往我的任務",
     cancelButtonText: "留在本頁",
     reverseButtons: true,
@@ -180,7 +180,7 @@ async function handleClaim(mission) {
 
 /* 按鈕微調，更接近你圖片中的那種質感 */
 .btn-claim {
-  background: #86b0bd; /* 使用你圖片中的深藍綠色 */
+  background: var(--incode-sage); /* 鼠尾草綠 */
   color: black;
   border: none;
   padding: 8px 24px;
@@ -188,13 +188,13 @@ async function handleClaim(mission) {
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s;
-  box-shadow: 0 4px 6px rgba(85, 128, 139, 0.2);
+  box-shadow: 0 4px 6px rgba(var(--incode-olive-rgb), 0.2);
 }
 
 .btn-claim:hover {
-  background: #145369;
+  background: var(--incode-olive-dark);
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(20, 83, 105, 0.2);
+  box-shadow: 0 6px 12px rgba(var(--incode-olive-dark-rgb), 0.2);
 }
 
 /* 圖示外層容器：增加呼吸感 */
@@ -203,7 +203,7 @@ async function handleClaim(mission) {
   align-items: center;
 }
 
-/* 圖示包裹器：還原圖片中的莫蘭迪藍綠色系 */
+/* 圖示包裹器：色票的淺色系 */
 .category-icon-wrapper {
   width: 40px;
   height: 40px;
@@ -212,33 +212,33 @@ async function handleClaim(mission) {
   justify-content: center;
 
   /* 使用與按鈕同色系但更淺的背景，製造層次 */
-  background-color: #f0f5f6;
-  color: #145369; /* 與你圖片中的按鈕色一致 */
+  background-color: var(--incode-cream-light);
+  color: var(--incode-olive-dark); /* 與你圖片中的按鈕色一致 */
 
   border-radius: 10px; /* 呼應按鈕的圓角 */
   font-size: 1.1rem;
 
   /* 增加一個極細的邊框讓輪廓更清晰 */
-  border: 1px solid rgba(85, 128, 139, 0.1);
+  border: 1px solid rgba(var(--incode-olive-rgb), 0.1);
   transition: all 0.3s ease;
 }
 
 /* 卡片 Hover 時，Icon 產生微幅震動或放大效果 */
 .mission-card:hover .category-icon-wrapper {
-  background-color: #86b0bd;
+  background-color: var(--incode-sage);
   color: #ffffff;
   transform: scale(1.05) rotate(-5deg);
 }
 
 /* 獎勵數值與 Pts 單位 */
 .reward-value {
-  color: #145369; /* 設定為主色調 */
+  color: var(--incode-olive-dark); /* 設定為主色調 */
   font-weight: 800;
   font-size: 1.1rem;
 }
 
 .reward-value small {
-  color: #145369;
+  color: var(--incode-olive-dark);
   opacity: 0.8; /* 單位 Pts 稍微透明，增加質感 */
   font-size: 0.75rem;
   margin-left: 2px;
@@ -247,7 +247,7 @@ async function handleClaim(mission) {
 /* 參與人數區塊 */
 .participants-tag {
   font-size: 0.75rem;
-  color: #145369; /* 設定為主色調 */
+  color: var(--incode-olive-dark); /* 設定為主色調 */
   font-weight: 600;
   margin-top: 2px;
   display: flex;
@@ -256,7 +256,7 @@ async function handleClaim(mission) {
 
 /* 圖示也同步顏色 */
 .participants-tag i {
-  color: #145369;
+  color: var(--incode-olive-dark);
   opacity: 0.9;
 }
 </style>
