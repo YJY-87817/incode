@@ -19,6 +19,18 @@ public class TmdbServiceTests
         public override DateTimeOffset GetUtcNow() => now;
     }
 
+    private sealed class BlockingHandler(Func<Task<HttpResponseMessage>> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => respond();
+    }
+
+    private static TmdbService CreateWith(HttpMessageHandler handler)
+    {
+        var http = new HttpClient(handler) { BaseAddress = new Uri("https://api.themoviedb.org/3/") };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["TmdbApiKey"] = "t" }).Build();
+        return new TmdbService(http, config, new MemoryCache(new MemoryCacheOptions()), new FixedTime(Now), NullLogger<TmdbService>.Instance);
+    }
+
     private sealed class FakeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         public List<HttpRequestMessage> Requests { get; } = new();
@@ -67,6 +79,7 @@ public class TmdbServiceTests
         var (service, handler) = Create(_ => Json("""{"results":[],"total_pages":1}"""), now: new DateTimeOffset(2026, 11, 30, 17, 0, 0, TimeSpan.Zero));
         await service.GetRecentReleasesAsync();
         var url = handler.Requests[0].RequestUri!.ToString();
+        Assert.Contains("discover/movie", url);
         Assert.Contains("release_date.gte=2026-11-01", url);
         Assert.Contains("release_date.lte=2027-01-31", url);
     }
@@ -91,8 +104,12 @@ public class TmdbServiceTests
         Assert.Equal("v4-token", request.Headers.Authorization?.Parameter);
     }
 
+    private static string TwDates(string date) => $$"""
+        {"id":0,"results":[{"iso_3166_1":"TW","release_dates":[{"type":3,"release_date":"{{date}}T00:00:00.000Z"}]}]}
+        """;
+
     [Fact]
-    public async Task Recent_sorts_newest_first_dedupes_and_skips_missing_posters()
+    public async Task Recent_uses_taiwan_dates_sorts_newest_first_dedupes_and_skips_missing_posters()
     {
         var page1 = """
         {"total_pages":2,"results":[
@@ -104,30 +121,83 @@ public class TmdbServiceTests
         var page2 = """
         {"total_pages":2,"results":[
           {"id":2,"title":"新片(重複)","original_title":"New","poster_path":"/b.jpg","release_date":"2026-12-20","vote_average":8.0},
-          {"id":4,"title":"中間","original_title":"Mid","poster_path":"/c.jpg","release_date":"2026-11-10","vote_average":6.0}
+          {"id":4,"title":"國外早已上映","original_title":"Abroad","poster_path":"/c.jpg","release_date":"2026-06-10","vote_average":6.0},
+          {"id":5,"title":"台灣日期不在區間","original_title":"Out","poster_path":"/d.jpg","release_date":"2026-11-01","vote_average":6.0}
         ]}
         """;
-        var (service, handler) = Create(r => Json(r.RequestUri!.Query.Contains("page=2") ? page2 : page1));
+        var (service, handler) = Create(r =>
+        {
+            var path = r.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/discover/movie")) return Json(r.RequestUri.Query.Contains("page=2") ? page2 : page1);
+            // 片 4：全球首映 6 月，台灣 12/05 上映 → 用台灣日期排序；片 5：台灣在 2027 才上映 → 排除；片 1：查不到 → 沿用首映日
+            if (path.EndsWith("/movie/4/release_dates")) return Json(TwDates("2026-12-05"));
+            if (path.EndsWith("/movie/5/release_dates")) return Json(TwDates("2027-03-01"));
+            if (path.EndsWith("/movie/2/release_dates")) return Json(TwDates("2026-12-20"));
+            return Json("{}", HttpStatusCode.NotFound);
+        });
 
         var result = await service.GetRecentReleasesAsync();
 
         Assert.True(result.Ok);
         Assert.Equal(new[] { 2, 4, 1 }, result.Data!.Select(m => m.Id));
-        Assert.Equal("新片", result.Data![0].Title);
+        Assert.Equal(new DateOnly(2026, 12, 5), result.Data![1].ReleaseDate);
         Assert.Equal(7.3, result.Data![2].VoteAverage);
-        Assert.Equal(2, handler.Requests.Count);
+        var discover = handler.Requests.Where(r => r.RequestUri!.AbsolutePath.EndsWith("/discover/movie")).ToList();
+        Assert.Equal(2, discover.Count);
+        Assert.All(discover, r => Assert.Contains("sort_by=popularity.desc", r.RequestUri!.ToString()));
     }
 
     [Fact]
     public async Task Recent_is_cached()
     {
-        var (service, handler) = Create(_ => Json("""{"results":[{"id":1,"title":"A","poster_path":"/a.jpg","release_date":"2026-11-01"}],"total_pages":1}"""));
+        var (service, handler) = Create(r => r.RequestUri!.AbsolutePath.EndsWith("/discover/movie")
+            ? Json("""{"results":[{"id":1,"title":"A","poster_path":"/a.jpg","release_date":"2026-11-01"}],"total_pages":1}""")
+            : Json(TwDates("2026-11-02")));
         await service.GetRecentReleasesAsync();
         var second = await service.GetRecentReleasesAsync();
 
         Assert.True(second.Ok);
         Assert.Single(second.Data!);
-        Assert.Single(handler.Requests);
+        Assert.Equal(2, handler.Requests.Count); // discover + release_dates，第二次全部來自快取
+    }
+
+    [Fact]
+    public async Task Concurrent_cache_misses_share_one_fetch()
+    {
+        var gate = new TaskCompletionSource();
+        var calls = 0;
+        var handler = new BlockingHandler(async () =>
+        {
+            Interlocked.Increment(ref calls);
+            await gate.Task;
+            return Json("""{"status_code":34}""", HttpStatusCode.NotFound);
+        });
+        var service = CreateWith(handler);
+
+        var tasks = Enumerable.Range(0, 5).Select(_ => service.GetMovieAsync(42)).ToList();
+        await Task.Delay(100);
+        gate.SetResult();
+        var results = await Task.WhenAll(tasks);
+
+        Assert.All(results, r => Assert.Equal(404, r.Code));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task Failures_and_not_found_are_cached_briefly()
+    {
+        var status = HttpStatusCode.InternalServerError;
+        var (service, handler) = Create(_ => Json("{}", status));
+
+        await service.GetRecentReleasesAsync();
+        var again = await service.GetRecentReleasesAsync();
+        Assert.Equal(503, again.Code);
+        Assert.Single(handler.Requests); // 503 也快取（FailureCacheDuration），TMDB 故障時不會每個請求都再呼叫
+
+        status = HttpStatusCode.NotFound;
+        await service.GetMovieAsync(7);
+        await service.GetMovieAsync(7);
+        Assert.Equal(2, handler.Requests.Count);
     }
 
     [Fact]
@@ -164,10 +234,7 @@ public class TmdbServiceTests
     [Fact]
     public async Task Network_failure_returns_503_without_exception_text()
     {
-        var handler = new FakeHandler(_ => throw new HttpRequestException("connection refused to 10.0.0.1"));
-        var http = new HttpClient(handler) { BaseAddress = new Uri("https://api.themoviedb.org/3/") };
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["TmdbApiKey"] = "t" }).Build();
-        var service = new TmdbService(http, config, new MemoryCache(new MemoryCacheOptions()), new FixedTime(Now), NullLogger<TmdbService>.Instance);
+        var service = CreateWith(new FakeHandler(_ => throw new HttpRequestException("connection refused to 10.0.0.1")));
 
         var result = await service.GetRecentReleasesAsync();
 
@@ -321,5 +388,20 @@ public class MovieApiTests
 
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/MovieApi/1")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/MovieApi/999")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Recent_is_not_rate_limited_per_ip_but_detail_is()
+    {
+        using var factory = new Factory();
+        var client = factory.CreateAnonymousClient(ownIp: true);
+
+        for (var i = 0; i < 70; i++)
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/MovieApi/recent")).StatusCode);
+
+        var statuses = new List<HttpStatusCode>();
+        for (var i = 0; i < 61; i++)
+            statuses.Add((await client.GetAsync("/api/MovieApi/1")).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]);
     }
 }

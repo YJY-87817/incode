@@ -1,7 +1,12 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { getRecentMovies } from "@/api/movieApi.js";
-import { formatReleaseDate, releaseLabel, tmdbImage } from "@/utils/movie.js";
+import {
+  formatReleaseDate,
+  releaseLabel,
+  taipeiToday,
+  tmdbImage,
+} from "@/utils/movie.js";
 import TmdbAttribution from "@/components/movies/TmdbAttribution.vue";
 
 const movies = ref([]);
@@ -10,11 +15,17 @@ const paused = ref(false);
 const scroller = ref(null);
 
 const visible = computed(() => loading.value || movies.value.length > 0);
-const today = new Date();
+const today = taipeiToday();
 
 const AUTO_SCROLL_MS = 4000;
 let timer = null;
 let reducedMotion = false;
+// 觸控 / 滾輪操作後暫停一段時間（手機沒有 mouseenter，不暫停會在使用者滑動時跳走）
+const INTERACTION_PAUSE_MS = 8000;
+let pausedUntil = 0;
+const pauseForInteraction = () => {
+  pausedUntil = Date.now() + INTERACTION_PAUSE_MS;
+};
 
 // 後端 / TMDB 失敗時不顯示整個區塊，不影響首頁其他內容
 const load = async () => {
@@ -30,7 +41,8 @@ const load = async () => {
 
 // 每次往右捲動約 7 成的可視寬度；捲到底就回到最前面
 const next = () => {
-  if (paused.value || document.hidden || movies.value.length < 2) return;
+  if (paused.value || Date.now() < pausedUntil) return;
+  if (document.hidden || movies.value.length < 2) return;
   const container = scroller.value?.$el?.querySelector(
     ".v-slide-group__container",
   );
@@ -83,6 +95,10 @@ onBeforeUnmount(() => {
       @mouseleave="paused = false"
       @focusin="paused = true"
       @focusout="paused = false"
+      @touchstart.passive="pauseForInteraction"
+      @touchend.passive="pauseForInteraction"
+      @pointerdown="pauseForInteraction"
+      @wheel.passive="pauseForInteraction"
     >
       <v-slide-group-item v-for="movie in movies" :key="movie.id">
         <router-link

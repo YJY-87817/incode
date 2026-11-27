@@ -29,15 +29,23 @@ export const formatReleaseDate = (value) => {
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
 };
 
-/** 上映日在今天之後 → 「即將上映」，其餘「上映中」；沒有日期回空字串 */
-export const releaseLabel = (value, today = new Date()) => {
+/**
+ * 台灣時間的今天（YYYY-MM-DD）。後端以台灣時區決定近期上映的區間，
+ * 「即將上映」也要用台灣的日期判斷，不能用瀏覽器所在時區
+ */
+export const taipeiToday = (now = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Taipei",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+
+/** 上映日在台灣的今天之後 → 「即將上映」，其餘「上映中」；沒有日期回空字串。today 為 YYYY-MM-DD */
+export const releaseLabel = (value, today = taipeiToday()) => {
   const date = parseDate(value);
-  if (!date) return "";
-  const start = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
+  const start = parseDate(today);
+  if (!date || !start) return "";
   return date > start ? "即將上映" : "上映中";
 };
 

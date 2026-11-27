@@ -27,7 +27,7 @@ namespace incode.MVC.Extensions
         /// </summary>
         public const string ContentWrite = "content-write";
 
-        /// <summary>電影資訊（TMDB）：匿名可用，依 IP 每分鐘 60 次。可指定任意電影 ID 繞過快取，需要限制</summary>
+        /// <summary>單部電影資訊（TMDB）：匿名可用，依 IP 每分鐘 60 次。可指定任意電影 ID 繞過快取，需要限制（近期上映列表不限制）</summary>
         public const string Movie = "movie";
     }
 

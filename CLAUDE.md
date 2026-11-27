@@ -622,13 +622,18 @@ incode/
     - 後端 `Services/Movies/TmdbService`（`ITmdbService`）轉呼叫 TMDB，**前端不直接呼叫、Token 不外露**。`TmdbApiKey` 放 v4「API Read Access Token」
       （user-secrets / 環境變數 `TmdbApiKey`），以 `Authorization: Bearer` 傳送；未設定時回 503（記 log、不呼叫 TMDB），前端不顯示該區塊
     - `GET api/MovieApi/recent`：`discover/movie`，`region=TW`、`language=zh-TW`，台灣上映日在**上個月 1 日～下個月月底**（以台灣時區的今天計算），
-      取前 2 頁（最多 40 部）、去重、略過沒有海報的片，依上映日由新到舊；快取 6 小時。`GET api/MovieApi/{id}`：一次 `append_to_response=credits,videos,release_dates`，
+      依熱門度取前 2 頁（最多 40 部）、去重、略過沒有海報的片。discover 結果的 `release_date` 是全球首映日，所以再逐部查 `movie/{id}/release_dates`
+      （同時 5 個、各自快取 24 小時）換成**台灣上映日**，只保留落在區間內的片、依台灣上映日由新到舊（查不到台灣日期時沿用首映日）；快取 6 小時。`GET api/MovieApi/{id}`：一次 `append_to_response=credits,videos,release_dates`，
       回傳台灣院線上映日（沒有則用 `release_date`）、片長、類型、導演、前 10 位演員、預告片（YouTube，Trailer 優先、中文優先）；快取 24 小時，找不到 404
-    - 兩支都是匿名 API，套用 `RateLimitPolicies.Movie`（每 IP 每分鐘 60 次，避免以任意 ID 繞過快取打 TMDB）。TMDB 失敗一律回通用的 503 訊息（細節只寫 log）。
+    - 兩支都是匿名 API。`{id}` 套用 `RateLimitPolicies.Movie`（每 IP 每分鐘 60 次，避免以任意 ID 繞過快取打 TMDB）；`recent` 不限制
+      （沒有輸入、由快取提供，每次進首頁都會呼叫，代理 / 共用網路下依 IP 限制會讓輪播消失）。
+      同一快取鍵同時只有一個請求向 TMDB 取資料；找不到（404）快取 1 小時、TMDB 失敗（503）快取 1 分鐘。TMDB 失敗一律回通用的 503 訊息（細節只寫 log）。
       圖片只回 TMDB 相對路徑（格式不符的略過），YouTube 影片代碼驗證格式後才回傳
-    - 前端：首頁標題下方 `components/movies/MovieCarousel.vue`（自動輪播、hover 暫停、失敗不顯示）→ `/movie/:id`（`views/movies/MovieDetailView.vue`）。
-      依 TMDB 條款頁面標示 `TmdbAttribution.vue`（目前只有文字；官方 logo 取得後可加進該元件）
-    - 測試：`TmdbServiceTests`（日期區間、查詢參數與 Bearer、排序 / 去重、詳細欄位轉換、快取、Token 未設定、TMDB 錯誤與網路失敗）、`MovieApiTests`、前端 `utils/movie.test.js`
+    - 前端：首頁標題下方 `components/movies/MovieCarousel.vue`（自動輪播；滑鼠移入 / 聚焦時暫停，觸控、滾輪操作後暫停 8 秒；失敗不顯示；
+      「即將上映」以台灣時區的今天判斷，`utils/movie.js` 的 `taipeiToday`）→ `/movie/:id`（`views/movies/MovieDetailView.vue`）。
+      電影頁只在路由仍是 `movie-detail` 時重新載入，較慢的舊回應會被丟掉。依 TMDB 條款頁面標示 `TmdbAttribution.vue`（目前只有文字；官方 logo 取得後可加進該元件）
+    - 測試：`TmdbServiceTests`（日期區間、查詢參數與 Bearer、台灣上映日排序 / 去重 / 排除區間外、詳細欄位轉換、快取與失敗快取、同時請求只取一次、
+      Token 未設定、TMDB 錯誤與網路失敗）、`MovieApiTests`（匿名、`recent` 不限流、`{id}` 限流）、前端 `utils/movie.test.js`
 
 ## 全專案檢查結果（2026-11）
 

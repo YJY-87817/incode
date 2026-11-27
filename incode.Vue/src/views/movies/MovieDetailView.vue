@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import DefaultNavbar from "@/components/layout/NavbarDefault.vue";
 import DefaultFooter from "@/components/layout/FooterCentered.vue";
@@ -19,23 +19,38 @@ const loading = ref(true);
 // "notFound" | "error" | ""
 const failure = ref("");
 
-const load = async () => {
+// 每次載入遞增；回應回來時編號已經不同（換了電影或離開頁面）就丟掉，避免較慢的舊回應蓋掉新的
+let requestSeq = 0;
+
+const load = async (id) => {
+  const seq = ++requestSeq;
   loading.value = true;
   failure.value = "";
   movie.value = null;
   try {
-    const res = await getMovie(route.params.id);
+    const res = await getMovie(id);
+    if (seq !== requestSeq) return;
     movie.value = res?.data ?? null;
     if (!movie.value) failure.value = "notFound";
   } catch (error) {
+    if (seq !== requestSeq) return;
     failure.value = error?.response?.status === 404 ? "notFound" : "error";
   } finally {
-    loading.value = false;
+    if (seq === requestSeq) loading.value = false;
   }
 };
 
-onMounted(load);
-watch(() => route.params.id, load);
+onMounted(() => load(route.params.id));
+// route 是全域的：離開本頁到其他有 :id 的路由（例如 /forum/:id）也會觸發，只在仍是電影頁時載入
+watch(
+  () => route.params.id,
+  (id) => {
+    if (route.name === "movie-detail" && id) load(id);
+  },
+);
+onBeforeUnmount(() => {
+  requestSeq++;
+});
 
 const backdropStyle = computed(() =>
   movie.value?.backdropPath

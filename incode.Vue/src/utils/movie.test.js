@@ -4,6 +4,7 @@ import {
   formatReleaseDate,
   formatRuntime,
   releaseLabel,
+  taipeiToday,
   tmdbImage,
   youtubeEmbedUrl,
 } from "@/utils/movie.js";
@@ -31,11 +32,19 @@ describe("formatReleaseDate / releaseLabel", () => {
     expect(formatReleaseDate("abc")).toBe("");
   });
   it("今天之後為即將上映，當天與之前為上映中", () => {
-    const today = new Date(2026, 10, 27, 15, 30);
+    const today = "2026-11-27";
     expect(releaseLabel("2026-11-28", today)).toBe("即將上映");
     expect(releaseLabel("2026-11-27", today)).toBe("上映中");
     expect(releaseLabel("2026-10-01", today)).toBe("上映中");
     expect(releaseLabel(null, today)).toBe("");
+  });
+});
+
+describe("taipeiToday", () => {
+  it("以台灣時區計算日期（與瀏覽器時區無關）", () => {
+    // UTC 11/30 17:00 = 台灣 12/01 01:00
+    expect(taipeiToday(new Date("2026-11-30T17:00:00Z"))).toBe("2026-12-01");
+    expect(taipeiToday(new Date("2026-11-30T15:59:00Z"))).toBe("2026-11-30");
   });
 });
 

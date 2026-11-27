@@ -18,9 +18,12 @@ namespace incode.MVC.Services.Movies
 
         public static readonly TimeSpan ListCacheDuration = TimeSpan.FromHours(6);
         public static readonly TimeSpan DetailCacheDuration = TimeSpan.FromHours(24);
+        public static readonly TimeSpan NotFoundCacheDuration = TimeSpan.FromHours(1);
+        public static readonly TimeSpan FailureCacheDuration = TimeSpan.FromMinutes(1);
 
         private const int MaxListPages = 2;
         private const int MaxCast = 10;
+        private const int ReleaseDateConcurrency = 5;
 
         private readonly HttpClient _http;
         private readonly IConfiguration _configuration;
@@ -76,54 +79,93 @@ namespace incode.MVC.Services.Movies
 
             var (from, to) = GetReleaseRange(TodayInTaipei());
             var cacheKey = $"tmdb:recent:{from:yyyyMMdd}:{to:yyyyMMdd}";
-            if (_cache.TryGetValue(cacheKey, out List<MovieSummaryDto>? cached) && cached != null)
-                return ResultDTO<List<MovieSummaryDto>>.Success(cached);
+            return await GetOrFetchAsync(cacheKey, ListCacheDuration, cancellationToken, async () =>
+            {
+                try
+                {
+                    return ResultDTO<List<MovieSummaryDto>>.Success(await FetchRecentAsync(token, from, to, cancellationToken));
+                }
+                catch (TmdbNotAvailableException)
+                {
+                    return ResultDTO<List<MovieSummaryDto>>.Failure(UnavailableMessage, 503);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
+                {
+                    if (cancellationToken.IsCancellationRequested) throw;
+                    _logger.LogError(ex, "向 TMDB 取得近期上映電影失敗");
+                    return ResultDTO<List<MovieSummaryDto>>.Failure(UnavailableMessage, 503);
+                }
+            });
+        }
+
+        /// <summary>
+        /// discover 以台灣上映日篩選，但結果的 release_date 是全球首映日；
+        /// 先依熱門度取最多 40 部，再逐部查台灣上映日（各自快取），只保留落在區間內的片並依台灣上映日排序
+        /// </summary>
+        private async Task<List<MovieSummaryDto>> FetchRecentAsync(string token, DateOnly from, DateOnly to, CancellationToken cancellationToken)
+        {
+            var movies = new Dictionary<int, MovieSummaryDto>();
+            for (var page = 1; page <= MaxListPages; page++)
+            {
+                var url = "discover/movie?region=TW&language=zh-TW&include_adult=false&with_release_type=2|3"
+                    + $"&release_date.gte={from:yyyy-MM-dd}&release_date.lte={to:yyyy-MM-dd}"
+                    + $"&sort_by=popularity.desc&page={page}";
+
+                using var doc = await SendAsync(url, token, cancellationToken)
+                    ?? throw new TmdbNotAvailableException();
+
+                var root = doc.RootElement;
+                if (root.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in results.EnumerateArray())
+                    {
+                        var movie = ParseSummary(item);
+                        // 沒有海報的片放進輪播很難看，直接略過
+                        if (movie == null || string.IsNullOrEmpty(movie.PosterPath)) continue;
+                        movies.TryAdd(movie.Id, movie);
+                    }
+                }
+
+                var totalPages = root.TryGetProperty("total_pages", out var tp) && tp.TryGetInt32(out var n) ? n : 1;
+                if (page >= totalPages) break;
+            }
+
+            await Parallel.ForEachAsync(movies.Values,
+                new ParallelOptions { MaxDegreeOfParallelism = ReleaseDateConcurrency, CancellationToken = cancellationToken },
+                async (movie, ct) =>
+                {
+                    var taiwan = await GetTaiwanReleaseDateAsync(movie.Id, token, ct);
+                    // 查不到台灣日期（或 TMDB 暫時失敗）時沿用首映日；仍只保留區間內的片
+                    if (taiwan != null) movie.ReleaseDate = taiwan;
+                });
+
+            return movies.Values
+                .Where(m => m.ReleaseDate is { } d && d >= from && d <= to)
+                .OrderByDescending(m => m.ReleaseDate)
+                .ThenByDescending(m => m.VoteAverage)
+                .ToList();
+        }
+
+        private sealed record TaiwanDate(DateOnly? Value);
+
+        private async Task<DateOnly?> GetTaiwanReleaseDateAsync(int id, string token, CancellationToken cancellationToken)
+        {
+            var cacheKey = $"tmdb:twdate:{id}";
+            if (_cache.TryGetValue(cacheKey, out TaiwanDate? cached) && cached != null)
+                return cached.Value;
 
             try
             {
-                var movies = new Dictionary<int, MovieSummaryDto>();
-                for (var page = 1; page <= MaxListPages; page++)
-                {
-                    var url = "discover/movie?region=TW&language=zh-TW&include_adult=false&with_release_type=2|3"
-                        + $"&release_date.gte={from:yyyy-MM-dd}&release_date.lte={to:yyyy-MM-dd}"
-                        + $"&sort_by=primary_release_date.desc&page={page}";
-
-                    using var doc = await SendAsync(url, token, cancellationToken);
-                    if (doc == null) return ResultDTO<List<MovieSummaryDto>>.Failure(UnavailableMessage, 503);
-
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var item in results.EnumerateArray())
-                        {
-                            var movie = ParseSummary(item);
-                            // 沒有海報的片放進輪播很難看，直接略過
-                            if (movie == null || string.IsNullOrEmpty(movie.PosterPath)) continue;
-                            movies.TryAdd(movie.Id, movie);
-                        }
-                    }
-
-                    var totalPages = root.TryGetProperty("total_pages", out var tp) && tp.TryGetInt32(out var n) ? n : 1;
-                    if (page >= totalPages) break;
-                }
-
-                var list = movies.Values
-                    .OrderByDescending(m => m.ReleaseDate ?? DateOnly.MinValue)
-                    .ThenByDescending(m => m.VoteAverage)
-                    .ToList();
-
-                _cache.Set(cacheKey, list, ListCacheDuration);
-                return ResultDTO<List<MovieSummaryDto>>.Success(list);
+                using var doc = await SendAsync($"movie/{id}/release_dates", token, cancellationToken, notFoundIsNull: true);
+                var date = doc == null ? null : TaiwanReleaseDate(doc.RootElement);
+                _cache.Set(cacheKey, new TaiwanDate(date), DetailCacheDuration);
+                return date;
             }
-            catch (TmdbNotAvailableException)
+            catch (Exception ex) when (ex is TmdbNotAvailableException or HttpRequestException or JsonException or InvalidOperationException
+                                       || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
             {
-                return ResultDTO<List<MovieSummaryDto>>.Failure(UnavailableMessage, 503);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
-            {
-                if (cancellationToken.IsCancellationRequested) throw;
-                _logger.LogError(ex, "向 TMDB 取得近期上映電影失敗");
-                return ResultDTO<List<MovieSummaryDto>>.Failure(UnavailableMessage, 503);
+                _logger.LogWarning(ex is TmdbNotAvailableException ? null : ex, "向 TMDB 取得電影 {MovieId} 的台灣上映日失敗", id);
+                return null;
             }
         }
 
@@ -140,31 +182,62 @@ namespace incode.MVC.Services.Movies
                 return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
             }
 
-            var cacheKey = $"tmdb:movie:{id}";
-            if (_cache.TryGetValue(cacheKey, out MovieDetailDto? cached) && cached != null)
-                return ResultDTO<MovieDetailDto>.Success(cached);
+            return await GetOrFetchAsync($"tmdb:movie:{id}", DetailCacheDuration, cancellationToken, async () =>
+            {
+                try
+                {
+                    var url = $"movie/{id}?language=zh-TW&append_to_response=credits,videos,release_dates&include_video_language=zh,en,null";
+                    using var doc = await SendAsync(url, token, cancellationToken, notFoundIsNull: true);
+                    if (doc == null) return ResultDTO<MovieDetailDto>.Failure(NotFoundMessage, 404);
 
+                    var detail = ParseDetail(doc.RootElement);
+                    return detail == null
+                        ? ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503)
+                        : ResultDTO<MovieDetailDto>.Success(detail);
+                }
+                catch (TmdbNotAvailableException)
+                {
+                    return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
+                {
+                    if (cancellationToken.IsCancellationRequested) throw;
+                    _logger.LogError(ex, "向 TMDB 取得電影 {MovieId} 失敗", id);
+                    return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
+                }
+            });
+        }
+
+        // ───────── 快取 ─────────
+
+        // 同一個快取鍵同時只有一個請求向 TMDB 取資料（快取過期時不會一起湧向 TMDB）。
+        // 依鍵的雜湊分到固定數量的鎖，任意電影 ID 不會讓鎖無限增加
+        private static readonly SemaphoreSlim[] FetchLocks = Enumerable.Range(0, 32).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
+
+        /// <summary>
+        /// 成功的結果快取 <paramref name="successDuration"/>；找不到（404）快取 NotFoundCacheDuration、
+        /// TMDB 無法使用（503）快取 FailureCacheDuration，TMDB 故障時不會每個請求都再等一次逾時
+        /// </summary>
+        private async Task<ResultDTO<T>> GetOrFetchAsync<T>(string cacheKey, TimeSpan successDuration, CancellationToken cancellationToken, Func<Task<ResultDTO<T>>> fetch)
+        {
+            if (_cache.TryGetValue(cacheKey, out ResultDTO<T>? cached) && cached != null)
+                return cached;
+
+            var gate = FetchLocks[(cacheKey.GetHashCode() & int.MaxValue) % FetchLocks.Length];
+            await gate.WaitAsync(cancellationToken);
             try
             {
-                var url = $"movie/{id}?language=zh-TW&append_to_response=credits,videos,release_dates&include_video_language=zh,en,null";
-                using var doc = await SendAsync(url, token, cancellationToken, notFoundIsNull: true);
-                if (doc == null) return ResultDTO<MovieDetailDto>.Failure(NotFoundMessage, 404);
+                if (_cache.TryGetValue(cacheKey, out cached) && cached != null)
+                    return cached;
 
-                var detail = ParseDetail(doc.RootElement);
-                if (detail == null) return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
-
-                _cache.Set(cacheKey, detail, DetailCacheDuration);
-                return ResultDTO<MovieDetailDto>.Success(detail);
+                var result = await fetch();
+                var duration = result.Ok ? successDuration : result.Code == 404 ? NotFoundCacheDuration : FailureCacheDuration;
+                _cache.Set(cacheKey, result, duration);
+                return result;
             }
-            catch (TmdbNotAvailableException)
+            finally
             {
-                return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
-            {
-                if (cancellationToken.IsCancellationRequested) throw;
-                _logger.LogError(ex, "向 TMDB 取得電影 {MovieId} 失敗", id);
-                return ResultDTO<MovieDetailDto>.Failure(UnavailableMessage, 503);
+                gate.Release();
             }
         }
 
@@ -266,11 +339,14 @@ namespace incode.MVC.Services.Movies
             return detail;
         }
 
-        /// <summary>release_dates 裡台灣（TW）的院線上映日（type 3 戲院，其次 2 限定上映）；沒有則回 null</summary>
+        /// <summary>
+        /// 台灣（TW）的院線上映日（type 3 戲院，其次 2 限定上映）；沒有則回 null。
+        /// <paramref name="root"/> 可以是 movie/{id}/release_dates 的回應，或帶有 release_dates 的電影詳細資料
+        /// </summary>
         private static DateOnly? TaiwanReleaseDate(JsonElement root)
         {
-            if (!root.TryGetProperty("release_dates", out var rd) || rd.ValueKind != JsonValueKind.Object
-                || !rd.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
+            var rd = root.TryGetProperty("release_dates", out var nested) && nested.ValueKind == JsonValueKind.Object ? nested : root;
+            if (!rd.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
                 return null;
 
             foreach (var country in results.EnumerateArray())
