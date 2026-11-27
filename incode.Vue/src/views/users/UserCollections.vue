@@ -6,7 +6,7 @@
 
     <nav
       class="text-center py-3 w-100"
-      style="font-size: 24px; background-color: #86b0bd"
+      style="font-size: 24px; background-color: var(--incode-accent)"
     >
       <router-link :to="{ name: 'UserPost' }">發文</router-link> |
       <router-link :to="{ name: 'UserSave' }">收藏</router-link> |

@@ -173,7 +173,7 @@ watch(
           size="small"
           :loading="isLoading"
           :variant="isFollowing ? 'tonal' : 'flat'"
-          :color="isFollowing ? 'grey-darken-1' : '#145369'"
+          :color="isFollowing ? 'grey-darken-1' : 'brand-dark'"
           :class="isFollowing ? '' : 'text-white'"
           @click="handleFollowAction"
         >

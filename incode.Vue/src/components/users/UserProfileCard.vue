@@ -50,7 +50,7 @@
 
 <template>
   <v-card class="rounded-xl overflow-hidden" elevation="0" border>
-    <div class="d-flex align-center pa-6" style="background-color: #86b0bd">
+    <div class="d-flex align-center pa-6" style="background-color: var(--incode-accent)">
       <div style="position: relative; width: 150px; height: 150px;" class="mb-0 mr-6">
         <v-avatar size="150" class="border border-4 border-white elevation-2">
           <v-img :src="displayAvatar" alt="User Avatar" cover></v-img>
@@ -97,7 +97,7 @@
         <slot name="actions" />
         <v-btn :prepend-icon="
               actionLabel === '編輯資料' ? 'mdi-pencil-outline' : actionLabel === '已追蹤' ? 'mdi-check' : 'mdi-plus'
-            " variant="flat" :color="actionLabel === '已追蹤' ? 'grey-lighten-2' : '#145369'" :class="
+            " variant="flat" :color="actionLabel === '已追蹤' ? 'grey-lighten-2' : 'brand-dark'" :class="
               actionLabel === '已追蹤' ? 'text-grey-darken-3' : 'text-white'
             " rounded="pill" size="large" :loading="loading" @click="emit('click-action')">
           {{ actionLabel }}

@@ -81,7 +81,7 @@ onMounted(() => {
 
                     <div>
                         <span class="badge rounded-pill mb-2"
-                            style="background-color: rgba(134, 176, 189, 0.1); color: #86B0BD;">{{ product.type
+                            style="background-color: rgba(var(--incode-accent-rgb), 0.1); color: var(--incode-accent);">{{ product.type
                             }}</span>
                         <h2 class="card-title fw-bold text-body-highlight mb-3" :title="product.name">{{ product.name }}
                         </h2>
@@ -89,7 +89,7 @@ onMounted(() => {
 
                     <div class="mt-auto">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-bold fs-4" style="color: #86B0BD;">{{ product.point }} P</span>
+                            <span class="fw-bold fs-4" style="color: var(--incode-accent);">{{ product.point }} P</span>
                             <span class="badge rounded-pill bg-light text-dark border">
                                 庫存: {{ product.stock }}
                             </span>
@@ -122,7 +122,7 @@ onMounted(() => {
             <div class="row">
                 <div class="col-12">
                     <h5 class="mb-3 fw-bold d-flex align-items-center">
-                        <span class="far fa-file-alt me-2" style="color: #86B0BD;"></span>商品詳情
+                        <span class="far fa-file-alt me-2" style="color: var(--incode-accent);"></span>商品詳情
                     </h5>
                     <div class="lh-lg">
                         <p>{{ product.description }}</p>
@@ -131,7 +131,7 @@ onMounted(() => {
             </div>
         </div>
         <div v-else-if="loading" class="text-center p-5">
-            <div class="spinner-border" style="color: #86B0BD;" role="status"></div>
+            <div class="spinner-border" style="color: var(--incode-accent);" role="status"></div>
             <p class="mt-2">正在讀取商品資訊，請稍候...</p>
         </div>
         <div v-else class="text-center p-5">

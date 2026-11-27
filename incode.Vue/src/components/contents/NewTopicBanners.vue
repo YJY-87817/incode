@@ -243,7 +243,7 @@ const resolveThreadIdByContentId = async (contentId) => {
   border-bottom-left-radius: 0.375rem;
   border-right: 1px solid #d2d6da;
   font-weight: 600;
-  color: #145369;
+  color: var(--incode-dark);
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -283,12 +283,12 @@ const resolveThreadIdByContentId = async (contentId) => {
 }
 
 .new-topic-banner:hover {
-  background-color: rgba(20, 83, 105, 0.08);
-  border-color: #145369;
+  background-color: rgba(var(--incode-dark-rgb), 0.08);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-banner .banner-jump:hover {
-  background-color: #145369;
+  background-color: var(--incode-dark);
   color: #fff;
 }
 

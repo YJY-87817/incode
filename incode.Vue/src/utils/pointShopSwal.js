@@ -10,7 +10,7 @@ const whiteButtonText = (modal) => {
 };
 
 export const shopSwal = Swal.mixin({
-  confirmButtonColor: "#145369",
+  confirmButtonColor: "var(--incode-dark)",
   cancelButtonColor: "#d33",
   confirmButtonText: "確定",
   didOpen: whiteButtonText,

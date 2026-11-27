@@ -10,10 +10,11 @@ import router from "@/router";
 import "vuetify/styles";
 import { createVuetify } from "vuetify";
 import { iconsOptions } from "@/plugins/vuetifyIcons.js";
+import { vuetifyTheme } from "@/plugins/themeColors.js";
 
 // 元件 / 指令由 vite-plugin-vuetify 依模板實際使用自動匯入（不要再 import * 全部元件）；
 // 圖示改用 SVG，只打包用到的（見 plugins/vuetifyIcons.js）
-const vuetify = createVuetify({ icons: iconsOptions });
+const vuetify = createVuetify({ icons: iconsOptions, theme: vuetifyTheme });
 
 // Nucleo Icons
 import "@/assets/css/nucleo-icons.css";
@@ -22,6 +23,8 @@ import "@/assets/css/nucleo-svg.css";
 //Bootstrap（CSS 由 Material Kit 內建的 Bootstrap 5.2 提供；5.3 專屬類別見 bootstrap53-utilities.css）
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "@/assets/css/bootstrap53-utilities.css";
+// 網站色票（CSS 變數 --incode-*）
+import "@/assets/css/theme.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 import materialKit from "@/material-kit";

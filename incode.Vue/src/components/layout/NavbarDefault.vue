@@ -141,7 +141,7 @@ watch(
 <template>
   <nav
     class="navbar navbar-expand-lg top-0"
-    :style="props.light ? 'background-color: #5e8a96 !important' : ''"
+    :style="props.light ? 'background-color: var(--incode-primary) !important' : ''"
     :class="{
       'z-index-3 w-100 shadow-none navbar-transparent position-absolute my-3':
         props.transparent,
@@ -365,7 +365,7 @@ watch(
               placeholder="搜尋"
               style="
                 padding: 0.5rem 1rem;
-                color: #344767;
+                color: var(--incode-dark);
                 outline: none;
                 box-shadow: none !important;
                 background-image: none !important;
@@ -539,11 +539,11 @@ watch(
 /* 登入按鈕 */
 .nav-login-btn {
   /* 預設狀態 */
-  background-color: #145369 !important;
+  background-color: var(--incode-dark) !important;
   /* 指定顏色 */
   color: #ffffff !important;
   /* 文字白色 */
-  border: 1px solid #145369 !important;
+  border: 1px solid var(--incode-dark) !important;
   /* 邊框同色 */
   margin-left: 10px;
   /* 左側間距 */
@@ -555,9 +555,9 @@ watch(
 .nav-login-btn:hover {
   background-color: #ffffff !important;
   /* 背景變白 */
-  color: #145369 !important;
+  color: var(--incode-dark) !important;
   /* 文字變回深色 */
-  border: 1px solid #145369 !important;
+  border: 1px solid var(--incode-dark) !important;
   /* 保留邊框 */
 }
 

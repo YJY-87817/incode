@@ -77,7 +77,7 @@ const validateEntrustMission = async (draft) => {
       title: "提醒",
       text: "請完整填寫委託任務資訊",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -88,7 +88,7 @@ const validateEntrustMission = async (draft) => {
       title: "提醒",
       text: "獎勵點數需大於 0",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return false;
   }
@@ -461,48 +461,48 @@ watch(
 }
 
 .new-topic-sidebar .btn-primary {
-  background-color: #145369;
-  border-color: #145369;
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-primary:hover {
-  background-color: #0f3c4d;
-  border-color: #0f3c4d;
+  background-color: var(--incode-darker);
+  border-color: var(--incode-darker);
 }
 
 .new-topic-sidebar .btn-outline-primary {
-  color: #145369;
-  border-color: #145369;
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-outline-primary:hover {
-  background-color: #145369;
-  border-color: #145369;
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
   color: white;
 }
 
 .new-topic-sidebar .btn-entrust-toggle {
-  border-color: #145369;
-  color: #145369;
+  border-color: var(--incode-dark);
+  color: var(--incode-dark);
 }
 
 .new-topic-sidebar .btn-entrust-toggle:hover {
-  background-color: #eaf2f4;
-  color: #0f4456;
+  background-color: var(--incode-light-soft);
+  color: var(--incode-darker);
 }
 
 .new-topic-sidebar .btn-entrust-toggle:focus,
 .new-topic-sidebar .btn-entrust-toggle:active,
 .new-topic-sidebar .btn-entrust-toggle.active {
-  background-color: #eaf2f4;
-  border-color: #145369;
-  color: #0f4456;
+  background-color: var(--incode-light-soft);
+  border-color: var(--incode-dark);
+  color: var(--incode-darker);
   box-shadow: none;
 }
 
 .new-topic-sidebar .entrust-mission-panel {
-  background: #f6f8f9;
-  border-color: #d9e2e6;
+  background: var(--incode-light-soft);
+  border-color: var(--incode-accent-soft);
 }
 
 .new-topic-sidebar .sidebar-actions {
@@ -516,12 +516,12 @@ watch(
 
 /* banner 中的按鈕樣式 */
 .new-topic-banner .btn-primary {
-  background-color: #145369;
-  border-color: #145369;
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 .new-topic-banner .btn-primary:hover {
-  background-color: #0f3c4d;
-  border-color: #0f3c4d;
+  background-color: var(--incode-darker);
+  border-color: var(--incode-darker);
 }
 </style>

@@ -68,11 +68,11 @@ const displayPages = computed(() => forumStore.displayPages);
 <style scoped>
 /* 卡片樣式 */
 .card {
-  border-color: #d1d3d4;
+  border-color: var(--incode-border);
 }
 
 .card-footer {
-  border-top-color: #d1d3d4;
+  border-top-color: var(--incode-border);
 }
 
 .card-body {

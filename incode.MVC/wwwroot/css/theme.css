@@ -1,0 +1,155 @@
+/*
+ * 後台色票（與前台 incode.Vue/src/assets/css/theme.css 相同）
+ * 來源：https://colorhunt.co/palette/131b2b2f4a635b91a3cfeae0
+ * 變數依用途命名，換色票時只改這裡的色碼（sb-admin-2.css 的 primary 系列另外替換）：
+ *   light    #CFEAE0  淺色底（頂欄、提示）
+ *   accent   #5B91A3  點綴、標題列底色（白字對比約 3.5:1，只適合大字；深色字約 5:1）
+ *   primary  #2F4A63  主色：按鈕、連結、側欄（白字對比約 9:1）
+ *   dark     #131B2B  文字、側欄漸層、深色區塊（放在 light 上對比約 13:1）
+ * 必須在 sb-admin-2.css 與 DataTables 的 CSS 之後載入。
+ */
+:root {
+  --incode-light: #cfeae0;
+  --incode-light-rgb: 207, 234, 224;
+  --incode-light-soft: #e7f4f0;
+  --incode-accent: #5b91a3;
+  --incode-accent-rgb: 91, 145, 163;
+  --incode-accent-soft: #b2d4d1;
+  --incode-primary: #2f4a63;
+  --incode-primary-rgb: 47, 74, 99;
+  --incode-primary-hover: #233749;
+  --incode-primary-tint: #d5dbe0;
+  --incode-dark: #131b2b;
+  --incode-dark-rgb: 19, 27, 43;
+  --incode-darker: #0a0f18;
+
+  /* Bootstrap 5.3（後台同時載入 5.3 與 sb-admin-2，5.3 的元件讀這些變數） */
+  --bs-primary: var(--incode-primary);
+  --bs-primary-rgb: var(--incode-primary-rgb);
+  --bs-primary-text-emphasis: var(--incode-darker);
+  --bs-primary-bg-subtle: var(--incode-primary-tint);
+  --bs-primary-border-subtle: #acb7c1;
+  --bs-link-color: var(--incode-primary);
+  --bs-link-color-rgb: var(--incode-primary-rgb);
+  --bs-link-hover-color: var(--incode-dark);
+  --bs-link-hover-color-rgb: var(--incode-dark-rgb);
+  --bs-focus-ring-color: rgba(var(--incode-primary-rgb), 0.25);
+}
+
+/* Bootstrap 5.3 的按鈕、分頁、表單元件（各自宣告了區域變數，:root 的 --bs-primary 蓋不到） */
+.btn-primary {
+  --bs-btn-bg: var(--incode-primary);
+  --bs-btn-border-color: var(--incode-primary);
+  --bs-btn-hover-bg: var(--incode-primary-hover);
+  --bs-btn-hover-border-color: var(--incode-primary-hover);
+  --bs-btn-active-bg: var(--incode-dark);
+  --bs-btn-active-border-color: var(--incode-dark);
+  --bs-btn-disabled-bg: var(--incode-primary);
+  --bs-btn-disabled-border-color: var(--incode-primary);
+  --bs-btn-focus-shadow-rgb: var(--incode-primary-rgb);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--incode-primary);
+  --bs-btn-border-color: var(--incode-primary);
+  --bs-btn-hover-bg: var(--incode-primary);
+  --bs-btn-hover-border-color: var(--incode-primary);
+  --bs-btn-active-bg: var(--incode-dark);
+  --bs-btn-active-border-color: var(--incode-dark);
+  --bs-btn-disabled-color: var(--incode-primary);
+  --bs-btn-disabled-border-color: var(--incode-primary);
+  --bs-btn-focus-shadow-rgb: var(--incode-primary-rgb);
+}
+
+.pagination {
+  --bs-pagination-color: var(--incode-primary);
+  --bs-pagination-hover-color: var(--incode-dark);
+  --bs-pagination-focus-color: var(--incode-dark);
+  --bs-pagination-active-bg: var(--incode-primary);
+  --bs-pagination-active-border-color: var(--incode-primary);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(var(--incode-primary-rgb), 0.25);
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--incode-primary);
+}
+
+.nav {
+  --bs-nav-link-color: var(--incode-primary);
+  --bs-nav-link-hover-color: var(--incode-dark);
+}
+
+.dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--incode-primary);
+}
+
+.list-group {
+  --bs-list-group-active-bg: var(--incode-primary);
+  --bs-list-group-active-border-color: var(--incode-primary);
+}
+
+.form-check-input:checked {
+  background-color: var(--incode-primary);
+  border-color: var(--incode-primary);
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--incode-accent);
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(var(--incode-primary-rgb), 0.5);
+}
+
+/* 版面：內容區淺色底、頂欄 light + dark 文字 */
+#wrapper #content-wrapper {
+  background-color: var(--incode-light-soft);
+}
+
+.topbar.incode-topbar {
+  background-color: var(--incode-light) !important;
+  border-bottom: 1px solid var(--incode-accent-soft);
+}
+
+.incode-topbar .nav-link,
+.incode-topbar .nav-link i,
+.incode-topbar #sidebarToggleTop {
+  color: var(--incode-dark) !important;
+}
+
+.incode-topbar .nav-link:hover,
+.incode-topbar .nav-link:hover i {
+  color: var(--incode-primary) !important;
+}
+
+.incode-topbar .topbar-divider {
+  border-right-color: var(--incode-accent);
+}
+
+/* 側欄：primary → dark 漸層（bg-gradient-primary，sb-admin-2.css 已換色），選取中的項目加淺色底 */
+.sidebar-dark .nav-item.active > .nav-link {
+  background-color: rgba(var(--incode-light-rgb), 0.12);
+}
+
+.sidebar .collapse-inner .collapse-item.active {
+  color: var(--incode-dark);
+  background-color: var(--incode-primary-tint);
+}
+
+.sidebar .collapse-inner .collapse-item:hover {
+  background-color: var(--incode-light-soft);
+}
+
+/* DataTables（Bootstrap 5 樣式）的目前頁碼 */
+div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-item.active .page-link {
+  background-color: var(--incode-primary);
+  border-color: var(--incode-primary);
+}
+
+/* 卡片標題列：sb-admin-2 原本是偏藍的 #f8f9fc */
+.card-header {
+  background-color: var(--incode-light-soft);
+  border-bottom-color: var(--incode-accent-soft);
+}

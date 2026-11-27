@@ -546,7 +546,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .tiptap-editor-wrapper {
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 0.25rem;
   overflow: hidden;
 }
@@ -557,14 +557,14 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   padding: 0.75rem;
   background-color: #f8f9fa;
-  border-bottom: 1px solid #d1d3d4;
+  border-bottom: 1px solid var(--incode-border);
   align-items: center;
 }
 
 .toolbar-group {
   display: flex;
   gap: 0.25rem;
-  border-right: 1px solid #d1d3d4;
+  border-right: 1px solid var(--incode-border);
   padding-right: 0.5rem;
 }
 
@@ -574,7 +574,7 @@ onBeforeUnmount(() => {
 
 .toolbar-btn {
   background-color: #fff;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   padding: 0.4rem 0.6rem;
   border-radius: 0.2rem;
   cursor: pointer;
@@ -590,7 +590,7 @@ onBeforeUnmount(() => {
 
 .toolbar-btn:hover:not(:disabled) {
   background-color: #e9ecef;
-  border-color: #86b0bd;
+  border-color: var(--incode-accent);
 }
 
 .toolbar-btn:disabled {
@@ -599,9 +599,9 @@ onBeforeUnmount(() => {
 }
 
 .toolbar-btn.is-active {
-  background-color: #145369;
+  background-color: var(--incode-dark);
   color: #fff;
-  border-color: #145369;
+  border-color: var(--incode-dark);
 }
 
 .toolbar-file-input {
@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
 }
 
 .upload-status {
-  color: #145369;
+  color: var(--incode-dark);
   font-size: 0.875rem;
   margin-left: auto;
 }
@@ -727,14 +727,14 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #d1d3d4;
+  border-bottom: 1px solid var(--incode-border);
   background-color: rgba(255, 255, 255, 0.95);
 }
 
 .cropper-header h5 {
   margin: 0;
   font-size: 1.25rem;
-  color: #145369;
+  color: var(--incode-dark);
 }
 
 .close-btn {
@@ -755,7 +755,7 @@ onBeforeUnmount(() => {
 
 .close-btn:hover {
   background: #f0f0f0;
-  color: #145369;
+  color: var(--incode-dark);
 }
 
 .cropper-body {
@@ -778,7 +778,7 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #d1d3d4;
+  border-top: 1px solid var(--incode-border);
 }
 
 .btn-cancel,
@@ -788,28 +788,28 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
 }
 
 .btn-cancel {
   background: #fff;
-  color: #145369;
+  color: var(--incode-dark);
 }
 
 .btn-cancel:hover {
   background: #f8f9fa;
-  border-color: #86b0bd;
+  border-color: var(--incode-accent);
 }
 
 .btn-confirm {
-  background: #145369;
+  background: var(--incode-dark);
   color: #fff;
-  border-color: #145369;
+  border-color: var(--incode-dark);
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background: #86b0bd;
-  border-color: #86b0bd;
+  background: var(--incode-accent);
+  border-color: var(--incode-accent);
 }
 
 .btn-confirm:disabled {

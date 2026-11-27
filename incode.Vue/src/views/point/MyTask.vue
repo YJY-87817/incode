@@ -81,7 +81,7 @@ const claimReward = async (mission) => {
       icon: "info",
       title: "獎勵已自動發放",
       text: "您獲得的最佳解答獎勵已直接入帳，無需手動領取。",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return;
   }
@@ -96,7 +96,7 @@ const claimReward = async (mission) => {
       icon: "error",
       title: "無法領取",
       text: "系統無法取得此任務的進度資訊，請重新整理頁面",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return;
   }
@@ -106,8 +106,8 @@ const claimReward = async (mission) => {
     text: `確定領取「${missionName}」的獎勵？`,
     icon: "question",
     showCancelButton: true,
-    confirmButtonColor: "#145369",
-    cancelButtonColor: "#86B0BD",
+    confirmButtonColor: "var(--incode-dark)",
+    cancelButtonColor: "var(--incode-accent)",
     confirmButtonText: "確定領取",
     cancelButtonText: "取消",
     reverseButtons: true,
@@ -126,7 +126,7 @@ const claimReward = async (mission) => {
       icon: "success",
       title: "領取成功",
       text: "獎勵已發放至您的帳戶。",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
       timer: 2000,
     });
 
@@ -140,7 +140,7 @@ const claimReward = async (mission) => {
         icon: "info",
         title: "提示",
         text: "偵測到獎勵先前已領取，清單已為您自動更新。",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-dark)",
       });
       if (selectedMission.value) isDetailOpen.value = false;
     } else {
@@ -148,7 +148,7 @@ const claimReward = async (mission) => {
         icon: "error",
         title: "領取失敗",
         text: err.message || "伺服器繁忙，請稍後再試",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-dark)",
       });
     }
   }
@@ -177,8 +177,8 @@ const cancelEntrust = async (mission) => {
     text: `取消「${mission.title}」後，預扣的 ${mission.rewardPoints || 0} 點會退回。已有其他會員回覆的委託無法取消。`,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: "#145369",
-    cancelButtonColor: "#86B0BD",
+    confirmButtonColor: "var(--incode-dark)",
+    cancelButtonColor: "var(--incode-accent)",
     confirmButtonText: "確定取消委託",
     cancelButtonText: "保留委託",
     reverseButtons: true,
@@ -197,7 +197,7 @@ const cancelEntrust = async (mission) => {
       icon: "success",
       title: "委託已取消",
       text: data?.message || "預扣點數已退回",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
       timer: 2500,
     });
   } catch (err) {
@@ -205,7 +205,7 @@ const cancelEntrust = async (mission) => {
       icon: "error",
       title: "無法取消",
       text: err.message,
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
   } finally {
     isCancelling.value = false;
@@ -587,8 +587,8 @@ onMounted(() => {
 <style scoped>
 /* 自定義配色系統 */
 .custom-theme {
-  --main-color: #86b0bd; /* 主色調 */
-  --btn-color: #145369; /* 按鈕與標籤色 */
+  --main-color: var(--incode-accent); /* 主色調 */
+  --btn-color: var(--incode-dark); /* 按鈕與標籤色 */
 }
 
 /* 顏色類別輔助 */
@@ -699,17 +699,17 @@ onMounted(() => {
   transition: all 0.25s ease;
 }
 
-/* 側邊欄 Active 狀態：改用您指定的 #86B0BD */
+/* 側邊欄 Active 狀態：改用您指定的 var(--incode-accent) */
 .active-tab {
-  background-color: #86b0bd !important;
+  background-color: var(--incode-accent) !important;
   color: #ffffff !important;
   font-weight: 600;
-  box-shadow: 0 4px 10px rgba(134, 176, 189, 0.4) !important;
+  box-shadow: 0 4px 10px rgba(var(--incode-accent-rgb), 0.4) !important;
 }
 
 /* 滑過效果 */
 .nav-link:hover:not(.active-tab) {
-  background-color: #f0f4f7 !important;
+  background-color: var(--incode-light-soft) !important;
   transform: translateX(5px);
   color: var(--btn-color) !important;
 }

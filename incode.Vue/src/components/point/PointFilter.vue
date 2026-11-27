@@ -2,7 +2,7 @@
 import { usePointStore } from "@/stores/point/pointStore.js";
 const store = usePointStore();
 
-const mainColor = "#145369";
+const mainColor = "var(--incode-dark)";
 </script>
 
 <template>
@@ -61,30 +61,30 @@ const mainColor = "#145369";
 </template>
 
 <style scoped>
-/* 自定義按鈕樣式，對應 #86B0BD */
+/* 自定義按鈕樣式，對應 var(--incode-accent) */
 .custom-btn {
-  color: #145369;
-  border-color: #145369;
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
   background-color: transparent;
   transition: all 0.3s ease;
 }
 
 .custom-btn:hover {
-  background-color: #145369;
+  background-color: var(--incode-dark);
   color: white;
-  border-color: #145369;
+  border-color: var(--incode-dark);
 }
 
 .custom-btn:disabled {
   opacity: 0.65;
-  color: #145369;
-  border-color: #145369;
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
 }
 
 /* 讓輸入框聚焦時也帶點主色調（選配） */
 .form-control:focus,
 .form-select:focus {
-  border-color: #145369;
-  box-shadow: 0 0 0 0.25rem rgba(134, 176, 189, 0.25);
+  border-color: var(--incode-dark);
+  box-shadow: 0 0 0 0.25rem rgba(var(--incode-accent-rgb), 0.25);
 }
 </style>

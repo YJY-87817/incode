@@ -282,7 +282,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
                 class="topic-preview-iframe"
                 :html="topic.contentHtml || topic.content"
                 :min-height="0"
-                text-color="#145369"
+                text-color="brand-dark"
                 :extra-css="getTopicPreviewCss(topic)"
               />
             </div>
@@ -488,7 +488,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
                         class="topic-preview-iframe"
                         :html="topic.contentHtml || topic.content"
                         :min-height="0"
-                        text-color="#145369"
+                        text-color="brand-dark"
                         :extra-css="getTopicPreviewCss(topic)"
                       />
                     </div>
@@ -574,7 +574,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 <style scoped>
 /* 卡片樣式 */
 .card {
-  border-color: #d1d3d4;
+  border-color: var(--incode-border);
 }
 
 .card-body {
@@ -610,8 +610,8 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   height: 56px;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid #d1d3d4;
-  background: #fff0dd;
+  border: 1px solid var(--incode-border);
+  background: var(--incode-light);
 }
 
 .topic-preview-text-col {
@@ -632,7 +632,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .topic-table-header {
-  background-color: #86b0bd;
+  background-color: var(--incode-accent);
   color: #fff;
 }
 
@@ -642,7 +642,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   padding-bottom: 1rem !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
-  border-bottom-color: #d1d3d4;
+  border-bottom-color: var(--incode-border);
 }
 
 .topic-table-header-label {
@@ -660,7 +660,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   display: inline-flex;
   width: var(--sort-control-width, auto);
   max-width: 100%;
-  color: #145369;
+  color: var(--incode-dark);
   transition: width 0.16s ease;
 }
 
@@ -684,9 +684,9 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   flex-wrap: nowrap;
   gap: 0.6rem;
   padding: 0.75rem;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 0.6rem;
-  background-color: #86b0bd;
+  background-color: var(--incode-accent);
   position: relative;
 }
 
@@ -715,7 +715,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   background-color: #fff;
   margin-left: 0;
   padding: 0.08rem 0.3rem;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 0.35rem;
   font-size: 0.75rem;
 }
@@ -728,8 +728,8 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   font-size: 0.7rem;
   padding: 0.05rem 0.15rem;
   min-width: calc(1ch + 1em);
-  color: #145369;
-  border-color: #86b0bd;
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: transparent;
   -moz-appearance: auto;
   appearance: auto;
@@ -747,14 +747,14 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 .topic-mobile-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.2rem;
   font-size: 0.7rem;
-  color: #145369;
-  border-color: #86b0bd;
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: #fff;
 }
 
 .topic-mobile-pagination :deep(.pagination-total-pages) {
   font-size: 0.7rem;
-  color: #145369 !important;
+  color: var(--incode-dark) !important;
 }
 
 .topic-mobile-pagination :deep(.topic-header-pagination-list .page-link) {
@@ -780,7 +780,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 .topic-header-pagination :deep(.pagination-jump-shell) {
   margin-left: 0.35rem;
   padding: 0.08rem 0.3rem;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 0.35rem;
   background-color: #fff;
   font-size: 0.75rem;
@@ -795,8 +795,8 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   font-weight: 700;
   padding: 0.05rem 0.2rem;
   min-width: calc(1ch + 1.3em);
-  color: #145369;
-  border-color: #86b0bd;
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: transparent;
   -moz-appearance: auto;
   appearance: auto;
@@ -813,22 +813,22 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 .topic-header-pagination :deep(.pagination-total-pages) {
   font-size: 0.75rem;
-  color: #145369 !important;
+  color: var(--incode-dark) !important;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button) {
   padding: 0.05rem 0.25rem;
   font-size: 0.75rem;
   line-height: 1.1;
-  color: #145369;
-  border-color: #86b0bd;
+  color: var(--incode-dark);
+  border-color: var(--incode-accent);
   background-color: #fff;
 }
 
 .topic-header-pagination :deep(.pagination-jump-button:hover) {
-  color: #145369;
-  border-color: #145369;
-  background-color: #fff0dd;
+  color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  background-color: var(--incode-light);
 }
 
 .topic-sort-input-wrapper {
@@ -842,9 +842,9 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   min-height: 28px;
   font-size: 0.82rem;
   font-weight: 700;
-  border: 1px solid #145369;
+  border: 1px solid var(--incode-dark);
   border-radius: 999px;
-  background: #145369;
+  background: var(--incode-dark);
   color: #fff;
   padding: 0 1.45rem 0 0.7rem;
   line-height: 28px;
@@ -876,9 +876,9 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   left: 0;
   width: 100%;
   border-radius: 0.65rem;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   background: #fff;
-  box-shadow: 0 8px 18px rgba(20, 83, 105, 0.12);
+  box-shadow: 0 8px 18px rgba(var(--incode-dark-rgb), 0.12);
   z-index: 30;
   overflow: hidden;
 }
@@ -888,7 +888,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
   width: 100%;
   border: none;
   background: transparent;
-  color: #145369;
+  color: var(--incode-dark);
   text-align: left;
   padding: 0.45rem 0.7rem;
   font-size: 0.82rem;
@@ -896,12 +896,12 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .topic-sort-item + .topic-sort-item {
-  border-top: 1px solid rgba(209, 211, 212, 0.8);
+  border-top: 1px solid var(--incode-border);
 }
 
 .topic-sort-item.active,
 .topic-sort-item:hover {
-  background: #fff0dd;
+  background: var(--incode-light);
 }
 
 .topic-table-header th:first-child {
@@ -913,7 +913,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .table-hover tbody tr:hover {
-  background-color: rgba(255, 240, 221, 0.5) !important;
+  background-color: rgba(var(--incode-light-rgb), 0.5) !important;
 }
 
 .forum-row {
@@ -1130,13 +1130,13 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 /* 徽章樣式 */
 .badge.bg-secondary {
-  background-color: #86b0bd !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
 .badge.bg-secondary-light {
-  background-color: #d0e8f2 !important;
-  color: #145369;
+  background-color: var(--incode-accent-soft) !important;
+  color: var(--incode-dark);
 }
 
 .interaction-aligned-badge {
@@ -1168,26 +1168,26 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .parent-link-btn {
-  border: 1px solid #86b0bd;
-  color: #145369;
-  background-color: #d0e8f2;
+  border: 1px solid var(--incode-accent);
+  color: var(--incode-dark);
+  background-color: var(--incode-accent-soft);
   cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .badge.bg-primary {
-  background-color: #86b0bd !important;
+  background-color: var(--incode-accent) !important;
   color: #fff;
 }
 
 /* 主題標題 */
 .topic-title-link {
-  color: #0f3c4d;
+  color: var(--incode-darker);
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -1196,7 +1196,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .topic-title-link:hover {
-  color: #86b0bd;
+  color: var(--incode-accent);
 }
 
 /* 互動按鈕容器樣式 */
@@ -1207,12 +1207,12 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 }
 
 .reply-mode-tabs .nav-link.active {
-  background: #145369;
+  background: var(--incode-dark);
   color: #fff;
 }
 
 .topic-mobile-card {
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 0.6rem;
   cursor: pointer;
 }
@@ -1223,7 +1223,7 @@ const desktopHeaderLinkPaddingClass = computed(() =>
 
 /* 載入動畫 */
 .spinner-border {
-  color: #145369 !important;
+  color: var(--incode-dark) !important;
 }
 
 /* 響應式調整 */

@@ -71,7 +71,7 @@ export function useForumPost() {
         title: "提醒",
         text: "請輸入標題與內容",
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-dark)",
       });
 
       // 恢複 modal 的 z-index
@@ -95,7 +95,7 @@ export function useForumPost() {
         title: "提醒",
         text: "請選擇分類",
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-dark)",
       });
 
       // 恢複 modal 的 z-index
@@ -228,7 +228,7 @@ export function useForumPost() {
       title: "發佈失敗",
       text: backendErrorMessage(error, "發佈失敗，請稍後再試"),
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
 
     // 恢複 modal 的 z-index
@@ -395,7 +395,7 @@ export function useForumPost() {
         title: "更新失敗",
         text: backendErrorMessage(error, "更新失敗，請稍後再試"),
         confirmButtonText: "確定",
-        confirmButtonColor: "#145369",
+        confirmButtonColor: "var(--incode-dark)",
       });
 
       // 恢複 modal 的 z-index

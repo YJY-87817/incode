@@ -27,7 +27,7 @@
     isResendingVerification.value = true;
     try {
       const res = await axios.post("/AuthApi/resend-verification");
-      Swal.fire({ icon: "success", title: res.data?.message || "驗證信已寄出", confirmButtonColor: "#145369" });
+      Swal.fire({ icon: "success", title: res.data?.message || "驗證信已寄出", confirmButtonColor: "var(--incode-dark)" });
     } catch (error) {
       Swal.fire({ icon: "error", title: "寄送失敗", text: error.response?.data?.message || "請稍後再試" });
     } finally {
@@ -285,7 +285,7 @@
           :show-contact-info="isSelf" :action-label="buttonLabel" @click-action="handleCardAction"
           @click-stat="openFollowDialog" @upload-avatar="handleCardAvatarUpload">
           <template #actions>
-            <v-btn v-if="canChangePassword" prepend-icon="mdi-lock-outline" variant="outlined" color="#145369"
+            <v-btn v-if="canChangePassword" prepend-icon="mdi-lock-outline" variant="outlined" color="brand-dark"
               rounded="pill" size="large" @click="passwordDialog = true">
               修改密碼
             </v-btn>
@@ -304,7 +304,7 @@
                 請到信箱點擊驗證連結。未驗證的帳號，若有人以同一個 Email 的 Google 帳號登入，帳號會改由該 Google 帳號使用。
               </div>
             </div>
-            <v-btn variant="flat" color="#145369" class="text-white" rounded="pill"
+            <v-btn variant="flat" color="brand-dark" class="text-white" rounded="pill"
               :loading="isResendingVerification" @click="resendVerification">
               重寄驗證信
             </v-btn>
@@ -375,7 +375,7 @@
           <v-spacer></v-spacer>
           <v-btn variant="text" class="text-body-1 font-weight-bold mr-2" color="grey-darken-1"
             @click="dialog = false">取消</v-btn>
-          <v-btn variant="flat" class="text-body-1 font-weight-bold px-6" color="#145369" :loading="isLoading"
+          <v-btn variant="flat" class="text-body-1 font-weight-bold px-6" color="brand-dark" :loading="isLoading"
             :disabled="!formValid" @click="handleUpdate">保存變更</v-btn>
         </v-card-actions>
       </v-card>
@@ -384,7 +384,7 @@
     <v-row>
       <v-col cols="12" class="mt-5">
         <v-card class="rounded-xl overflow-hidden" border flat>
-          <nav class="text-center py-3" style="font-size: 24px; background-color: #86b0bd">
+          <nav class="text-center py-3" style="font-size: 24px; background-color: var(--incode-accent)">
             <router-link :to="{ name: 'UserCollections' }">討論區</router-link> |
             <router-link :to="{ name: 'UserMission' }">任務</router-link>
           </nav>

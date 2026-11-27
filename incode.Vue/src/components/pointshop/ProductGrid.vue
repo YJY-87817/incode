@@ -176,26 +176,26 @@ const changePage = (page) => {
 
 /* 1. 基礎樣式：讓所有分頁按鈕符合你的自定義風格 */
 :deep(.pagination .page-link) {
-  color: #145369;
+  color: var(--incode-dark);
   background-color: transparent;
-  border: 1px solid #145369;
+  border: 1px solid var(--incode-dark);
   transition: all 0.2s ease-in-out;
   /* 增加一點平滑過渡感 */
 }
 
 /* 2. 選中狀態：當前頁碼填滿顏色 */
 :deep(.pagination .page-item.active .page-link) {
-  background-color: #145369;
-  border-color: #145369;
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
   color: #ffffff;
   z-index: 3;
 }
 
 /* 3. 滑鼠懸停樣式 (Hover) */
 :deep(.pagination .page-link:hover) {
-  background-color: #145369;
+  background-color: var(--incode-dark);
   color: #ffffff;
-  border-color: #145369;
+  border-color: var(--incode-dark);
 }
 
 /* 4. 禁用狀態 (例如在第一頁時的「上一頁」按鈕) */

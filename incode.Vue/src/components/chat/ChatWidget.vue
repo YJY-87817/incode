@@ -596,7 +596,7 @@ onUnmounted(() => {
   top: 90%;
   right: 0;
   transform: translateY(-50%) translateX(68px); 
-  background: linear-gradient(135deg, #4398a5 0%, #3a5f54 100%);
+  background: linear-gradient(135deg, var(--incode-primary) 0%, var(--incode-dark) 100%);
   color: white;
   border: none;
   width: 120px; 
@@ -608,7 +608,7 @@ onUnmounted(() => {
   justify-content: flex-start; /* 靠左 */
   padding-left: 10px; /* 左邊留白 */
   gap: 4px; /* 圖片跟字的距離 */
-  box-shadow: -4px 0 15px rgba(67, 152, 165, 0.4);
+  box-shadow: -4px 0 15px rgba(var(--incode-primary-rgb), 0.4);
   z-index: 9998;
   transition: transform 0.3s ease-out, box-shadow 0.3s ease;
 }
@@ -616,7 +616,7 @@ onUnmounted(() => {
 /* 懸停效果 */
 .side-hidden-btn:hover {
   transform: translateY(-50%) translateX(0); /* 滑鼠移上去完全滑出 */
-  box-shadow: -6px 0 20px rgba(67, 152, 165, 0.6);
+  box-shadow: -6px 0 20px rgba(var(--incode-primary-rgb), 0.6);
 }
 .side-btn-gif {
   width: 33px;
@@ -640,14 +640,14 @@ onUnmounted(() => {
 .custom-chat-window {
     position: fixed; bottom: 15px; right: 15px;
     width: 380px; height: 550px; /* 固定寬高避免擠壓 */
-    background: linear-gradient(90deg, rgb(239, 242, 247) 0%, rgb(235, 239, 248) 50%, rgb(208, 224, 247) 100%) !important;
+    background: linear-gradient(90deg, var(--incode-light-soft) 0%, var(--incode-light) 50%, var(--incode-accent-soft) 100%) !important;
     box-shadow: 0 12px 30px rgba(0,0,0,0.15);
     border-radius: 20px;
     display: flex; flex-direction: column; z-index: 9999; overflow: hidden;
 }
 
 .chat-header {
-    background: linear-gradient(135deg, #4398a5, #3a5f54);
+    background: linear-gradient(135deg, var(--incode-primary), var(--incode-dark));
     color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;
 }
 .chat-header.human-mode { background: linear-gradient(135deg, #e67e22, #d35400); }
@@ -697,7 +697,7 @@ onUnmounted(() => {
     padding-left: 20px !important;
 }
 .ai .bubble { background: white; border-radius: 12px; }
-.user .bubble { background: #3578F6; color: white; }
+.user .bubble { background: var(--incode-dark); color: white; }
 .msg-time { font-size: 10px; color: #999; margin-top: 4px; }
 .msg-image { 
     max-width: 100%; 
@@ -753,21 +753,21 @@ onUnmounted(() => {
     border: 1px solid #ddd; outline: none; background: #f9f9f9;
 }
 .img-upload-icon {
-    position: absolute; right: 10px; color: #3578F6; background:transparent; border: none; cursor: pointer;
+    position: absolute; right: 10px; color: var(--incode-dark); background:transparent; border: none; cursor: pointer;
 }
-.image-btn:hover { color: #3578F6 !important; background: #eee !important; }
+.image-btn:hover { color: var(--incode-dark) !important; background: #eee !important; }
 :deep(.img-upload-icon:hover) {
-    color: #3578F6 !important;
-    background-color: rgba(53, 120, 246, 0.1) !important;
+    color: var(--incode-dark) !important;
+    background-color: rgba(var(--incode-primary-rgb), 0.1) !important;
     opacity: 1 !important;
     border-radius: 30% !important;
 }
 
 .submit-send-btn {
-    width: 40px; height: 40px; border-radius: 50%; background: #3578F6;
+    width: 40px; height: 40px; border-radius: 50%; background: var(--incode-dark);
     border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.submit-send-btn:disabled { background: linear-gradient(135deg, #3578F6, #205AE6); }
+.submit-send-btn:disabled { background: linear-gradient(135deg, var(--incode-dark), var(--incode-darker)); }
 .submit-send-btn svg { width: 18px; height: 18px; }
 
 .preview-box {
@@ -779,7 +779,7 @@ onUnmounted(() => {
 
 /* 側邊滾動條 */
 .messages-area::-webkit-scrollbar { width: 5px; }
-.messages-area::-webkit-scrollbar-track { background: linear-gradient(90deg, rgb(239, 242, 247) 0%, rgb(235, 239, 248) 50%, rgb(208, 224, 247) 100%) !important; }
+.messages-area::-webkit-scrollbar-track { background: linear-gradient(90deg, var(--incode-light-soft) 0%, var(--incode-light) 50%, var(--incode-accent-soft) 100%) !important; }
 .messages-area::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.1); border-radius: 10px; }
 /* 動畫 */
 .popup-anim-enter-active { transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
@@ -791,7 +791,7 @@ onUnmounted(() => {
 .message-row.ai .avatar { 
     width: 32px; 
     height: 32px; 
-    background: #90afe4; 
+    background: var(--incode-accent); 
     border-radius: 50%; 
     display: flex; 
     align-items: center; 

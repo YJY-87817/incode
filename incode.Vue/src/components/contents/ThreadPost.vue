@@ -126,7 +126,7 @@
                   class="card-text rich-content"
                   :html="safeContent"
                   :min-height="previewMinHeight"
-                  text-color="#145369"
+                  text-color="brand-dark"
                   :extra-css="iframeExtraCssCollapsed"
                 />
                 <HtmlIframe
@@ -134,7 +134,7 @@
                   class="card-text rich-content"
                   :html="safeContent"
                   :min-height="previewMinHeight"
-                  text-color="#145369"
+                  text-color="brand-dark"
                   :extra-css="iframeExtraCssExpanded"
                 />
               </div>
@@ -584,7 +584,7 @@ const previewImages = computed(() => {
 });
 
 const baseIframeCss =
-  "body { white-space: pre-wrap; text-align: left !important; padding-left: 0 !important; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: #145369; } .reply-body { margin: 0; } p, div, figure, figcaption { text-align: left !important; margin-left: 0 !important; padding-left: 0 !important; } figure, .image { display: block !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; max-height: 320px; object-fit: contain; object-position: left center !important; display: block !important; float: none !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } .image img { margin-left: 0 !important; margin-right: auto !important; } @media (max-width: 768px) { img { max-height: 240px; } }";
+  "body { white-space: pre-wrap; text-align: left !important; padding-left: 0 !important; } h6.reply-title { margin: 0 0 6px; font-size: 1rem; font-weight: 600; color: var(--incode-dark); } .reply-body { margin: 0; } p, div, figure, figcaption { text-align: left !important; margin-left: 0 !important; padding-left: 0 !important; } figure, .image { display: block !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } img:not([style*='width']) { width: 30%; } img { max-width: 100%; max-height: 320px; object-fit: contain; object-position: left center !important; display: block !important; float: none !important; margin: 0.5rem 0 !important; margin-left: 0 !important; margin-right: auto !important; } .image img { margin-left: 0 !important; margin-right: auto !important; } @media (max-width: 768px) { img { max-height: 240px; } }";
 const iframeExtraCssCollapsed = computed(() => {
   if (!props.previewOnly || !previewToggleEnabled.value) return baseIframeCss;
   return `${baseIframeCss} img { display: none !important; } figure, .image { display: none !important; }`;
@@ -934,7 +934,7 @@ async function submitReply() {
       title: "提醒",
       text: "請輸入回覆內容",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
     return;
   }
@@ -982,7 +982,7 @@ async function submitReply() {
       title: "送出失敗",
       text: "回覆失敗，請稍後再試",
       confirmButtonText: "確定",
-      confirmButtonColor: "#145369",
+      confirmButtonColor: "var(--incode-dark)",
     });
   } finally {
     forumStore.setQuickReplySubmitting(props.post.id, false);
@@ -1062,7 +1062,7 @@ async function handleInteractionError(data) {
     title: "互動失敗",
     text: data.error || "操作失敗，請稍後再試",
     confirmButtonText: "確定",
-    confirmButtonColor: "#145369",
+    confirmButtonColor: "var(--incode-dark)",
   });
 }
 
@@ -1095,12 +1095,12 @@ async function handleDeleteContent(contentId) {
 <style scoped>
 /* 正在回覆的目標內容高亮效果 */
 .thread-post .card.replying-target {
-  border: 2px solid #145369;
-  box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+  border: 2px solid var(--incode-dark);
+  box-shadow: 0 0 20px rgba(var(--incode-dark-rgb), 0.3);
   background: linear-gradient(
     135deg,
-    rgba(20, 83, 105, 0.08) 0%,
-    rgba(20, 83, 105, 0.03) 100%
+    rgba(var(--incode-dark-rgb), 0.08) 0%,
+    rgba(var(--incode-dark-rgb), 0.03) 100%
   );
   position: relative;
   animation: pulse-border 2s ease-in-out infinite;
@@ -1109,11 +1109,11 @@ async function handleDeleteContent(contentId) {
 }
 
 .thread-post .card.replying-target:hover {
-  box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+  box-shadow: 0 0 30px rgba(var(--incode-dark-rgb), 0.5);
   background: linear-gradient(
     135deg,
-    rgba(20, 83, 105, 0.12) 0%,
-    rgba(20, 83, 105, 0.06) 100%
+    rgba(var(--incode-dark-rgb), 0.12) 0%,
+    rgba(var(--incode-dark-rgb), 0.06) 100%
   );
 }
 
@@ -1122,68 +1122,68 @@ async function handleDeleteContent(contentId) {
   position: absolute;
   top: -12px;
   left: 12px;
-  background: linear-gradient(135deg, #145369 0%, #0f3c4d 100%);
-  color: #fff0dd;
+  background: linear-gradient(135deg, var(--incode-dark) 0%, var(--incode-darker) 100%);
+  color: var(--incode-light);
   padding: 2px 12px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(20, 83, 105, 0.4);
+  box-shadow: 0 2px 8px rgba(var(--incode-dark-rgb), 0.4);
   z-index: 7;
 }
 
 @keyframes pulse-border {
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(20, 83, 105, 0.3);
+    box-shadow: 0 0 20px rgba(var(--incode-dark-rgb), 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(20, 83, 105, 0.5);
+    box-shadow: 0 0 30px rgba(var(--incode-dark-rgb), 0.5);
   }
 }
 
 /* 自定義按鈕樣式 */
 .btn-forum-primary {
-  background-color: #145369;
-  border-color: #145369;
-  color: #fff0dd;
+  background-color: var(--incode-dark);
+  border-color: var(--incode-dark);
+  color: var(--incode-light);
   transition: all 0.3s ease;
 }
 
 .btn-forum-primary:hover {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .btn-forum-primary:disabled {
-  background-color: #d1d3d4;
-  border-color: #d1d3d4;
+  background-color: var(--incode-border);
+  border-color: var(--incode-border);
   color: #fff;
   opacity: 0.6;
 }
 
 .btn-forum-secondary {
   background-color: transparent;
-  border: 1px solid #d1d3d4;
-  color: #145369;
+  border: 1px solid var(--incode-border);
+  color: var(--incode-dark);
   transition: all 0.3s ease;
 }
 
 .btn-forum-secondary:hover {
-  background-color: #fff0dd;
-  border-color: #86b0bd;
-  color: #145369;
+  background-color: var(--incode-light);
+  border-color: var(--incode-accent);
+  color: var(--incode-dark);
 }
 
 .card-title {
   font-weight: 600;
-  color: #145369;
+  color: var(--incode-dark);
 }
 
 .post-author {
   font-weight: 700;
-  color: #0f3c4d;
+  color: var(--incode-darker);
   letter-spacing: 0.2px;
   font-size: 1rem;
 }
@@ -1197,21 +1197,21 @@ async function handleDeleteContent(contentId) {
 }
 
 .parent-link-btn {
-  border: 1px solid #86b0bd;
-  color: #145369;
-  background-color: #d0e8f2;
+  border: 1px solid var(--incode-accent);
+  color: var(--incode-dark);
+  background-color: var(--incode-accent-soft);
   cursor: pointer;
 }
 
 .parent-link-btn:hover {
-  background-color: #86b0bd;
-  border-color: #86b0bd;
+  background-color: var(--incode-accent);
+  border-color: var(--incode-accent);
   color: #fff;
 }
 
 .badge.bg-secondary-light {
-  background-color: #d0e8f2 !important;
-  color: #145369;
+  background-color: var(--incode-accent-soft) !important;
+  color: var(--incode-dark);
 }
 
 .interaction-aligned-badge {
@@ -1245,7 +1245,7 @@ async function handleDeleteContent(contentId) {
 }
 
 .post-time.clickable:hover {
-  color: #145369 !important;
+  color: var(--incode-dark) !important;
   text-decoration-style: solid;
   font-weight: 500;
 }
@@ -1274,7 +1274,7 @@ async function handleDeleteContent(contentId) {
   gap: 0;
   padding: 3px;
   background: #fff;
-  border: 1px solid #d1d3d4;
+  border: 1px solid var(--incode-border);
   border-radius: 999px;
   height: 32px;
   font-size: 0.875rem;
@@ -1286,7 +1286,7 @@ async function handleDeleteContent(contentId) {
 .reply-mode-tabs .nav-link {
   border: none;
   background: transparent;
-  color: #145369;
+  color: var(--incode-dark);
   padding: 0 0.75rem;
   border-radius: 999px;
   font-size: 0.875rem;
@@ -1305,14 +1305,14 @@ async function handleDeleteContent(contentId) {
 }
 
 .reply-mode-tabs .nav-link.active {
-  background: #145369;
+  background: var(--incode-dark);
   color: #fff;
 }
 
 .quick-reply-box,
 .detailed-reply-box {
-  background: rgba(255, 240, 221, 0.5);
-  border: 1px solid #d1d3d4;
+  background: rgba(var(--incode-light-rgb), 0.5);
+  border: 1px solid var(--incode-border);
   border-radius: 8px;
   padding-top: 1rem; /* 上 */
   padding-right: 1rem; /* 右 */
@@ -1360,7 +1360,7 @@ async function handleDeleteContent(contentId) {
   top: 0;
   left: 0;
   right: 0;
-  border-top: 1px solid #d1d3d4;
+  border-top: 1px solid var(--incode-border);
 }
 
 .thread-post .card-body {
@@ -1390,7 +1390,7 @@ async function handleDeleteContent(contentId) {
 .rich-content {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #145369;
+  color: var(--incode-dark);
 }
 
 .rich-content img {
@@ -1458,8 +1458,8 @@ async function handleDeleteContent(contentId) {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 6px;
-  border: 1px solid #d1d3d4;
-  background: #fff0dd;
+  border: 1px solid var(--incode-border);
+  background: var(--incode-light);
 }
 
 .preview-iframe-wrapper.preview-collapsed {
@@ -1469,8 +1469,8 @@ async function handleDeleteContent(contentId) {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  background-color: rgba(255, 240, 221, 0.35);
-  border: 1px dashed #d1d3d4;
+  background-color: rgba(var(--incode-light-rgb), 0.35);
+  border: 1px dashed var(--incode-border);
   border-radius: 6px;
   z-index: 2;
 }
@@ -1489,7 +1489,7 @@ async function handleDeleteContent(contentId) {
 }
 
 .preview-iframe-wrapper.preview-expanded {
-  border-top: 1px dashed #d1d3d4;
+  border-top: 1px dashed var(--incode-border);
   padding-top: 0.75rem;
   z-index: 2;
 }
@@ -1592,21 +1592,21 @@ async function handleDeleteContent(contentId) {
 /* 巢狀回覆的樣式 */
 .thread-post .replies-container .thread-post .card {
   border: none;
-  background-color: rgba(255, 240, 221, 0.3);
+  background-color: rgba(var(--incode-light-rgb), 0.3);
 }
 
 .thread-post .replies-container .thread-post .card:hover {
-  background-color: rgba(255, 240, 221, 0.6);
+  background-color: rgba(var(--incode-light-rgb), 0.6);
 }
 
 /* 更深層巢狀的樣式 */
 .thread-post .replies-container .replies-container .thread-post .card {
   border: none;
-  background-color: rgba(255, 240, 221, 0.2);
+  background-color: rgba(var(--incode-light-rgb), 0.2);
 }
 
 .thread-post .replies-container .replies-container .thread-post .card:hover {
-  background-color: rgba(255, 240, 221, 0.5);
+  background-color: rgba(var(--incode-light-rgb), 0.5);
 }
 
 /* ========== 巢狀回覆展開/收起樣式 ========== */
@@ -1617,8 +1617,8 @@ async function handleDeleteContent(contentId) {
 .nested-toggle-btn {
   font-size: 0.875rem;
   padding: 0.25rem 0.75rem;
-  border-color: #d1d3d4;
-  color: #145369;
+  border-color: var(--incode-border);
+  color: var(--incode-dark);
   background-color: #fff;
   transition: all 0.2s ease;
   height: 32px;
@@ -1630,8 +1630,8 @@ async function handleDeleteContent(contentId) {
 
 .nested-toggle-btn:hover {
   background-color: #f8f9fa;
-  border-color: #145369;
-  color: #145369;
+  border-color: var(--incode-dark);
+  color: var(--incode-dark);
 }
 
 .nested-toggle-btn i {
@@ -1659,8 +1659,8 @@ async function handleDeleteContent(contentId) {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  background-color: rgba(255, 240, 221, 0.25);
-  border: 1px dashed #d1d3d4;
+  background-color: rgba(var(--incode-light-rgb), 0.25);
+  border: 1px dashed var(--incode-border);
   border-radius: 6px;
   padding: 0.5rem;
 }
@@ -1674,7 +1674,7 @@ async function handleDeleteContent(contentId) {
 }
 
 .nested-replies-wrapper.nested-expanded {
-  border-top: 1px dashed #d1d3d4;
+  border-top: 1px dashed var(--incode-border);
   padding-top: 0.5rem;
   margin-top: 0.5rem;
 }
@@ -1694,12 +1694,12 @@ async function handleDeleteContent(contentId) {
 /* 調整巢狀回覆內的卡片樣式 */
 .nested-replies-wrapper .thread-post .card {
   border: none;
-  background-color: rgba(255, 240, 221, 0.4);
+  background-color: rgba(var(--incode-light-rgb), 0.4);
   margin-bottom: 0.5rem;
 }
 
 .nested-replies-wrapper .thread-post .card:hover {
-  background-color: rgba(255, 240, 221, 0.7);
+  background-color: rgba(var(--incode-light-rgb), 0.7);
 }
 
 .nested-replies-wrapper.nested-collapsed .thread-post .card {
