@@ -75,6 +75,13 @@ const routes = [
   },
   // 以上是tim的路由
 
+  // 電影介紹（首頁「近期上映」輪播點擊後）
+  {
+    path: "/movie/:id(\\d+)",
+    name: "movie-detail",
+    component: () => import("@/views/movies/MovieDetailView.vue"),
+  },
+
   // owen
   {
     path: "/auth",

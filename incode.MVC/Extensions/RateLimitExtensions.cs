@@ -26,6 +26,9 @@ namespace incode.MVC.Extensions
         /// 寫入的檔案量另由 UploadQuota（每小時上限）控制，這裡擋大量的小請求
         /// </summary>
         public const string ContentWrite = "content-write";
+
+        /// <summary>單部電影資訊（TMDB）：匿名可用，依 IP 每分鐘 60 次。可指定任意電影 ID 繞過快取，需要限制（近期上映列表不限制）</summary>
+        public const string Movie = "movie";
     }
 
     public static class RateLimitExtensions
@@ -44,6 +47,7 @@ namespace incode.MVC.Extensions
                 options.AddPolicy(RateLimitPolicies.AiChat, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(1)));
                 options.AddPolicy(RateLimitPolicies.Upload, context => FixedWindowByUser(context, 10, TimeSpan.FromMinutes(10)));
                 options.AddPolicy(RateLimitPolicies.ContentWrite, context => FixedWindowByUser(context, 30, TimeSpan.FromMinutes(1)));
+                options.AddPolicy(RateLimitPolicies.Movie, context => FixedWindowByIp(context, 60, TimeSpan.FromMinutes(1)));
 
                 options.OnRejected = async (context, cancellationToken) =>
                 {
