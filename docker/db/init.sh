@@ -25,4 +25,15 @@ fi
 echo "[db-init] 執行 seed.sql"
 run -d "$DB_NAME" -i /scripts/seed.sql
 
+# 展示用假資料：只在 [user] 資料表是空的時候執行（會員 ID 與其他資料互相對應）；DEMO_SEED=0 可略過
+if [ "${DEMO_SEED:-1}" != "0" ]; then
+  user_count=$(run -d "$DB_NAME" -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM [user];")
+  if [ "$(echo "$user_count" | tr -d '[:space:]')" = "0" ]; then
+    echo "[db-init] 執行 seed-demo.sql（展示用假資料，會員密碼 Demo1234!）"
+    run -d "$DB_NAME" -i /scripts/seed-demo.sql
+  else
+    echo "[db-init] 已有會員資料，略過 seed-demo.sql"
+  fi
+fi
+
 echo "[db-init] 完成"

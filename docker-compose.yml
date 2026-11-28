@@ -38,6 +38,7 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Incode_Dev_2026!}
       DB_HOST: db
       DB_NAME: incodedatabase
+      DEMO_SEED: ${DEMO_SEED:-1}   # 0 = 不建立展示用假資料（docs/database/seed-demo.sql）
     volumes:
       - ./docs/database:/scripts:ro
       - ./docker/db/init.sh:/init.sh:ro

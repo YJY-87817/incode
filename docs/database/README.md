@@ -7,6 +7,7 @@ SQL Server（開發預設為 LocalDB）。專案為 Database-First：`incode.MVC
 |---|---|
 | `schema.sql` | 建表腳本：33 張資料表的欄位、預設值、主鍵 / 外鍵、索引（由 EF 模型產生） |
 | `seed.sql` | 基本資料：程式依賴的固定資料（角色、點數類型、互動分類）＋範例資料（論壇分類、平台任務） |
+| `seed-demo.sql` | 展示 / 測試用假資料：251 位會員（1～5 為管理員，**所有密碼 `Demo1234!`**）、論壇文章與互動、任務、委託、點數紀錄、儲值、商品與 110 筆訂單。Docker 的 `db-init` 在 `[user]` 為空時自動執行（`DEMO_SEED=0` 可略過）；文章內文檔與商品圖片不在資料庫內，不會產生 |
 | `migrations/` | 已上線資料庫要依日期順序各執行一次的修正（`2026-11-12-tip-log-remove-email.sql`、`2026-11-17-content-interaction-unique.sql`、`2026-11-17-user-email-verify-security-stamp.sql`、`2026-11-18-content-report-review.sql`），都可重複執行；用目前 `schema.sql` 新建的資料庫不需要 |
 | `../dbdiagram.md` | 資料表設計說明（[dbdiagram.io](https://dbdiagram.io) 格式，含欄位意義） |
 
